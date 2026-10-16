@@ -1,0 +1,36 @@
+# Catalog
+
+Everything Sandkit offers, one line each. Read a practice before the components that support it, and a component's `manifest.md` for its full contract. Use components through their manifests; you don't need to read their source.
+
+## Practices
+
+How to do something well in a sandbox. Plain instructions, for people and agents alike.
+
+| Practice | What it covers |
+|---|---|
+| [Building a sandbox](practices/building-a-sandbox.md) | Start here. The end-to-end method: setting up the folder, copying components in, the model, chapters, checking. |
+| [Identifiers](practices/identifiers.md) | Short, stable codes for the things in a sandbox, and citing them everywhere. Supported by `sb-id`. |
+
+## Shell
+
+| Part | What it does |
+|---|---|
+| [Sandbox shell](shell/manifest.md) | The environment around a sandbox: header, goal, full screen, settings and theming. |
+
+## Components
+
+| Component | What it does |
+|---|---|
+| [`sb-id`](components/sb-id/manifest.md) | An identifying code as a pill: hover explains it, click highlights every mention. |
+| [`sb-log`](components/sb-log/manifest.md) | A stream of things that happened, in order: tones, columns, expandable detail, selection. |
+| [`sb-parameters`](components/sb-parameters/manifest.md) | The knobs people turn: labelled sliders with live values, changes from defaults marked, reset. |
+
+## In progress
+
+Working, and used by the supply chain example, but without a manifest or demo yet. Not ready for new sandboxes.
+
+| Component | What it does |
+|---|---|
+| `sb-chart` | A line chart of values over time, with reference lines. |
+| `sb-controls` | Play, pause, step, reset and speed for anything that runs over time. |
+| `sb-network` | Locations joined by routes, with things moving along them. |
