@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Shell and theming tests</title>
+  <script src="../test/harness.js"></script>
+  <script src="sb-theme-settings.js"></script>
+  <script src="sb-shell.js"></script>
+</head>
+<body>
+  <script>
+    const root = document.documentElement;
+    const token = (name) => getComputedStyle(root).getPropertyValue(`--sb-${name}`).trim();
+
+    // A shell with the theme section, as sandboxes declare it.
+    function shell(inner = '', attrs = '') {
+      return mount(`<sb-shell heading="Test sandbox" ${attrs}><sb-theme-settings slot="settings"></sb-theme-settings>${inner}</sb-shell>`);
+    }
+
+    // Returns theme settings with the token editor open, after resetting to the default theme.
+    function openThemeEditor(el = shell()) {
+      const themes = el.querySelector('sb-theme-settings');
+      themes.querySelector('[value="auto"]').click();
+      themes.querySelector('[data-action="customise"]').click();
+      return themes;
+    }
+
+    function editToken(themes, name, value) {
+      const input = themes.querySelector(`[data-token="${name}"]`);
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    // ---- Header ----
+
+    test('shows the heading and wraps other children as header content', () => {
+      const el = shell('<p>The goal</p>');
+      assertEqual(el.querySelector('.sb-shell__heading').textContent, 'Test sandbox');
+      assertEqual(el.querySelector('.sb-shell__content').textContent, 'The goal');
+    });
+
+    test('places slot="actions" children beside the controls', () => {
+      const el = shell('<button slot="actions">Share</button><p>Goal</p>');
+      assertEqual(el.querySelector('.sb-shell__actions').textContent, 'Share');
+      assert(!el.querySelector('.sb-shell__content').textContent.includes('Share'));
+    });
+
+    test('shows the controls named in the controls attribute, in that order', () => {
+      const el = shell('', 'controls="collapse settings"');
+      const actions = [...el.querySelectorAll('.sb-shell__controls [data-action]')].map((b) => b.dataset.action);
+      assertEqual(actions, ['collapse', 'open-settings']);
+    });
+
+    test('collapsing hides the header, fires sb-collapse and is remembered', () => {
+      const el = shell();
+      const events = recordEvents(el, 'sb-collapse');
+      el.querySelector('[data-action="collapse"]').click();
+      assert(el.collapsed && el.hasAttribute('collapsed'), 'collapsed');
+      assertEqual(events[0].detail.collapsed, true);
+      assertEqual(localStorage.getItem('sb-shell-collapsed'), 'true');
+      el.querySelector('[data-action="expand"]').click();
+      assert(!el.collapsed, 'expanded again');
+    });
+
+    test('focus moves to the restore button on collapse, and back on expand', () => {
+      const el = shell();
+      el.querySelector('[data-action="collapse"]').click();
+      assertEqual(document.activeElement, el.querySelector('[data-action="expand"]'));
+      el.querySelector('[data-action="expand"]').click();
+      assertEqual(document.activeElement, el.querySelector('[data-action="collapse"]'));
+    });
+
+    test('offers More only when header content overflows one line', async () => {
+      const el = shell(`<p>${'A long goal. '.repeat(80)}</p>`);
+      await nextFrame();
+      const more = el.querySelector('.sb-shell__more');
+      assert(!more.hidden, 'More is shown');
+      more.click();
+      assertEqual(more.textContent, 'Less');
+
+      const short = shell('<p>Short</p>');
+      await nextFrame();
+      assert(short.querySelector('.sb-shell__more').hidden, 'More is hidden for short content');
+    });
+
+    // ---- Settings sections ----
+
+    test('shows the settings sections the sandbox declares, in order', () => {
+      const el = shell('<div slot="settings" heading="Simulation">Speed options</div>');
+      const titles = [...el.querySelectorAll('.sb-shell__section-title')].map((h) => h.textContent);
+      assertEqual(titles, ['Theme', 'Simulation', 'Your settings']);
+    });
+
+    test('exports settings from every saveable section', () => {
+      const settings = shell().settings;
+      assertEqual(settings.format, 'sandkit-settings');
+      assertEqual(Object.keys(settings.sections), ['theme']);
+    });
+
+    test('rejects a file that is not a settings file', () => {
+      assertThrows(() => shell().importSettings({ some: 'thing' }));
+    });
+
+    test('passes imported data to the matching section', () => {
+      const el = shell();
+      el.importSettings({ format: 'sandkit-settings', version: 1, sections: { theme: { choice: 'dark', presets: [] } } });
+      assertEqual(root.dataset.theme, 'dark');
+    });
+
+    // ---- Theming ----
+
+    test('choosing a theme applies it to the page and fires sb-theme', () => {
+      const themes = shell().querySelector('sb-theme-settings');
+      themes.querySelector('[value="light"]').click();
+      const events = recordEvents(document, 'sb-theme');
+      themes.querySelector('[value="dark"]').click();
+      assertEqual(root.dataset.theme, 'dark');
+      assertEqual(events.at(-1).detail.theme, 'dark');
+    });
+
+    test('editing a token previews it live, and Discard reverts it', () => {
+      const themes = openThemeEditor();
+      const original = token('accent');
+      editToken(themes, 'accent', '#e11d48');
+      assertEqual(token('accent'), '#e11d48');
+      assert(!themes.querySelector('[data-action="discard"]').hidden, 'Discard offered');
+      themes.querySelector('[data-action="discard"]').click();
+      assertEqual(token('accent'), original);
+      assert(themes.querySelector('[data-action="discard"]').hidden, 'Discard hidden again');
+    });
+
+    test('the editor is not rebuilt while previewing', () => {
+      const themes = openThemeEditor();
+      const input = themes.querySelector('[data-token="accent"]');
+      editToken(themes, 'accent', '#123456');
+      assertEqual(themes.querySelector('[data-token="accent"]'), input);
+      themes.querySelector('[data-action="discard"]').click();
+    });
+
+    test('saving a preset stores only the changed tokens on top of its base theme', () => {
+      const el = shell();
+      const themes = openThemeEditor(el);
+      themes.querySelector('[value="dark"]').click();
+      editToken(themes, 'accent', '#16a34a');
+      themes.querySelector('.sb-theme-settings__name').value = 'Forest';
+      themes.querySelector('[data-action="save"]').click();
+
+      const { presets, choice } = el.settings.sections.theme;
+      const forest = presets.find((p) => p.label === 'Forest');
+      assertEqual([forest.base, forest.tokens], ['dark', { accent: '#16a34a' }]);
+      assertEqual(choice, forest.id);
+      assertEqual(token('accent'), '#16a34a');
+    });
+
+    test('deleting the current preset returns to the default theme', () => {
+      const el = shell();
+      const themes = el.querySelector('sb-theme-settings');
+      themes.querySelectorAll('.sb-theme-settings__delete').forEach((button) => button.click());
+      assertEqual(el.settings.sections.theme, { choice: 'auto', presets: [] });
+    });
+
+    test('importing presets replaces any with the same id', () => {
+      const el = shell();
+      const preset = (label) => ({ id: 'preset-x', label, base: 'light', tokens: {} });
+      el.importSettings({ format: 'sandkit-settings', sections: { theme: { presets: [preset('One')] } } });
+      el.importSettings({ format: 'sandkit-settings', sections: { theme: { presets: [preset('Two')] } } });
+      assertEqual(el.settings.sections.theme.presets.map((p) => p.label), ['Two']);
+    });
+
+    test('sandboxes can add their own themes', () => {
+      const themes = shell().querySelector('sb-theme-settings');
+      themes.themes = themes.themes.concat([{ id: 'sepia', label: 'Sepia' }]);
+      assert(themes.querySelector('[value="sepia"]'), 'Sepia offered');
+    });
+
+    // ---- Several on one page ----
+
+    test('includes no settings sections the sandbox did not declare', () => {
+      const el = mount('<sb-shell heading="Bare"></sb-shell>');
+      const titles = [...el.querySelectorAll('.sb-shell__section-title')].map((h) => h.textContent);
+      assertEqual(titles, ['Your settings']);
+    });
+
+    test('two shells on one page have their own settings dialogs', () => {
+      mount('<div><sb-shell heading="One"></sb-shell><sb-shell heading="Two"></sb-shell></div>');
+      const titles = [...document.querySelectorAll('#test-fixture .sb-shell__dialog-title')].map((t) => t.id);
+      assertEqual(new Set(titles).size, 2, 'unique dialog title ids');
+      document.querySelectorAll('#test-fixture dialog').forEach((dialog, i) => {
+        assertEqual(dialog.getAttribute('aria-labelledby'), titles[i]);
+      });
+    });
+
+    test('two theme sections each show the current theme', () => {
+      mount('<div><sb-theme-settings></sb-theme-settings><sb-theme-settings></sb-theme-settings></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-theme-settings');
+      a.querySelector('[value="light"]').click();
+      a.querySelector('[value="dark"]').click();
+      assert(a.querySelector('[value="dark"]').checked && b.querySelector('[value="dark"]').checked, 'both show dark');
+    });
+  </script>
+</body>
+</html>
