@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Supply chain model tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="model.js"></script>
+</head>
+<body>
+  <script>
+    const DAY = 24;
+
+    function run(hours, options) {
+      const model = createSupplyChain(options);
+      for (let i = 0; i < hours; i++) model.step();
+      return model;
+    }
+
+    // Steps the model until `find` returns something, and returns it.
+    function stepUntil(model, find, limit = 30 * DAY) {
+      for (let i = 0; i < limit; i++) {
+        const found = find();
+        if (found) return found;
+        model.step();
+      }
+      throw new Error('condition never met');
+    }
+
+    const firstStoreShipment = (model) => model.state.shipments.find((s) => s.from === 'DC-1');
+
+    test('the same seed replays exactly the same run', () => {
+      assertEqual(run(5 * DAY, { seed: 7 }).state.totals, run(5 * DAY, { seed: 7 }).state.totals);
+    });
+
+    test('a different seed gives a different run', () => {
+      const a = run(5 * DAY, { seed: 1 }).state.totals.sold;
+      const b = run(5 * DAY, { seed: 2 }).state.totals.sold;
+      assert(a !== b, 'expected different sales');
+    });
+
+    test('reset starts the run again from the beginning', () => {
+      const model = run(3 * DAY);
+      const totals = { ...model.state.totals };
+      model.reset();
+      assertEqual(model.state.hour, 0);
+      for (let i = 0; i < 3 * DAY; i++) model.step();
+      assertEqual(model.state.totals, totals);
+    });
+
+    test('stores sell nothing before they open at 08:00', () => {
+      assertEqual(run(7).state.totals.sold, 0, 'up to 07:00');
+      assert(run(8).state.totals.sold > 0, 'sales in the 08:00 hour');
+    });
+
+    test('a store that falls below its reorder point orders back up to its target', () => {
+      const model = createSupplyChain();
+      const shipment = stepUntil(model, () => firstStoreShipment(model));
+      const store = model.node(shipment.to);
+      assertEqual(store.stock + model.inbound(store.id), store.orderUpTo);
+    });
+
+    test('a delivery arrives after the delivery time', () => {
+      const model = createSupplyChain({ storeLeadHours: 10 });
+      const shipment = stepUntil(model, () => firstStoreShipment(model));
+      assertEqual(shipment.arrives - shipment.departs, 10);
+      stepUntil(model, () => model.state.hour === shipment.arrives);
+      assert(!model.state.shipments.includes(shipment), 'no longer on the way');
+      assert(model.state.log.some((e) => e.kind === 'delivery' && e.hour === shipment.arrives), 'arrival logged');
+    });
+
+    test('the DC alternates its orders between suppliers', () => {
+      const orders = run(14 * DAY).state.log.filter((e) => e.text.startsWith('DC ordered')).map((e) => e.text.match(/Supplier \w/)[0]);
+      assert(orders.length >= 2, 'at least two DC orders');
+      orders.forEach((supplier, i) => assertEqual(supplier, i % 2 ? 'Supplier B' : 'Supplier A'));
+    });
+
+    test('at normal demand no customer leaves empty-handed over two weeks', () => {
+      assertEqual(run(14 * DAY).state.totals.lost, 0);
+    });
+
+    test('at double demand some customers find the shelf empty', () => {
+      assert(run(14 * DAY, { demand: 2 }).state.totals.lost > 0);
+    });
+
+    test('changing an option takes effect on the running model', () => {
+      const model = createSupplyChain();
+      model.setOption('storeLeadHours', 30);
+      const shipment = stepUntil(model, () => firstStoreShipment(model));
+      assertEqual(shipment.arrives - shipment.departs, 30);
+    });
+
+    test('formats time as day and hour', () => {
+      assertEqual(formatTime(0), 'Day 1 · 00:00');
+      assertEqual(formatTime(DAY + 9), 'Day 2 · 09:00');
+    });
+
+    test('every rule has a unique code, a title and a description', () => {
+      const { rules } = createSupplyChain();
+      assertEqual(new Set(rules.map((r) => r.id)).size, rules.length);
+      rules.forEach((r) => assert(/^RUL-\d{3}$/.test(r.id) && r.title && r.description, `incomplete rule ${r.id}`));
+    });
+
+    // ---- The sandbox page ----
+
+    test('the sandbox page starts and renders every part', async () => {
+      const frame = mount('<iframe src="index.html" style="width: 1200px; height: 900px"></iframe>');
+      await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      await nextFrame();
+      const page = frame.contentDocument;
+      assertEqual(page.querySelectorAll('.sb-network__node').length, 6, 'network nodes');
+      assert(page.querySelector('#detail h3')?.textContent.includes('Distribution centre'), 'detail panel');
+      assertEqual(page.querySelectorAll('.sb-parameters__parameter').length, 2, 'parameters');
+      assertEqual(page.querySelectorAll('sb-id.sb-id--unresolved').length, 0, 'every code resolves');
+    });
+  </script>
+</body>
+</html>

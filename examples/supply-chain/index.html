@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Supply Chain Sandbox</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-network/sb-network.js"></script>
+  <script src="../../components/sb-chart/sb-chart.js"></script>
+  <script src="../../components/sb-controls/sb-controls.js"></script>
+  <script src="../../components/sb-log/sb-log.js"></script>
+  <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="../../components/sb-parameters/sb-parameters.js"></script>
+  <script src="model.js"></script>
+</head>
+<body>
+  <sb-shell heading="Supply Chain Sandbox">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p><strong>Goal:</strong> understand end to end how goods get from suppliers to customers, what goes wrong along the way, and what keeps it all running efficiently.</p>
+  </sb-shell>
+
+  <main>
+    <section class="chapter">
+      <h2>Chapter 1 · The network</h2>
+      <p>One product moves from two suppliers, through a distribution centre (DC), to three stores. Customers buy from the stores between 08:00 and 20:00 <sb-id code="RUL-003"></sb-id>. Every location follows one simple rule <sb-id code="RUL-001"></sb-id>: <em>when stock plus deliveries on the way drops below a reorder point, order enough to get back up to a target level.</em> Blue dots are trucks on the road.</p>
+      <p class="try"><strong>Try:</strong> press Play and watch a few days pass. Click a location to see its stock over time. Then raise demand, or make DC deliveries slower, and see where things break first.</p>
+    </section>
+
+    <sb-controls id="controls"></sb-controls>
+
+    <div class="layout">
+      <div class="panel network-panel">
+        <sb-network id="network" width="700" height="400" selected="DC-1"></sb-network>
+        <div class="stats" id="stats"></div>
+      </div>
+
+      <aside class="panel side">
+        <div id="detail"></div>
+        <sb-chart id="chart"></sb-chart>
+        <sb-parameters id="parameters"></sb-parameters>
+      </aside>
+    </div>
+
+    <section class="panel">
+      <h3>What happened</h3>
+      <sb-log id="log" limit="80" empty-text="Press Play or Step to start."></sb-log>
+    </section>
+  </main>
+
+  <script>
+    const model = createSupplyChain({ seed: 1 });
+    const $ = (id) => document.getElementById(id);
+    const network = $('network'), chart = $('chart'), controls = $('controls'), log = $('log'), parameters = $('parameters');
+    let selected = 'DC-1';
+    let timer = null;
+    let detailFor = null; // the location the detail panel was built for
+
+    // ---- Controls ----
+
+    controls.speeds = [
+      { label: '1 hour/s', value: 1 }, { label: '6 hours/s', value: 6 },
+      { label: '1 day/s', value: 24 }, { label: '3 days/s', value: 72 }
+    ];
+    controls.speed = 6;
+
+    const tick = () => { model.step(); render(); };
+    const start = () => { timer = setInterval(tick, 1000 / controls.speed); };
+    const stop = () => { clearInterval(timer); timer = null; };
+
+    controls.addEventListener('sb-play', start);
+    controls.addEventListener('sb-pause', stop);
+    controls.addEventListener('sb-step', tick);
+    controls.addEventListener('sb-reset', () => { model.reset(); render(); });
+    controls.addEventListener('sb-speed', () => { if (timer) { stop(); start(); } });
+    network.addEventListener('sb-select', (e) => { selected = e.detail.id; render(); });
+
+    // ---- Codes ----
+    // Every sb-id on the page asks here what its code refers to.
+
+    const KINDS = { supplier: 'Supplier', dc: 'Distribution centre', store: 'Store' };
+
+    document.addEventListener('sb-resolve', (e) => { e.detail.definition = describe(e.detail.code); });
+
+    function describe(code) {
+      const rule = model.rules.find((r) => r.id === code);
+      if (rule) return { kind: 'Rule', title: rule.title, description: rule.description };
+      const node = model.node(code);
+      if (node) return { kind: KINDS[node.type], title: node.name, description: summaryOf(node) };
+      return null;
+    }
+
+    function summaryOf(n) {
+      if (n.type === 'supplier') return `Always has stock. Delivers to the distribution centre in ${n.leadHours} hours.`;
+      if (n.type === 'dc') return 'Holds stock for the three stores, and reorders from the suppliers.';
+      return `Sells around ${n.dailyDemand} a day at normal demand.`;
+    }
+
+    // ---- Parameters ----
+
+    parameters.definitions = [
+      { key: 'demand', label: 'Customer demand', min: 0.5, max: 2.5, step: 0.1, value: 1, unit: '×' },
+      { key: 'storeLeadHours', label: 'DC to store delivery time', min: 2, max: 48, value: 12, unit: 'hours' }
+    ];
+    parameters.addEventListener('sb-change', (e) => {
+      model.setOption(e.detail.key, e.detail.value);
+      render();
+    });
+
+    // ---- Rendering ----
+
+    function render() {
+      const { hour, nodes, shipments, log: entries, totals } = model.state;
+      controls.label = formatTime(hour);
+      network.data = {
+        nodes: nodes.map(toNetworkNode),
+        edges: nodes.flatMap((n) => upstreamOf(n).map((from) => ({ from, to: n.id }))),
+        tokens: shipments.map((s) => toToken(s, hour))
+      };
+      log.entries = entries;
+      renderDetail(model.node(selected));
+      renderStats(totals);
+    }
+
+    function toNetworkNode(n) {
+      return {
+        id: n.id, label: n.name, type: n.type, x: n.x, y: n.y,
+        sublabel: n.type === 'supplier' ? `${n.leadHours}h to DC` : `Stock ${n.stock}`,
+        status: stockStatus(n), value: n.stock, max: n.capacity
+      };
+    }
+
+    function stockStatus(n) {
+      if (n.type === 'supplier') return null;
+      if (n.stock === 0) return 'out';
+      return n.stock < n.reorderPoint ? 'low' : 'ok';
+    }
+
+    function upstreamOf(n) {
+      return n.suppliers || (n.source ? [n.source] : []);
+    }
+
+    function toToken(s, hour) {
+      return {
+        id: s.id, from: s.from, to: s.to, label: s.qty,
+        progress: (hour - s.departs) / (s.arrives - s.departs),
+        title: `${s.qty} units, arriving ${formatTime(s.arrives)}`
+      };
+    }
+
+    function renderStats({ sold, lost }) {
+      const served = sold + lost ? Math.round(100 * sold / (sold + lost)) : 100;
+      $('stats').innerHTML = `
+        <span>Sold <b>${sold}</b></span>
+        <span>Lost sales <b>${lost}</b></span>
+        <span>Customers served <b>${served}%</b></span>`;
+    }
+
+    // The detail panel is built when a location is selected, then only its numbers change,
+    // so pills inside it stay put while the simulation runs.
+    function renderDetail(n) {
+      if (detailFor !== n.id) {
+        buildDetail(n);
+        detailFor = n.id;
+      }
+      if (n.type !== 'supplier') updateDetail(n);
+    }
+
+    function buildDetail(n) {
+      const title = `<h3>${n.name} <sb-id code="${n.id}"></sb-id></h3>`;
+      if (n.type === 'supplier') {
+        $('detail').innerHTML = `${title}
+          <p>Suppliers always have stock in this chapter. ${n.name} takes <b>${n.leadHours} hours</b>
+          to deliver to the DC, which alternates its orders between suppliers <sb-id code="RUL-002"></sb-id>.</p>`;
+        chart.removeAttribute('heading');
+        chart.data = {};
+        return;
+      }
+
+      const orderFrom = n.type === 'dc' ? 'a supplier' : 'the DC';
+      $('detail').innerHTML = `${title}
+        <dl class="facts">
+          <dt>In stock</dt><dd data-fact="stock"></dd>
+          <dt>On the way</dt><dd data-fact="inbound"></dd>
+          <dt>Reorder point</dt><dd>${n.reorderPoint}</dd>
+          <dt>Order up to</dt><dd>${n.orderUpTo}</dd>
+          ${n.dailyDemand ? '<dt>Typical demand</dt><dd data-fact="demand"></dd>' : ''}
+        </dl>
+        <p class="rule"><sb-id code="RUL-001"></sb-id> When stock plus deliveries on the way falls below
+        <b>${n.reorderPoint}</b>, order enough from ${orderFrom} to get back up to <b>${n.orderUpTo}</b>.</p>`;
+      chart.setAttribute('heading', 'Stock, last 7 days');
+    }
+
+    function updateDetail(n) {
+      setFact('stock', n.stock);
+      setFact('inbound', model.inbound(n.id));
+      if (n.dailyDemand) setFact('demand', `${Math.round(n.dailyDemand * model.options.demand)} a day`);
+      chart.data = {
+        series: [{ label: 'Stock', values: model.state.history[n.id] }],
+        lines: [
+          { value: n.reorderPoint, label: `Reorder ${n.reorderPoint}` },
+          { value: n.orderUpTo, label: `Target ${n.orderUpTo}` }
+        ],
+        yMax: n.capacity
+      };
+    }
+
+    function setFact(name, value) {
+      $('detail').querySelector(`[data-fact="${name}"]`).textContent = value;
+    }
+
+    // ---- Start ----
+    // Everything above is declared first; the sandbox starts here.
+
+    render();
+  </script>
+</body>
+</html>
