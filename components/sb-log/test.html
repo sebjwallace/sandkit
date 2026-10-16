@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-log tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-log.js"></script>
+  <script src="sb-log.js"></script>
+</head>
+<body>
+  <script>
+    const texts = (log) => [...log.querySelectorAll('.sb-log__text')].map((el) => el.textContent);
+    const rows = (log) => [...log.querySelectorAll('.sb-log__entry')];
+
+    // ---- Showing entries ----
+
+    test('shows the empty text when there are no entries', () => {
+      const log = mount('<sb-log empty-text="Press Play to start."></sb-log>');
+      assertEqual(log.textContent.trim(), 'Press Play to start.');
+    });
+
+    test('falls back to a default empty text', () => {
+      assertEqual(mount('<sb-log></sb-log>').textContent.trim(), 'Nothing yet.');
+    });
+
+    test('shows entries newest first by default', () => {
+      const log = mount('<sb-log></sb-log>');
+      log.entries = [{ text: 'first' }, { text: 'second' }, { text: 'third' }];
+      assertEqual(texts(log), ['third', 'second', 'first']);
+    });
+
+    test('shows entries oldest first when asked', () => {
+      const log = mount('<sb-log order="oldest-first"></sb-log>');
+      log.entries = [{ text: 'first' }, { text: 'second' }];
+      assertEqual(texts(log), ['first', 'second']);
+    });
+
+    test('keeps only the latest entries up to the limit', () => {
+      const log = mount('<sb-log limit="2"></sb-log>');
+      log.entries = [{ text: 'a' }, { text: 'b' }, { text: 'c' }];
+      assertEqual(texts(log), ['c', 'b']);
+      assertEqual(log.entries.length, 2);
+    });
+
+    test('shows the time of each entry', () => {
+      const log = mount('<sb-log></sb-log>');
+      log.entries = [{ time: 'Day 1 · 08:00', text: 'Opened' }];
+      assertEqual(log.querySelector('.sb-log__time').textContent, 'Day 1 · 08:00');
+    });
+
+    test('exposes tone and kind for styling', () => {
+      const log = mount('<sb-log></sb-log>');
+      log.entries = [{ text: 'Sold out', tone: 'bad', kind: 'stockout' }];
+      assertEqual(rows(log)[0].dataset.tone, 'bad');
+      assertEqual(rows(log)[0].dataset.kind, 'stockout');
+    });
+
+    test('displays text as text, never as markup', () => {
+      const log = mount('<sb-log></sb-log>');
+      log.entries = [{ text: '<b>bold</b>', fields: { a: '<i>x</i>' }, detail: '<script>' }];
+      log.columns = [{ key: 'a' }];
+      rows(log)[0].click();
+      assertEqual(log.querySelectorAll('b, i, .sb-log__detail script').length, 0);
+    });
+
+    // ---- Streaming ----
+
+    test('append adds an entry, and respects the limit', () => {
+      const log = mount('<sb-log limit="2"></sb-log>');
+      log.append({ text: 'a' });
+      log.append({ text: 'b' });
+      log.append({ text: 'c' });
+      assertEqual(texts(log), ['c', 'b']);
+    });
+
+    test('clear removes every entry', () => {
+      const log = mount('<sb-log></sb-log>');
+      log.entries = [{ text: 'a' }];
+      log.clear();
+      assertEqual(log.entries, []);
+      assertEqual(log.textContent.trim(), 'Nothing yet.');
+    });
+
+    test('changing the entries given does not change the log', () => {
+      const log = mount('<sb-log></sb-log>');
+      const list = [{ text: 'a' }];
+      log.entries = list;
+      list.push({ text: 'b' });
+      assertEqual(log.entries.length, 1);
+    });
+
+    test('an oldest-first log follows new entries when scrolled to the bottom', async () => {
+      const log = mount('<sb-log order="oldest-first" style="max-height: 60px"></sb-log>');
+      for (let i = 0; i < 30; i++) log.append({ text: `entry ${i}` });
+      await nextFrame();
+      assert(log.scrollHeight - log.scrollTop - log.clientHeight < 8, 'scrolled to the newest entry');
+    });
+
+    test('an oldest-first log stays put when the viewer has scrolled up', async () => {
+      const log = mount('<sb-log order="oldest-first" style="max-height: 60px"></sb-log>');
+      for (let i = 0; i < 30; i++) log.append({ text: `entry ${i}` });
+      log.scrollTop = 0;
+      log.append({ text: 'one more' });
+      assertEqual(log.scrollTop, 0);
+    });
+
+    test('opening an entry does not scroll an oldest-first log away from it', async () => {
+      const log = mount('<sb-log order="oldest-first" style="max-height: 120px"></sb-log>');
+      for (let i = 0; i < 3; i++) log.append({ text: `entry ${i}`, detail: 'x\n'.repeat(20) });
+      await nextFrame();
+      rows(log)[0].click();
+      assertEqual(log.scrollTop, 0);
+    });
+
+    // ---- Columns ----
+
+    test('shows chosen fields as columns, with a header', () => {
+      const log = mount('<sb-log></sb-log>');
+      log.columns = [{ key: 'direction', label: 'Dir' }, { key: 'topic', label: 'Topic' }];
+      log.entries = [{ time: '12:00', text: 'OrderPlaced', fields: { direction: 'in', topic: 'orders' } }];
+      const header = [...log.querySelectorAll('.sb-log__head span')].map((s) => s.textContent);
+      const cells = [...log.querySelectorAll('.sb-log__field')].map((s) => s.textContent);
+      assertEqual(header, ['Time', 'Dir', 'Topic', '']);
+      assertEqual(cells, ['in', 'orders']);
+    });
+
+    test('shows no header without columns', () => {
+      const log = mount('<sb-log></sb-log>');
+      log.entries = [{ text: 'a' }];
+      assertEqual(log.querySelector('.sb-log__head'), null);
+    });
+
+    test('columns line up across entries', () => {
+      const log = mount('<sb-log style="width: 400px"></sb-log>');
+      log.columns = [{ key: 'topic' }];
+      log.entries = [{ text: 'a', fields: { topic: 'x' } }, { text: 'b', fields: { topic: 'a much longer topic' } }];
+      const [first, second] = [...log.querySelectorAll('.sb-log__text')].map((el) => el.getBoundingClientRect().left);
+      assertEqual(first, second);
+    });
+
+    // ---- Detail and selection ----
+
+    test('clicking an entry with detail expands it as formatted JSON, and again collapses it', () => {
+      const log = mount('<sb-log></sb-log>');
+      log.entries = [{ text: 'OrderPlaced', detail: { id: 42 } }];
+      rows(log)[0].click();
+      assertEqual(log.querySelector('.sb-log__detail').textContent, JSON.stringify({ id: 42 }, null, 2));
+      assertEqual(rows(log)[0].getAttribute('aria-expanded'), 'true');
+      rows(log)[0].click();
+      assertEqual(log.querySelector('.sb-log__detail'), null);
+    });
+
+    test('an expanded entry stays expanded as new entries arrive', () => {
+      const log = mount('<sb-log></sb-log>');
+      const entry = { text: 'a', detail: 'payload' };
+      log.entries = [entry];
+      rows(log)[0].click();
+      log.append({ text: 'b' });
+      assertEqual(log.querySelector('.sb-log__detail').textContent, 'payload');
+    });
+
+    test('entries with detail can be opened from the keyboard', () => {
+      const log = mount('<sb-log></sb-log>');
+      log.entries = [{ text: 'a', detail: 'payload' }, { text: 'b' }];
+      const [withDetail] = rows(log).reverse();
+      assertEqual(withDetail.tabIndex, 0);
+      withDetail.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      assert(log.querySelector('.sb-log__detail'), 'detail opened');
+    });
+
+    test('clicking an entry selects it and fires sb-select with the entry', () => {
+      const log = mount('<sb-log></sb-log>');
+      const entry = { text: 'a', id: 'EVT-1' };
+      log.entries = [entry];
+      const selections = recordEvents(log, 'sb-select');
+      rows(log)[0].click();
+      assertEqual(selections[0].detail.entry, entry);
+      assert(rows(log)[0].classList.contains('sb-log__entry--selected'), 'highlighted');
+    });
+
+    test('two logs on one page keep their own entries', () => {
+      mount('<div><sb-log id="a"></sb-log><sb-log id="b"></sb-log></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-log');
+      a.append({ text: 'only in a' });
+      assertEqual([a.entries.length, b.entries.length], [1, 0]);
+    });
+
+    test('loading the same script twice is harmless and quiet', () => {
+      assertEqual(consoleErrors, []);
+    });
+  </script>
+</body>
+</html>

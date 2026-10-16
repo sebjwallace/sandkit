@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-network tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-network.js"></script>
+</head>
+<body>
+  <script>
+    const DATA = {
+      nodes: [
+        { id: 'A', label: 'Supplier', type: 'supplier', x: 100, y: 100 },
+        { id: 'B', label: 'Store', type: 'store', x: 300, y: 100, sublabel: 'Stock 30', value: 30, max: 120, status: 'low' }
+      ],
+      edges: [{ from: 'A', to: 'B' }],
+      tokens: [{ id: 'T1', from: 'A', to: 'B', progress: 0.5, label: 12 }]
+    };
+
+    function network(attrs = '') {
+      const el = mount(`<sb-network ${attrs}></sb-network>`);
+      el.data = DATA;
+      return el;
+    }
+
+    const nodeEl = (el, id) => el.querySelector(`[data-node-id="${id}"]`);
+
+    test('draws a node per location, with its label and sublabel', () => {
+      const el = network();
+      assertEqual(el.querySelectorAll('.sb-network__node').length, 2);
+      assertEqual(nodeEl(el, 'B').querySelector('.sb-network__label').textContent, 'Store');
+      assertEqual(nodeEl(el, 'B').querySelector('.sb-network__sublabel').textContent, 'Stock 30');
+    });
+
+    test('marks each node with its type and status', () => {
+      const classes = nodeEl(network(), 'B').classList;
+      assert(classes.contains('sb-network__node--store'), 'type class');
+      assert(classes.contains('sb-network__node--low'), 'status class');
+    });
+
+    test('fills the bar in proportion to value over max', () => {
+      const bar = nodeEl(network(), 'B').querySelector('.sb-network__bar');
+      const track = nodeEl(network(), 'B').querySelector('.sb-network__bar-bg');
+      assertEqual(Number(bar.getAttribute('width')), Number(track.getAttribute('width')) * 30 / 120);
+    });
+
+    test('shows no bar for a node without a max', () => {
+      assertEqual(nodeEl(network(), 'A').querySelector('.sb-network__bar'), null);
+    });
+
+    test('draws edges between nodes', () => {
+      const edge = network().querySelector('.sb-network__edge');
+      assertEqual([edge.getAttribute('x1'), edge.getAttribute('x2')], ['100', '300']);
+    });
+
+    test('places a token part-way along its route', () => {
+      const token = network().querySelector('.sb-network__token');
+      assertEqual(Number(token.getAttribute('cx')), 200, 'halfway between x=100 and x=300');
+    });
+
+    test('ignores edges and tokens that refer to unknown nodes', () => {
+      const el = mount('<sb-network></sb-network>');
+      el.data = { nodes: DATA.nodes, edges: [{ from: 'A', to: 'missing' }], tokens: [{ from: 'missing', to: 'B' }] };
+      assertEqual(el.querySelectorAll('.sb-network__edge, .sb-network__token').length, 0);
+    });
+
+    test('highlights the selected node', () => {
+      const el = network('selected="B"');
+      assert(nodeEl(el, 'B').classList.contains('sb-network__node--selected'));
+      el.selected = 'A';
+      assert(nodeEl(el, 'A').classList.contains('sb-network__node--selected'));
+      assert(!nodeEl(el, 'B').classList.contains('sb-network__node--selected'));
+    });
+
+    test('pressing a node selects it and fires sb-select', () => {
+      const el = network();
+      const selections = recordEvents(el, 'sb-select');
+      nodeEl(el, 'B').querySelector('rect').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      assertEqual(el.selected, 'B');
+      assertEqual(selections[0].detail.id, 'B');
+    });
+
+    test('displays labels as text, never as markup', () => {
+      const el = mount('<sb-network></sb-network>');
+      el.data = { nodes: [{ id: 'X', label: '<b>bold</b>', x: 0, y: 0 }] };
+      assertEqual(el.querySelector('.sb-network__label').textContent, '<b>bold</b>');
+    });
+
+    test('two networks on one page select independently', () => {
+      mount('<div><sb-network></sb-network><sb-network></sb-network></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-network');
+      a.data = DATA;
+      b.data = DATA;
+      nodeEl(a, 'B').querySelector('rect').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      assertEqual([a.selected, b.selected], ['B', null]);
+    });
+  </script>
+</body>
+</html>

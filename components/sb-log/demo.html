@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-log demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-log.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    sb-log { max-height: 220px; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-log">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A stream of things that happened, in the order they happened.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>A model that runs over time keeps producing occurrences: an order placed, a message received, a cell dividing, a rule firing. Most of them pass too quickly to notice. A log catches them, so anyone exploring the sandbox can see what just happened, in what order, and look closely at any single moment.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Following cause and effect.</strong> When something surprising happens, the log shows what led up to it.</li>
+        <li><strong>Watching a system's traffic.</strong> Events in and out of a processor, messages between services, packets on a network.</li>
+        <li><strong>Narrating a simulation.</strong> Orders and deliveries, turns in a game, steps in a reaction, an agent's reasoning.</li>
+        <li><strong>Connecting the moment to the model.</strong> Selecting an entry can highlight the part of the sandbox it concerns.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Comparing a fixed set of records.</strong> If order of occurrence doesn't matter, a table is clearer.</li>
+        <li><strong>Showing current state.</strong> A log tells you what happened, not how things stand now. Pair it with a view of the state.</li>
+        <li><strong>Very high volumes.</strong> Hundreds of entries a second become noise. Summarise them in a chart or counts, and log only the notable ones.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-log/sb-log.js"&gt;&lt;/script&gt;
+&lt;sb-log limit="200"&gt;&lt;/sb-log&gt;
+
+&lt;script&gt;
+  const log = document.querySelector('sb-log');
+  log.append({ time: 'Day 1 · 09:00', text: 'Store North ordered 63 from the DC' });
+  log.append({ time: 'Day 2 · 15:00', text: 'Store South sold out', tone: 'bad' });
+&lt;/script&gt;</pre>
+      <p>Each entry needs only <code>text</code>. Add <code>time</code>, a <code>tone</code> (good, warn or bad), <code>fields</code> to show as columns, or a <code>detail</code> to open on click, as your sandbox needs them.</p>
+
+      <h3>Making it reveal, not just record</h3>
+      <ul>
+        <li><strong>Use tone sparingly.</strong> If everything is coloured, nothing stands out. Keep it for the moments that matter.</li>
+        <li><strong>Keep the text short and specific.</strong> One line that says what happened. Put the specifics in <code>fields</code> and the full record in <code>detail</code>.</li>
+        <li><strong>Say why, where you can.</strong> "Ordered 63 (stock 37, below 40)" teaches more than "Ordered 63".</li>
+        <li><strong>Connect it.</strong> Listen for <code>sb-select</code> and highlight the related part of the sandbox, so the log becomes a way into the model.</li>
+      </ul>
+
+      <p>The full contract, including every attribute, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>An event processor</h2>
+      <p>Oldest first, following new events. Columns for direction and topic. Click an event to see its payload.</p>
+      <sb-log id="events" order="oldest-first" limit="200"></sb-log>
+    </section>
+
+    <section class="example">
+      <h2>A supply chain</h2>
+      <p>Newest first, as a plain list, with bad news in red.</p>
+      <sb-log id="supply"></sb-log>
+    </section>
+  </main>
+
+  <script>
+    const events = document.getElementById('events');
+    events.columns = [{ key: 'direction', label: 'Dir' }, { key: 'topic', label: 'Topic' }];
+
+    const TOPICS = ['orders', 'payments', 'shipping'];
+    let sequence = 0;
+
+    function nextEvent() {
+      sequence++;
+      const topic = TOPICS[sequence % TOPICS.length];
+      const incoming = sequence % 2 === 1;
+      const failed = sequence % 11 === 0;
+      events.append({
+        id: `EVT-${sequence}`,
+        time: new Date().toLocaleTimeString(),
+        text: failed ? `${topic} handler failed, retrying` : `${incoming ? 'Received' : 'Emitted'} ${topic} event #${sequence}`,
+        tone: failed ? 'bad' : undefined,
+        fields: { direction: incoming ? 'in' : 'out', topic },
+        detail: { id: `EVT-${sequence}`, topic, payload: { orderId: 1000 + sequence, amount: (sequence * 17) % 250 } }
+      });
+    }
+
+    for (let i = 0; i < 8; i++) nextEvent();
+    setInterval(nextEvent, 1500);
+
+    document.getElementById('supply').entries = [
+      { time: 'Day 1 · 09:00', text: 'Store North ordered 63 from the DC' },
+      { time: 'Day 1 · 21:00', text: '63 arrived at Store North' },
+      { time: 'Day 2 · 15:00', text: 'Store South sold out', tone: 'bad' },
+      { time: 'Day 2 · 16:00', text: 'DC could only send 20 of 60 to Store South', tone: 'bad' }
+    ];
+  </script>
+</body>
+</html>

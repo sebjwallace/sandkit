@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Name collision tests</title>
+  <script>
+    // Collect console errors, and claim every tag with an unrelated component before Sandkit loads.
+    window.reportedErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
+
+    window.TAGS = ['sb-id', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-network', 'sb-shell', 'sb-theme-settings'];
+    for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
+  </script>
+  <script src="../harness.js"></script>
+  <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="../../components/sb-parameters/sb-parameters.js"></script>
+  <script src="../../components/sb-log/sb-log.js"></script>
+  <script src="../../components/sb-chart/sb-chart.js"></script>
+  <script src="../../components/sb-controls/sb-controls.js"></script>
+  <script src="../../components/sb-network/sb-network.js"></script>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+</head>
+<body>
+  <script>
+    for (const tag of TAGS) {
+      test(`a different component already named <${tag}> is reported, with how to rename`, () => {
+        const message = reportedErrors.find((m) => m.includes(`<${tag}>`));
+        assert(message, `no error reported for <${tag}>`);
+        assert(message.includes(`replacing every "${tag}"`), 'explains how to rename');
+      });
+    }
+
+    test('the component already registered keeps running', () => {
+      assertEqual(customElements.get('sb-log').origin, undefined);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-controls tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-controls.js"></script>
+</head>
+<body>
+  <script>
+    const click = (controls, action) => controls.querySelector(`[data-action="${action}"]`).click();
+
+    test('Play and Pause alternate, firing sb-play then sb-pause', () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      const plays = recordEvents(controls, 'sb-play');
+      const pauses = recordEvents(controls, 'sb-pause');
+      click(controls, 'play');
+      assert(controls.running, 'running after Play');
+      click(controls, 'play');
+      assert(!controls.running, 'stopped after Pause');
+      assertEqual([plays.length, pauses.length], [1, 1]);
+    });
+
+    test('the play button shows what pressing it will do', () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      assert(controls.querySelector('[data-action="play"]').textContent.includes('Play'));
+      controls.running = true;
+      assert(controls.querySelector('[data-action="play"]').textContent.includes('Pause'));
+    });
+
+    test('Step and Reset fire their events', () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      const steps = recordEvents(controls, 'sb-step');
+      const resets = recordEvents(controls, 'sb-reset');
+      click(controls, 'step');
+      click(controls, 'reset');
+      assertEqual([steps.length, resets.length], [1, 1]);
+    });
+
+    test('events bubble, so a page can listen higher up', () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      const steps = recordEvents(document.body, 'sb-step');
+      click(controls, 'step');
+      assertEqual(steps.length, 1);
+    });
+
+    test('offers the given speeds and reports a change as a number', () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      controls.speeds = [{ label: 'Slow', value: 1 }, { label: 'Fast', value: 24 }];
+      const changes = recordEvents(controls, 'sb-speed');
+      const select = controls.querySelector('select');
+      assertEqual([...select.options].map((o) => o.textContent), ['Slow', 'Fast']);
+      select.value = '24';
+      select.dispatchEvent(new Event('change'));
+      assertEqual(changes[0].detail.value, 24);
+      assertEqual(controls.speed, 24);
+    });
+
+    test('shows its label', () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      controls.label = 'Day 3 · 08:00';
+      assertEqual(controls.querySelector('.sb-controls__label').textContent, 'Day 3 · 08:00');
+    });
+
+    test('keeps properties set before it is added to the page', () => {
+      const controls = document.createElement('sb-controls');
+      controls.label = 'Early';
+      controls.speeds = [{ label: 'Only', value: 5 }];
+      controls.speed = 5;
+      mount(controls);
+      assertEqual(controls.querySelector('.sb-controls__label').textContent, 'Early');
+      assertEqual(controls.querySelector('select').value, '5');
+    });
+
+    test('two sets of controls on one page run independently', () => {
+      mount('<div><sb-controls></sb-controls><sb-controls></sb-controls></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-controls');
+      a.querySelector('[data-action="play"]').click();
+      assertEqual([a.running, b.running], [true, false]);
+    });
+  </script>
+</body>
+</html>

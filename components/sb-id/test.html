@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-id tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-id.js"></script>
+  <script>
+    // The sandbox's side of the protocol: answer sb-resolve from its own definitions.
+    const DEFINITIONS = {
+      'RUL-001': { kind: 'Rule', title: 'Reorder rule', description: 'Order back up to target when low.' }
+    };
+    document.addEventListener('sb-resolve', (e) => {
+      e.detail.definition = DEFINITIONS[e.detail.code] ?? null;
+    });
+  </script>
+</head>
+<body>
+  <p id="static">Pills in the page itself: <sb-id code="RUL-001"></sb-id></p>
+
+  <script>
+    const pill = (el) => el.querySelector('.sb-id__pill');
+    const card = (el) => el.querySelector('.sb-id__card');
+    const pills = (html) => { mount(html); return [...document.querySelectorAll('#test-fixture sb-id')]; };
+
+    test('shows its code', () => {
+      assertEqual(pill(mount('<sb-id code="RUL-001"></sb-id>')).textContent, 'RUL-001');
+    });
+
+    test('asks the sandbox for its definition', () => {
+      const el = mount('<sb-id code="RUL-001"></sb-id>');
+      assertEqual(el.definition.title, 'Reorder rule');
+      assert(!el.classList.contains('sb-id--unresolved'));
+    });
+
+    test('pills written in the page are resolved once it has loaded', () => {
+      assertEqual(document.querySelector('#static sb-id').definition?.title, 'Reorder rule');
+    });
+
+    test('marks a code nothing in the sandbox defines as unresolved', () => {
+      const el = mount('<sb-id code="RUL-999"></sb-id>');
+      assertEqual(el.definition, null);
+      assert(el.classList.contains('sb-id--unresolved'));
+    });
+
+    test('hover shows the definition card, and leaving hides it', () => {
+      const el = mount('<sb-id code="RUL-001"></sb-id>');
+      pill(el).dispatchEvent(new MouseEvent('mouseenter'));
+      assert(card(el).matches(':popover-open'), 'card open');
+      assert(card(el).textContent.includes('Reorder rule') && card(el).textContent.includes('Rule'));
+      pill(el).dispatchEvent(new MouseEvent('mouseleave'));
+      assert(!card(el).matches(':popover-open'), 'card closed');
+    });
+
+    test('focus shows the card too, for keyboard users', () => {
+      const el = mount('<sb-id code="RUL-001"></sb-id>');
+      pill(el).focus();
+      assert(card(el).matches(':popover-open'));
+      pill(el).blur();
+    });
+
+    test('the card says so when a code is unresolved', () => {
+      const el = mount('<sb-id code="RUL-999"></sb-id>');
+      pill(el).dispatchEvent(new MouseEvent('mouseenter'));
+      assert(card(el).textContent.includes('Nothing in this sandbox is defined as RUL-999'));
+      pill(el).dispatchEvent(new MouseEvent('mouseleave'));
+    });
+
+    test('the pill is described by its card', () => {
+      const el = mount('<sb-id code="RUL-001"></sb-id>');
+      assertEqual(pill(el).getAttribute('aria-describedby'), card(el).id);
+    });
+
+    test('clicking highlights every mention of the code, and only that code', () => {
+      const [a, b, other] = pills('<p><sb-id code="RUL-001"></sb-id><sb-id code="RUL-001"></sb-id><sb-id code="ST-N"></sb-id></p>');
+      pill(a).click();
+      assert(a.classList.contains('sb-id--highlighted') && b.classList.contains('sb-id--highlighted'), 'both mentions');
+      assert(!other.classList.contains('sb-id--highlighted'), 'not other codes');
+      pill(b).click();
+      assert(!a.classList.contains('sb-id--highlighted'), 'clicking again clears it');
+    });
+
+    test('clicking fires sb-select with the code and whether it is highlighted', () => {
+      const el = mount('<sb-id code="RUL-001"></sb-id>');
+      const events = recordEvents(el, 'sb-select');
+      pill(el).click();
+      pill(el).click();
+      assertEqual(events.map((e) => e.detail), [{ code: 'RUL-001', highlighted: true }, { code: 'RUL-001', highlighted: false }]);
+    });
+
+    test('a pill added while a code is highlighted joins the highlight', () => {
+      const el = mount('<sb-id code="RUL-001"></sb-id>');
+      pill(el).click();
+      const later = document.createElement('sb-id');
+      later.code = 'RUL-001';
+      document.getElementById('test-fixture').append(later);
+      assert(later.classList.contains('sb-id--highlighted'));
+      pill(el).click();
+    });
+
+    test('changing the code re-resolves it', () => {
+      const el = mount('<sb-id code="RUL-999"></sb-id>');
+      el.code = 'RUL-001';
+      assertEqual(pill(el).textContent, 'RUL-001');
+      assertEqual(el.definition.title, 'Reorder rule');
+    });
+
+    test('refresh picks up a changed definition', () => {
+      const el = mount('<sb-id code="NEW-1"></sb-id>');
+      DEFINITIONS['NEW-1'] = { title: 'Added later' };
+      el.refresh();
+      assertEqual(el.definition.title, 'Added later');
+    });
+
+    test('several pills on one page have their own cards', () => {
+      const ids = pills('<p><sb-id code="A-1"></sb-id><sb-id code="A-2"></sb-id></p>').map((el) => card(el).id);
+      assertEqual(new Set(ids).size, 2);
+    });
+
+    test('displays codes and definitions as text, never as markup', () => {
+      DEFINITIONS['X-1'] = { title: '<b>bold</b>' };
+      const el = mount('<sb-id code="X-1"></sb-id>');
+      pill(el).dispatchEvent(new MouseEvent('mouseenter'));
+      assertEqual(card(el).querySelector('b'), null);
+      pill(el).dispatchEvent(new MouseEvent('mouseleave'));
+    });
+
+    test('adds no space around itself in prose', () => {
+      const p = mount('<p>Rule<sb-id code="RUL-001"></sb-id>.</p>');
+      assertEqual(p.textContent, 'RuleRUL-001.');
+    });
+  </script>
+</body>
+</html>

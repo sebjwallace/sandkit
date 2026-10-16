@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-parameters demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-parameters.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example .note { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .example .stage { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 20px; align-items: start; }
+    .example .result { font-size: 14px; }
+    .example .hint { font-size: 11px; color: var(--sb-muted); }
+    .example canvas { width: 100%; height: 220px; display: block; border-radius: var(--sb-radius); background: var(--sb-surface-2); }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    @media (max-width: 700px) { .example .stage { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-parameters">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>The knobs people turn to see what happens.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>The quickest way to understand a model is to change something and watch what follows. "What if demand doubled?" "What if gravity were weaker?" <code>sb-parameters</code> gives a sandbox its knobs: a labelled slider for each value people can change, showing the value live. It also keeps track of the baseline, marking anything that has moved from its default, so explorers always know how far they are from where they started and can return in one click.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Asking "what if?"</strong> Push a value and watch the model respond, while it runs.</li>
+        <li><strong>Finding where things break.</strong> Slide until behaviour changes character: stock runs out, a queue overflows, a ball stops bouncing.</li>
+        <li><strong>Comparing against a baseline.</strong> Changed values are marked with their defaults, so differences are never hidden.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Values people shouldn't change.</strong> Fixed facts of the model belong in its description, not on a slider.</li>
+        <li><strong>Long lists of settings.</strong> A dozen sliders overwhelm. Choose the few that teach the most, and leave the rest fixed.</li>
+        <li><strong>Choices that aren't numbers.</strong> This first version handles ranges. Toggles and choices will come when a sandbox needs them.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-parameters/sb-parameters.js"&gt;&lt;/script&gt;
+&lt;sb-parameters&gt;&lt;/sb-parameters&gt;
+
+&lt;script&gt;
+  const parameters = document.querySelector('sb-parameters');
+  parameters.definitions = [
+    { key: 'demand', label: 'Customer demand', min: 0.5, max: 2.5, step: 0.1, value: 1, unit: '×' }
+  ];
+  parameters.addEventListener('sb-change', (e) =&gt; model.setOption(e.detail.key, e.detail.value));
+&lt;/script&gt;</pre>
+
+      <h3>Making it reveal, not just control</h3>
+      <ul>
+        <li><strong>Choose ranges that reach interesting territory.</strong> Let people push far enough to see the model change behaviour, not just shift slightly.</li>
+        <li><strong>Set honest defaults,</strong> and say where they come from when it matters. Anything placed in a parameter's slot sits beside its name: a note, or a code citing the source.</li>
+        <li><strong>Make the effect visible straight away.</strong> Pair the parameters with a chart, a simulation or a count that responds as people slide.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A bouncing ball</h2>
+      <p class="note">A tiny physics model. Change gravity or bounciness and watch it respond, live. The note beside Gravity is the sandbox's own content, placed with a slot.</p>
+      <div class="stage">
+        <canvas id="ball" width="600" height="220"></canvas>
+        <sb-parameters id="physics">
+          <span slot="gravity" class="hint">Earth by default</span>
+        </sb-parameters>
+      </div>
+    </section>
+
+    <section class="example">
+      <h2>A supply chain</h2>
+      <p class="note">Demand and delivery time, with a quick estimate that responds as you slide.</p>
+      <div class="stage">
+        <p class="result" id="estimate"></p>
+        <sb-parameters id="supply"></sb-parameters>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ---- Bouncing ball ----
+
+    const physics = document.getElementById('physics');
+    physics.definitions = [
+      { key: 'gravity', label: 'Gravity', min: 0, max: 30, step: 0.1, value: 9.8, unit: 'm/s²' },
+      { key: 'bounciness', label: 'Bounciness', min: 0, max: 1, step: 0.01, value: 0.8, format: (v) => `${Math.round(v * 100)}%` }
+    ];
+
+    const canvas = document.getElementById('ball');
+    const context = canvas.getContext('2d');
+    const RADIUS = 14, PIXELS_PER_METRE = 40;
+    let ball = { x: RADIUS, y: RADIUS, vx: 2.4, vy: 0 };
+
+    function stepBall(dt) {
+      const { gravity, bounciness } = physics.values;
+      ball.vy += gravity * dt;
+      ball.x += ball.vx * dt * PIXELS_PER_METRE;
+      ball.y += ball.vy * dt * PIXELS_PER_METRE;
+      const floor = canvas.height - RADIUS;
+      if (ball.y > floor) { ball.y = floor; ball.vy = -ball.vy * bounciness; }
+      if (ball.x > canvas.width - RADIUS || ball.x < RADIUS) ball.vx = -ball.vx;
+      if (Math.abs(ball.vy) < 0.05 && ball.y >= floor) ball = { x: RADIUS, y: RADIUS, vx: 2.4, vy: 0 }; // at rest: drop again
+    }
+
+    function drawBall() {
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--sb-accent');
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = accent;
+      context.beginPath();
+      context.arc(ball.x, ball.y, RADIUS, 0, Math.PI * 2);
+      context.fill();
+    }
+
+    let last = performance.now();
+    requestAnimationFrame(function frame(now) {
+      stepBall(Math.min(0.05, (now - last) / 1000));
+      last = now;
+      drawBall();
+      requestAnimationFrame(frame);
+    });
+
+    // ---- Supply chain ----
+
+    const supply = document.getElementById('supply');
+    supply.definitions = [
+      { key: 'demand', label: 'Customer demand', min: 0.5, max: 2.5, step: 0.1, value: 1, unit: '×' },
+      { key: 'leadHours', label: 'DC to store delivery time', min: 2, max: 48, value: 12, unit: 'hours' }
+    ];
+
+    // Stock a store needs to cover demand while a delivery is on its way (40 a day at normal demand).
+    function showEstimate({ demand, leadHours }) {
+      const needed = Math.round(40 * demand * leadHours / 24);
+      const verdict = needed > 40 ? 'more than its reorder point of 40, so it will run out before deliveries arrive.' : 'within its reorder point of 40, so shelves stay stocked.';
+      document.getElementById('estimate').innerHTML = `Store North sells about <b>${needed}</b> while a delivery is on its way: ${verdict}`;
+    }
+
+    supply.addEventListener('sb-change', (e) => showEstimate(e.detail.values));
+    showEstimate(supply.values);
+  </script>
+</body>
+</html>

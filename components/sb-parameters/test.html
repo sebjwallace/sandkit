@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-parameters tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-parameters.js"></script>
+</head>
+<body>
+  <script>
+    const DEFINITIONS = [
+      { key: 'demand', label: 'Customer demand', min: 0.5, max: 2.5, step: 0.1, value: 1, unit: '×' },
+      { key: 'lead', label: 'Delivery time', min: 2, max: 48, value: 12, unit: 'hours' }
+    ];
+
+    function parameters() {
+      const el = mount('<sb-parameters></sb-parameters>');
+      el.definitions = DEFINITIONS;
+      return el;
+    }
+
+    const row = (el, key) => el.querySelector(`.sb-parameters__parameter[data-key="${key}"]`);
+    const shown = (el, key) => row(el, key).querySelector('.sb-parameters__value').textContent;
+    const resetButton = (el) => el.querySelector('.sb-parameters__reset');
+
+    function slide(el, key, value) {
+      const input = row(el, key).querySelector('input');
+      input.value = String(value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    // ---- Showing parameters ----
+
+    test('shows a labelled slider for each parameter', () => {
+      const el = parameters();
+      assertEqual([...el.querySelectorAll('label')].map((l) => l.textContent), ['Customer demand', 'Delivery time']);
+      const input = row(el, 'lead').querySelector('input');
+      assertEqual([input.min, input.max, input.value], ['2', '48', '12']);
+      assertEqual(el.querySelector('label').htmlFor, row(el, 'demand').querySelector('input').id, 'label is linked to its slider');
+    });
+
+    test('formats values with the step\'s decimal places and the unit', () => {
+      const el = parameters();
+      assertEqual(shown(el, 'demand'), '1.0×', 'symbol units attach directly');
+      assertEqual(shown(el, 'lead'), '12 hours', 'word units are spaced');
+    });
+
+    test('uses a custom format when given', () => {
+      const el = mount('<sb-parameters></sb-parameters>');
+      el.definitions = [{ key: 'p', min: 0, max: 1, step: 0.01, value: 0.25, format: (v) => `${Math.round(v * 100)}%` }];
+      assertEqual(shown(el, 'p'), '25%');
+    });
+
+    test('tells screen readers the formatted value', () => {
+      const el = parameters();
+      assertEqual(row(el, 'lead').querySelector('input').getAttribute('aria-valuetext'), '12 hours');
+    });
+
+    // ---- Changing values ----
+
+    test('sliding fires sb-change with the new value as a number', () => {
+      const el = parameters();
+      const changes = recordEvents(el, 'sb-change');
+      slide(el, 'lead', 30);
+      assertEqual(changes[0].detail.key, 'lead');
+      assertEqual(changes[0].detail.value, 30);
+      assertEqual(changes[0].detail.values, { demand: 1, lead: 30 });
+      assertEqual(shown(el, 'lead'), '30 hours');
+    });
+
+    test('sliding updates in place, without replacing the slider', () => {
+      const el = parameters();
+      const input = row(el, 'lead').querySelector('input');
+      slide(el, 'lead', 30);
+      assertEqual(row(el, 'lead').querySelector('input'), input);
+    });
+
+    test('marks a changed parameter, with its default, and offers reset', () => {
+      const el = parameters();
+      assert(resetButton(el).hidden, 'no reset while everything is at its default');
+      slide(el, 'demand', 2);
+      assert(row(el, 'demand').hasAttribute('data-changed'), 'marked as changed');
+      assert(!row(el, 'lead').hasAttribute('data-changed'), 'others unmarked');
+      assertEqual(row(el, 'demand').querySelector('.sb-parameters__default').textContent, 'Default 1.0×');
+      assert(!resetButton(el).hidden, 'reset offered');
+    });
+
+    test('a parameter slid back to its default is no longer marked', () => {
+      const el = parameters();
+      slide(el, 'demand', 2);
+      slide(el, 'demand', 1);
+      assert(!row(el, 'demand').hasAttribute('data-changed'));
+    });
+
+    test('reset returns every parameter to its default and announces each change', () => {
+      const el = parameters();
+      slide(el, 'demand', 2);
+      slide(el, 'lead', 40);
+      const changes = recordEvents(el, 'sb-change');
+      resetButton(el).click();
+      assertEqual(el.values, { demand: 1, lead: 12 });
+      assertEqual(changes.map((e) => [e.detail.key, e.detail.value]), [['demand', 1], ['lead', 12]]);
+      assert(resetButton(el).hidden, 'reset hidden again');
+    });
+
+    test('reset announces nothing when nothing has changed', () => {
+      const el = parameters();
+      const changes = recordEvents(el, 'sb-change');
+      el.reset();
+      assertEqual(changes.length, 0);
+    });
+
+    // ---- Values ----
+
+    test('values can be read and set, and are kept within range', () => {
+      const el = parameters();
+      el.values = { lead: 100, unknown: 5 };
+      assertEqual(el.values, { demand: 1, lead: 48 });
+      assertEqual(shown(el, 'lead'), '48 hours');
+    });
+
+    test('changing the values returned does not change the parameters', () => {
+      const el = parameters();
+      el.values.demand = 2;
+      assertEqual(el.values.demand, 1);
+    });
+
+    // ---- Slots ----
+
+    test('places slot="<key>" children beside that parameter\'s name, outside its label', () => {
+      const el = mount('<sb-parameters><span slot="lead" class="note">Measured</span></sb-parameters>');
+      el.definitions = DEFINITIONS;
+      const note = el.querySelector('.note');
+      assertEqual(note.closest('.sb-parameters__parameter').dataset.key, 'lead');
+      assertEqual(note.closest('label'), null, 'not part of the label');
+    });
+
+    test('slotted children survive re-rendering', () => {
+      const el = mount('<sb-parameters><span slot="lead" class="note">Measured</span></sb-parameters>');
+      el.definitions = DEFINITIONS;
+      const note = el.querySelector('.note');
+      el.values = { lead: 20 };
+      el.definitions = DEFINITIONS;
+      assertEqual(el.querySelector('.note'), note);
+      assertEqual(el.querySelectorAll('.note').length, 1);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two panels on one page have their own sliders and values', () => {
+      mount('<div><sb-parameters></sb-parameters><sb-parameters></sb-parameters></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-parameters');
+      a.definitions = DEFINITIONS;
+      b.definitions = DEFINITIONS;
+      slide(a, 'lead', 30);
+      assertEqual([a.values.lead, b.values.lead], [30, 12]);
+      assert(row(a, 'lead').querySelector('input').id !== row(b, 'lead').querySelector('input').id, 'unique ids');
+    });
+
+    test('displays labels as text, never as markup', () => {
+      const el = mount('<sb-parameters></sb-parameters>');
+      el.definitions = [{ key: 'x', label: '<b>bold</b>', min: 0, max: 1, value: 0 }];
+      assertEqual(el.querySelector('b'), null);
+    });
+  </script>
+</body>
+</html>

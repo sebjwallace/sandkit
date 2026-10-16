@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Isolation tests</title>
+  <script src="../harness.js"></script>
+</head>
+<body>
+  <script>
+    // Components never reference each other. Their scripts and demos must not mention another
+    // component's tag; manifests may, because suggestions there are only text.
+    const COMPONENTS = ['sb-chart', 'sb-controls', 'sb-id', 'sb-log', 'sb-network', 'sb-parameters'];
+
+    // file:// pages can read sibling files with XHR when the runner allows file access.
+    function read(path) {
+      return new Promise((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open('GET', path);
+        request.onload = () => resolve(request.responseText);
+        request.onerror = () => reject(new Error(`could not read ${path}`));
+        request.send();
+      });
+    }
+
+    // Matches a whole tag name, so 'sb-id' doesn't match inside 'sb-identity'.
+    const mentions = (source, tag) => new RegExp(`(^|[^a-z-])${tag}(?![a-z-])`).test(source);
+
+    for (const component of COMPONENTS) {
+      const others = COMPONENTS.filter((c) => c !== component);
+      for (const file of [`${component}.js`, 'demo.html']) {
+        test(`${component}/${file} mentions no other component`, async () => {
+          const source = await read(`../../components/${component}/${file}`).catch(() => null);
+          if (source === null) return; // not every component has a demo yet
+          const found = others.filter((tag) => mentions(source, tag));
+          assertEqual(found, [], 'references');
+        });
+      }
+    }
+  </script>
+</body>
+</html>

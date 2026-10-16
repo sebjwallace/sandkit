@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-chart tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-chart.js"></script>
+</head>
+<body>
+  <script>
+    const pointsOf = (polyline) => polyline.getAttribute('points').split(' ').map((p) => p.split(',').map(Number));
+
+    test('shows a placeholder until there are at least two values', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Stock', values: [5] }] };
+      assertEqual(chart.querySelector('.sb-chart__empty').textContent, 'No data yet.');
+      assertEqual(chart.querySelector('svg'), null);
+    });
+
+    test('draws one line per series, with a point per value', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'A', values: [1, 2, 3] }, { label: 'B', values: [3, 2, 1] }] };
+      const lines = chart.querySelectorAll('.sb-chart__series');
+      assertEqual(lines.length, 2);
+      assertEqual(pointsOf(lines[0]).length, 3);
+    });
+
+    test('draws higher values higher up', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Rising', values: [0, 10] }] };
+      const [[, firstY], [, lastY]] = pointsOf(chart.querySelector('.sb-chart__series'));
+      assert(lastY < firstY, 'a rising series should go up the chart');
+    });
+
+    test('aligns a shorter series with the latest values', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Long', values: [1, 2, 3, 4] }, { label: 'Short', values: [1, 2] }] };
+      const [long, short] = [...chart.querySelectorAll('.sb-chart__series')].map(pointsOf);
+      assertEqual(short.at(-1)[0], long.at(-1)[0], 'last points share an x position');
+      assert(short[0][0] > long[0][0], 'the shorter series starts later');
+    });
+
+    test('draws labelled reference lines', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Stock', values: [1, 2] }], lines: [{ value: 40, label: 'Reorder 40' }] };
+      assertEqual(chart.querySelectorAll('.sb-chart__line').length, 1);
+      assertEqual(chart.querySelector('.sb-chart__line-label').textContent, 'Reorder 40');
+    });
+
+    test('scales to yMax when given', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Stock', values: [1, 2] }], yMax: 120 };
+      const ticks = [...chart.querySelectorAll('.sb-chart__tick')].map((t) => t.textContent);
+      assert(ticks.includes('120'), `expected a 120 tick, got ${ticks}`);
+    });
+
+    test('shows its heading attribute and updates when it changes', () => {
+      const chart = mount('<sb-chart heading="Stock"></sb-chart>');
+      assertEqual(chart.querySelector('.sb-chart__heading').textContent, 'Stock');
+      chart.setAttribute('heading', 'Orders');
+      assertEqual(chart.querySelector('.sb-chart__heading').textContent, 'Orders');
+    });
+
+    test('two charts on one page draw their own data', () => {
+      mount('<div><sb-chart></sb-chart><sb-chart></sb-chart></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-chart');
+      a.data = { series: [{ label: 'A', values: [1, 2, 3] }] };
+      assertEqual([a.querySelectorAll('polyline').length, b.querySelectorAll('polyline').length], [1, 0]);
+    });
+  </script>
+</body>
+</html>
