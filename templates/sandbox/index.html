@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{Sandbox name}}</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Sandkit, copied into lib/ (see lib/sandkit/SOURCE.md). Theming loads first, so the page never flashes the wrong theme. -->
+  <script src="lib/sandkit/shell/sb-theme-settings.js"></script>
+  <script src="lib/sandkit/shell/sb-shell.js"></script>
+  <!-- Add a line for each component this sandbox uses, for example: -->
+  <!-- <script src="lib/sandkit/components/sb-log/sb-log.js"></script> -->
+
+  <script src="model.js"></script>
+</head>
+<body>
+  <sb-shell heading="{{Sandbox name}}">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p><strong>Goal:</strong> {{What this sandbox helps people understand or discover, in one or two sentences.}}</p>
+  </sb-shell>
+
+  <main>
+    <section class="chapter">
+      <h2>Chapter 1 · {{The first idea}}</h2>
+      <p>{{Introduce one idea, briefly. The sandbox below lets people work with it.}}</p>
+      <p class="try"><strong>Try:</strong> {{One thing to do, and what to look for.}}</p>
+    </section>
+
+    <section class="panel" id="stage">
+      {{The interactive surface: the model, made visible and handleable.}}
+    </section>
+  </main>
+
+  <script>
+    // Declare everything first; the sandbox starts at the bottom.
+
+    const model = createModel();
+    const $ = (id) => document.getElementById(id);
+
+    // ---- Rendering ----
+
+    function render() {
+      // Show the model's state. Re-run after anything changes.
+    }
+
+    // ---- Start ----
+
+    render();
+  </script>
+</body>
+</html>

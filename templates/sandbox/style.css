@@ -1,0 +1,24 @@
+/* The sandbox's own styles. Colours and fonts come from the theme tokens (--sb-*),
+   so the sandbox follows whichever theme the viewer picks. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--sb-font);
+  color: var(--sb-text);
+  background: var(--sb-bg);
+  line-height: 1.45;
+}
+
+main { max-width: 1200px; margin: 0 auto; padding: 16px 24px 40px; display: grid; gap: 14px; }
+
+.chapter h2 { margin: 0 0 6px; font-size: 18px; }
+.chapter p { margin: 0 0 6px; max-width: 900px; font-size: 14px; }
+.try { color: var(--sb-muted); }
+
+.panel { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: calc(var(--sb-radius) * 1.25); padding: 14px; }
+
+@media (max-width: 800px) {
+  main { padding: 12px 16px 32px; }
+}
