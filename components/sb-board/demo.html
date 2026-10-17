@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-board demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-board.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-accent-text); background: var(--sb-accent); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button.quiet { color: var(--sb-text); background: var(--sb-surface-2); }
+    .actions label { display: flex; align-items: center; gap: 6px; }
+    .actions input[type="range"] { accent-color: var(--sb-accent); }
+    .example .readout { margin: 10px 0 0; min-height: 1.5em; color: var(--sb-text); }
+    .readout[data-tone="bad"] { color: var(--sb-bad); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-board">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Things moving through stages, as cards in columns, with the bottlenecks counted and every move marked.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Plenty of things move through the same steps, one after another: orders through a warehouse, patients through a hospital, bills through parliament, applications through an office. Each thing on its own is easy to follow. What's hard to see is the whole flow: where things are piling up, which ones are stuck, and what one slow step does to everything behind it. A board lays the stages side by side, so you can see all of that at once.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Queues and bottlenecks.</strong> Give a column a limit and watch it go over as work arrives faster than it leaves.</li>
+        <li><strong>Processes with rules.</strong> Let people drag cards and have the model refuse the moves its rules don't allow, saying why.</li>
+        <li><strong>Following one thing.</strong> A card that just moved says where it came from, so you can follow it through the flow.</li>
+        <li><strong>Keeping track of the sandbox itself.</strong> A board of questions to explore and ideas to try, moved along as the sandbox grows, keeps everyone working on it pointed the same way.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>One thing through a branching process.</strong> A flowchart shows the paths and the step it's on.</li>
+        <li><strong>How queues change over time.</strong> Plot the column counts on a chart, next to the board.</li>
+        <li><strong>Hundreds or thousands of things.</strong> Cards stop being readable; count them in a table or bars instead.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-board/sb-board.js"&gt;&lt;/script&gt;
+&lt;sb-board movable&gt;&lt;/sb-board&gt;
+
+&lt;script&gt;
+  const board = document.querySelector('sb-board');
+  board.columns = [{ id: 'todo', label: 'To do' }, { id: 'doing', label: 'Doing', limit: 2 }, { id: 'done', label: 'Done' }];
+  board.items = model.tasks;                      // [{ id, label, column, note, tone }]
+
+  // Dragging asks the model; the model decides, and the board shows it.
+  board.addEventListener('sb-move', (e) =&gt; { model.move(e.detail.item.id, e.detail.to); board.items = model.tasks; });
+&lt;/script&gt;</pre>
+      <p>Set <code>items</code> again after every step of the model, and the board marks each card that moved, saying where it came from. With <code>movable</code>, dragging a card or pressing the arrow keys fires <code>sb-move</code>. The board never moves a card itself, so the model stays in charge.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Give the slow stage a limit.</strong> A column flagged over its limit says "bottleneck" before anyone has to count.</li>
+        <li><strong>Let the model say no.</strong> A refused move that explains itself teaches the rules better than a list of them.</li>
+        <li><strong>Colour the stuck cards.</strong> Put how long a card has waited in its <code>note</code>, and give it a <code>tone</code> once that's too long.</li>
+        <li><strong>Step slowly.</strong> Each step marks what moved, so take one at a time and watch where things stop moving.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A warehouse at full stretch</h2>
+      <p>Orders arrive, get picked from the shelves, are packed and ship. Pickers can handle three orders a step, but the packers can only handle as many as there are packers. Step through it and watch <span class="point" data-columns="packing">the packing column</span>: with two packers it slowly falls behind, and the orders waiting there turn amber, then red. Add a third packer and see how quickly the queue drains. Click an order to follow it.</p>
+      <div class="actions">
+        <button id="warehouse-play">Play</button><button id="warehouse-step" class="quiet">Step</button><button id="warehouse-reset" class="quiet">Start again</button>
+        <label>Packers <input type="range" id="packers" min="1" max="4" step="1" value="2"> <span id="packers-value">2</span></label>
+      </div>
+      <sb-board id="warehouse"></sb-board>
+      <p class="readout" id="warehouse-readout"></p>
+    </section>
+
+    <section class="example">
+      <h2>How a bill becomes law</h2>
+      <p>Drag a bill, or focus one and press the arrow keys, to move it through parliament. Each bill moves forward one stage at a time, and can always be withdrawn back to the start. <span class="point" data-columns="committee">The committee</span> can only examine two bills at once, so it's where bills stall: every other bill that moves past one stuck there makes it look more stuck. Try moving <span class="point" data-items="B4">the School Meals Bill</span> into committee, or getting <span class="point" data-items="B5">the Data Privacy Bill</span> into law.</p>
+      <sb-board id="parliament" movable></sb-board>
+      <p class="readout" id="parliament-readout">Try to move a bill.</p>
+    </section>
+
+    <section class="example">
+      <h2>What to explore next</h2>
+      <p>A board can also be practical: a sandbox's own list of what to explore next, moved along as the work goes. Here it's a mortgage sandbox, part way through being built. Drag cards as things move on; every move is accepted, because here the board is just a record. <span class="point" data-items="Q3">The question about overpaying</span> is the one everyone's waiting on, and <span class="point" data-columns="understood">what's understood so far</span> shows what the sandbox has already answered.</p>
+      <sb-board id="roadmap" movable></sb-board>
+    </section>
+  </main>
+
+  <script>
+    // ---- A warehouse at full stretch ----
+    // Each step, orders move on from the last stage back to the first, so none moves twice.
+
+    const warehouse = document.getElementById('warehouse');
+    warehouse.columns = [
+      { id: 'received', label: 'Received' },
+      { id: 'picking', label: 'Picking' },
+      { id: 'packing', label: 'Packing', limit: 4 },
+      { id: 'shipped', label: 'Shipped (latest)' }
+    ];
+    const PICKERS = 3;
+    const SHIPPED_SHOWN = 5;
+    let orders, step, nextOrder;
+
+    const steps = (n) => `${n} ${n === 1 ? 'step' : 'steps'}`;
+    const waitNote = (waited) => (waited ? `waiting ${steps(waited)}` : 'just arrived');
+
+    function waitTone(waited) {
+      if (waited >= 5) return 'bad';
+      if (waited >= 3) return 'warn';
+      return undefined;
+    }
+
+    function showWarehouse() {
+      const shipped = orders.filter((o) => o.column === 'shipped').slice(-SHIPPED_SHOWN);
+      warehouse.items = orders.filter((o) => o.column !== 'shipped').concat(shipped).map((o) => {
+        const waited = step - o.since;
+        const done = o.column === 'shipped';
+        return { id: o.id, label: o.label, column: o.column, note: done ? `took ${steps(o.since - o.arrived)}` : waitNote(waited), tone: done ? 'good' : waitTone(waited) };
+      });
+    }
+
+    function moveOn(from, to, howMany) {
+      for (const order of orders.filter((o) => o.column === from).slice(0, howMany)) {
+        order.column = to;
+        order.since = step;
+      }
+    }
+
+    function stepWarehouse() {
+      step += 1;
+      moveOn('packing', 'shipped', Number(document.getElementById('packers').value));
+      moveOn('picking', 'packing', PICKERS);
+      moveOn('received', 'picking', PICKERS);
+      const arriving = 1 + Math.floor(Math.random() * 4);   // one to four, two and a half on average
+      for (let i = 0; i < arriving; i++) {
+        nextOrder += 1;
+        orders.push({ id: `O${nextOrder}`, label: `Order ${nextOrder}`, column: 'received', arrived: step, since: step });
+      }
+      showWarehouse();
+    }
+
+    function resetWarehouse() {
+      orders = [];
+      step = 0;
+      nextOrder = 0;
+      stepWarehouse();
+    }
+
+    const STAGE_NAMES = { received: 'waiting to be picked', picking: 'being picked', packing: 'waiting for a packer', shipped: 'shipped' };
+    warehouse.addEventListener('sb-select', (e) => {
+      const order = orders.find((o) => o.id === e.detail.item.id);
+      warehouse.highlight = { items: [order.id] };
+      document.getElementById('warehouse-readout').textContent =
+        `${order.label} arrived at step ${order.arrived}, and has been ${STAGE_NAMES[order.column]} since step ${order.since}.`;
+    });
+
+    document.getElementById('packers').addEventListener('input', (e) => {
+      document.getElementById('packers-value').textContent = e.target.value;
+    });
+
+    // ---- How a bill becomes law ----
+    // The model's rules: one stage forward at a time, or back to the start; the committee holds two.
+
+    const parliament = document.getElementById('parliament');
+    const STAGES = [
+      { id: 'introduced', label: 'Introduced' },
+      { id: 'committee', label: 'Committee', limit: 2 },
+      { id: 'floor', label: 'Floor vote' },
+      { id: 'other', label: 'Other chamber' },
+      { id: 'law', label: 'Law' }
+    ];
+    parliament.columns = STAGES;
+    const COMMITTEE_SEATS = 2;
+    const STALLED_AFTER = 3;   // other bills' moves while stuck in committee
+    const bills = [
+      { id: 'B1', label: 'Clean Rivers Bill', column: 'committee', passedBy: 0 },
+      { id: 'B2', label: 'Rural Broadband Bill', column: 'committee', passedBy: 0 },
+      { id: 'B3', label: 'Tenancy Reform Bill', column: 'introduced', passedBy: 0 },
+      { id: 'B4', label: 'School Meals Bill', column: 'introduced', passedBy: 0 },
+      { id: 'B5', label: 'Data Privacy Bill', column: 'floor', passedBy: 0 }
+    ];
+    const stageIndex = (id) => STAGES.findIndex((s) => s.id === id);
+    const stageLabel = (id) => STAGES[stageIndex(id)].label;
+
+    // Why a move isn't allowed, or nothing if it is.
+    function refusal(bill, to) {
+      if (to === 'introduced') return null;
+      if (stageIndex(to) !== stageIndex(bill.column) + 1) return `${bill.label} can't go from ${stageLabel(bill.column)} to ${stageLabel(to)}: bills move one stage at a time.`;
+      if (to === 'committee' && bills.filter((b) => b.column === 'committee').length >= COMMITTEE_SEATS) return `The committee is already examining ${COMMITTEE_SEATS} bills, so ${bill.label} has to wait.`;
+      return null;
+    }
+
+    function moveBill(bill, to) {
+      for (const other of bills) if (other !== bill && other.column === 'committee') other.passedBy += 1;
+      bill.column = to;
+      bill.passedBy = 0;
+    }
+
+    function showParliament() {
+      parliament.items = bills.map((b) => {
+        const stalled = b.column === 'committee' && b.passedBy >= STALLED_AFTER;
+        return { ...b, note: stalled ? 'stalled in committee' : undefined, tone: stalled ? 'bad' : b.column === 'law' ? 'good' : undefined };
+      });
+    }
+
+    parliament.addEventListener('sb-move', (e) => {
+      const bill = bills.find((b) => b.id === e.detail.item.id);
+      const readout = document.getElementById('parliament-readout');
+      const reason = refusal(bill, e.detail.to);
+      readout.dataset.tone = reason ? 'bad' : '';
+      if (reason) { readout.textContent = reason; return; }
+      moveBill(bill, e.detail.to);
+      readout.textContent = e.detail.to === 'introduced' ? `${bill.label} was withdrawn for redrafting.` : `${bill.label} moved to ${stageLabel(e.detail.to)}.`;
+      showParliament();
+    });
+
+    // ---- What to explore next ----
+    // A record rather than a model: any move is accepted.
+
+    const roadmap = document.getElementById('roadmap');
+    roadmap.columns = [
+      { id: 'ideas', label: 'Ideas' },
+      { id: 'next', label: 'Next', limit: 3 },
+      { id: 'exploring', label: 'Exploring', limit: 1 },
+      { id: 'understood', label: 'Understood' }
+    ];
+    const plans = [
+      { id: 'Q1', label: 'How is each payment split between interest and the loan?', column: 'understood', note: 'Chapter 1' },
+      { id: 'Q2', label: 'Why does a longer term cost so much more?', column: 'understood', note: 'Chapter 2' },
+      { id: 'Q3', label: 'What does overpaying £100 a month change?', column: 'exploring', note: 'Chapter 3, in progress', tone: 'warn' },
+      { id: 'Q4', label: 'Fixed or variable rate: what\'s the risk?', column: 'next' },
+      { id: 'Q5', label: 'Compare against renting and investing', column: 'next' },
+      { id: 'Q6', label: 'A chart of the balance over thirty years', column: 'ideas', note: 'Would help chapter 2' },
+      { id: 'Q7', label: 'What happens if rates double?', column: 'ideas' }
+    ];
+    roadmap.items = plans;
+
+    roadmap.addEventListener('sb-move', (e) => {
+      plans.find((p) => p.id === e.detail.item.id).column = e.detail.to;
+      roadmap.items = plans;
+    });
+
+    // ---- Playing ----
+
+    function player(button, step, interval) {
+      let timer = null;
+      button.addEventListener('click', () => {
+        if (timer) { clearInterval(timer); timer = null; button.textContent = 'Play'; return; }
+        timer = setInterval(step, interval);
+        button.textContent = 'Pause';
+      });
+    }
+
+    player(document.getElementById('warehouse-play'), stepWarehouse, 700);
+    document.getElementById('warehouse-step').addEventListener('click', stepWarehouse);
+    document.getElementById('warehouse-reset').addEventListener('click', resetWarehouse);
+
+    // ---- Pointing from the text ----
+
+    for (const point of document.querySelectorAll('.point')) {
+      const board = point.closest('.example').querySelector('sb-board');
+      const ids = (list) => list?.split(' ') ?? [];
+      point.addEventListener('pointerenter', () => { board.highlight = { columns: ids(point.dataset.columns), items: ids(point.dataset.items) }; });
+      point.addEventListener('pointerleave', () => { board.highlight = {}; });
+    }
+
+    // ---- Start ----
+
+    resetWarehouse();
+    for (let i = 0; i < 8; i++) stepWarehouse();
+    showParliament();
+  </script>
+</body>
+</html>

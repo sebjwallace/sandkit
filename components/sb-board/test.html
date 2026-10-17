@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-board tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-board.js"></script>
+</head>
+<body>
+  <script>
+    const COLUMNS = [{ id: 'todo', label: 'To do' }, { id: 'doing', label: 'Doing', limit: 2 }, { id: 'done', label: 'Done' }];
+    const ITEMS = [
+      { id: 'a', label: 'Alpha', column: 'todo' },
+      { id: 'b', label: 'Beta', column: 'doing', note: '2 days', tone: 'warn' },
+      { id: 'c', label: 'Gamma', column: 'todo' }
+    ];
+
+    function board(attrs = '') {
+      const el = mount(`<sb-board ${attrs}></sb-board>`);
+      el.columns = COLUMNS;
+      el.items = ITEMS;
+      return el;
+    }
+
+    const column = (el, id) => el.querySelector(`.sb-board__column[data-column="${id}"]`);
+    const labels = (el, id) => [...column(el, id).querySelectorAll('.sb-board__card')].map((card) => card.firstChild.textContent.trim());
+    const card = (el, id) => el.querySelector(`.sb-board__card[data-id="${id}"]`);
+    const count = (el, id) => column(el, id).querySelector('.sb-board__count').textContent;
+    const moved = (el, items) => { el.items = items; return el; };
+    const at = (id, columnId) => ITEMS.map((item) => (item.id === id ? { ...item, column: columnId } : item));
+
+    function drag(el, id, to) {
+      const data = new DataTransfer();
+      card(el, id).dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: data }));
+      column(el, to).dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: data }));
+      column(el, to).dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: data }));
+    }
+
+    // ---- Showing columns and cards ----
+
+    test('shows a column per column, and each card in its column, in order', () => {
+      const el = board();
+      assertEqual([...el.querySelectorAll('.sb-board__head span:first-child')].map((s) => s.textContent), ['To do', 'Doing', 'Done']);
+      assertEqual(labels(el, 'todo'), ['Alpha', 'Gamma']);
+      assertEqual(labels(el, 'doing'), ['Beta']);
+      assertEqual(labels(el, 'done'), []);
+    });
+
+    test('a card shows its note, and exposes its tone', () => {
+      const el = board();
+      assertEqual(card(el, 'b').querySelector('.sb-board__note').textContent, '2 days');
+      assertEqual(card(el, 'b').dataset.tone, 'warn');
+    });
+
+    test('shows the empty text with no columns', () => {
+      assertEqual(mount('<sb-board empty-text="No stages yet."></sb-board>').textContent.trim(), 'No stages yet.');
+    });
+
+    // ---- Counts and limits ----
+
+    test('each column counts its cards, against its limit where it has one', () => {
+      const el = board();
+      assertEqual([count(el, 'todo'), count(el, 'doing'), count(el, 'done')], ['2', '1 / 2', '0']);
+    });
+
+    test('a column over its limit is flagged, and says so', () => {
+      const el = moved(board(), ITEMS.map((item) => ({ ...item, column: 'doing' })));
+      assert(column(el, 'doing').classList.contains('sb-board__column--over'), 'flagged');
+      assertEqual(column(el, 'doing').getAttribute('aria-label'), 'Doing, 3 items, over its limit of 2');
+      el.items = at('a', 'doing');
+      assertEqual(el.querySelectorAll('.sb-board__column--over').length, 0, 'at the limit is fine');
+    });
+
+    // ---- Changes ----
+
+    test('marks cards that moved since the items were last set, with where they came from', () => {
+      const el = board();
+      assertEqual(el.querySelectorAll('.sb-board__card--moved, .sb-board__card--new').length, 0, 'nothing on first set');
+      el.items = at('a', 'done');
+      assertEqual([...el.querySelectorAll('.sb-board__card--moved')], [card(el, 'a')]);
+      assertEqual(card(el, 'a').querySelector('.sb-board__from').textContent, 'from To do');
+      el.items = at('a', 'done');
+      assertEqual(el.querySelectorAll('.sb-board__card--moved').length, 0, 'cleared on the next update');
+    });
+
+    test('marks cards that are new since the last update', () => {
+      const el = moved(board(), [...ITEMS, { id: 'd', label: 'Delta', column: 'todo' }]);
+      assertEqual([...el.querySelectorAll('.sb-board__card--new')], [card(el, 'd')]);
+      assertEqual(card(el, 'd').querySelector('.sb-board__from').textContent, 'new');
+    });
+
+    test('sees moves even when the model edits its items in place', () => {
+      const items = ITEMS.map((item) => ({ ...item }));
+      const el = mount('<sb-board></sb-board>');
+      el.columns = COLUMNS;
+      el.items = items;
+      items[0].column = 'doing';
+      el.items = items;
+      assert(card(el, 'a').classList.contains('sb-board__card--moved'));
+    });
+
+    // ---- Moving ----
+
+    test('dragging a card to another column asks to move it, without moving it', () => {
+      const el = board('movable');
+      const moves = recordEvents(el, 'sb-move');
+      drag(el, 'a', 'done');
+      assertEqual(moves.map((e) => [e.detail.item.id, e.detail.from, e.detail.to]), [['a', 'todo', 'done']]);
+      assertEqual(labels(el, 'todo'), ['Alpha', 'Gamma'], 'the card stays until the sandbox moves it');
+      drag(el, 'a', 'todo');
+      assertEqual(moves.length, 1, 'dropping in its own column asks nothing');
+    });
+
+    test('cards can only be dragged on a movable board', () => {
+      assert(!card(board(), 'a').hasAttribute('draggable'), 'still');
+      assertEqual(card(board('movable'), 'a').getAttribute('draggable'), 'true');
+      const el = board();
+      const moves = recordEvents(el, 'sb-move');
+      drag(el, 'a', 'done');
+      assertEqual(moves.length, 0);
+    });
+
+    test('the arrow keys ask to move a card to the next column, keeping focus', () => {
+      const el = board('movable');
+      const moves = recordEvents(el, 'sb-move');
+      el.addEventListener('sb-move', (e) => { el.items = at(e.detail.item.id, e.detail.to); });
+      card(el, 'a').focus();
+      card(el, 'a').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      assertEqual(moves.length, 0, 'nothing left of the first column');
+      card(el, 'a').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      assertEqual(moves.map((e) => e.detail.to), ['doing']);
+      assertEqual(document.activeElement, card(el, 'a'), 'focus follows the card');
+      const still = board();
+      const stillMoves = recordEvents(still, 'sb-move');
+      card(still, 'a').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      assertEqual(stillMoves.length, 0, 'not on a still board');
+    });
+
+    // ---- Selecting, pointing and highlighting ----
+
+    test('clicking a card fires sb-select with its item', () => {
+      const el = board();
+      const selections = recordEvents(el, 'sb-select');
+      card(el, 'b').querySelector('.sb-board__note').click();
+      assertEqual(selections[0].detail.item, ITEMS[1]);
+    });
+
+    test('pointing at a card fires sb-point with its item, then null on leaving', () => {
+      const el = board();
+      const points = recordEvents(el, 'sb-point');
+      card(el, 'c').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(points.map((e) => e.detail?.item.id ?? null), ['c', null]);
+    });
+
+    test('highlights cards and columns by id', () => {
+      const el = board();
+      el.highlight = { items: ['c'], columns: ['done'] };
+      assertEqual([...el.querySelectorAll('.sb-board__card--highlighted')], [card(el, 'c')]);
+      assertEqual([...el.querySelectorAll('.sb-board__column--highlighted')], [column(el, 'done')]);
+      el.highlight = {};
+      assertEqual(el.querySelectorAll('[class*="highlighted"]').length, 0, 'cleared');
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two boards on one page keep their own items and changes', () => {
+      mount('<div><sb-board></sb-board><sb-board></sb-board></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-board');
+      for (const el of [a, b]) { el.columns = COLUMNS; el.items = ITEMS; }
+      a.items = at('c', 'done');
+      assertEqual(labels(b, 'done'), []);
+      assertEqual(b.querySelectorAll('.sb-board__card--moved').length, 0);
+      assertEqual(labels(a, 'done'), ['Gamma']);
+    });
+
+    test('displays text as text, never as markup', () => {
+      const el = mount('<sb-board></sb-board>');
+      el.columns = [{ id: 'x', label: '<i>x</i>' }, { id: 'y', label: '<i>y</i>' }];
+      el.items = [{ id: 'r', label: '<b>bold</b>', note: '<b>note</b>', column: 'x' }];
+      el.items = [{ id: 'r', label: '<b>bold</b>', note: '<b>note</b>', column: 'y' }];
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(card(el, 'r').querySelector('.sb-board__from').textContent, 'from <i>x</i>');
+    });
+  </script>
+</body>
+</html>
