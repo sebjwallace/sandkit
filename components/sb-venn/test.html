@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-venn tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-venn.js"></script>
+</head>
+<body>
+  <script>
+    const SETS = [{ id: 'a', label: 'Apples' }, { id: 'b', label: 'Bananas' }, { id: 'c', label: 'Cherries' }];
+    const ITEMS = [
+      { id: 'ann', label: 'Ann', sets: ['a'] },
+      { id: 'bob', label: 'Bob', sets: ['a', 'b'] },
+      { id: 'cy', label: 'Cy', sets: ['b', 'a'] },
+      { id: 'dee', label: 'Dee', sets: ['c'], tone: 'bad' }
+    ];
+
+    function venn(attrs = '', sets = SETS) {
+      const el = mount(`<sb-venn ${attrs}></sb-venn>`);
+      el.sets = sets;
+      el.items = ITEMS;
+      return el;
+    }
+
+    // The texts shown in a region, in order.
+    const shown = (el, ref) => [...el.querySelectorAll(`.sb-venn__contents[data-region="${ref}"] > text`)].map((text) => text.textContent);
+    const item = (el, id) => el.querySelector(`[data-item="${id}"]`);
+    const region = (el, ref) => el.querySelector(`.sb-venn__region[data-region="${ref}"]`);
+    const reading = (el) => el.querySelector('.sb-venn__reading').textContent;
+    const at = (id, sets) => ITEMS.map((it) => (it.id === id ? { ...it, sets } : it));
+    const click = (target) => target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const point = (target) => target.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+
+    // ---- Sets and regions ----
+
+    test('draws a circle and a label per set, with how many each holds', () => {
+      const el = venn();
+      assertEqual(el.querySelectorAll('.sb-venn__outline').length, 3);
+      assertEqual([...el.querySelectorAll('.sb-venn__label')].map((l) => l.textContent), ['Apples 3', 'Bananas 2', 'Cherries 1']);
+    });
+
+    test('has a region for every combination, named by the sets it is in', () => {
+      assertEqual([...venn().querySelectorAll('.sb-venn__region')].map((r) => r.dataset.region), ['', 'a', 'b', 'a&b', 'c', 'a&c', 'b&c', 'a&b&c']);
+      assertEqual([...venn('', SETS.slice(0, 2)).querySelectorAll('.sb-venn__region')].map((r) => r.dataset.region), ['', 'a', 'b', 'a&b']);
+    });
+
+    test('puts each item in the region of exactly its sets, in any order', () => {
+      const el = venn();
+      assertEqual(shown(el, 'a'), ['Ann']);
+      assertEqual(shown(el, 'a&b'), ['Bob', 'Cy']);
+      assertEqual(item(el, 'dee').dataset.tone, 'bad');
+    });
+
+    test('marks empty regions as none, and shows outside only when something is there', () => {
+      const el = venn();
+      assertEqual(shown(el, 'b'), ['none']);
+      assertEqual(el.querySelectorAll('.sb-venn__contents[data-region=""]').length, 0);
+      el.items = [...ITEMS, { id: 'eve', label: 'Eve', sets: [] }];
+      assertEqual(shown(el, ''), ['+ Eve']);
+    });
+
+    test('a crowded region lists what fits, then how many more', () => {
+      const el = mount('<sb-venn></sb-venn>');
+      el.sets = SETS;
+      el.items = Array.from({ length: 9 }, (_, i) => ({ id: i, label: `P${i}`, sets: ['a', 'b', 'c'] }));
+      assertEqual(shown(el, 'a&b&c'), ['P0', 'P1', '+7 more']);
+    });
+
+    test('shortens long labels, keeping the full one as a title', () => {
+      const el = venn();
+      el.items = [{ id: 'x', label: 'A remarkably long name', sets: ['a', 'b', 'c'] }];
+      assert(item(el, 'x').textContent.endsWith('…'), item(el, 'x').textContent);
+      assertEqual(item(el, 'x').querySelector('title').textContent, 'A remarkably long name');
+    });
+
+    test('shows the empty text unless there are two or three sets', () => {
+      assertEqual(venn('empty-text="Pick two."', SETS.slice(0, 1)).textContent.trim(), 'Pick two.');
+      assertEqual(venn('', [...SETS, { id: 'd' }]).textContent.trim(), 'Give two or three sets.');
+    });
+
+    test('shows the universe label', () => {
+      assertEqual(venn('universe="Everyone"').querySelector('.sb-venn__universe-label').textContent, 'Everyone');
+    });
+
+    // ---- Counts ----
+
+    test('with counts instead of items, shows each region\'s count', () => {
+      const el = mount('<sb-venn></sb-venn>');
+      el.sets = SETS.slice(0, 2);
+      el.counts = { a: 5, 'b&a': 2, '': 40 };
+      assertEqual(shown(el, 'a'), ['5']);
+      assertEqual(shown(el, 'a&b'), ['2']);
+      assertEqual(shown(el, ''), ['40']);
+      assert(el.querySelector('.sb-venn__contents[data-region="b"] .sb-venn__count').classList.contains('sb-venn--empty'), 'zero is marked empty');
+      assertEqual(el.querySelector('.sb-venn__label').textContent, 'Apples 7');
+    });
+
+    test('show="counts" counts the items instead of naming them', () => {
+      assertEqual(shown(venn('show="counts"'), 'a&b'), ['2']);
+    });
+
+    test('shows how each count changed since the last update, and nothing the first time', () => {
+      const el = mount('<sb-venn></sb-venn>');
+      el.sets = SETS.slice(0, 2);
+      el.counts = { a: 5, b: 1 };
+      assertEqual(el.querySelectorAll('.sb-venn__delta').length, 0, 'nothing on first set');
+      el.counts = { a: 3, b: 1, 'a&b': 2 };
+      assertEqual([...el.querySelectorAll('.sb-venn__delta')].map((d) => d.textContent), ['−2', '+2']);
+    });
+
+    // ---- Changes ----
+
+    test('marks items that changed region since the last update, and says where they were', () => {
+      const el = venn();
+      assertEqual(el.querySelectorAll('.sb-venn__marker').length, 0, 'nothing on first set');
+      el.items = at('ann', ['a', 'c']);
+      assertEqual([...el.querySelectorAll('.sb-venn__marker')].map((m) => m.closest('text').dataset.item), ['ann']);
+      el.highlight = { items: ['ann'] };
+      assertEqual(reading(el), 'Ann: in Apples and Cherries, not Bananas (was in Apples, not Bananas or Cherries)');
+      el.items = at('ann', ['a', 'c']);
+      assertEqual(el.querySelectorAll('.sb-venn__marker').length, 0, 'cleared on the next update');
+    });
+
+    test('marks items that are new since the last update', () => {
+      const el = venn();
+      el.items = [...ITEMS, { id: 'eve', label: 'Eve', sets: ['b'] }];
+      assertEqual(item(el, 'eve').querySelector('.sb-venn__marker').textContent.trim(), '+');
+      el.highlight = { items: ['eve'] };
+      assertEqual(reading(el), 'Eve: in Bananas, not Apples or Cherries (new)');
+    });
+
+    test('sees changes even when the items were set before the sets', () => {
+      const el = mount('<sb-venn></sb-venn>');
+      el.items = ITEMS;
+      el.sets = SETS;
+      el.items = ITEMS;
+      assertEqual(el.querySelectorAll('.sb-venn__marker').length, 0);
+    });
+
+    // ---- Highlighting and reading ----
+
+    test('highlights sets, regions by ref in any order, and items', () => {
+      const el = venn();
+      el.highlight = { sets: ['c'], regions: ['b&a'], items: ['dee'] };
+      assertEqual([...el.querySelectorAll('.sb-venn__outline.sb-venn--highlighted')].map((c) => c.dataset.set), ['c']);
+      assertEqual([...el.querySelectorAll('.sb-venn__region.sb-venn--highlighted')], [region(el, 'a&b')]);
+      assertEqual([...el.querySelectorAll('[data-item].sb-venn--highlighted')], [item(el, 'dee')]);
+      el.highlight = {};
+      assertEqual(el.querySelectorAll('.sb-venn--highlighted').length, 0, 'cleared');
+    });
+
+    test('reads out what is highlighted', () => {
+      const el = venn();
+      el.highlight = { regions: ['a&b'] };
+      assertEqual(reading(el), 'In Apples and Bananas, not Cherries: Bob and Cy');
+      el.highlight = { regions: ['a&b&c'] };
+      assertEqual(reading(el), 'In Apples, Bananas and Cherries: none');
+      el.highlight = { regions: [''] };
+      assertEqual(reading(el), 'In none of them: none');
+      el.highlight = { sets: ['a'] };
+      assertEqual(reading(el), 'Apples: 3');
+      el.highlight = {};
+      assertEqual(reading(el), '');
+    });
+
+    // ---- Pointing and selecting ----
+
+    test('pointing at an item, a set label or a count fires sb-point, then null on leaving', () => {
+      const el = venn('show="counts"');
+      const points = recordEvents(el, 'sb-point');
+      point(el.querySelector('.sb-venn__label[data-set="b"]'));
+      point(el.querySelector('.sb-venn__contents[data-region="a&b"] .sb-venn__count'));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(points.map((e) => e.detail?.set?.id ?? e.detail?.region?.ref ?? null), ['b', 'a&b', null]);
+      assertEqual(points[1].detail.region, { ref: 'a&b', sets: ['a', 'b'], count: 2, items: [ITEMS[1], ITEMS[2]] });
+    });
+
+    test('pointing reads out and lights what is pointed at, over what is highlighted', () => {
+      const el = venn();
+      el.highlight = { sets: ['a'] };
+      point(item(el, 'bob'));
+      assertEqual(reading(el), 'Bob: in Apples and Bananas, not Cherries');
+      assert(item(el, 'bob').classList.contains('sb-venn--pointed'));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(reading(el), 'Apples: 3');
+    });
+
+    test('pointing at a place in the diagram finds the region there', () => {
+      const el = venn('', SETS.slice(0, 2));
+      const points = recordEvents(el, 'sb-point');
+      const svg = el.querySelector('svg');
+      const place = (x, y) => new DOMPoint(x, y).matrixTransform(svg.getScreenCTM());
+      for (const [x, y] of [[0, 60], [-150, 0], [150, 0], [-190, -160]]) {
+        const { x: clientX, y: clientY } = place(x, y);
+        svg.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX, clientY }));
+      }
+      assertEqual(points.map((e) => e.detail.region.ref), ['a&b', 'a', 'b', '']);
+      assert(region(el, '').classList.contains('sb-venn--pointed'));
+    });
+
+    test('clicking fires sb-select with the item, set or region', () => {
+      const el = venn();
+      const selections = recordEvents(el, 'sb-select');
+      click(item(el, 'cy'));
+      click(el.querySelector('.sb-venn__label[data-set="c"]'));
+      click(el.querySelector('.sb-venn__contents[data-region="b"] .sb-venn__none'));
+      assertEqual(selections[0].detail.item, ITEMS[2]);
+      assertEqual(selections[1].detail.set, SETS[2]);
+      assertEqual(selections[2].detail.region.ref, 'b');
+    });
+
+    test('focus points, and Enter selects', () => {
+      const el = venn();
+      const points = recordEvents(el, 'sb-point');
+      const selections = recordEvents(el, 'sb-select');
+      item(el, 'ann').focus();
+      item(el, 'ann').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      assertEqual(points[0].detail.item.id, 'ann');
+      assertEqual(selections[0].detail.item.id, 'ann');
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two diagrams on one page keep their own items, changes and clip ids', () => {
+      mount('<div><sb-venn></sb-venn><sb-venn></sb-venn></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-venn');
+      for (const el of [a, b]) { el.sets = SETS; el.items = ITEMS; }
+      a.items = at('ann', ['c']);
+      assertEqual(shown(b, 'a'), ['Ann']);
+      assertEqual(b.querySelectorAll('.sb-venn__marker').length, 0);
+      const ids = [...document.querySelectorAll('#test-fixture clipPath, #test-fixture mask')].map((d) => d.id);
+      assertEqual(new Set(ids).size, ids.length, 'unique');
+    });
+
+    test('displays text as text, never as markup', () => {
+      const el = mount('<sb-venn universe="<i>all</i>"></sb-venn>');
+      el.sets = [{ id: 'x', label: '<i>x</i>' }, { id: 'y', label: '<i>y</i>' }];
+      el.items = [{ id: 'r', label: '<b>b</b>', sets: ['x'] }];
+      el.items = [{ id: 'r', label: '<b>b</b>', sets: ['x', 'y'] }];
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      el.highlight = { items: ['r'] };
+      assertEqual(reading(el), '<b>b</b>: in <i>x</i> and <i>y</i> (was in <i>x</i>, not <i>y</i>)');
+    });
+  </script>
+</body>
+</html>

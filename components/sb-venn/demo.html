@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-venn demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-venn.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 0 0 10px; font-size: 13px; }
+    .actions label { display: flex; align-items: center; gap: 6px; }
+    .actions input { accent-color: var(--sb-accent); }
+    .actions output { min-width: 3.5em; font-variant-numeric: tabular-nums; }
+    .example .readout { margin: 10px 0 0; min-height: 1.5em; color: var(--sb-text); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-venn">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Two or three sets as overlapping circles, with every region they make counted, named and ready to point at.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Whenever things fall into groups that overlap, the interesting part is usually the overlap: patients with both conditions, animals that break the rules, the skills only one person on a team has. A Venn diagram draws the groups as circles, so every combination gets a place of its own. Lists can tell you who is in each group; only the diagram shows at a glance which combinations are crowded, which are rare, and which are empty.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Classification and its exceptions.</strong> Sort things by two or three properties and the odd ones out sit where nobody expected them, or where the rule says nothing should be.</li>
+        <li><strong>Probability and screening.</strong> Give counts instead of things, and the diagram shows how a small overlap compares with everything around it.</li>
+        <li><strong>Comparing lists.</strong> What two suppliers both stock, which features three products share, what's in this version but not the last.</li>
+        <li><strong>Explaining logic.</strong> "And", "or" and "not" are regions: point at the words and the regions light up.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Four or more sets.</strong> The regions get too small to read. Put the things in a table with a column per set and let viewers filter.</li>
+        <li><strong>Groups inside groups.</strong> When every set sits wholly inside another, it's a hierarchy: a tree shows it better.</li>
+        <li><strong>Exact sizes.</strong> The circles are all the same size, whatever they hold. When the proportions are the point, compare the counts as bars.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-venn/sb-venn.js"&gt;&lt;/script&gt;
+&lt;sb-venn universe="All animals"&gt;&lt;/sb-venn&gt;
+
+&lt;script&gt;
+  const venn = document.querySelector('sb-venn');
+  venn.sets = [{ id: 'm', label: 'Mammals' }, { id: 'w', label: 'Live in water' }];
+  venn.items = model.animals;                       // [{ id, label, sets: ['m', 'w'] }]
+  // or, with no things to name:  venn.counts = { m: 40, 'm&w': 6, w: 120, '': 900 };
+
+  venn.highlight = { regions: ['m&w'] };            // the overlap
+&lt;/script&gt;</pre>
+      <p>Each region has a ref naming exactly the sets it's in, so <code>'m&amp;w'</code> is the overlap, <code>'m'</code> is mammals that don't live in water, and <code>''</code> is everything outside both. Set <code>items</code> or <code>counts</code> again whenever the model changes, and whatever changed region is marked. Pointing fires <code>sb-point</code> and clicking <code>sb-select</code>, each with the set, region or item.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Point at regions from the prose.</strong> "Mammals that lay eggs" is a region with a ref: let the words light it up, and the line under the diagram reads it out in full.</li>
+        <li><strong>Keep the empty regions.</strong> A region marked "none" is often the finding: nothing is both. Choose sets whose emptiness would mean something.</li>
+        <li><strong>Change the rule, not the picture.</strong> When a definition shifts, set the items again: the ones that changed region are marked, and pointing at one says where it was.</li>
+        <li><strong>Count the whole population.</strong> With a <code>universe</code> and its outside region counted, small overlaps are seen against everything, which is where intuition most often fails.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Animals that break the rules</h2>
+      <p>Most mammals give birth to live young and live on land, which is why <span class="point" data-regions="mammal&eggs">mammals that lay eggs</span> are such a surprise: there are only two kinds, and <span class="point" data-items="platypus">the platypus</span> also lives in water. Is anything in <span class="point" data-regions="mammal&water&eggs">all three</span>? Point at a region to read it out, and click an animal to learn why it's there. Then change what counts as living in water.</p>
+      <div class="actions">
+        <label><input type="checkbox" id="part-time"> Count animals that spend only part of their lives in water</label>
+      </div>
+      <sb-venn id="animals" universe="Some animals"></sb-venn>
+      <p class="readout" id="animals-readout">Click an animal.</p>
+    </section>
+
+    <section class="example">
+      <h2>What a positive test means</h2>
+      <p>A thousand people are screened for a condition. The test catches most people who have it, and wrongly flags only a few who don't. So if your test is positive, you very likely have it? Compare <span class="point" data-regions="ill&positive">people who are ill and tested positive</span> with <span class="point" data-regions="positive">people who tested positive but aren't ill</span>. When the condition is rare, the healthy are so many that their few false alarms outnumber the true ones. Move the sliders and watch which regions change.</p>
+      <div class="actions">
+        <label>How common <input type="range" id="prevalence" min="0.5" max="30" step="0.5" value="2"> <output id="prevalence-value"></output></label>
+        <label>Catches <input type="range" id="sensitivity" min="50" max="100" step="1" value="90"> <output id="sensitivity-value"></output></label>
+        <label>Wrongly flags <input type="range" id="false-alarms" min="0" max="20" step="0.5" value="5"> <output id="false-alarms-value"></output></label>
+      </div>
+      <sb-venn id="screening" universe="1,000 people screened"></sb-venn>
+      <p class="readout" id="screening-readout"></p>
+    </section>
+  </main>
+
+  <script>
+    // ---- Animals that break the rules ----
+
+    const animals = document.getElementById('animals');
+    animals.sets = [
+      { id: 'mammal', label: 'Mammals' },
+      { id: 'water', label: 'Live in water' },
+      { id: 'eggs', label: 'Lay eggs' }
+    ];
+
+    // Each animal's facts; `partly` means it spends only part of its life in water.
+    const ANIMALS = [
+      { id: 'dog', label: 'Dog', mammal: true, why: 'A land mammal that gives birth to live young: the usual case.' },
+      { id: 'bat', label: 'Bat', mammal: true, why: 'A mammal that flies, but still gives birth to live young.' },
+      { id: 'whale', label: 'Whale', mammal: true, water: true, why: 'A mammal that never leaves the water, breathing air and feeding its calves milk.' },
+      { id: 'dolphin', label: 'Dolphin', mammal: true, water: true, why: 'Like the whale, a mammal entirely at home in the sea.' },
+      { id: 'otter', label: 'Otter', mammal: true, partly: true, why: 'Hunts in rivers and the sea but rests and breeds on land.' },
+      { id: 'platypus', label: 'Platypus', mammal: true, eggs: true, partly: true, why: 'A mammal that lays eggs, and hunts underwater with its eyes closed, by sensing electricity.' },
+      { id: 'echidna', label: 'Echidna', mammal: true, eggs: true, why: 'The only other egg-laying mammal, and a land animal that eats ants.' },
+      { id: 'salmon', label: 'Salmon', water: true, eggs: true, why: 'A fish: lives in water and lays eggs, as most fish do.' },
+      { id: 'shark', label: 'Shark', water: true, why: 'Many sharks give birth to live young, though they are fish.' },
+      { id: 'turtle', label: 'Sea turtle', eggs: true, partly: true, why: 'Lives at sea but crawls ashore to lay its eggs in the sand.' },
+      { id: 'frog', label: 'Frog', eggs: true, partly: true, why: 'Lays its eggs in water and starts life there as a tadpole.' },
+      { id: 'penguin', label: 'Penguin', eggs: true, partly: true, why: 'A bird that swims to feed but lays its eggs on land.' },
+      { id: 'eagle', label: 'Eagle', eggs: true, why: 'A bird: lays eggs, and never swims.' },
+      { id: 'lizard', label: 'Lizard', eggs: true, why: 'Most lizards lay eggs on land.' },
+      { id: 'scorpion', label: 'Scorpion', why: 'Not a mammal, yet it gives birth to live young, and lives on land: in none of the sets.' }
+    ];
+
+    function showAnimals() {
+      const partTime = document.getElementById('part-time').checked;
+      animals.items = ANIMALS.map((a) => ({
+        id: a.id,
+        label: a.label,
+        sets: ['mammal', 'water', 'eggs'].filter((set) => (set === 'water' ? a.water || (partTime && a.partly) : a[set]))
+      }));
+    }
+
+    document.getElementById('part-time').addEventListener('change', showAnimals);
+
+    animals.addEventListener('sb-select', (e) => {
+      if (!e.detail.item) return;
+      const animal = ANIMALS.find((a) => a.id === e.detail.item.id);
+      animals.highlight = { items: [animal.id] };
+      document.getElementById('animals-readout').textContent = `${animal.label}: ${animal.why}`;
+    });
+
+    // ---- What a positive test means ----
+    // The model: a thousand people, split by whether they're ill and whether they test positive.
+
+    const screening = document.getElementById('screening');
+    screening.sets = [{ id: 'ill', label: 'Ill', tone: 'bad' }, { id: 'positive', label: 'Tested positive', tone: 'warn' }];
+    const PEOPLE = 1000;
+    const slider = (id) => Number(document.getElementById(id).value);
+
+    function showScreening() {
+      const ill = Math.round(PEOPLE * slider('prevalence') / 100);
+      const caught = Math.round(ill * slider('sensitivity') / 100);
+      const falseAlarms = Math.round((PEOPLE - ill) * slider('false-alarms') / 100);
+      screening.counts = { 'ill&positive': caught, ill: ill - caught, positive: falseAlarms, '': PEOPLE - ill - falseAlarms };
+      document.getElementById('prevalence-value').textContent = `${slider('prevalence')}%`;
+      document.getElementById('sensitivity-value').textContent = `${slider('sensitivity')}%`;
+      document.getElementById('false-alarms-value').textContent = `${slider('false-alarms')}%`;
+      const chance = caught + falseAlarms ? Math.round(100 * caught / (caught + falseAlarms)) : 0;
+      document.getElementById('screening-readout').textContent =
+        `Of the ${caught + falseAlarms} people who tested positive, ${caught} are ill: a positive test means a ${chance}% chance of having the condition.`;
+    }
+
+    for (const id of ['prevalence', 'sensitivity', 'false-alarms']) document.getElementById(id).addEventListener('input', showScreening);
+
+    // ---- Pointing from the text ----
+
+    for (const point of document.querySelectorAll('.point')) {
+      const venn = point.closest('.example').querySelector('sb-venn');
+      const refs = (list) => list?.split(' ') ?? [];
+      let before = {};
+      point.addEventListener('pointerenter', () => {
+        before = venn.highlight;
+        venn.highlight = { sets: refs(point.dataset.sets), regions: refs(point.dataset.regions), items: refs(point.dataset.items) };
+      });
+      point.addEventListener('pointerleave', () => { venn.highlight = before; });
+    }
+
+    // ---- Start ----
+
+    showAnimals();
+    showScreening();
+  </script>
+</body>
+</html>
