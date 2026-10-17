@@ -13,7 +13,7 @@
   <script src="../../components/sb-matrix/sb-matrix.js"></script>
   <script src="../../components/sb-math/sb-math.js"></script>
   <script src="../../components/sb-id/sb-id.js"></script>
-  <script src="../../components/sb-timeline/sb-timeline.js"></script>
+  <script src="../../components/sb-scrubber/sb-scrubber.js"></script>
   <script src="../../components/sb-callout/sb-callout.js"></script>
   <script src="model.js"></script>
 </head>
@@ -68,13 +68,13 @@
         <sb-callout kind="definition" heading="Definition: linear transformation">
           <p>A way of moving space that keeps the origin in place and keeps grid lines straight, parallel and evenly spaced. Every one is described by a matrix, whose columns say where î and ĵ land.</p>
         </sb-callout>
-        <p class="try"><strong>Try:</strong> drag the green and red points to choose where î and ĵ land, or type into the matrix. Point at <sb-id code="î"></sb-id> or <sb-id code="ĵ"></sb-id>, at a column, or at an arrow, and watch everything it stands for light up. Then drag the timeline back to the start and play it forward. Can you make a quarter turn? A mirror image?</p>
+        <p class="try"><strong>Try:</strong> drag the green and red points to choose where î and ĵ land, or type into the matrix. Point at <sb-id code="î"></sb-id> or <sb-id code="ĵ"></sb-id>, at a column, or at an arrow, and watch everything it stands for light up. Then drag the slider back to the start and play it forward. Can you make a quarter turn? A mirror image?</p>
         <div class="panel stage">
           <sb-plane id="moving" range="3" snap="0.5" height="420"></sb-plane>
           <div class="explain">
             <p class="equation"><sb-matrix id="matrix-a" name="A" editable step="0.5"></sb-matrix></p>
             <sb-math id="product"></sb-math>
-            <sb-timeline id="transformation" min="0" max="1" step="0.01" duration="2" label="Transformation"></sb-timeline>
+            <sb-scrubber id="transformation" min="0" max="1" step="0.01" duration="2" label="Transformation"></sb-scrubber>
             <div id="moving-explain"></div>
           </div>
         </div>
@@ -109,7 +109,7 @@
           <sb-plane id="composing" range="3" height="420"></sb-plane>
           <div class="explain">
             <p class="equation">First <sb-matrix id="matrix-first" name="A" editable step="0.5"></sb-matrix> then <sb-matrix id="matrix-second" name="B" editable step="0.5"></sb-matrix></p>
-            <sb-timeline id="composition" min="0" max="2" step="0.01" duration="4" label="Both moves"></sb-timeline>
+            <sb-scrubber id="composition" min="0" max="2" step="0.01" duration="4" label="Both moves"></sb-scrubber>
             <p><button type="button" class="next" id="swap-order">Swap the order</button></p>
             <div id="composing-explain"></div>
           </div>

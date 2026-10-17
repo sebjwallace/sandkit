@@ -16,7 +16,7 @@ Sandkit is a toolkit for domain sandboxing. Read `README.md` for what it is, `DE
 A component is done when it has all of these:
 
 1. `components/sb-name/sb-name.js`, first line `// Sandkit sb-name 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit`, the collision guard, prefixed classes, theme tokens with fallbacks.
-2. `manifest.md` in the established layout (see `sb-log` or `sb-timeline`), opening with "Use this component through the interface below…".
+2. `manifest.md` in the established layout (see `sb-log` or `sb-scrubber`), opening with "Use this component through the interface below…".
 3. `CHANGELOG.md`, newest first, `## x.y.z · yyyy-mm-dd`.
 4. `test.html`: the public contract, two instances side by side, text never rendered as markup.
 5. `demo.html`: **About** (the guide: where it helps, where something else fits, getting started, making it reveal) then **Examples** in two contrasting domains. It loads only its own component and the shell.

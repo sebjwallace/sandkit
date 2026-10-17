@@ -101,7 +101,7 @@ Classes: `sb-code__bar`, `sb-code__button`, `sb-code__slider`, `sb-code__count`,
 
 Suggestions only: nothing here is wired in. The sandbox composes these itself.
 
-- **[`sb-timeline`](../sb-timeline/manifest.md),** to play the trace at a steady pace: a range from 0 to the last step, setting `step` on `sb-change`.
+- **[`sb-scrubber`](../sb-scrubber/manifest.md),** to play the trace at a steady pace: a range from 0 to the last step, setting `step` on `sb-change`.
 - **A picture of the data,** such as [`sb-table`](../sb-table/manifest.md) or [`sb-matrix`](../sb-matrix/manifest.md): on `sb-step`, show `e.detail.entry.variables` there too, so the code and the data move together.
 - **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so the prose can point at lines and variables.
 

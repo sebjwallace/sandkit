@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>sb-timeline demo</title>
+  <title>sb-scrubber demo</title>
   <script src="../../shell/sb-theme-settings.js"></script>
   <script src="../../shell/sb-shell.js"></script>
-  <script src="sb-timeline.js"></script>
+  <script src="sb-scrubber.js"></script>
   <style>
     body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
     main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
@@ -33,7 +33,7 @@
   </style>
 </head>
 <body>
-  <sb-shell heading="sb-timeline">
+  <sb-shell heading="sb-scrubber">
     <sb-theme-settings slot="settings"></sb-theme-settings>
     <p>Scrub back and forth through anything with a beginning and an end.</p>
   </sb-shell>
@@ -41,7 +41,7 @@
   <main>
     <h2 class="part">About</h2>
     <article class="guide">
-      <p>Some ideas are about change from one state to another: a shape turning, a season passing, a ball rising and falling. Watching the change once helps; being able to stop it, rewind it and look closely at any moment helps far more. <code>sb-timeline</code> gives a sandbox a scrubbable stretch of progress, with play and pause, and marks for the moments worth stopping at.</p>
+      <p>Some ideas are about change from one state to another: a shape turning, a season passing, a ball rising and falling. Watching the change once helps; being able to stop it, rewind it and look closely at any moment helps far more. <code>sb-scrubber</code> gives a sandbox a scrubbable stretch of progress, with play and pause, and marks for the moments worth stopping at.</p>
 
       <h3>Where it helps</h3>
       <ul>
@@ -57,13 +57,13 @@
       </ul>
 
       <h3>Getting started</h3>
-      <pre>&lt;script src="components/sb-timeline/sb-timeline.js"&gt;&lt;/script&gt;
-&lt;sb-timeline min="0" max="1" duration="2"&gt;&lt;/sb-timeline&gt;
+      <pre>&lt;script src="components/sb-scrubber/sb-scrubber.js"&gt;&lt;/script&gt;
+&lt;sb-scrubber min="0" max="1" duration="2"&gt;&lt;/sb-scrubber&gt;
 
 &lt;script&gt;
-  const timeline = document.querySelector('sb-timeline');
-  timeline.marks = [{ value: 0, label: 'before' }, { value: 1, label: 'after' }];
-  timeline.addEventListener('sb-change', (e) =&gt; draw(e.detail.value));
+  const scrubber = document.querySelector('sb-scrubber');
+  scrubber.marks = [{ value: 0, label: 'before' }, { value: 1, label: 'after' }];
+  scrubber.addEventListener('sb-change', (e) =&gt; draw(e.detail.value));
 &lt;/script&gt;</pre>
 
       <h3>Making it reveal, not just animate</h3>
@@ -86,7 +86,7 @@
         <circle class="ball" id="ball" r="10"/>
       </svg>
       <p class="reading" id="flight-reading"></p>
-      <sb-timeline id="flight" min="0" max="3.06" step="0.01" duration="3.06" label="Time since the throw"></sb-timeline>
+      <sb-scrubber id="flight" min="0" max="3.06" step="0.01" duration="3.06" label="Time since the throw"></sb-scrubber>
     </section>
 
     <section class="example">
@@ -98,7 +98,7 @@
         <text x="20" y="100">midnight</text><text x="320" y="100" text-anchor="middle">noon</text><text x="620" y="100" text-anchor="end">midnight</text>
       </svg>
       <p class="reading" id="day-reading"></p>
-      <sb-timeline id="year" min="0" max="12" step="0.05" duration="12" loop label="Month of the year"></sb-timeline>
+      <sb-scrubber id="year" min="0" max="12" step="0.05" duration="12" loop label="Month of the year"></sb-scrubber>
     </section>
   </main>
 

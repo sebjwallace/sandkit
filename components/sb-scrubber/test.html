@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>sb-timeline tests</title>
+  <title>sb-scrubber tests</title>
   <script src="../../test/harness.js"></script>
-  <script src="sb-timeline.js"></script>
+  <script src="sb-scrubber.js"></script>
 </head>
 <body>
   <script>
-    const timeline = (attrs = 'min="0" max="2"') => mount(`<sb-timeline ${attrs}></sb-timeline>`);
+    const scrubber = (attrs = 'min="0" max="2"') => mount(`<sb-scrubber ${attrs}></sb-scrubber>`);
     const input = (el) => el.querySelector('input');
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -20,13 +20,13 @@
     // ---- Scrubbing ----
 
     test('starts at its minimum, with a slider over its range', () => {
-      const el = timeline();
+      const el = scrubber();
       assertEqual(el.value, 0);
       assertEqual([input(el).min, input(el).max], ['0', '2']);
     });
 
     test('scrubbing moves it and fires sb-change', () => {
-      const el = timeline();
+      const el = scrubber();
       const changes = recordEvents(el, 'sb-change');
       scrub(el, 1.5);
       assertEqual(el.value, 1.5);
@@ -34,7 +34,7 @@
     });
 
     test('setting value moves it without firing sb-change, and keeps it within range', () => {
-      const el = timeline();
+      const el = scrubber();
       const changes = recordEvents(el, 'sb-change');
       el.value = 5;
       assertEqual(el.value, 2);
@@ -43,30 +43,30 @@
     });
 
     test('shows the value through its format, also for screen readers', () => {
-      const el = timeline();
+      const el = scrubber();
       el.format = (v) => `${Math.round(v * 50)}% done`;
       el.value = 1;
-      assertEqual(el.querySelector('.sb-timeline__label').textContent, '50% done');
+      assertEqual(el.querySelector('.sb-scrubber__label').textContent, '50% done');
       assertEqual(input(el).getAttribute('aria-valuetext'), '50% done');
     });
 
     // ---- Marks ----
 
     test('places named marks along the range, and clicking one jumps there', () => {
-      const el = timeline();
+      const el = scrubber();
       el.marks = [{ value: 0, label: 'Start' }, { value: 1, label: 'Halfway' }, { value: 2, label: 'End' }];
-      const marks = [...el.querySelectorAll('.sb-timeline__mark')];
+      const marks = [...el.querySelectorAll('.sb-scrubber__mark')];
       assertEqual(marks.map((m) => [m.textContent.trim(), m.style.left]), [['Start', '0%'], ['Halfway', '50%'], ['End', '100%']]);
       const changes = recordEvents(el, 'sb-change');
       marks[1].click();
       assertEqual([el.value, changes[0].detail.value], [1, 1]);
-      assert(marks[1].classList.contains('sb-timeline__mark--current'), 'the mark shows it is current');
+      assert(marks[1].classList.contains('sb-scrubber__mark--current'), 'the mark shows it is current');
     });
 
     // ---- Playing ----
 
     test('plays forward at a steady pace and stops at the end', async () => {
-      const el = timeline('min="0" max="1" duration="0.3"');
+      const el = scrubber('min="0" max="1" duration="0.3"');
       const changes = recordEvents(el, 'sb-change');
       el.play();
       assert(el.playing, 'playing');
@@ -78,7 +78,7 @@
     });
 
     test('playing from the end starts again from the beginning', () => {
-      const el = timeline();
+      const el = scrubber();
       el.value = 2;
       const changes = recordEvents(el, 'sb-change');
       el.play();
@@ -87,7 +87,7 @@
     });
 
     test('with loop, it keeps going round', async () => {
-      const el = timeline('min="0" max="1" duration="0.1" loop');
+      const el = scrubber('min="0" max="1" duration="0.1" loop');
       el.play();
       await wait(250);
       assert(el.playing, 'still playing after more than one full run');
@@ -95,7 +95,7 @@
     });
 
     test('pausing, or scrubbing, stops it', async () => {
-      const el = timeline('min="0" max="1" duration="1"');
+      const el = scrubber('min="0" max="1" duration="1"');
       el.play();
       scrub(el, 0.5);
       assert(!el.playing, 'scrubbing pauses');
@@ -107,16 +107,16 @@
     });
 
     test('the play button shows what pressing it will do', () => {
-      const el = timeline();
-      const button = el.querySelector('.sb-timeline__play');
+      const el = scrubber();
+      const button = el.querySelector('.sb-scrubber__play');
       assert(button.textContent.includes('Play'));
       button.click();
       assert(button.textContent.includes('Pause'));
       button.click();
     });
 
-    test('a removed timeline stops playing', async () => {
-      const el = timeline('min="0" max="1" duration="1"');
+    test('a removed scrubber stops playing', async () => {
+      const el = scrubber('min="0" max="1" duration="1"');
       el.play();
       el.remove();
       assert(!el.playing);
@@ -124,17 +124,17 @@
 
     // ---- Several on one page, and safety ----
 
-    test('two timelines on one page move independently', () => {
-      mount('<div><sb-timeline max="1"></sb-timeline><sb-timeline max="1"></sb-timeline></div>');
-      const [a, b] = document.querySelectorAll('#test-fixture sb-timeline');
+    test('two scrubbers on one page move independently', () => {
+      mount('<div><sb-scrubber max="1"></sb-scrubber><sb-scrubber max="1"></sb-scrubber></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-scrubber');
       scrub(a, 0.7);
       assertEqual([a.value, b.value], [0.7, 0]);
     });
 
     test('shows mark labels as text, never as markup', () => {
-      const el = timeline();
+      const el = scrubber();
       el.marks = [{ value: 1, label: '<b>x</b>' }];
-      assertEqual(el.querySelector('.sb-timeline__marks b'), null);
+      assertEqual(el.querySelector('.sb-scrubber__marks b'), null);
     });
   </script>
 </body>

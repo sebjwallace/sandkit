@@ -44,7 +44,7 @@ Positions count from 0 at the oldest value of the longest series.
 | `heading` | A title shown above the chart. Attribute. |
 | `height` | The drawing's height in pixels. Attribute. Default `150`. |
 | `highlight` | What to point at, by id or label: series are brought forward and the others fade, in the legend too; reference lines and marks are drawn bolder. |
-| `current` | A position to mark with a cursor, such as the moment a timeline has scrubbed to; `null` for none. The legend then gives each line's value there, rather than its latest. |
+| `current` | A position to mark with a cursor, such as the moment a scrubber has reached; `null` for none. The legend then gives each line's value there, rather than its latest. |
 
 Pointing at the chart shows a guide line with each line's value there, and its label from `xLabels`. Pointing at a line, or its name in the legend, brings it forward while the pointer is there.
 
@@ -67,7 +67,7 @@ Suggestions only: nothing here is wired in. The sandbox composes these itself.
 
 - **[`sb-controls`](../sb-controls/manifest.md),** to watch the lines grow as the model runs. Keep a history array in the model and redraw on each tick.
 - **[`sb-parameters`](../sb-parameters/manifest.md),** so people see the effect of a change in the shape of the line.
-- **[`sb-timeline`](../sb-timeline/manifest.md),** to scrub through history: set `current` on its `sb-change`, and move the timeline on the chart's `sb-select`, so both point at the same moment.
+- **[`sb-scrubber`](../sb-scrubber/manifest.md),** to scrub through history: set `current` on its `sb-change`, and move the scrubber on the chart's `sb-select`, so both point at the same moment.
 - **[`sb-stat`](../sb-stat/manifest.md),** for where things stand now. On a figure's `sb-select`, `highlight` its line.
 - **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so the prose can point at a line, a threshold or an event; set `current` for a moment.
 

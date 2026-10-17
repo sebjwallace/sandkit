@@ -79,7 +79,7 @@ Classes: `sb-sequence__svg`, `sb-sequence__participant` (`--highlighted`), `sb-s
 
 Suggestions only: nothing here is wired in. The sandbox composes these itself.
 
-- **[`sb-controls`](../sb-controls/manifest.md) or [`sb-timeline`](../sb-timeline/manifest.md),** to play the conversation: on each step, set `current` to the next message.
+- **[`sb-controls`](../sb-controls/manifest.md) or [`sb-scrubber`](../sb-scrubber/manifest.md),** to play the conversation: on each step, set `current` to the next message.
 - **[`sb-log`](../sb-log/manifest.md),** for the full record as it runs. On the log's `sb-select`, set `current` to the message the entry concerns.
 - **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight` when the prose mentions a participant or a message.
 

@@ -128,16 +128,16 @@
       assertEqual(page.getElementById('matrix-first').getAttribute('name'), 'B');
     });
 
-    test('the timelines drive the transformations, with their moments marked', async () => {
+    test('the scrubbers drive the transformations, with their moments marked', async () => {
       const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
       await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
       const page = frame.contentDocument;
-      const timeline = page.getElementById('transformation');
-      const slider = timeline.querySelector('input');
+      const scrubber = page.getElementById('transformation');
+      const slider = scrubber.querySelector('input');
       slider.value = '0.25';
       slider.dispatchEvent(new Event('input', { bubbles: true }));
       assertEqual(page.getElementById('moving').progress, 0.25);
-      const marks = [...page.querySelectorAll('#composition .sb-timeline__mark')].map((m) => m.textContent.trim());
+      const marks = [...page.querySelectorAll('#composition .sb-scrubber__mark')].map((m) => m.textContent.trim());
       assertEqual(marks, ['start', 'A', 'A, then B']);
     });
 
