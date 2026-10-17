@@ -33,6 +33,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-graph`](components/sb-graph/manifest.md) | State machines, workflows and networks: active nodes, edges and rule lines lit up; things moving along edges. |
 | [`sb-grid`](components/sb-grid/manifest.md) | Cells across space coloured by state or value: a legend counting each state, painting reported to the model, changes marked. |
 | [`sb-id`](components/sb-id/manifest.md) | An identifying code as a pill: hover explains it, click highlights every mention. |
+| [`sb-image`](components/sb-image/manifest.md) | An image to zoom and pan, starting on the part that matters, with boxes and pins that prose can glide to and light up. |
 | [`sb-json`](components/sb-json/manifest.md) | JSON shown cleanly, with the paths that matter spotlit and the rest folded away; a clicked line shows its path and the note written for it. |
 | [`sb-log`](components/sb-log/manifest.md) | A stream of things that happened, in order: tones, columns, expandable detail, selection. |
 | [`sb-math`](components/sb-math/manifest.md) | Equations in native MathML whose marked parts light up, and are lit by, what they stand for. |

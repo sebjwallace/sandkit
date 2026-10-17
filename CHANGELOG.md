@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.1.4 · 2026-10-17
+- Twenty-nine components: added `sb-image`.
+
 ## 0.1.3 · 2026-10-17
 - Twenty-eight components: added `sb-json`.
 

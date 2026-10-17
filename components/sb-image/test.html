@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-image tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-image.js"></script>
+</head>
+<body>
+  <script>
+    // A 400 × 200 image, shown in a frame 400 pixels wide, so one image pixel is one screen pixel.
+    const IMAGE = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="#ccd"/></svg>');
+
+    async function image(setup = () => {}, style = '') {
+      const el = mount(`<sb-image src="${IMAGE}" style="width: 400px; ${style}"></sb-image>`);
+      setup(el);
+      await waitFor(() => el.shown, { message: 'the image never loaded' });
+      return el;
+    }
+
+    const frame = (el) => el.querySelector('.sb-image__frame');
+    const stage = (el) => el.querySelector('.sb-image__stage');
+    const mark = (el, id) => el.querySelector(`.sb-image__mark[data-id="${id}"]`);
+    const highlighted = (el) => [...el.querySelectorAll('.sb-image__mark--highlighted')].map((m) => m.dataset.id);
+    const gliding = (el) => stage(el).classList.contains('sb-image__stage--glide');
+    const tool = (el, name) => el.querySelector(`.sb-image__tool[data-tool="${name}"]`);
+
+    // A point in the frame, in screen coordinates.
+    const at = (el, x, y) => {
+      const box = frame(el).getBoundingClientRect();
+      return { bubbles: true, clientX: box.left + x, clientY: box.top + y };
+    };
+    const click = (node, options = { bubbles: true }) => node.dispatchEvent(new MouseEvent('click', options));
+    const press = (el, key) => frame(el).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+    function drag(el, dx, dy) {
+      frame(el).dispatchEvent(new PointerEvent('pointerdown', at(el, 200, 100)));
+      window.dispatchEvent(new PointerEvent('pointermove', at(el, 200 + dx, 100 + dy)));
+      window.dispatchEvent(new PointerEvent('pointerup', at(el, 200 + dx, 100 + dy)));
+    }
+
+    const BOX = { id: 'box', x: 0.4, y: 0.4, w: 0.2, h: 0.1, label: 'Box' };
+    const PIN = { id: 'pin', x: 0.25, y: 0.75, label: 'Pin', tone: 'warn' };
+
+    // ---- Showing the image ----
+
+    test('shows the whole image by default, in a frame of its shape', async () => {
+      const el = await image();
+      assertEqual(el.shown, { x: 0, y: 0, w: 1, h: 1 });
+      assertEqual(frame(el).clientHeight, 200);
+      assertEqual(el.querySelector('img').getAttribute('src'), IMAGE);
+    });
+
+    test('nothing is shown before the image loads', () => {
+      const el = mount(`<sb-image src="${IMAGE}"></sb-image>`);
+      assertEqual(el.shown, null);
+      assert(stage(el).hidden && el.querySelector('.sb-image__tools').hidden, 'stage and tools wait for the image');
+    });
+
+    test('says so when there is no image, or it cannot be loaded', async () => {
+      const empty = mount('<sb-image empty-text="Choose a map."></sb-image>');
+      assertEqual(empty.querySelector('.sb-image__message').textContent, 'Choose a map.');
+      const broken = mount('<sb-image src="data:image/png;base64,broken"></sb-image>');
+      await waitFor(() => broken.textContent.includes('could not be loaded'), { message: 'no error shown' });
+    });
+
+    test('alt describes the image and caption sits beneath it', async () => {
+      const el = await image((el) => { el.setAttribute('alt', 'A river map'); el.setAttribute('caption', 'The catchment'); });
+      assertEqual(el.querySelector('img').alt, 'A river map');
+      assertEqual(frame(el).getAttribute('aria-label'), 'A river map');
+      assertEqual(el.querySelector('.sb-image__caption').textContent, 'The catchment');
+    });
+
+    // ---- The starting view ----
+
+    test('view starts on part of the image, and the frame takes its shape', async () => {
+      const el = await image((el) => { el.view = { x: 0.5, y: 0.5, w: 0.5, h: 0.25 }; });
+      assertEqual(el.shown, { x: 0.5, y: 0.5, w: 0.5, h: 0.25 });
+      assertEqual(frame(el).clientHeight, 100);
+      assert(!gliding(el), 'the first view is shown at once');
+    });
+
+    test('a frame of another shape fits the view whole, centred', async () => {
+      const el = await image(() => {}, '--sb-image-height: 100px');
+      assertEqual(el.shown, { x: -0.5, y: 0, w: 2, h: 1 });
+    });
+
+    test('a new view glides there', async () => {
+      const el = await image();
+      el.view = { x: 0, y: 0, w: 0.5, h: 0.5 };
+      assertEqual([el.shown, gliding(el)], [{ x: 0, y: 0, w: 0.5, h: 0.5 }, true]);
+      assertEqual(el.view, { x: 0, y: 0, w: 0.5, h: 0.5 });
+    });
+
+    // ---- Marks ----
+
+    test('boxes and pins are placed on the image, labelled and toned', async () => {
+      const el = await image((el) => { el.marks = [BOX, PIN]; });
+      assertEqual([mark(el, 'box').style.left, mark(el, 'box').style.width], ['40%', '20%']);
+      assert(mark(el, 'box').classList.contains('sb-image__mark--box'), 'a box');
+      assert(mark(el, 'pin').classList.contains('sb-image__mark--pin'), 'a pin');
+      assert(mark(el, 'pin').classList.contains('sb-image__mark--warn'), 'toned');
+      assertEqual(mark(el, 'pin').textContent, 'Pin');
+      assertEqual(el.marks, [{ id: 'box', x: 0.4, y: 0.4, label: 'Box', tone: '', w: 0.2, h: 0.1 }, { id: 'pin', x: 0.25, y: 0.75, label: 'Pin', tone: 'warn' }]);
+    });
+
+    test('highlighting a box glides to it, with room around, and dims the rest', async () => {
+      const el = await image((el) => { el.marks = [BOX, PIN]; });
+      el.highlight = 'box';
+      assertEqual(el.shown, { x: 0.35, y: 0.3, w: 0.3, h: 0.3 });
+      assertEqual([highlighted(el), gliding(el)], [['box'], true]);
+    });
+
+    test('highlighting a pin centres it at twice the starting zoom', async () => {
+      const el = await image((el) => { el.marks = [BOX, PIN]; });
+      el.highlight = 'pin';
+      assertEqual(el.shown, { x: 0, y: 0.5, w: 0.5, h: 0.5 });
+    });
+
+    test('no highlight, or an unknown one, glides back to the view', async () => {
+      const el = await image((el) => { el.marks = [BOX]; el.view = { x: 0, y: 0, w: 0.5, h: 0.5 }; });
+      el.highlight = 'box';
+      el.highlight = null;
+      assertEqual([el.shown, highlighted(el)], [{ x: 0, y: 0, w: 0.5, h: 0.5 }, []]);
+      el.highlight = 'nothing';
+      assertEqual(el.shown, { x: 0, y: 0, w: 0.5, h: 0.5 });
+    });
+
+    test('a highlight set before the image loads is where it starts', async () => {
+      const el = await image((el) => { el.marks = [BOX]; el.highlight = 'box'; });
+      assertEqual(el.shown, { x: 0.35, y: 0.3, w: 0.3, h: 0.3 });
+    });
+
+    // ---- What viewers do ----
+
+    test('the zoom buttons zoom about the centre, never out past the whole image', async () => {
+      const el = await image();
+      click(tool(el, 'in'));
+      assertEqual(el.shown, { x: 0.167, y: 0.167, w: 0.667, h: 0.667 });
+      click(tool(el, 'out'));
+      click(tool(el, 'out'));
+      assertEqual(el.shown, { x: 0, y: 0, w: 1, h: 1 });
+    });
+
+    test('reset glides back to the highlighted mark, or else the view', async () => {
+      const el = await image((el) => { el.marks = [BOX]; });
+      click(tool(el, 'in'));
+      click(tool(el, 'reset'));
+      assertEqual(el.shown, { x: 0, y: 0, w: 1, h: 1 });
+      el.highlight = 'box';
+      drag(el, 50, 0);
+      el.reset();
+      assertEqual(el.shown, { x: 0.35, y: 0.3, w: 0.3, h: 0.3 });
+    });
+
+    test('Ctrl-scrolling zooms about the pointer; plain scrolling is left to the page', async () => {
+      const el = await image();
+      const plain = new WheelEvent('wheel', { ...at(el, 100, 50), deltaY: -100, cancelable: true });
+      frame(el).dispatchEvent(plain);
+      assertEqual([el.shown.w, plain.defaultPrevented], [1, false]);
+      frame(el).dispatchEvent(new WheelEvent('wheel', { ...at(el, 100, 50), deltaY: -200 * Math.LN2, ctrlKey: true, cancelable: true }));
+      assertEqual(el.shown, { x: 0.125, y: 0.125, w: 0.5, h: 0.5 });
+      assert(!gliding(el), 'follows at once');
+    });
+
+    test('dragging pans, never past the edge of an image larger than the frame', async () => {
+      const el = await image((el) => { el.view = { x: 0, y: 0, w: 0.5, h: 0.5 }; }, '--sb-image-height: 200px');
+      drag(el, -100, -50);
+      assertEqual(el.shown, { x: 0.125, y: 0.125, w: 0.5, h: 0.5 });
+      drag(el, -1000, 0);
+      assertEqual(el.shown.x, 0.5);
+    });
+
+    test('an image smaller than the frame stays in the middle', async () => {
+      const el = await image();
+      drag(el, -100, 0);
+      assertEqual(el.shown, { x: 0, y: 0, w: 1, h: 1 });
+    });
+
+    test('a mark by the edge is shown with the image still filling the frame', async () => {
+      const el = await image((el) => { el.marks = [{ id: 'corner', x: 0, y: 0, w: 0.1, h: 0.1 }]; });
+      el.highlight = 'corner';
+      assertEqual([el.shown.x, el.shown.y], [0, 0]);
+    });
+
+    test('keys zoom, pan and reset', async () => {
+      const el = await image();
+      press(el, '+');
+      assertEqual(el.shown.w, 0.667);
+      press(el, 'ArrowRight');
+      assertEqual(el.shown.x, 0.267);
+      press(el, '0');
+      assertEqual(el.shown, { x: 0, y: 0, w: 1, h: 1 });
+    });
+
+    test('clicking the image reports where, as fractions of it', async () => {
+      const el = await image();
+      const points = recordEvents(el, 'sb-point');
+      click(frame(el), at(el, 100, 150));
+      assertEqual(points[0].detail, { x: 0.25, y: 0.75 });
+    });
+
+    test('a drag does not count as a click', async () => {
+      const el = await image();
+      const points = recordEvents(el, 'sb-point');
+      drag(el, 30, 0);
+      click(frame(el), at(el, 230, 100));
+      assertEqual(points.length, 0);
+    });
+
+    test('clicking a mark fires sb-select with it, and nothing else', async () => {
+      const el = await image((el) => { el.marks = [BOX, PIN]; });
+      const selects = recordEvents(el, 'sb-select');
+      const points = recordEvents(el, 'sb-point');
+      click(mark(el, 'pin'));
+      assertEqual(selects[0].detail, { id: 'pin', mark: { id: 'pin', x: 0.25, y: 0.75, label: 'Pin', tone: 'warn' } });
+      assertEqual([points.length, el.highlight], [0, null]);
+    });
+
+    test('setting properties fires no events', async () => {
+      const el = await image();
+      const events = [...recordEvents(el, 'sb-select'), ...recordEvents(el, 'sb-point')];
+      el.marks = [BOX];
+      el.highlight = 'box';
+      el.view = { x: 0, y: 0, w: 0.5, h: 0.5 };
+      el.reset();
+      assertEqual(events.length, 0);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two images on one page keep their own state', async () => {
+      mount(`<div><sb-image src="${IMAGE}" style="width: 400px"></sb-image><sb-image src="${IMAGE}" style="width: 400px"></sb-image></div>`);
+      const [a, b] = document.querySelectorAll('#test-fixture sb-image');
+      await waitFor(() => a.shown && b.shown);
+      a.marks = [BOX];
+      a.highlight = 'box';
+      click(tool(a, 'in'));
+      assertEqual([b.marks, b.highlight, b.shown], [[], null, { x: 0, y: 0, w: 1, h: 1 }]);
+    });
+
+    test('displays labels, ids and captions as text, never as markup', async () => {
+      const el = await image((el) => {
+        el.marks = [{ id: '"><b>x</b>', x: 0.5, y: 0.5, label: '<i>label</i>' }];
+        el.setAttribute('caption', '<img src=x>');
+      });
+      assertEqual(el.querySelectorAll('b, i, .sb-image__caption img').length, 0);
+      assertEqual(el.querySelector('.sb-image__label').textContent, '<i>label</i>');
+      assertEqual(el.querySelector('.sb-image__mark').dataset.id, '"><b>x</b>');
+    });
+  </script>
+</body>
+</html>

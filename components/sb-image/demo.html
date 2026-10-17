@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-image demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-image.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .example .prose { color: var(--sb-text); font-size: 14px; }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-text); background: var(--sb-surface-2); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button[aria-pressed="true"] { background: var(--sb-accent-soft); color: var(--sb-accent); font-weight: 600; }
+    .point { border-bottom: 1px dashed var(--sb-accent); cursor: default; }
+    .example .explain { margin: 10px 0 0; min-height: 3em; color: var(--sb-text); font-size: 14px; }
+    .example .where { margin: 4px 0 0; font: 12px ui-monospace, Menlo, Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-image">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>An image to zoom and pan, starting on the part that matters, with marks that the words around it can glide to.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>A picture often holds much more than the sentence beside it is about: a whole site plan when the paragraph means one building, a whole board when it means one chip. This component starts on just the part that matters, as if the image had been cropped, while keeping all of it inside. Boxes and pins mark the things being discussed, and highlighting one glides the view there and dims everything else, so the words can steer the eye around the picture. Viewers can always zoom out, pan around, and come back.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Explaining something in a picture.</strong> A map, a plan, a photograph, a scan, a screenshot: prose points at its parts and the image goes to each in turn.</li>
+        <li><strong>Showing part of a large image.</strong> Start on the region the page is about, without cutting a new image, and let curious viewers explore the rest.</li>
+        <li><strong>Placing things on an image.</strong> Clicking reports where, as fractions of the image, so marks and views are placed by pointing rather than guessing.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Things the model draws itself,</strong> such as a network or a grid of cells. A component that draws them can light up their real parts, not just boxes over a picture.</li>
+        <li><strong>A coordinate system to work in.</strong> A plane with axes suits vectors, points and shapes.</li>
+        <li><strong>A small picture that needs no exploring.</strong> A plain <code>&lt;img&gt;</code> is simpler.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-image/sb-image.js"&gt;&lt;/script&gt;
+&lt;sb-image src="images/site-plan.png" alt="The site plan"&gt;&lt;/sb-image&gt;
+
+&lt;script&gt;
+  const image = document.querySelector('sb-image');
+  image.view = { x: 0.2, y: 0.1, w: 0.5, h: 0.4 };       // start here: fractions of the image
+  image.marks = [
+    { id: 'pump', x: 0.31, y: 0.22, w: 0.08, h: 0.06, label: 'Pump house' },   // a box
+    { id: 'gate', x: 0.62, y: 0.35, label: 'Gate', tone: 'warn' }             // a pin
+  ];
+  image.highlight = 'pump';                                // glide there; null comes back
+&lt;/script&gt;</pre>
+      <p>The image can be a file in the sandbox's folder or an address on the web. Everything is placed in fractions of the image, from 0 to 1 across and down, so it still lines up if the image is swapped for a sharper copy. To find a place, click it: <code>sb-point</code> reports where. Viewers zoom with the buttons, or Ctrl-scroll and pinch; they pan by dragging, and the circling arrow brings them back.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Start on what the page is about.</strong> Set <code>view</code> to the part the paragraph discusses, rather than shrinking the whole image to fit.</li>
+        <li><strong>Let the words point.</strong> Route pointing at a word to <code>highlight</code>, so reading a sentence shows its subject, lit, with the rest dimmed.</li>
+        <li><strong>Mark few things.</strong> Each mark should be something the prose talks about; tone the ones that are good or bad news.</li>
+        <li><strong>Connect it.</strong> Listen for <code>sb-select</code> to explain a clicked mark elsewhere in the sandbox.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A walk through a town</h2>
+      <p>The plan covers the whole town; the page starts on its centre. Point at a dashed word to go there.</p>
+      <p class="prose">
+        Leave the <span class="point" data-ref="station" tabindex="0">station</span> and head north over the
+        <span class="point" data-ref="bridge" tabindex="0">bridge</span>, the only crossing of the river for a mile.
+        The <span class="point" data-ref="school" tabindex="0">school</span> sits on the far side, across the road from the
+        <span class="point" data-ref="park" tabindex="0">park</span>, where the old
+        <span class="point" data-ref="bandstand" tabindex="0">bandstand</span> still stands.
+      </p>
+      <sb-image id="town" alt="A plan of a town, with a river running across it"></sb-image>
+    </section>
+
+    <section class="example">
+      <h2>Inside a sensor board</h2>
+      <p>Follow the power and the data through a small wireless sensor. Choose a stage, or click a mark; click anywhere else to read its place on the board.</p>
+      <div class="actions" id="stages">
+        <button data-ref="usb">Power comes in</button>
+        <button data-ref="regulator">It's made steady</button>
+        <button data-ref="mcu">The chip decides</button>
+        <button data-ref="antenna">The reading goes out</button>
+        <button data-ref="">The whole board</button>
+      </div>
+      <sb-image id="board" alt="A circuit board with chips, parts and copper tracks"></sb-image>
+      <p class="explain" id="board-explain"></p>
+      <p class="where" id="board-where">Click the board to read a place on it.</p>
+    </section>
+  </main>
+
+  <script>
+    // Both pictures are drawn here as SVG, so this page needs no image files. A sandbox would
+    // usually give src a file in its folder, or an address on the web.
+    const svgImage = (width, height, body) => 'data:image/svg+xml,' + encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${body}</svg>`);
+
+    // The same pseudo-random sequence every time, so the pictures never change.
+    function seeded(seed) {
+      return () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    }
+
+    // ---- A walk through a town ----
+
+    function townPlan() {
+      const random = seeded(7);
+      const parts = ['<rect width="1600" height="1000" fill="#ebe6d9"/>'];
+      for (let x = 0; x < 1600; x += 200) {
+        for (let y = 0; y < 1000; y += 200) {
+          if (x === 1000 && y === 0) continue; // the park
+          for (let i = 0; i < 5; i++) {
+            const w = 30 + random() * 50, h = 30 + random() * 50;
+            parts.push(`<rect x="${x + 20 + random() * (160 - w)}" y="${y + 20 + random() * (160 - h)}" width="${w}" height="${h}" fill="#cdbfa6" stroke="#b3a386"/>`);
+          }
+        }
+      }
+      for (let x = 0; x <= 1600; x += 200) parts.push(`<rect x="${x - 9}" y="0" width="18" height="1000" fill="#fff"/>`);
+      for (let y = 0; y <= 1000; y += 200) parts.push(`<rect x="0" y="${y - 9}" width="1600" height="18" fill="#fff"/>`);
+      // The park and its bandstand
+      parts.push('<rect x="1012" y="12" width="376" height="176" fill="#a9cf8f"/>');
+      for (let i = 0; i < 40; i++) parts.push(`<circle cx="${1030 + random() * 340}" cy="${30 + random() * 140}" r="${6 + random() * 8}" fill="#6fa55a"/>`);
+      parts.push('<circle cx="1230" cy="100" r="22" fill="#f4efe2" stroke="#8a6d3b" stroke-width="5"/>');
+      // The school and its field
+      parts.push('<rect x="620" y="30" width="150" height="60" fill="#c98f6b" stroke="#9b6747"/><rect x="620" y="90" width="50" height="80" fill="#c98f6b" stroke="#9b6747"/>');
+      parts.push('<rect x="690" y="105" width="90" height="70" rx="30" fill="#9ccc83" stroke="#fff" stroke-width="3"/>');
+      // The river, the bridge and the railway
+      parts.push('<path d="M0 560 C 400 480, 600 760, 900 640 S 1400 500, 1600 560" fill="none" stroke="#86b6dd" stroke-width="70"/>');
+      parts.push('<rect x="582" y="540" width="36" height="150" fill="#9c8467" stroke="#6f5a42" stroke-width="3"/>');
+      parts.push('<rect x="0" y="905" width="1600" height="14" fill="#55524c"/>');
+      for (let x = 0; x < 1600; x += 16) parts.push(`<rect x="${x}" y="901" width="4" height="22" fill="#55524c"/>`);
+      parts.push('<rect x="520" y="860" width="200" height="40" fill="#8f8a80" stroke="#55524c" stroke-width="3"/>');
+      return svgImage(1600, 1000, parts.join(''));
+    }
+
+    const town = document.getElementById('town');
+    town.setAttribute('src', townPlan());
+    town.view = { x: 0.3, y: 0, w: 0.6, h: 0.6 };
+    town.marks = [
+      { id: 'station', x: 0.32, y: 0.855, w: 0.135, h: 0.055, label: 'Station' },
+      { id: 'bridge', x: 0.36, y: 0.535, w: 0.03, h: 0.16, label: 'Bridge' },
+      { id: 'school', x: 0.38, y: 0.025, w: 0.112, h: 0.155, label: 'School' },
+      { id: 'park', x: 0.631, y: 0.011, w: 0.237, h: 0.18, label: 'Park', tone: 'good' },
+      { id: 'bandstand', x: 1230 / 1600, y: 0.1, label: 'Bandstand' }
+    ];
+
+    for (const word of document.querySelectorAll('.prose [data-ref]')) {
+      const point = () => { town.highlight = word.dataset.ref; };
+      const stop = () => { town.highlight = null; };
+      word.addEventListener('pointerenter', point);
+      word.addEventListener('pointerleave', stop);
+      word.addEventListener('focus', point);
+      word.addEventListener('blur', stop);
+    }
+
+    // ---- Inside a sensor board ----
+
+    function sensorBoard() {
+      const random = seeded(11);
+      const parts = ['<rect width="1600" height="900" rx="40" fill="#1f5c3a"/>'];
+      for (let i = 0; i < 70; i++) {
+        const y = 60 + random() * 780, x = 60 + random() * 1300;
+        parts.push(`<path d="M${x} ${y} h${80 + random() * 200} v${(random() - 0.5) * 160} h${60 + random() * 120}" fill="none" stroke="#c9a64a" stroke-width="4" opacity="0.7"/>`);
+      }
+      for (const [x, y] of [[40, 40], [1560, 40], [40, 860], [1560, 860]]) parts.push(`<circle cx="${x}" cy="${y}" r="18" fill="#0d2b1b" stroke="#c9a64a" stroke-width="5"/>`);
+      // The USB socket and the regulator
+      parts.push('<rect x="0" y="380" width="130" height="130" rx="8" fill="#c8ccd0" stroke="#8a9096" stroke-width="5"/><rect x="20" y="420" width="70" height="50" fill="#5d6369"/>');
+      parts.push('<rect x="250" y="400" width="90" height="70" fill="#151515"/>');
+      for (const y of [410, 430, 450]) parts.push(`<rect x="340" y="${y}" width="24" height="10" fill="#d7d7d7"/>`);
+      for (const x of [230, 380]) parts.push(`<circle cx="${x + 20}" cy="560" r="26" fill="#2f4f8a" stroke="#d7d7d7" stroke-width="4"/>`);
+      // The microcontroller, its crystal, and an LED
+      parts.push('<rect x="640" y="300" width="300" height="300" fill="#151515"/>');
+      for (let i = 0; i < 12; i++) {
+        const across = 655 + i * 23, down = 315 + i * 23;
+        parts.push(`<rect x="${across}" y="282" width="10" height="18" fill="#d7d7d7"/><rect x="${across}" y="600" width="10" height="18" fill="#d7d7d7"/>`);
+        parts.push(`<rect x="622" y="${down}" width="18" height="10" fill="#d7d7d7"/><rect x="940" y="${down}" width="18" height="10" fill="#d7d7d7"/>`);
+      }
+      parts.push('<circle cx="672" cy="332" r="10" fill="#333"/>');
+      parts.push('<rect x="700" y="700" width="90" height="40" rx="20" fill="#d7d7d7" stroke="#8a9096" stroke-width="4"/>');
+      parts.push('<rect x="1000" y="160" width="40" height="24" fill="#e04b4b"/><circle cx="1020" cy="172" r="8" fill="#ffb3b3"/>');
+      // The radio and its antenna
+      parts.push('<rect x="1150" y="320" width="220" height="260" fill="#c8ccd0" stroke="#8a9096" stroke-width="5"/>');
+      parts.push('<path d="M1420 200 h60 v60 h-60 v60 h60 v60 h-60 v60 h60 v60 h-60 v60 h60" fill="none" stroke="#c9a64a" stroke-width="12"/>');
+      return svgImage(1600, 900, parts.join(''));
+    }
+
+    const STAGES = {
+      usb: 'Five volts arrive through the USB socket, straight from whatever it is plugged into, noise and all.',
+      regulator: 'The regulator turns that into a steady 3.3 volts, and the capacitors either side smooth out the ripples.',
+      mcu: 'The microcontroller wakes, reads the sensor, and decides whether the reading is worth sending. Its crystal keeps time.',
+      antenna: 'The radio sends the reading, and the zigzag of copper is the antenna, sized to the radio\'s wavelength.',
+      led: 'The LED blinks once each time a reading is sent, so you can see the board at work.',
+      crystal: 'The crystal ticks millions of times a second, the clock everything else keeps to.'
+    };
+
+    const board = document.getElementById('board');
+    board.setAttribute('src', sensorBoard());
+    board.view = { x: 0, y: 0.15, w: 1, h: 0.7 };
+    board.marks = [
+      { id: 'usb', x: 0, y: 0.41, w: 0.085, h: 0.16, label: 'USB' },
+      { id: 'regulator', x: 0.135, y: 0.43, w: 0.135, h: 0.2, label: 'Regulator' },
+      { id: 'mcu', x: 0.383, y: 0.305, w: 0.218, h: 0.39, label: 'Microcontroller' },
+      { id: 'antenna', x: 0.71, y: 0.33, w: 0.225, h: 0.36, label: 'Radio and antenna' },
+      { id: 'led', x: 0.6375, y: 0.19, label: 'LED', tone: 'bad' },
+      { id: 'crystal', x: 0.465, y: 0.8, label: 'Crystal' }
+    ];
+
+    const explain = document.getElementById('board-explain');
+    const stages = [...document.querySelectorAll('#stages button')];
+    function show(ref) {
+      board.highlight = ref || null;
+      explain.textContent = STAGES[ref] ?? '';
+      for (const button of stages) button.setAttribute('aria-pressed', String(button.dataset.ref === ref));
+    }
+    for (const button of stages) button.addEventListener('click', () => show(button.dataset.ref));
+    board.addEventListener('sb-select', (e) => show(e.detail.id));
+    board.addEventListener('sb-point', (e) => {
+      document.getElementById('board-where').textContent = `Clicked at x ${e.detail.x}, y ${e.detail.y}.`;
+    });
+    show('usb');
+  </script>
+</body>
+</html>
