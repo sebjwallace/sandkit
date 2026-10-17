@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-table tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-table.js"></script>
+</head>
+<body>
+  <script>
+    const COLUMNS = [{ key: 'name', label: 'Planet' }, { key: 'moons', label: 'Moons' }, { key: 'type', label: 'Type' }];
+    const ROWS = [
+      { id: 'mars', name: 'Mars', moons: 2, type: 'rocky' },
+      { id: 'earth', name: 'Earth', moons: 1, type: 'rocky' },
+      { id: 'saturn', name: 'Saturn', moons: 146, type: 'gas giant' },
+      { id: 'venus', name: 'Venus', moons: 0, type: 'rocky' }
+    ];
+
+    function table(attrs = '') {
+      const el = mount(`<sb-table ${attrs}></sb-table>`);
+      el.columns = COLUMNS;
+      el.rows = ROWS;
+      return el;
+    }
+
+    const names = (el) => [...el.querySelectorAll('tbody tr')].map((tr) => tr.cells[0].textContent);
+    const headings = (el) => [...el.querySelectorAll('thead th')];
+    const cell = (el, name, column) => [...el.querySelectorAll('tbody tr')].find((tr) => tr.cells[0].textContent === name).cells[column];
+    const isShown = (node) => !node.closest('[hidden]');
+
+    // ---- Showing rows ----
+
+    test('shows a row per row and a heading per column, in order', () => {
+      const el = table();
+      assertEqual(headings(el).map((th) => th.textContent), ['Planet', 'Moons', 'Type']);
+      assertEqual(names(el), ['Mars', 'Earth', 'Saturn', 'Venus']);
+      assertEqual(cell(el, 'Saturn', 2).textContent, 'gas giant');
+    });
+
+    test('without columns, shows every field of the first row except id and tone', () => {
+      const el = mount('<sb-table></sb-table>');
+      el.rows = [{ id: 1, tone: 'bad', city: 'Lima', rain: 6 }];
+      assertEqual(headings(el).map((th) => th.textContent), ['city', 'rain']);
+    });
+
+    test('a column can format its values', () => {
+      const el = mount('<sb-table></sb-table>');
+      el.columns = [{ key: 'moons', format: (v, row) => `${v} (${row.name})` }];
+      el.rows = ROWS;
+      assertEqual(el.querySelector('tbody td').textContent, '2 (Mars)');
+    });
+
+    test('numeric columns line up on the right; align overrides', () => {
+      const el = table();
+      assert(cell(el, 'Mars', 1).classList.contains('sb-table__cell--number'), 'numbers');
+      assert(!cell(el, 'Mars', 0).classList.contains('sb-table__cell--number'), 'text');
+      el.columns = [{ key: 'moons', align: 'left' }];
+      assert(!el.querySelector('tbody td').classList.contains('sb-table__cell--number'), 'align: left');
+    });
+
+    test('a row\'s tone is exposed for colouring', () => {
+      const el = mount('<sb-table></sb-table>');
+      el.rows = [{ id: 'a', x: 1, tone: 'bad' }];
+      assertEqual(el.querySelector('tbody tr').dataset.tone, 'bad');
+    });
+
+    test('shows the empty text when there are no rows', () => {
+      assertEqual(mount('<sb-table empty-text="No planets yet."></sb-table>').textContent.trim(), 'No planets yet.');
+    });
+
+    // ---- Sorting ----
+
+    test('sorts numbers by size, and text naturally', () => {
+      const el = table();
+      el.sort = { key: 'moons', direction: 'descending' };
+      assertEqual(names(el), ['Saturn', 'Mars', 'Earth', 'Venus']);
+      el.rows = [{ name: 'Item 10' }, { name: 'item 2' }, { name: 'Item 1' }];
+      el.columns = [{ key: 'name' }];
+      el.sort = { key: 'name' };
+      assertEqual(names(el), ['Item 1', 'item 2', 'Item 10']);
+    });
+
+    test('empty values go last in either direction', () => {
+      const el = mount('<sb-table></sb-table>');
+      el.rows = [{ n: 'a', v: null }, { n: 'b', v: 2 }, { n: 'c', v: 1 }];
+      el.sort = { key: 'v', direction: 'ascending' };
+      assertEqual(names(el), ['c', 'b', 'a']);
+      el.sort = { key: 'v', direction: 'descending' };
+      assertEqual(names(el), ['b', 'c', 'a']);
+    });
+
+    test('clicking a heading sorts ascending, then descending, then not at all', () => {
+      const el = table();
+      const click = () => headings(el)[1].querySelector('button').click();
+      click();
+      assertEqual(el.sort, { key: 'moons', direction: 'ascending' });
+      assertEqual(headings(el)[1].getAttribute('aria-sort'), 'ascending');
+      click();
+      assertEqual(names(el)[0], 'Saturn');
+      click();
+      assertEqual(el.sort, null);
+      assertEqual(names(el), ['Mars', 'Earth', 'Saturn', 'Venus']);
+    });
+
+    // ---- Searching and filtering ----
+
+    test('the search box appears only when asked for', () => {
+      assert(!isShown(table().querySelector('.sb-table__search')), 'hidden by default');
+      assert(isShown(table('search').querySelector('.sb-table__search')), 'shown with search');
+    });
+
+    test('searching shows rows whose text contains the query, ignoring case', () => {
+      const el = table('search');
+      const box = el.querySelector('.sb-table__search');
+      box.value = 'ROCK';
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+      assertEqual(names(el), ['Mars', 'Earth', 'Venus']);
+      assertEqual(el.query, 'ROCK');
+      assertEqual(el.querySelector('.sb-table__search'), box, 'the box survives, keeping focus');
+      el.query = 'saturn';
+      assertEqual(names(el), ['Saturn'], 'the text\'s case is ignored too');
+    });
+
+    test('searching looks at the shown text, after formatting', () => {
+      const el = table();
+      el.columns = [{ key: 'name' }, { key: 'moons', format: (v) => (v ? `${v} moons` : 'none') }];
+      el.query = 'none';
+      assertEqual(names(el), ['Venus']);
+    });
+
+    test('the sandbox can filter rows, and the count says how many are hidden', () => {
+      const el = table();
+      assertEqual(el.querySelector('.sb-table__count').textContent, '');
+      el.filter = (row) => row.moons > 0;
+      assertEqual(names(el), ['Mars', 'Earth', 'Saturn']);
+      const count = el.querySelector('.sb-table__count');
+      assertEqual(count.textContent, '3 of 4 rows');
+      assert(isShown(count), 'count visible even without the search box');
+    });
+
+    test('says so when nothing matches', () => {
+      const el = table();
+      el.query = 'pluto';
+      assertEqual(el.querySelector('.sb-table__empty').textContent, 'No matching rows.');
+    });
+
+    // ---- Changes ----
+
+    test('marks the cells that changed since the rows were last set, matched by id', () => {
+      const el = table();
+      assertEqual(el.querySelectorAll('.sb-table__cell--changed').length, 0, 'nothing on first set');
+      el.rows = ROWS.map((row) => (row.id === 'earth' ? { ...row, moons: 2 } : row)).reverse();
+      const changed = [...el.querySelectorAll('.sb-table__cell--changed')];
+      assertEqual(changed, [cell(el, 'Earth', 1)]);
+      assertEqual(changed[0].getAttribute('title'), 'was 1');
+      assertEqual(changed[0].dataset.change, 'up');
+    });
+
+    test('sees changes even when the model edits its rows in place', () => {
+      const rows = ROWS.map((row) => ({ ...row }));
+      const el = mount('<sb-table></sb-table>');
+      el.rows = rows;
+      rows[0].moons = 1;
+      el.rows = rows;
+      assertEqual(cell(el, 'Mars', 1).dataset.change, 'down');
+    });
+
+    test('marks stay until the next update, through sorting', () => {
+      const el = table();
+      el.rows = ROWS.map((row) => ({ ...row, type: 'planet' }));
+      el.sort = { key: 'name' };
+      assertEqual(el.querySelectorAll('.sb-table__cell--changed').length, 4, 'kept through sorting');
+      el.rows = el.rows.slice();
+      assertEqual(el.querySelectorAll('.sb-table__cell--changed').length, 0, 'cleared');
+    });
+
+    // ---- Highlighting and selection ----
+
+    test('highlights rows, columns and cells by id and key', () => {
+      const el = table();
+      el.highlight = { rows: ['earth'], columns: ['type'], cells: [['saturn', 'moons']] };
+      assert(cell(el, 'Earth', 0).parentElement.classList.contains('sb-table__row--highlighted'), 'row');
+      assertEqual(el.querySelectorAll('.sb-table__cell--highlighted').length, 5, 'four type cells and one moons cell');
+      assert(cell(el, 'Saturn', 1).classList.contains('sb-table__cell--highlighted'), 'cell');
+      el.highlight = {};
+      assertEqual(el.querySelectorAll('[class*="highlighted"]').length, 0, 'cleared');
+    });
+
+    test('clicking a row fires sb-select with the row, even when sorted', () => {
+      const el = table();
+      el.sort = { key: 'moons' };
+      const selections = recordEvents(el, 'sb-select');
+      cell(el, 'Saturn', 2).click();
+      assertEqual(selections[0].detail.row, ROWS[2]);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two tables on one page keep their own sort, search and changes', () => {
+      mount('<div><sb-table search></sb-table><sb-table search></sb-table></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-table');
+      a.rows = ROWS;
+      b.rows = ROWS;
+      a.sort = { key: 'moons' };
+      a.query = 'gas';
+      a.rows = ROWS.map((row) => ({ ...row, moons: row.moons + 1 }));
+      assertEqual(names(b), ['Mars', 'Earth', 'Saturn', 'Venus']);
+      assertEqual([b.sort, b.query, b.querySelectorAll('.sb-table__cell--changed').length], [null, '', 0]);
+      assertEqual(names(a), ['Saturn'], 'a is searched');
+    });
+
+    test('displays values as text, never as markup', () => {
+      const el = mount('<sb-table></sb-table>');
+      el.columns = [{ key: 'x', label: '<i>x</i>' }];
+      el.rows = [{ id: 'r', x: '<b>bold</b>' }];
+      el.rows = [{ id: 'r', x: '<b>bolder</b>' }];
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(el.querySelector('td').title, 'was <b>bold</b>');
+    });
+  </script>
+</body>
+</html>

@@ -42,6 +42,7 @@ Settled decisions for Sandkit, newest last. One line each, with the reason.
 - **Maths is native MathML,** wrapped by `sb-math`: no library, no fonts, export-safe. Parts marked `data-ref` become pointable.
 - **Bounded progress is `sb-timeline`; unbounded is `sb-controls`.** A timeline has a start and an end to scrub between, plays at a steady pace (`duration` for the whole range), can loop, and names moments with marks. Scrubbing pauses, so the viewer stays in control.
 - **`sb-callout` sets things apart, like a textbook's boxes.** A small fixed set of kinds (definition, note, tip, question, answer, warning), each with its own title, tone and icon, so readers learn what to expect; `heading` and `tone` cover anything else. Collapsible callouts use the native disclosure element, which suits answers: think first, then reveal.
+- **`sb-table` is the general table; `sb-rules` stays the table of rules.** Sorting, search and a model-driven filter, with a count of hidden rows so they never go unnoticed. Its reveal is marking the cells that changed since the rows were last set, matched by `id`, with direction and previous value, so a step shows what it changed. Paging, editing, grouping and column resizing wait until a sandbox needs them.
 - **Interaction outranks tone.** A selected or active element shows as such even when it also carries a warning tone.
 
 ## Sandbox shell and theming

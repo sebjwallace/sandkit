@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-table demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-table.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; font-size: 13px; }
+    .actions label { display: flex; align-items: center; gap: 6px; }
+    .actions input[type="number"] { width: 64px; padding: 2px 6px; font: inherit; color: inherit; background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-table">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Rows and columns to sort, search and filter, with what just changed marked.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Many models are a set of comparable things: stores and their stock, teams in a league, patients on a ward, the planets. A table lays them side by side, so people can put them in order, narrow them down to the ones that matter, and compare. When the model moves on, the table marks which values changed, so you can see what a step actually did.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Comparing many things on several measures.</strong> Which store is lowest on stock? Which team has scored most? Click a heading and see.</li>
+        <li><strong>Finding the few that matter.</strong> Search, or filter from the model ("only the overspent ones"), and the table says how many it's hiding.</li>
+        <li><strong>Seeing what a step changed.</strong> After each step of the model, the cells that changed are marked, with which way numbers moved and what they were before.</li>
+        <li><strong>Grounding the prose.</strong> Point at a row, column or cell from the explanation, and it lights up.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Things that happened in order.</strong> A stream of occurrences is a log, not a table.</li>
+        <li><strong>Values over time.</strong> A table shows where things stand; a chart shows how they got there.</li>
+        <li><strong>The rules a model follows.</strong> A rules table can mark the rule about to apply and the one just applied.</li>
+        <li><strong>A handful of numbers.</strong> Three values read better in a sentence.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-table/sb-table.js"&gt;&lt;/script&gt;
+&lt;sb-table search&gt;&lt;/sb-table&gt;
+
+&lt;script&gt;
+  const table = document.querySelector('sb-table');
+  table.columns = [{ key: 'name', label: 'Store' }, { key: 'stock', label: 'Stock' }];
+  table.rows = [
+    { id: 'north', name: 'North', stock: 37 },
+    { id: 'south', name: 'South', stock: 0, tone: 'bad' }
+  ];
+&lt;/script&gt;</pre>
+      <p>Rows are plain objects. Give each an <code>id</code> so the table can match it from one update to the next, and a <code>tone</code> (good, warn or bad) where it deserves attention. Columns can <code>format</code> their values; numbers line up on the right by themselves.</p>
+
+      <h3>Making it reveal, not just list</h3>
+      <ul>
+        <li><strong>Set the rows again after every step.</strong> That's all it takes for the changes to be marked. Hover a marked cell to see what it was.</li>
+        <li><strong>Show the columns that answer the question,</strong> not every field the model has. Fewer columns, compared more easily.</li>
+        <li><strong>Use tone for the rows that matter now,</strong> such as a store that has run out, and only those.</li>
+        <li><strong>Filter from the model,</strong> with <code>filter</code>, when the question is about a subset. The count keeps the rest in mind.</li>
+        <li><strong>Connect it.</strong> Listen for <code>sb-select</code> to follow a row elsewhere in the sandbox, and set <code>highlight</code> when the prose points at something.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>The planets</h2>
+      <p>Click a heading to put the planets in order: by distance, size, the length of a day or a year. Change your weight to see what it would feel like on each, and which way it moved.</p>
+      <div class="actions"><label>Your weight <input type="number" id="weight" value="70" min="1" max="500" step="5"> kg</label></div>
+      <sb-table id="planets"></sb-table>
+    </section>
+
+    <section class="example">
+      <h2>A household budget</h2>
+      <p>A month's spending against the budget. Search it, or show only what's over. Point at <span class="point" data-rows="groceries eating-out">food</span> or <span class="point" data-columns="left">what's left</span> to see it light up.</p>
+      <div class="actions"><label><input type="checkbox" id="overspent"> Only what's over budget</label></div>
+      <sb-table id="budget" search></sb-table>
+    </section>
+  </main>
+
+  <script>
+    // ---- The planets ----
+
+    // From NASA's planetary fact sheet. Day is from one sunrise to the next; gravity is at the surface, in m/s².
+    const PLANETS = [
+      { id: 'mercury', name: 'Mercury', type: 'rocky', distance: 0.39, diameter: 4879, day: 4222.6, year: 88, gravity: 3.7 },
+      { id: 'venus', name: 'Venus', type: 'rocky', distance: 0.72, diameter: 12104, day: 2802, year: 224.7, gravity: 8.9 },
+      { id: 'earth', name: 'Earth', type: 'rocky', distance: 1, diameter: 12756, day: 24, year: 365.2, gravity: 9.8 },
+      { id: 'mars', name: 'Mars', type: 'rocky', distance: 1.52, diameter: 6792, day: 24.7, year: 687, gravity: 3.7 },
+      { id: 'jupiter', name: 'Jupiter', type: 'gas giant', distance: 5.2, diameter: 142984, day: 9.9, year: 4331, gravity: 23.1 },
+      { id: 'saturn', name: 'Saturn', type: 'gas giant', distance: 9.54, diameter: 120536, day: 10.7, year: 10747, gravity: 9 },
+      { id: 'uranus', name: 'Uranus', type: 'ice giant', distance: 19.2, diameter: 51118, day: 17.2, year: 30589, gravity: 8.7 },
+      { id: 'neptune', name: 'Neptune', type: 'ice giant', distance: 30.1, diameter: 49528, day: 16.1, year: 59800, gravity: 11 }
+    ];
+
+    const planets = document.getElementById('planets');
+    const weight = document.getElementById('weight');
+    const thousands = (v) => v.toLocaleString('en');
+
+    planets.columns = [
+      { key: 'name', label: 'Planet' }, { key: 'type', label: 'Type' },
+      { key: 'distance', label: 'From the Sun (AU)' },
+      { key: 'diameter', label: 'Diameter (km)', format: thousands },
+      { key: 'day', label: 'Day (hours)', format: thousands },
+      { key: 'year', label: 'Year (days)', format: thousands },
+      { key: 'feelsLike', label: 'You\'d feel (kg)' }
+    ];
+
+    function showPlanets() {
+      const kg = Number(weight.value) || 0;
+      planets.rows = PLANETS.map((p) => ({ ...p, feelsLike: Math.round(kg * p.gravity / 9.8) }));
+    }
+
+    weight.addEventListener('input', showPlanets);
+
+    // ---- A household budget ----
+
+    const budget = document.getElementById('budget');
+    const money = (v) => (v < 0 ? `−£${-v}` : `£${v}`);
+    const SPENDING = [
+      { id: 'rent', item: 'Rent', group: 'Home', budget: 950, spent: 950 },
+      { id: 'energy', item: 'Energy', group: 'Home', budget: 120, spent: 146 },
+      { id: 'groceries', item: 'Groceries', group: 'Food', budget: 400, spent: 372 },
+      { id: 'eating-out', item: 'Eating out', group: 'Food', budget: 80, spent: 131 },
+      { id: 'travel', item: 'Travel', group: 'Getting about', budget: 150, spent: 118 },
+      { id: 'phone', item: 'Phone and internet', group: 'Home', budget: 55, spent: 55 },
+      { id: 'clothes', item: 'Clothes', group: 'Personal', budget: 60, spent: 24 },
+      { id: 'gifts', item: 'Gifts', group: 'Personal', budget: 40, spent: 65 }
+    ];
+
+    budget.columns = [
+      { key: 'item', label: 'Item' }, { key: 'group', label: 'Group' },
+      { key: 'budget', label: 'Budget', format: money }, { key: 'spent', label: 'Spent', format: money },
+      { key: 'left', label: 'Left', format: money }
+    ];
+    budget.rows = SPENDING.map((row) => ({ ...row, left: row.budget - row.spent, tone: row.spent > row.budget ? 'bad' : undefined }));
+
+    document.getElementById('overspent').addEventListener('change', (e) => {
+      budget.filter = e.target.checked ? (row) => row.left < 0 : null;
+    });
+
+    for (const point of document.querySelectorAll('.point')) {
+      point.addEventListener('pointerenter', () => {
+        budget.highlight = { rows: point.dataset.rows?.split(' '), columns: point.dataset.columns?.split(' ') };
+      });
+      point.addEventListener('pointerleave', () => { budget.highlight = {}; });
+    }
+
+    // ---- Start ----
+
+    showPlanets();
+  </script>
+</body>
+</html>
