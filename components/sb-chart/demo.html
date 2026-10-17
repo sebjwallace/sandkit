@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-chart demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-chart.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example .note { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; font-size: 13px; }
+    .actions input[type=range] { width: 180px; accent-color: var(--sb-accent); vertical-align: middle; }
+    .actions output { font-weight: 600; }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-chart">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Values over time, with where things stand now always marked.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>A single number says how things are; a line says how they got there and where they're heading. <code>sb-chart</code> draws a model's values over time, with reference lines for the thresholds and targets that give those values meaning: a reorder point, an overdraft limit, a safe level. The latest value of each line is marked, so the eye always finds "now".</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Seeing patterns that numbers hide.</strong> Cycles, drift, sudden drops, the sawtooth of stock being used and restocked.</li>
+        <li><strong>Comparing quantities that move together.</strong> Predators and prey, supply and demand, income and spending.</li>
+        <li><strong>Showing when a line is crossed.</strong> A reference line makes "too low" or "over budget" visible at a glance.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Comparing categories.</strong> Values that aren't a sequence over time are better as bars or a table.</li>
+        <li><strong>Just the current value.</strong> If the history doesn't matter, a single figure or a meter is clearer.</li>
+        <li><strong>Many lines at once.</strong> Beyond three or four, lines tangle. Split them into separate charts.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-chart/sb-chart.js"&gt;&lt;/script&gt;
+&lt;sb-chart heading="Stock"&gt;&lt;/sb-chart&gt;
+
+&lt;script&gt;
+  document.querySelector('sb-chart').data = {
+    series: [{ label: 'Stock', values: [80, 64, 51, 38, 92] }],
+    lines: [{ value: 40, label: 'Reorder', tone: 'warn' }]
+  };
+&lt;/script&gt;</pre>
+
+      <h3>Making it reveal, not just plot</h3>
+      <ul>
+        <li><strong>Add the lines that give values meaning.</strong> A level is just a level until it sits next to a limit or a target.</li>
+        <li><strong>Use tones for what matters.</strong> A warning line in amber, a limit in red, everything else calm.</li>
+        <li><strong>Show enough history to see the pattern,</strong> and no more. A week of stock shows the sawtooth; a year flattens it.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Predators and prey</h2>
+      <p class="note">Foxes eat rabbits; with fewer rabbits, foxes go hungry; with fewer foxes, rabbits recover. The two populations chase each other in cycles.</p>
+      <sb-chart id="populations" heading="Population over time" height="180"></sb-chart>
+    </section>
+
+    <section class="example">
+      <h2>A household budget</h2>
+      <p class="note">A month's balance, with rent leaving at the start and wages arriving at the end. Raise the spending and watch it dip into the overdraft.</p>
+      <div class="actions">
+        <label>Daily spending <input type="range" id="spending" min="20" max="80" value="40"></label>
+        <output id="spending-out"></output>
+      </div>
+      <sb-chart id="budget" heading="Balance over a month"></sb-chart>
+    </section>
+  </main>
+
+  <script>
+    // ---- Predators and prey (Lotka–Volterra) ----
+
+    const populations = document.getElementById('populations');
+    const HISTORY = 240;
+    let rabbits = 40, foxes = 9;
+    const rabbitHistory = [], foxHistory = [];
+
+    function stepPopulations() {
+      const dt = 0.05;
+      const births = 1.1 * rabbits, eaten = 0.4 * rabbits * foxes / 10;
+      const fed = 0.1 * rabbits * foxes / 10, starved = 0.4 * foxes;
+      rabbits = Math.max(0.1, rabbits + (births - eaten) * dt);
+      foxes = Math.max(0.1, foxes + (fed - starved) * dt);
+      rabbitHistory.push(rabbits);
+      foxHistory.push(foxes);
+      if (rabbitHistory.length > HISTORY) { rabbitHistory.shift(); foxHistory.shift(); }
+    }
+
+    function drawPopulations() {
+      populations.data = {
+        series: [{ label: 'Rabbits', values: rabbitHistory }, { label: 'Foxes', values: foxHistory, tone: 'bad' }],
+        xLabel: 'now'
+      };
+    }
+
+    // ---- A household budget ----
+
+    const budget = document.getElementById('budget');
+    const spending = document.getElementById('spending');
+
+    function drawBudget() {
+      const perDay = Number(spending.value);
+      let balance = 400;
+      const balances = [];
+      for (let day = 1; day <= 30; day++) {
+        if (day === 1) balance -= 950;       // rent
+        balance -= perDay;
+        if (day === 30) balance += 2100;     // wages
+        balances.push(balance);
+      }
+      document.getElementById('spending-out').textContent = `£${perDay} a day`;
+      budget.data = {
+        series: [{ label: 'Balance', values: balances }],
+        lines: [{ value: -1000, label: 'Overdraft limit', tone: 'bad' }]
+      };
+    }
+
+    spending.addEventListener('input', drawBudget);
+
+    // ---- Start ----
+
+    for (let i = 0; i < HISTORY; i++) stepPopulations();
+    drawPopulations();
+    setInterval(() => { stepPopulations(); drawPopulations(); }, 60);
+    drawBudget();
+  </script>
+</body>
+</html>

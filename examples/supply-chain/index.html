@@ -199,7 +199,7 @@
       chart.data = {
         series: [{ label: 'Stock', values: model.state.history[n.id] }],
         lines: [
-          { value: n.reorderPoint, label: `Reorder ${n.reorderPoint}` },
+          { value: n.reorderPoint, label: `Reorder ${n.reorderPoint}`, tone: 'warn' },
           { value: n.orderUpTo, label: `Target ${n.orderUpTo}` }
         ],
         yMax: n.capacity

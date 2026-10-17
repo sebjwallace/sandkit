@@ -1,12 +1,13 @@
 // Tests for the tools. Plain assertions, no libraries; run with `node tools/test.mjs`.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SETUP = resolve(fileURLToPath(import.meta.url), '../setup.mjs');
+const COMPONENTS = resolve(fileURLToPath(import.meta.url), '../../components');
 
 function test(name, fn) {
   const sandbox = mkdtempSync(join(tmpdir(), 'sandkit-sandbox-'));
@@ -86,9 +87,16 @@ test('an unknown component is refused before anything is copied', (sandbox) => {
   assert(!existsSync(join(sandbox, 'index.html')), 'nothing copied');
 });
 
-test('an in-progress component is refused, saying why', (sandbox) => {
-  const result = setup(sandbox, 'sb-chart');
-  assert(!result.ok && result.output.includes('still in progress'), 'explains');
+test('an in-progress component (one without a manifest yet) is refused, saying why', (sandbox) => {
+  const inProgress = join(COMPONENTS, 'sb-test-in-progress');
+  mkdirSync(inProgress);
+  writeFileSync(join(inProgress, 'sb-test-in-progress.js'), '');
+  try {
+    const result = setup(sandbox, 'sb-test-in-progress');
+    assert(!result.ok && result.output.includes('still in progress'), 'explains');
+  } finally {
+    rmSync(inProgress, { recursive: true, force: true });
+  }
 });
 
 test('without a folder, it explains how to use it', () => {

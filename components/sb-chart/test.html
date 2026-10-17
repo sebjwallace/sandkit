@@ -61,6 +61,81 @@
       assertEqual(chart.querySelector('.sb-chart__heading').textContent, 'Orders');
     });
 
+    test('draws negative values below zero, with zero marked', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Balance', values: [50, -30] }] };
+      const [[, aboveY], [, belowY]] = pointsOf(chart.querySelector('.sb-chart__series'));
+      const axisY = Number(chart.querySelector('.sb-chart__axis').getAttribute('y1'));
+      assert(aboveY < axisY && belowY > axisY, 'the zero axis sits between the two values');
+      const ticks = [...chart.querySelectorAll('.sb-chart__tick')].map((t) => t.textContent);
+      assert(ticks.includes('0') && ticks.some((t) => Number(t) <= -30), `ticks: ${ticks}`);
+    });
+
+    test('data beyond yMin or yMax widens the range, so no line is cut off', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Balance', values: [-500, -2600] }], yMin: -1700, yMax: 0 };
+      const [, , , height] = chart.querySelector('svg').getAttribute('viewBox').split(' ').map(Number);
+      const ys = chart.querySelector('.sb-chart__series').getAttribute('points').split(' ').map((p) => Number(p.split(',')[1]));
+      assert(Math.max(...ys) <= height && Math.min(...ys) >= 0, `points within the drawing: ${ys}`);
+    });
+
+    test('keeps the axis inside the drawing when every value is below zero', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Balance', values: [-500, -900] }], yMax: -400 };
+      const axisY = Number(chart.querySelector('.sb-chart__axis').getAttribute('y1'));
+      assert(axisY >= 0, `axis at ${axisY}`);
+    });
+
+    test('starts from yMin when given', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Temperature', values: [18, 21] }], yMin: 15, yMax: 25 };
+      const ticks = [...chart.querySelectorAll('.sb-chart__tick')].map((t) => t.textContent);
+      assertEqual(ticks, ['25', '15']);
+    });
+
+    test('marks the latest value of each line', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Stock', values: [5, 9, 7] }] };
+      const point = chart.querySelector('.sb-chart__point');
+      const last = pointsOf(chart.querySelector('.sb-chart__series')).at(-1);
+      assertEqual([Number(point.getAttribute('cx')), Number(point.getAttribute('cy'))], last);
+      assertEqual(point.querySelector('title').textContent, 'Stock: 7');
+    });
+
+    test('names several lines in a legend, with their latest values', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Rabbits', values: [40, 52] }, { label: 'Foxes', values: [9, 7.5] }] };
+      const keys = [...chart.querySelectorAll('.sb-chart__key')].map((k) => k.textContent.replace(/\s+/g, ' ').trim());
+      assertEqual(keys, ['Rabbits 52', 'Foxes 7.5']);
+    });
+
+    test('shows no legend for a single line', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = { series: [{ label: 'Stock', values: [1, 2] }] };
+      assertEqual(chart.querySelector('.sb-chart__legend'), null);
+    });
+
+    test('colours lines by their tone, or in turn when none is given', () => {
+      const chart = mount('<sb-chart></sb-chart>');
+      chart.data = {
+        series: [{ label: 'A', values: [1, 2] }, { label: 'B', values: [2, 1], tone: 'bad' }],
+        lines: [{ value: 1, label: 'Limit', tone: 'warn' }, { value: 2, label: 'Target' }]
+      };
+      const [a, b] = chart.querySelectorAll('.sb-chart__series');
+      assert(a.classList.contains('sb-chart--accent') && b.classList.contains('sb-chart--bad'), 'series tones');
+      const [limit, target] = chart.querySelectorAll('.sb-chart__line');
+      assert(limit.classList.contains('sb-chart--warn') && target.classList.contains('sb-chart--muted'), 'line tones');
+    });
+
+    test('draws at its real width, so text keeps its size', async () => {
+      const chart = mount('<sb-chart style="width: 620px"></sb-chart>');
+      chart.data = { series: [{ label: 'A', values: [1, 2] }] };
+      assertEqual(chart.querySelector('svg').getAttribute('width'), '620');
+      chart.style.width = '300px';
+      await nextFrame();
+      assertEqual(chart.querySelector('svg').getAttribute('width'), '300');
+    });
+
     test('two charts on one page draw their own data', () => {
       mount('<div><sb-chart></sb-chart><sb-chart></sb-chart></div>');
       const [a, b] = document.querySelectorAll('#test-fixture sb-chart');
