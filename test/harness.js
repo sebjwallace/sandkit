@@ -23,9 +23,13 @@
     if (!condition) throw new Error(message);
   }
 
-  // Compares primitives with Object.is, and arrays or objects by their JSON form.
+  // Plain arrays and objects are compared by their contents (as JSON). Everything else, including
+  // DOM elements, must be the very same value: two different elements would otherwise both look like {}.
+  const isPlain = (value) => Array.isArray(value) || Object.getPrototypeOf(value ?? 0) === Object.prototype;
+
   function assertEqual(actual, expected, message) {
-    const same = Object.is(actual, expected) || JSON.stringify(actual) === JSON.stringify(expected);
+    const same = Object.is(actual, expected) ||
+      (isPlain(actual) && isPlain(expected) && JSON.stringify(actual) === JSON.stringify(expected));
     if (!same) throw new Error(`${message ? message + ': ' : ''}expected ${format(expected)}, got ${format(actual)}`);
   }
 
@@ -34,7 +38,7 @@
     throw new Error(message);
   }
 
-  const format = (value) => (typeof value === 'string' ? `"${value}"` : JSON.stringify(value));
+  const format = (value) => (typeof value === 'string' ? `"${value}"` : value instanceof Node ? `<${value.nodeName.toLowerCase()}>` : JSON.stringify(value));
 
   // Puts markup, or an element, into a fresh fixture area and returns the element.
   // The fixture is cleared after each test.

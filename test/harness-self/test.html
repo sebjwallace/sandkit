@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Harness tests</title>
+  <script src="../harness.js"></script>
+</head>
+<body>
+  <script>
+    // The harness checks everything else, so it is checked too.
+
+    test('assertEqual compares arrays and plain objects by their contents', () => {
+      assertEqual([1, [2, 3]], [1, [2, 3]]);
+      assertEqual({ a: 1, b: [2] }, { a: 1, b: [2] });
+      assertThrows(() => assertEqual([1, 2], [1, 3]));
+    });
+
+    test('assertEqual treats two different elements as different, even though both look like {}', () => {
+      const first = document.createElement('div'), second = document.createElement('div');
+      assertEqual(first, first);
+      assertThrows(() => assertEqual(first, second));
+    });
+
+    test('assertEqual compares primitives exactly', () => {
+      assertEqual(NaN, NaN);
+      assertThrows(() => assertEqual(1, '1'));
+      assertThrows(() => assertEqual(null, {}));
+    });
+
+    test('mount returns the element, from markup or as given', () => {
+      assertEqual(mount('<p class="a"></p>').className, 'a');
+      const div = document.createElement('div');
+      assertEqual(mount(div), div);
+    });
+
+    test('waitFor resolves once its condition holds, and fails after its timeout', async () => {
+      let ready = false;
+      setTimeout(() => { ready = true; }, 30);
+      await waitFor(() => ready);
+      let failed = false;
+      try { await waitFor(() => false, { timeout: 50 }); } catch { failed = true; }
+      assert(failed, 'timed out');
+    });
+  </script>
+</body>
+</html>
