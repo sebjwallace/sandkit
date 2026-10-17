@@ -1,4 +1,4 @@
-// Sandkit sb-callout 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-callout 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A block that stands out from the text around it, like a textbook's "Definition" box: for
 // definitions, notes, tips, questions, answers and warnings. Its content is whatever is inside it.
 //
@@ -90,6 +90,7 @@
     // A collapsible callout uses the browser's own disclosure element, so it opens with a click or
     // the keyboard and is announced properly; a plain one is a titled block.
     _build() {
+      if (this._built) return; // a callout moved while the page loads is asked twice
       this._built = true;
       const body = Object.assign(document.createElement('div'), { className: 'sb-callout__body' });
       body.append(...this.childNodes);

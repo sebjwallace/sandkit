@@ -12,6 +12,20 @@
     const title = (el) => el.querySelector('.sb-callout__title').textContent.trim();
     const toneOf = (el) => [...el.classList].find((c) => c.startsWith('sb-callout--'));
 
+    test('a callout moved while the page loads is built once', () => {
+      Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
+      let el;
+      try {
+        el = mount('<sb-callout kind="tip">A tip</sb-callout>');
+        document.body.append(el); // moved by another element, before the page has loaded
+      } finally {
+        delete document.readyState;
+      }
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      assertEqual(el.querySelectorAll('.sb-callout__title').length, 1);
+      el.remove();
+    });
+
     test('wraps its content under a title', () => {
       const el = callout('kind="definition"');
       assertEqual(title(el), 'Definition');

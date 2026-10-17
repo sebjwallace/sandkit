@@ -1,4 +1,4 @@
-// Sandkit sb-shell 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-shell 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The sandbox shell: the header and the settings dialog around a sandbox.
 //
 //   <sb-shell heading="My sandbox" controls="fullscreen settings collapse">
@@ -168,6 +168,7 @@
     // ---- Building ----
 
     _build() {
+      if (this._built) return; // a shell moved while the page loads is asked twice
       this._built = true;
       const { content, actions, sections } = this._takeChildren();
       this._restoreCollapsed();

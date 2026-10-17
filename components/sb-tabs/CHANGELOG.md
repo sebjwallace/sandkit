@@ -1,5 +1,8 @@
 # sb-tabs changelog
 
+## 0.1.2 · 2026-10-17
+- A tab set moved by another element while the page loads is built once, not twice; for example, inside a walkthrough's step.
+
 ## 0.1.1 · 2026-10-17
 - Fixed: a panel chosen with `selected` before the tabs have built themselves is now kept, rather than reset to the first.
 

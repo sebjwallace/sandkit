@@ -33,6 +33,20 @@
 
     // ---- Header ----
 
+    test('a shell moved while the page loads is built once', () => {
+      Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
+      let el;
+      try {
+        el = mount('<sb-shell heading="Moved"><p>Goal</p></sb-shell>');
+        document.body.append(el); // moved by another element, before the page has loaded
+      } finally {
+        delete document.readyState;
+      }
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      assertEqual(el.querySelectorAll('.sb-shell__bar').length, 1);
+      el.remove();
+    });
+
     test('shows the heading and wraps other children as header content', () => {
       const el = shell('<p>The goal</p>');
       assertEqual(el.querySelector('.sb-shell__heading').textContent, 'Test sandbox');

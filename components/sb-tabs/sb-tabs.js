@@ -1,4 +1,4 @@
-// Sandkit sb-tabs 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-tabs 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Tabs over the panels inside it: chapters of a sandbox, views of a model, anything. Each panel is
 // a direct child titled by its `heading`; only the selected one shows. Tab sets only ever look at
 // their own direct children, so they nest freely.
@@ -101,6 +101,7 @@
     // ---- Building ----
 
     _build() {
+      if (this._built) return; // a tab set moved while the page loads is asked twice
       this._built = true;
       this._list = Object.assign(document.createElement('div'), { className: 'sb-tabs__list' });
       this._list.setAttribute('role', 'tablist');

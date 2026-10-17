@@ -26,6 +26,20 @@
 
     // ---- Docked ----
 
+    test('a panel moved while the page loads is built once', () => {
+      Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
+      try {
+        const el = panel();
+        document.body.append(el); // moved by another element, before the page has loaded
+      } finally {
+        delete document.readyState;
+      }
+      const el = document.body.lastElementChild;
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      assertEqual(el.querySelectorAll('.sb-panel__bar').length, 1);
+      el.remove();
+    });
+
     test('wraps its content under a bar with its heading and controls', () => {
       const el = panel();
       assertEqual(el.querySelector('.sb-panel__heading').textContent, 'Rules');

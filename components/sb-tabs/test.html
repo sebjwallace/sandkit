@@ -18,6 +18,20 @@
 
     // ---- Tabs and panels ----
 
+    test('a tab set moved while the page loads is built once', () => {
+      Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
+      let el;
+      try {
+        el = mount('<sb-tabs><section heading="One">1</section><section heading="Two">2</section></sb-tabs>');
+        document.body.append(el); // moved by another element, before the page has loaded
+      } finally {
+        delete document.readyState;
+      }
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      assertEqual(el.querySelectorAll('.sb-tabs__list').length, 1);
+      el.remove();
+    });
+
     test('makes a tab for each panel, titled by its heading', () => {
       assertEqual(tabButtons(tabs()).map((t) => t.textContent.trim()), ['One', 'Two', 'Three']);
     });
