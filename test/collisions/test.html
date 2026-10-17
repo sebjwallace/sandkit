@@ -9,11 +9,12 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-id', 'sb-timeline', 'sb-math', 'sb-matrix', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rules', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings'];
+    window.TAGS = ['sb-id', 'sb-callout', 'sb-timeline', 'sb-math', 'sb-matrix', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rules', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
   <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="../../components/sb-callout/sb-callout.js"></script>
   <script src="../../components/sb-timeline/sb-timeline.js"></script>
   <script src="../../components/sb-math/sb-math.js"></script>
   <script src="../../components/sb-matrix/sb-matrix.js"></script>

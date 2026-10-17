@@ -38,3 +38,4 @@ main { max-width: 1100px; margin: 0 auto; padding: 16px 24px 40px; }
 .vector--j { color: var(--sb-bad); }
 .equation { margin: 0 0 14px; font-size: 16px; }
 #product { display: block; margin: 0 0 14px; }
+.chapter > sb-callout { max-width: 820px; margin: 0; }

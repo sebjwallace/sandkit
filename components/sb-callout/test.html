@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-callout tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-callout.js"></script>
+</head>
+<body>
+  <script>
+    const callout = (attrs, content = '<p class="content">Body text.</p>') => mount(`<sb-callout ${attrs}>${content}</sb-callout>`);
+    const title = (el) => el.querySelector('.sb-callout__title').textContent.trim();
+    const toneOf = (el) => [...el.classList].find((c) => c.startsWith('sb-callout--'));
+
+    test('wraps its content under a title', () => {
+      const el = callout('kind="definition"');
+      assertEqual(title(el), 'Definition');
+      assert(el.querySelector('.sb-callout__body .content'), 'content kept, in the body');
+    });
+
+    test('each kind has its own title, tone and icon', () => {
+      const kinds = { definition: ['Definition', 'accent'], note: ['Note', 'muted'], tip: ['Tip', 'good'], question: ['Question', 'accent'], answer: ['Answer', 'good'], warning: ['Warning', 'warn'] };
+      for (const [kind, [name, tone]] of Object.entries(kinds)) {
+        const el = callout(`kind="${kind}"`);
+        assertEqual([title(el), toneOf(el)], [name, `sb-callout--${tone}`], kind);
+        assert(el.querySelector('.sb-callout__title svg'), `${kind} has an icon`);
+      }
+    });
+
+    test('a heading replaces the title, and a tone the colour', () => {
+      const el = callout('kind="note" heading="Example: two arrows" tone="bad"');
+      assertEqual([title(el), toneOf(el)], ['Example: two arrows', 'sb-callout--bad']);
+    });
+
+    test('an unknown kind looks like a note, titled by its heading', () => {
+      const el = callout('kind="proof" heading="Proof"');
+      assertEqual([el.kind, title(el), toneOf(el)], ['note', 'Proof', 'sb-callout--muted']);
+    });
+
+    test('is announced as a note, named by its title', () => {
+      const el = callout('kind="warning"');
+      assertEqual([el.getAttribute('role'), el.getAttribute('aria-label')], ['note', 'Warning']);
+    });
+
+    test('changing the kind updates the title and tone', () => {
+      const el = callout('kind="question"');
+      el.setAttribute('kind', 'answer');
+      assertEqual([title(el), toneOf(el)], ['Answer', 'sb-callout--good']);
+    });
+
+    // ---- Collapsible ----
+
+    test('a collapsible callout starts closed, and its title opens it', () => {
+      const el = callout('kind="answer" collapsible');
+      const details = el.querySelector('details');
+      assert(details && !details.open && !el.open, 'closed');
+      el.querySelector('summary').click();
+      assert(el.open, 'open after clicking the title');
+      assert(details.querySelector('.content'), 'content inside');
+    });
+
+    test('a collapsible callout can be opened from code', () => {
+      const el = callout('kind="answer" collapsible');
+      el.open = true;
+      assert(el.querySelector('details').open);
+    });
+
+    test('a plain callout is always open', () => {
+      const el = callout('kind="tip"');
+      assertEqual(el.querySelector('details'), null);
+      assert(el.open);
+    });
+
+    // ---- Placement and safety ----
+
+    test('sits inside a list item as well as between paragraphs', () => {
+      const list = mount('<ul><li>First <sb-callout kind="tip"><p>inside</p></sb-callout></li></ul>');
+      assertEqual(getComputedStyle(list.querySelector('sb-callout')).display, 'block');
+    });
+
+    test('shows its heading as text, never as markup', () => {
+      assertEqual(callout('heading="<b>x</b>"').querySelector('.sb-callout__title b'), null);
+    });
+
+    test('titles look the same whether or not the callout is collapsible, whatever the page does to paragraphs', () => {
+      const page = mount('<div><style>#test-fixture p { font-size: 30px; }</style><sb-callout kind="tip"><span>a</span></sb-callout><sb-callout kind="answer" collapsible><span>b</span></sb-callout></div>');
+      const [plain, collapsible] = [...page.querySelectorAll('.sb-callout__title')].map((t) => getComputedStyle(t).fontSize);
+      assertEqual(plain, collapsible);
+    });
+  </script>
+</body>
+</html>

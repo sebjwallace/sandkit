@@ -140,6 +140,15 @@
       const marks = [...page.querySelectorAll('#composition .sb-timeline__mark')].map((m) => m.textContent.trim());
       assertEqual(marks, ['start', 'A', 'A, then B']);
     });
+
+    test('key terms are defined where they first appear, and chapter 1\'s answer starts hidden', async () => {
+      const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
+      await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      const page = frame.contentDocument;
+      const definitions = [...page.querySelectorAll('sb-callout[kind="definition"]')].map((c) => c.getAttribute('heading'));
+      assertEqual(definitions, ['Definition: span', 'Definition: linear transformation', 'Definition: determinant']);
+      assertEqual(page.querySelector('sb-callout[kind="answer"]').open, false);
+    });
   </script>
 </body>
 </html>

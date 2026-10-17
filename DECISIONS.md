@@ -41,6 +41,7 @@ Settled decisions for Sandkit, newest last. One line each, with the reason.
 - **Pointing works through one page-wide event, `sb-highlight`** (`{ ref }`, or `null` when pointing stops), described in the highlighting practice. `sb-id` pills and `sb-math` terms announce and light up; other components keep their own `highlight` properties and the sandbox routes refs to them, so no component listens for things it can't own. A ref names a single thing.
 - **Maths is native MathML,** wrapped by `sb-math`: no library, no fonts, export-safe. Parts marked `data-ref` become pointable.
 - **Bounded progress is `sb-timeline`; unbounded is `sb-controls`.** A timeline has a start and an end to scrub between, plays at a steady pace (`duration` for the whole range), can loop, and names moments with marks. Scrubbing pauses, so the viewer stays in control.
+- **`sb-callout` sets things apart, like a textbook's boxes.** A small fixed set of kinds (definition, note, tip, question, answer, warning), each with its own title, tone and icon, so readers learn what to expect; `heading` and `tone` cover anything else. Collapsible callouts use the native disclosure element, which suits answers: think first, then reveal.
 - **Interaction outranks tone.** A selected or active element shows as such even when it also carries a warning tone.
 
 ## Sandbox shell and theming

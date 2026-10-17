@@ -14,6 +14,7 @@
   <script src="../../components/sb-math/sb-math.js"></script>
   <script src="../../components/sb-id/sb-id.js"></script>
   <script src="../../components/sb-timeline/sb-timeline.js"></script>
+  <script src="../../components/sb-callout/sb-callout.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
@@ -34,6 +35,9 @@
           <sb-plane id="adding" range="5" snap="1" height="420"></sb-plane>
           <div class="explain" id="adding-explain"></div>
         </div>
+        <sb-callout kind="answer" heading="Answer: landing on the origin" collapsible>
+          <p>Drag w until it points exactly the opposite way to v, with the same length. Then w is −v, and walking v and then −v brings you straight back where you started.</p>
+        </sb-callout>
         <p class="onward"><button type="button" class="next">Next: scaling, combinations and span →</button></p>
       </section>
 
@@ -41,6 +45,9 @@
         <h2>Chapter 2 · Scaling, combinations and span</h2>
         <p>Multiplying a vector by a number stretches it. <span class="vector">2·v</span> is twice as long; <span class="vector">½·v</span> is half; <span class="vector">−1·v</span> points the opposite way. The number is called a <em>scalar</em>, because it scales.</p>
         <p>Scale two vectors, then add them, and you have a <em>linear combination</em>: <span class="vector">a·v + b·w</span>. Every choice of <em>a</em> and <em>b</em> reaches some point. All the points you can reach this way are the <em>span</em> of v and w.</p>
+        <sb-callout kind="definition" heading="Definition: span">
+          <p>The span of some vectors is every point you can reach by scaling them and adding them up. Two vectors that point in different directions span the whole plane; two that line up span only a line.</p>
+        </sb-callout>
         <p class="try"><strong>Try:</strong> slide <em>a</em> and <em>b</em> until the tip lands on the red point <span class="vector vector--target">P</span>. Then show the span, and drag <span class="vector vector--w">w</span> until it lines up with <span class="vector vector--v">v</span>. What happens to everywhere you can reach?</p>
 
         <div class="panel stage">
@@ -58,6 +65,9 @@
         <h2>Chapter 3 · Matrices as moving space</h2>
         <p>A matrix is a way of moving the whole of space, and it needs only two pairs of numbers to say how. Its first column is where <sb-id code="î"></sb-id>, the arrow one step right, lands. Its second column is where <sb-id code="ĵ"></sb-id>, the arrow one step up, lands.</p>
         <p>Why is that enough? Every vector is a combination of î and ĵ: <span class="vector">(2, 1)</span> is 2·î + 1·ĵ. Move î and ĵ, keep the same combination, and you know where every vector goes. The grid lines follow, staying straight, parallel and evenly spaced.</p>
+        <sb-callout kind="definition" heading="Definition: linear transformation">
+          <p>A way of moving space that keeps the origin in place and keeps grid lines straight, parallel and evenly spaced. Every one is described by a matrix, whose columns say where î and ĵ land.</p>
+        </sb-callout>
         <p class="try"><strong>Try:</strong> drag the green and red points to choose where î and ĵ land, or type into the matrix. Point at <sb-id code="î"></sb-id> or <sb-id code="ĵ"></sb-id>, at a column, or at an arrow, and watch everything it stands for light up. Then drag the timeline back to the start and play it forward. Can you make a quarter turn? A mirror image?</p>
         <div class="panel stage">
           <sb-plane id="moving" range="3" snap="0.5" height="420"></sb-plane>
@@ -75,6 +85,9 @@
         <h2>Chapter 4 · Determinants</h2>
         <p>A matrix stretches some areas and squashes others, but it scales every area by the same amount. That amount is the <em>determinant</em>. Watch the unit square: it starts with area 1, so whatever area it ends up with is the determinant.</p>
         <p>A negative determinant means space has been flipped over, like a page turned face down: ĵ ends up clockwise from î instead of anticlockwise. A determinant of zero means space has been squashed flat, onto a line or even a single point.</p>
+        <sb-callout kind="definition" heading="Definition: determinant">
+          <p>The factor by which a transformation scales every area. For the matrix with entries <em>a</em>, <em>b</em> in the top row and <em>c</em>, <em>d</em> in the bottom, it is <em>a·d − b·c</em>. Negative means space is flipped over; zero means it is squashed flat.</p>
+        </sb-callout>
         <p class="try"><strong>Try:</strong> drag where î and ĵ land. Can you make the square twice as big? Flip it over? Squash it flat? Point at the two halves of the formula to see which entries of the matrix each one uses.</p>
         <div class="panel stage">
           <sb-plane id="stretching" range="3" snap="0.5" height="420"></sb-plane>
