@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-modal tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-modal.js"></script>
+  <script src="sb-modal.js"></script>
+</head>
+<body>
+  <script>
+    const modal = (attrs = '', content = '<p class="content">Body text.</p>') => mount(`<sb-modal ${attrs}>${content}</sb-modal>`);
+    const dialogOf = (el) => el.querySelector('.sb-modal__dialog');
+    const isModal = (el) => dialogOf(el).matches(':modal');
+    const closings = (el) => {
+      const reasons = [];
+      el.addEventListener('sb-close', (e) => reasons.push(e.detail.reason));
+      return reasons;
+    };
+    const press = (target, release = target) => {
+      target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      release.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    };
+
+    test('a modal moved while the page loads is built once', () => {
+      Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
+      let el;
+      try {
+        el = mount('<sb-modal heading="Hi">Body</sb-modal>');
+        document.body.append(el); // moved by another element, before the page has loaded
+      } finally {
+        delete document.readyState;
+      }
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      assertEqual(el.querySelectorAll('dialog').length, 1);
+      el.remove();
+    });
+
+    // ---- Content ----
+
+    test('puts its content in the body and its actions in the footer', () => {
+      const el = modal('heading="Why?"', '<p class="content">Because.</p><button slot="actions">OK</button>');
+      assert(el.querySelector('.sb-modal__body .content'), 'content in the body');
+      assert(el.querySelector('.sb-modal__actions button'), 'action in the footer');
+      assertEqual(el.querySelector('.sb-modal__title').textContent, 'Why?');
+    });
+
+    test('is named by its heading', () => {
+      const el = modal('heading="Stock-out"');
+      const title = el.querySelector('.sb-modal__title');
+      assertEqual(dialogOf(el).getAttribute('aria-labelledby'), title.id);
+      el.setAttribute('heading', 'Restocked');
+      assertEqual(title.textContent, 'Restocked');
+    });
+
+    test('without a heading, shows no title', () => {
+      const el = modal();
+      assert(el.querySelector('.sb-modal__title').hidden, 'title hidden');
+      assertEqual(dialogOf(el).getAttribute('aria-labelledby'), null);
+    });
+
+    test('shows its heading as text, never as markup', () => {
+      assertEqual(modal('heading="<b>x</b>"').querySelector('.sb-modal__title b'), null);
+    });
+
+    // ---- Opening and closing from code ----
+
+    test('starts closed', () => {
+      const el = modal();
+      assert(!el.open && !dialogOf(el).open, 'closed');
+    });
+
+    test('show() opens it over the page, and close() closes it', () => {
+      const el = modal();
+      el.show();
+      assert(el.open && isModal(el), 'open and modal');
+      el.close();
+      assert(!el.open && !dialogOf(el).open, 'closed');
+    });
+
+    test('the open attribute and property open it too', () => {
+      const el = modal('open');
+      assert(isModal(el), 'open from markup');
+      el.open = false;
+      assert(!el.hasAttribute('open') && !dialogOf(el).open, 'closed by the property');
+      el.open = true;
+      assert(isModal(el), 'opened by the property');
+      el.close();
+    });
+
+    test('opening and closing from code fires no event', () => {
+      const el = modal();
+      const reasons = closings(el);
+      el.show();
+      el.close();
+      assertEqual(reasons, []);
+    });
+
+    test('taken out of the page and put back while open, it is a modal again', () => {
+      const el = modal('open');
+      const holder = el.parentElement;
+      el.remove();
+      holder.append(el);
+      assert(isModal(el), 'modal again');
+      el.close();
+    });
+
+    // ---- Closing by the viewer ----
+
+    test('the close button closes it and says so', () => {
+      const el = modal('open');
+      const reasons = closings(el);
+      el.querySelector('.sb-modal__close').click();
+      assert(!el.open && !dialogOf(el).open, 'closed');
+      assertEqual(reasons, ['close']);
+    });
+
+    test('an action marked data-close closes it, giving its value as the reason', () => {
+      const el = modal('open', '<button slot="actions" data-close="replay">Replay</button><button slot="actions" data-close>Done</button>');
+      const reasons = closings(el);
+      el.querySelector('[data-close="replay"]').click();
+      el.show();
+      el.querySelector('.sb-modal__actions [data-close=""]').click();
+      assertEqual(reasons, ['replay', 'close']);
+    });
+
+    test('Escape closes it and says so', () => {
+      const el = modal('open');
+      const reasons = closings(el);
+      dialogOf(el).dispatchEvent(new Event('cancel', { cancelable: true }));
+      assert(!el.open && !dialogOf(el).open, 'closed');
+      assertEqual(reasons, ['escape']);
+    });
+
+    test('a click on the backdrop closes it and says so', () => {
+      const el = modal('open');
+      const reasons = closings(el);
+      press(dialogOf(el));
+      assert(!el.open, 'closed');
+      assertEqual(reasons, ['backdrop']);
+    });
+
+    test('clicks inside it leave it open, even one that ends on the backdrop', () => {
+      const el = modal('open');
+      const reasons = closings(el);
+      press(el.querySelector('.content'));
+      press(el.querySelector('.content'), dialogOf(el)); // selecting text, letting go outside
+      assert(el.open && isModal(el), 'still open');
+      assertEqual(reasons, []);
+      el.close();
+    });
+
+    // ---- Several on a page ----
+
+    test('two modals open and close independently', () => {
+      const pair = mount('<div><sb-modal heading="One">A</sb-modal><sb-modal heading="Two">B</sb-modal></div>');
+      const [one, two] = pair.querySelectorAll('sb-modal');
+      const reasons = closings(pair);
+      one.show();
+      assert(one.open && !two.open, 'only the first open');
+      one.querySelector('.sb-modal__close').click();
+      two.show();
+      assert(!one.open && two.open, 'only the second open');
+      assertEqual(reasons, ['close']);
+      const ids = [...pair.querySelectorAll('.sb-modal__title')].map((t) => t.id);
+      assert(ids[0] !== ids[1], 'title ids are unique');
+      two.close();
+    });
+  </script>
+</body>
+</html>
