@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-panel tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-panel.js"></script>
+</head>
+<body>
+  <script>
+    function panel(attrs = '', content = '<p class="content">Inside</p>') {
+      return mount(`<div style="width: 500px"><sb-panel heading="Rules" ${attrs}>${content}</sb-panel><p class="after">After</p></div>`).querySelector('sb-panel');
+    }
+
+    const press = (el, action) => el.querySelector(`[data-action="${action}"]`).click();
+    const placeholderOf = (el) => el.previousElementSibling?.classList.contains('sb-panel__placeholder') ? el.previousElementSibling : null;
+
+    function drag(el, dx, dy) {
+      const bar = el.querySelector('.sb-panel__heading');
+      const rect = bar.getBoundingClientRect();
+      const at = (x, y) => ({ bubbles: true, clientX: x, clientY: y });
+      bar.dispatchEvent(new PointerEvent('pointerdown', at(rect.left + 5, rect.top + 5)));
+      window.dispatchEvent(new PointerEvent('pointermove', at(rect.left + 5 + dx, rect.top + 5 + dy)));
+      window.dispatchEvent(new PointerEvent('pointerup', at(rect.left + 5 + dx, rect.top + 5 + dy)));
+    }
+
+    // ---- Docked ----
+
+    test('wraps its content under a bar with its heading and controls', () => {
+      const el = panel();
+      assertEqual(el.querySelector('.sb-panel__heading').textContent, 'Rules');
+      assert(el.querySelector('.sb-panel__body .content'), 'content moved into the body');
+      assert(el.querySelector('[data-action="collapse"]') && el.querySelector('[data-action="float"]'), 'controls');
+    });
+
+    test('collapsing hides the content, and expanding shows it again', () => {
+      const el = panel();
+      press(el, 'collapse');
+      assert(el.collapsed && el.querySelector('.sb-panel__body').offsetHeight === 0, 'hidden');
+      assertEqual(el.querySelector('[data-action="collapse"]').getAttribute('aria-expanded'), 'false');
+      press(el, 'collapse');
+      assert(!el.collapsed && el.querySelector('.sb-panel__body').offsetHeight > 0, 'shown');
+    });
+
+    test('a collapsed panel shrinks to its bar, even in a layout that stretches it', () => {
+      const grid = mount('<div style="display: grid; grid-template-rows: 300px"><sb-panel heading="Notes">notes</sb-panel></div>');
+      const el = grid.querySelector('sb-panel');
+      el.toggleCollapsed();
+      assert(el.offsetHeight < 60, `collapsed to ${el.offsetHeight}px`);
+    });
+
+    // ---- Floating ----
+
+    test('popping out floats it where it was, and leaves a placeholder so nothing moves', () => {
+      const el = panel();
+      const before = el.getBoundingClientRect();
+      const afterTop = el.parentElement.querySelector('.after').getBoundingClientRect().top;
+      press(el, 'float');
+      assert(el.floating, 'floating');
+      assertEqual(getComputedStyle(el).position, 'fixed');
+      const now = el.getBoundingClientRect();
+      assertEqual([Math.round(now.left), Math.round(now.top), Math.round(now.width)], [Math.round(before.left), Math.round(before.top), Math.round(before.width)]);
+      assertEqual(Math.round(placeholderOf(el).getBoundingClientRect().height), Math.round(before.height));
+      assertEqual(el.parentElement.querySelector('.after').getBoundingClientRect().top, afterTop, 'the content after it stays put');
+    });
+
+    test('docking returns it to its place and removes the placeholder', () => {
+      const el = panel();
+      press(el, 'float');
+      press(el, 'float');
+      assert(!el.floating && !placeholderOf(el), 'docked');
+      assertEqual(getComputedStyle(el).position, 'static');
+      assertEqual(el.style.left, '');
+    });
+
+    test('the placeholder\'s "Dock here" docks it too', () => {
+      const el = panel();
+      el.popOut();
+      placeholderOf(el).querySelector('button').click();
+      assert(!el.floating);
+    });
+
+    test('dragging the bar moves a floating panel', () => {
+      const el = panel();
+      el.popOut({ left: 100, top: 100 });
+      drag(el, 40, 30);
+      assertEqual([el.offsetLeft, el.offsetTop], [140, 130]);
+    });
+
+    test('a floating panel can\'t be dragged out of reach', () => {
+      const el = panel();
+      el.popOut({ left: 100, top: 100 });
+      drag(el, 0, -500);
+      assert(el.offsetTop >= 0, 'its bar stays on screen');
+    });
+
+    test('touching a floating panel brings it in front of other floating panels', () => {
+      mount('<div><sb-panel heading="A">a</sb-panel><sb-panel heading="B">b</sb-panel></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-panel');
+      a.popOut();
+      b.popOut();
+      a.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      assert(Number(a.style.zIndex) > Number(b.style.zIndex), 'A in front');
+    });
+
+    test('a floating panel can collapse to its bar', () => {
+      const el = panel();
+      el.popOut({ left: 50, top: 50, width: 300, height: 300 });
+      press(el, 'collapse');
+      assert(el.offsetHeight < 100, `collapsed to ${el.offsetHeight}px`);
+    });
+
+    test('fires sb-layout when floated, docked or collapsed', () => {
+      const el = panel();
+      const events = recordEvents(el, 'sb-layout');
+      el.popOut();
+      el.toggleCollapsed();
+      el.dock();
+      assertEqual(events.map((e) => e.detail), [
+        { floating: true, collapsed: false }, { floating: true, collapsed: true }, { floating: false, collapsed: true }
+      ]);
+    });
+
+    // ---- Remembering ----
+
+    test('a panel with an id remembers how the viewer left it', () => {
+      localStorage.removeItem('sb-panel:remembered');
+      const first = panel('id="remembered"');
+      first.popOut({ left: 120, top: 80, width: 260, height: 200 });
+      first.toggleCollapsed();
+      const again = panel('id="remembered"');
+      assert(again.floating && again.collapsed, 'floating and collapsed again');
+      assertEqual([again.offsetLeft, again.offsetTop, again.offsetWidth], [120, 80, 260]);
+      localStorage.removeItem('sb-panel:remembered');
+    });
+
+    test('a panel without an id remembers nothing', () => {
+      const before = localStorage.length;
+      panel().popOut();
+      assertEqual(localStorage.length, before);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two panels on one page float independently', () => {
+      mount('<div><sb-panel heading="A">a</sb-panel><sb-panel heading="B">b</sb-panel></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-panel');
+      a.popOut();
+      assertEqual([a.floating, b.floating], [true, false]);
+    });
+
+    test('shows the heading as text, never as markup', () => {
+      const el = panel('heading="<b>bold</b>"');
+      assertEqual(el.querySelector('.sb-panel__bar b'), null);
+    });
+  </script>
+</body>
+</html>

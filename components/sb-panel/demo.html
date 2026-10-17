@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-panel demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-panel.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 1100px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example .note { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .workspace { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+    .workspace sb-panel:first-child { grid-row: span 2; }
+    .workspace canvas { display: block; width: 100%; aspect-ratio: 16 / 10; border-radius: 6px; background: var(--sb-surface-2); }
+    .workspace table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .workspace td, .workspace th { padding: 4px 6px; text-align: left; border-bottom: 1px solid var(--sb-surface-2); }
+    .workspace textarea { width: 100%; min-height: 90px; box-sizing: border-box; font: inherit; font-size: 13px; padding: 6px; border: 1px solid var(--sb-border); border-radius: 6px; background: var(--sb-bg); color: var(--sb-text); resize: vertical; }
+    .reading { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+    .reading article p { margin: 0 0 10px; font-size: 15px; }
+    .reading dl { margin: 0; font-size: 13px; }
+    .reading dt { font-weight: 600; }
+    .reading dd { margin: 0 0 8px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-panel">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Let viewers arrange a sandbox their own way, and put it back with one click.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>A sandbox's layout is a good starting point, but exploring is personal: one person wants the rules beside the model, another wants the log large and the explanation out of the way. <code>sb-panel</code> lets viewers rearrange a sandbox as they work. Pop a panel out and it floats as a window that can be dragged, resized, collapsed or made full screen; dock it and it returns to the place the sandbox gave it. While it floats, a placeholder holds its place, so nothing else on the page moves.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Keeping something in view.</strong> Float the rules, the log or a chart beside whatever part of the sandbox you're exploring.</li>
+        <li><strong>Focusing.</strong> Make one panel full screen to study it, or collapse the ones you're not using.</li>
+        <li><strong>Comparing.</strong> Pull two panels side by side, even when the sandbox put them far apart.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Content that only makes sense in place,</strong> such as a paragraph that introduces the figure below it. Leave it unwrapped.</li>
+        <li><strong>Phones.</strong> Floating windows need room. This is designed for desktop and tablet screens.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-panel/sb-panel.js"&gt;&lt;/script&gt;
+
+&lt;sb-panel id="notes" heading="Notes"&gt;
+  …anything: text, a table, a canvas, another component…
+&lt;/sb-panel&gt;</pre>
+      <p>With an <code>id</code>, each viewer's arrangement is remembered when they come back.</p>
+
+      <h3>Making it reveal, not just rearrange</h3>
+      <ul>
+        <li><strong>Wrap the parts people will want beside each other,</strong> such as the rules and the model, or the log and the diagram.</li>
+        <li><strong>Choose clear headings.</strong> A floating panel is known only by its title.</li>
+        <li><strong>Lay the page out well first.</strong> Docked is how most people will see it; floating is for when they need something different.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A workspace</h2>
+      <p class="note">Three panels, laid out as a sandbox might be. Pop them out, drag them around, resize from the corner, collapse or go full screen, then dock them back. Reload the page: your arrangement is remembered.</p>
+      <div class="workspace">
+        <sb-panel id="demo-model" heading="Model">
+          <canvas id="swarm" width="640" height="400"></canvas>
+        </sb-panel>
+        <sb-panel id="demo-rules" heading="Rules">
+          <table>
+            <tr><th>Rule</th><th>Each bird…</th></tr>
+            <tr><td>Separate</td><td>steers away from birds too close</td></tr>
+            <tr><td>Align</td><td>matches its neighbours' heading</td></tr>
+            <tr><td>Cohere</td><td>moves towards its neighbours' centre</td></tr>
+          </table>
+        </sb-panel>
+        <sb-panel id="demo-notes" heading="Notes">
+          <textarea aria-label="Notes">Three simple rules, and a flock emerges.</textarea>
+        </sb-panel>
+      </div>
+    </section>
+
+    <section class="example">
+      <h2>Reading with a glossary</h2>
+      <p class="note">A long explanation with a glossary beside it. Pop the glossary out and drag it next to the paragraph you're reading.</p>
+      <div class="reading">
+        <article>
+          <p>A flock of starlings turning as one looks choreographed, yet no bird is in charge. Each follows a few local rules, reacting only to its nearest neighbours. Order at the scale of the flock emerges from interactions at the scale of the bird.</p>
+          <p>This is emergence: behaviour of the whole that no part intends. Ant trails, traffic jams and market prices arise the same way. None is designed; each is the sum of many small decisions made with local information.</p>
+          <p>Models of emergence are often agent-based: they simulate each individual and let the pattern appear. Their power is that the rules are simple enough to state in a sentence, and the results rich enough to surprise the person who wrote them.</p>
+          <p>That surprise is the point. A model that only confirms what its author expected teaches little. One that produces something nobody anticipated invites the best question a sandbox can raise: why did that happen?</p>
+        </article>
+        <sb-panel id="demo-glossary" heading="Glossary">
+          <dl>
+            <dt>Emergence</dt><dd>Behaviour of a whole that none of its parts intends.</dd>
+            <dt>Agent-based model</dt><dd>A simulation of many individuals, each following its own rules.</dd>
+            <dt>Local information</dt><dd>What an individual can sense from where it is, such as its nearest neighbours.</dd>
+          </dl>
+        </sb-panel>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // A small flock (boids), so the Model panel has something alive to rearrange around.
+    const canvas = document.getElementById('swarm');
+    const context = canvas.getContext('2d');
+    const birds = Array.from({ length: 60 }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      vx: Math.random() * 2 - 1, vy: Math.random() * 2 - 1
+    }));
+
+    function stepFlock() {
+      for (const b of birds) {
+        let ax = 0, ay = 0, cx = 0, cy = 0, sx = 0, sy = 0, n = 0;
+        for (const o of birds) {
+          const dx = o.x - b.x, dy = o.y - b.y, d = Math.hypot(dx, dy);
+          if (o === b || d > 60) continue;
+          n++; ax += o.vx; ay += o.vy; cx += dx; cy += dy;
+          if (d < 18) { sx -= dx / d; sy -= dy / d; }
+        }
+        if (n) { b.vx += (ax / n - b.vx) * 0.05 + cx / n * 0.002 + sx * 0.08; b.vy += (ay / n - b.vy) * 0.05 + cy / n * 0.002 + sy * 0.08; }
+        const speed = Math.hypot(b.vx, b.vy) || 1;
+        b.vx = b.vx / speed * 2; b.vy = b.vy / speed * 2;
+        b.x = (b.x + b.vx + canvas.width) % canvas.width;
+        b.y = (b.y + b.vy + canvas.height) % canvas.height;
+      }
+    }
+
+    function drawFlock() {
+      const style = getComputedStyle(document.documentElement);
+      context.fillStyle = style.getPropertyValue('--sb-surface-2');
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = style.getPropertyValue('--sb-accent');
+      for (const b of birds) {
+        const angle = Math.atan2(b.vy, b.vx);
+        context.beginPath();
+        context.moveTo(b.x + Math.cos(angle) * 7, b.y + Math.sin(angle) * 7);
+        context.lineTo(b.x + Math.cos(angle + 2.5) * 5, b.y + Math.sin(angle + 2.5) * 5);
+        context.lineTo(b.x + Math.cos(angle - 2.5) * 5, b.y + Math.sin(angle - 2.5) * 5);
+        context.fill();
+      }
+    }
+
+    setInterval(() => { stepFlock(); drawFlock(); }, 33);
+  </script>
+</body>
+</html>
