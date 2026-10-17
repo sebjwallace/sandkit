@@ -75,7 +75,7 @@
       addStyle();
       this.classList.add('sb-id');
       this.render();
-      whenParsed(() => this.refresh());
+      whenParsed(() => this._resolveOnArrival());
     }
 
     attributeChangedCallback() {
@@ -98,6 +98,13 @@
       this.dispatchEvent(new CustomEvent('sb-resolve', { bubbles: true, detail: request }));
       this._definition = request.definition;
       this.classList.toggle('sb-id--unresolved', !this._definition);
+    }
+
+    // A sandbox often shows a code in the same moment it defines it, so an unresolved pill asks
+    // once more on the next frame before settling as unresolved.
+    _resolveOnArrival() {
+      this.refresh();
+      if (!this._definition) requestAnimationFrame(() => this.refresh());
     }
 
     // ---- Rendering ----

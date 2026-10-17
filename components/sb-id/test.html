@@ -129,6 +129,14 @@
       const p = mount('<p>Rule<sb-id code="RUL-001"></sb-id>.</p>');
       assertEqual(p.textContent, 'RuleRUL-001.');
     });
+
+    test('a code defined just after its pill appears still resolves', async () => {
+      const el = mount('<sb-id code="LATE-1"></sb-id>');
+      DEFINITIONS['LATE-1'] = { title: 'Defined a moment later' };
+      await nextFrame();
+      assertEqual(el.definition?.title, 'Defined a moment later');
+      assert(!el.classList.contains('sb-id--unresolved'));
+    });
   </script>
 </body>
 </html>

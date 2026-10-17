@@ -25,7 +25,9 @@ Use this component through the interface below. You don't need to read its sourc
 
 The pill keeps no list of definitions. It asks the sandbox by firing `sb-resolve`, which bubbles from the pill. The sandbox answers by setting `e.detail.definition`. One listener on `document` can answer for every pill.
 
-A pill asks once the page has loaded (so the listener can be added anywhere), again on hover or focus, and whenever `refresh()` is called. If nothing answers, the pill is marked unresolved.
+A pill asks once the page has loaded (so the listener can be added anywhere), again on hover or focus, and whenever `refresh()` is called. If nothing answers, it asks once more on the next frame, then is marked unresolved.
+
+**Define codes before showing them.** When a sandbox creates codes while it runs (for example, rules a person writes), register the definition before adding the pill, or call the pill's `refresh()` afterwards.
 
 | Definition field | Meaning |
 |---|---|

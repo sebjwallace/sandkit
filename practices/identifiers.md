@@ -19,6 +19,7 @@ Use `PREFIX-NUMBER`: a short uppercase prefix for the type of thing, a hyphen, a
 - **One prefix per type.** Choose prefixes that read naturally in the domain. Keep them to two to four letters.
 - **Numbers are padded where order helps** (`RUL-001`), or short where there are only a few (`DC-1`). Pick one style per prefix and keep to it.
 - **A letter suffix is fine for small, named sets** (`SUP-A`, `ST-N`) when the letters carry meaning.
+- **Families of the same type get a prefix each.** When a sandbox has several sets of the same kind of thing, such as seven machines each with their own rules, give each set its own prefix (`INC-4`, `PAL-10`) rather than sharing one (`RUL-`). The prefix then says which set a code belongs to.
 
 Example prefixes for different kinds of sandbox:
 
@@ -36,6 +37,15 @@ Example prefixes for different kinds of sandbox:
 - **Names can change; codes don't.** Show both where there is room: "Store North (`ST-N`)". The name is for reading, the code is for referring.
 - **Don't encode meaning that may change.** `ST-N` is fine while stores are named by region; avoid codes like `ST-BUSY` that describe a state.
 - **Issue codes for what people will discuss.** Rules, entities, claims and sources usually deserve codes. Momentary things, such as each individual step of a simulation, usually don't.
+
+## Codes created while the sandbox runs
+
+Some codes are issued by the sandbox itself, for example when a person writes their own rule.
+
+- **Give them their own prefix,** so they are never confused with codes the model ships with (`YOU-1`, `YOU-2`).
+- **Issue them from a counter that only goes up.** A deleted rule's code is retired, never reused, as for any other code.
+- **Register the definition before showing the code.** A pill asks what its code means as soon as it appears, so the model must already know. If it can't, show the pill and then call its `refresh()`.
+- **Decide whether they last.** If people's own rules should survive a reload, save them with the counter; otherwise they belong to the visit.
 
 ## Where codes appear
 

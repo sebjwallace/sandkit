@@ -1,8 +1,24 @@
 # Building a sandbox
 
-The end-to-end guide for an agent asked to build a domain sandbox with Sandkit. Read this first, then the [catalog](../CATALOG.md), then only the practices and manifests you need.
+The guide for an agent asked to build a domain sandbox with Sandkit. Read this first, then the [catalog](../CATALOG.md), then only the practices and manifests you need.
 
 A domain sandbox is a small, self-contained application that houses an interactive, executable model of a subject, along with everything needed to explore it. It is plain HTML, CSS and JavaScript that opens in any browser, with nothing to install and no build step.
+
+## Work in iterations
+
+A sandbox grows in small iterations, steered by the person exploring it. **Never build the whole sandbox at once.** Until the person has tried something, you don't know what they want from it, and everything built beyond their first look is a guess that may be thrown away.
+
+- **Iteration 1 is the model plus chapter 1, rough.** Working and honest, not polished. Plan the chapters after it, one line each, but don't build them.
+- **Hand over after every iteration,** and build the next one only after the person has seen it and said where to go.
+- **Polish only what has survived feedback.** Effort goes where the person's attention is.
+
+What each iteration needs to reach:
+
+| | The bar |
+|---|---|
+| **Iteration 1** | The model behaves correctly. Chapter 1's "Try" works. The layout doesn't break at phone width. Visual roughness is fine: a simple layout beats a hand-tuned one. |
+| **Later iterations** | The new chapter or change works to the same bar. Polish the parts the person has engaged with and said matter. |
+| **Always** | Cosmetic issues in parts nobody has looked at yet are noted as known rough edges in the handover, not fixed. |
 
 ## 1. Understand the request
 
@@ -12,6 +28,8 @@ Before building anything, be clear on:
 - **The goal.** What should someone understand, decide or discover by the end? If the request doesn't say, ask. The goal shapes everything else.
 - **The kind of sandbox.** For intuition (a believable feel for how something works), for decisions (grounded in sources people can check), or for exploring possibilities (pushing beyond what is known, clearly marked as such).
 - **The sources.** What material is the model to be built from? Documents, data, articles, or the person's own knowledge. A sandbox is only as good as what is behind it.
+
+Then sketch the chapters: one line each, starting with the most fundamental idea. You'll present this plan with iteration 1, so the person can reorder, cut or redirect it before anything more is built.
 
 ## 2. Set up the folder
 
@@ -52,40 +70,91 @@ Components from other libraries work the same way: copy them into `lib/<library-
 
 Put the goal in the header of `index.html`, where everyone sees it, people and agents alike. One or two sentences: what this sandbox helps people understand or discover.
 
-## 4. Build the model first
+## 4. Build the model
 
-The model in `model.js` is the heart of the sandbox: the subject captured as code that runs. Build it before the interface, and keep it free of UI.
+The model in `model.js` is the heart of the sandbox: the subject captured as code that runs. Build it before any interface, and keep it free of UI.
 
-- **Start small.** The fewest moving parts that show the first idea. Add more as chapters need them.
+- **Start small.** The fewest moving parts that show chapter 1's idea. Add more as later chapters need them.
 - **Give it a small, clear interface,** like the template's: `state`, `step()`, `reset()`, `setOption()`. The page reads state and calls these; it never reaches inside.
+- **Make it a factory when the sandbox needs several.** One machine, market or organism per chapter is common. Keep the specifications (data) apart from the engine (code), so a new instance is just a new specification.
 - **Issue codes** for the rules and entities people will discuss, following the [identifiers practice](identifiers.md), and keep them in the model as data.
 - **Make runs reproducible.** If the model uses randomness, seed it, so a reset replays the same run.
 
-## 5. Build the surface, a chapter at a time
+**Add model tests when they become worth it, not before.** A young model doesn't need them: it is small, and the person exploring it will notice when it's wrong. Add tests once the model has grown enough that a change could quietly break earlier behaviour, when a bug has come back, or when the person asks. Then anchor the settled rules and known results (a machine halts after 107 steps; a store reorders below its reorder point) with plain assertions, no library, in `model.test.js`:
 
-Organise the sandbox into chapters, each introducing one idea, much as a well-designed game introduces one mechanic before the next. Each chapter has a short explanation, something to try, and the interactive model.
+```js
+// Model tests: plain assertions that keep the model anchored. No libraries.
+// Run with `node model.test.js`, or load this after model.js in a page and read the console.
+const { createModel } = typeof require === 'function' ? require('./model.js') : window;
+
+function test(name, fn) {
+  try { fn(); console.log(`✓ ${name}`); }
+  catch (err) { console.log(`✗ ${name}: ${err.message}`); if (typeof process !== 'undefined') process.exitCode = 1; }
+}
+
+const assert = (condition, message) => { if (!condition) throw new Error(message); };
+
+test('each step moves time on by one', () => {
+  const model = createModel();
+  model.step();
+  assert(model.state.time === 1, 'one step later');
+});
+```
+
+Run them after changing the model. They are the cheapest tests there are; keep them that simple.
+
+## 5. Build chapter 1's surface
+
+Each chapter introduces one idea, much as a well-designed game introduces one mechanic before the next. It has a short explanation, something to try, and the interactive model.
 
 - **Reveal, don't merely display.** Show why things happen: highlight the rule that fired, the stock that ran out, the cause behind the effect.
 - **Choose components from the catalog,** and combine them in the page. Each manifest's "Works well with" section suggests pairings and how to wire them. Components never go inside one another unless a component offers a slot for exactly that.
 - **Write what the sandbox needs itself** in the page or in `model.js`. Not everything needs a component.
+- **Move reused parts out of the page.** When a piece of the surface is used by more than one chapter, make it the sandbox's own component in `components/`, with a short manifest like Sandkit's.
 - **Make it two-way.** Let people change things (parameters, scenarios, controls) and see the model respond.
 
 ## 6. Keep the page script in order
 
 Declare everything first (state, functions, wiring), then start the sandbox in one marked section at the end. Nothing runs before it exists. The template is laid out this way.
 
-## 7. Check it works
+## 7. Check only what needs checking
 
-Open `index.html` in a browser, or a headless one, and check:
+A sandbox aims to be built with as little testing as possible. Testing is overhead, and the person exploring the sandbox is the best check there is: they will find what is wrong, and that is part of the loop.
 
-- Every part renders, and the console shows no errors.
-- Every code resolves (no dashed `sb-id` pills, if you use them).
-- The first chapter's "Try" actually shows what it promises.
+- **If the model has tests** (step 4), run them after changing it.
+- **Don't write automated tests for the interface.** Driving the page in a browser is expensive, and depends on tools the agent may not have. Add such tests only if the person asks, or if something truly can't be trusted without them, and say why.
+- **Check the interface by hand only when it's really needed,** for example after a risky change. Many iterations need no checking at all.
+- **Make no assumptions about the environment.** You may have no browser, no automation and no Node, or different ones from what Sandkit uses. If you can't check something, say so in the handover, and ask the person to try it.
+- **Screenshots are expensive.** If you take any, take few, and only of what you need to see.
 
 ## 8. Hand it over
 
-Tell the person how to open it, what to try first, and what is still uncertain or assumed. Then keep going: they will explore, question and correct it, and you refine it. That loop is the point.
+End every iteration with a short handover:
+
+```
+Open:           how to open the sandbox
+Try first:      the one thing to do first
+What it shows:  one line per chapter built
+Checked:        what was checked, if anything, or what the person should look at
+Assumed:        what is simplified or rests on assumptions
+Rough edges:    known issues left for later
+Next:           2–4 named directions, each with what it adds and what it costs
+```
+
+For example, for a Turing machine sandbox:
+
+> **A. Universality.** One machine runs another machine's rules from its tape. Big conceptual payoff; needs a tape encoding and a larger machine.
+> **B. Programming.** More challenges to solve by writing rules. Cheap; deepens chapter 2.
+> **C. Halting.** More machines whose halting people predict, and a step budget. Cheap.
+
+Then wait for the person to try it and choose.
+
+## Next iterations
+
+When the person responds, record the direction they chose, and the chapter plan as it now stands, in the **Roadmap** section of the sandbox's `AGENTS.md`, so the next session, person or agent, can pick it up. Then build that one iteration, to the bar above, and hand over again.
+
+That loop, explore, question, correct, extend, is the point of a sandbox.
 
 ## Updating Sandkit in a sandbox
 
-Re-copy the files listed in `lib/sandkit/SOURCE.md` from the latest Sandkit, keeping their paths, update `SOURCE.md`, and check the sandbox still works. Each sandbox carries its own copy, so nothing changes under it until someone chooses to update.
+Re-copy the files listed in `lib/sandkit/SOURCE.md` from the latest Sandkit, keeping their paths, update `SOURCE.md`, and open the sandbox to see it still works. Each sandbox carries its own copy, so nothing changes under it until someone chooses to update.

@@ -27,7 +27,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 
 ## In progress
 
-Working, and used by the supply chain example, but without a manifest or demo yet. Not ready for new sandboxes.
+Working, and used by the supply chain example, but without a manifest or demo yet, and their interfaces will change. If a sandbox needs one now, eject it into the sandbox's own `components/` and treat it as the sandbox's own code.
 
 | Component | What it does |
 |---|---|

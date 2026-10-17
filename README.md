@@ -48,7 +48,8 @@ You don't need to be a programmer to build a sandbox. You need curiosity about a
 2. **Make a new folder** for your sandbox, and open the assistant there.
 3. **Ask for the sandbox you want,** and point it to Sandkit:
    > Using Sandkit (https://github.com/sebjwallace/sandkit), build me a sandbox to explore how a city's water supply works, from reservoir to tap.
-4. **Open `index.html`** in your web browser when it is ready. Play with it, and keep talking to the assistant: ask why something happens, say where it seems wrong, ask for the next chapter.
+4. **Open `index.html`** in your web browser when it is ready. The first version is deliberately small: the model and a first chapter, with a few suggestions for where it could go next.
+5. **Steer it from there.** Play with it, and keep talking to the assistant: ask why something happens, say where it seems wrong, choose what to explore next. The sandbox grows one step at a time, in the direction your understanding takes it.
 
 Some starting points, to show the range:
 

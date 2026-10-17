@@ -8,6 +8,14 @@ This folder is a domain sandbox: a small, self-contained application that houses
 2. **`lib/sandkit/practices/building-a-sandbox.md`,** the method this sandbox follows.
 3. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
 
+## Roadmap
+
+How this sandbox is meant to grow. Update it at the end of every iteration, when the person chooses where to go next.
+
+- **Chapters built:** {{one line each}}
+- **Chapters planned:** {{one line each, in order}}
+- **Chosen direction:** {{what the person asked for next, and why}}
+
 ## Files
 
 | File | What it is |
@@ -27,11 +35,13 @@ This folder is a domain sandbox: a small, self-contained application that houses
 
 ## Conventions
 
+- **Work in iterations.** One chapter or change at a time, handed over before the next. See `lib/sandkit/practices/building-a-sandbox.md`.
 - **Declare everything, then start.** Page scripts declare their state and functions first, and start the sandbox in one marked section at the end.
 - **Codes for what people discuss.** Rules, entities, claims and sources get stable codes (see `lib/sandkit/practices/identifiers.md`), issued in the model and cited everywhere.
 - **Reveal, don't merely display.** Show why things happen, not only that they did.
 - **Keep it small and clear.** This is a sandbox, not production software.
+- **Test as little as possible, for as long as possible.** Add model tests (plain assertions, no library) only once the model has grown enough to need them; see the guide, step 4. No automated tests of the interface unless the person asks; check it by hand only when really needed, and never assume what tools are available.
 
 ## Updating Sandkit
 
-Re-copy the files listed in `lib/sandkit/SOURCE.md` from the Sandkit repository, keeping their paths, update `SOURCE.md`, and check the sandbox still works.
+Re-copy the files listed in `lib/sandkit/SOURCE.md` from the Sandkit repository, keeping their paths, update `SOURCE.md`, and open the sandbox to see it still works.

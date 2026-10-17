@@ -30,3 +30,6 @@ function createModel(options) {
     setOption(key, value) { opts[key] = value; }
   };
 }
+
+// Lets Node load the model too, for model tests once the sandbox needs them (see the guide, step 4).
+if (typeof module !== 'undefined') module.exports = { createModel, RULES };
