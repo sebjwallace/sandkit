@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-code demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-code.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; }
+    .actions input { width: 70px; padding: 2px 6px; font: inherit; color: inherit; background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-code">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Code or pseudocode, walked through a step at a time, with the variables beside it.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Reading code tells you what it says; watching it run tells you what it does. This shows a piece of code, or pseudocode, beside its variables, and walks through it a step at a time: the line running now is marked, and the variables that just changed stand out. The steps come from the sandbox's own model, which records them as it runs, so what you see is exactly what the model did.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Understanding an algorithm.</strong> Sorting, searching, making change, a recipe followed to the letter.</li>
+        <li><strong>Showing why a result came out as it did.</strong> Step back to the moment a variable went wrong.</li>
+        <li><strong>Explaining code in prose.</strong> Point at a line or a variable from the text and it lights up.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>The rules a model follows,</strong> rather than a procedure: a rules table marks the rule that applies.</li>
+        <li><strong>Branches you want to see at a glance:</strong> a flowchart shows every way through, not one run.</li>
+        <li><strong>Long programs.</strong> Show the few lines the question is about.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-code/sb-code.js"&gt;&lt;/script&gt;
+&lt;sb-code controls&gt;&lt;/sb-code&gt;
+
+&lt;script&gt;
+  const code = document.querySelector('sb-code');
+  code.code = 'total = 0\nfor each n in numbers\n  total = total + n';
+
+  // The model records each step as it runs: the line, and the variables after it.
+  const trace = [];
+  let total = 0;
+  trace.push({ line: 1, variables: { total } });
+  for (const n of [4, 7]) {
+    trace.push({ line: 2, variables: { total, n } });
+    total += n;
+    trace.push({ line: 3, variables: { total, n }, note: `Added ${n}` });
+  }
+  code.trace = trace;
+&lt;/script&gt;</pre>
+      <p>Keywords common to pseudocode, JavaScript and Python are coloured for you. For your own language, add its words: <code>code.syntax = { ...code.syntax, keywords: [...code.syntax.keywords, 'reorder'] }</code>.</p>
+      <p>The <code>controls</code> attribute adds buttons and a slider to step through; without it, the sandbox moves things along by setting <code>step</code>. Either way, <code>sb-step</code> tells the sandbox when a viewer moves.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Let the model record the trace,</strong> rather than writing steps by hand, so they can never disagree with what the model does.</li>
+        <li><strong>Record the variables that matter,</strong> not every one. Copy lists and objects as you record them, so each step keeps its own values.</li>
+        <li><strong>Add a note where a step needs a reason,</strong> such as "3 is bigger than 1, so swap them".</li>
+        <li><strong>Connect it.</strong> On <code>sb-step</code>, update the rest of the sandbox, such as a picture of the list being sorted.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Giving change, in pseudocode</h2>
+      <p>The fewest coins for an amount: take the biggest coin that fits, as often as it fits, then the next. Change the amount and the model runs again.</p>
+      <div class="actions"><label>Change for <input type="number" id="amount" value="87" min="0" max="500"> p</label></div>
+      <sb-code id="change" controls></sb-code>
+    </section>
+
+    <section class="example">
+      <h2>Sorting a list, in JavaScript</h2>
+      <p>Bubble sort walks through the list, swapping neighbours that are the wrong way round. Point at <span class="point" data-lines="4">the comparison</span>, <span class="point" data-lines="5 6 7">the swap</span>, or <span class="point" data-names="list">the list</span>; or point at a variable, beside the code or in it.</p>
+      <sb-code id="sort" controls style="--sb-code-height: 260px"></sb-code>
+    </section>
+  </main>
+
+  <script>
+    // ---- Giving change ----
+    // The model is the pseudocode, run for real; it records each step as it goes.
+
+    const change = document.getElementById('change');
+    change.code = [
+      'amount = 87',
+      'coins = [50, 20, 10, 5, 2, 1]',
+      'given = []',
+      'for each coin in coins',
+      '  while amount >= coin',
+      '    add coin to given',
+      '    amount = amount - coin',
+      '# given now holds the fewest coins'
+    ].join('\n');
+    // Pseudocode keywords come with the component; this example adds its own.
+    change.syntax = { ...change.syntax, keywords: [...change.syntax.keywords, 'add'] };
+
+    function giveChange(start) {
+      const trace = [];
+      const coins = [50, 20, 10, 5, 2, 1];
+      const given = [];
+      let amount = start;
+      const record = (line, extra, note) => trace.push({ line, variables: { amount, coins, given: [...given], ...extra }, note });
+      record(1, {}, `Start with ${start}p to give.`);
+      record(3);
+      for (const coin of coins) {
+        record(4, { coin });
+        while (amount >= coin) {
+          record(5, { coin }, `${amount}p is at least ${coin}p, so a ${coin}p coin fits.`);
+          given.push(coin);
+          record(6, { coin });
+          amount -= coin;
+          record(7, { coin });
+        }
+      }
+      record(8, {}, `${given.length} coins: ${given.join('p, ')}p.`);
+      return trace;
+    }
+
+    const amount = document.getElementById('amount');
+    const showChange = () => {
+      const start = Math.max(0, Math.round(Number(amount.value) || 0));
+      change.code = change.code.replace(/^amount = \d+/, `amount = ${start}`);
+      change.trace = giveChange(start);
+      change.step = 0;
+    };
+    amount.addEventListener('input', showChange);
+
+    // ---- Sorting a list ----
+
+    const sort = document.getElementById('sort');
+    sort.code = [
+      'function bubbleSort(list) {',
+      '  for (let i = 0; i < list.length - 1; i++) {',
+      '    for (let j = 0; j < list.length - 1 - i; j++) {',
+      '      if (list[j] > list[j + 1]) {',
+      '        const swap = list[j];',
+      '        list[j] = list[j + 1];',
+      '        list[j + 1] = swap;',
+      '      }',
+      '    }',
+      '  }',
+      '  return list; // sorted',
+      '}'
+    ].join('\n');
+
+    // The same algorithm, recording each step.
+    function bubbleSort(start) {
+      const trace = [];
+      const list = [...start];
+      const record = (line, variables, note) => trace.push({ line, variables: { list: [...list], ...variables }, note });
+      record(1, {}, 'A list to sort.');
+      for (let i = 0; i < list.length - 1; i++) {
+        record(2, { i });
+        for (let j = 0; j < list.length - 1 - i; j++) {
+          record(3, { i, j });
+          const wrong = list[j] > list[j + 1];
+          record(4, { i, j }, `${list[j]} ${wrong ? '>' : '≤'} ${list[j + 1]}${wrong ? ', so swap them.' : ', so leave them.'}`);
+          if (wrong) {
+            const swap = list[j];
+            record(5, { i, j, swap });
+            list[j] = list[j + 1];
+            record(6, { i, j, swap });
+            list[j + 1] = swap;
+            record(7, { i, j, swap });
+          }
+        }
+      }
+      record(11, {}, 'Sorted.');
+      return trace;
+    }
+
+    sort.trace = bubbleSort([5, 2, 4, 1]);
+
+    for (const point of document.querySelectorAll('.point')) {
+      point.addEventListener('pointerenter', () => {
+        sort.highlight = { lines: point.dataset.lines?.split(' ').map(Number) ?? [], names: point.dataset.names?.split(' ') ?? [] };
+      });
+      point.addEventListener('pointerleave', () => { sort.highlight = {}; });
+    }
+
+    // ---- Start ----
+
+    showChange();
+  </script>
+</body>
+</html>

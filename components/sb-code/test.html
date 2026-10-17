@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-code tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-code.js"></script>
+</head>
+<body>
+  <script>
+    const CODE = 'total = 0 # start\nfor each n in numbers\n  total = total + n\nsay "done"';
+    const TRACE = [
+      { line: 1, variables: { total: 0 } },
+      { line: 2, variables: { total: 0, n: 4 }, note: 'First number' },
+      { line: 3, variables: { total: 4, n: 4 } },
+      { line: 4, variables: { total: 4, n: 4 } }
+    ];
+
+    function viewer(attrs = '') {
+      const el = mount(`<sb-code ${attrs}></sb-code>`);
+      el.code = CODE;
+      el.trace = TRACE;
+      return el;
+    }
+
+    const line = (el, n) => el.querySelector(`.sb-code__line[data-line="${n}"]`);
+    const currentLine = (el) => Number(el.querySelector('.sb-code__line--current')?.dataset.line);
+    const variables = (el) => Object.fromEntries([...el.querySelectorAll('.sb-code__variable')].map((r) => [r.dataset.variable, r.querySelector('td').textContent]));
+    const variable = (el, name) => [...el.querySelectorAll('.sb-code__variable')].find((r) => r.dataset.variable === name);
+    const changed = (el) => [...el.querySelectorAll('.sb-code__variable--changed')].map((r) => r.dataset.variable);
+    const button = (el, move) => el.querySelector(`[data-move="${move}"]`);
+    const isShown = (node) => !node.closest('[hidden]');
+    const litNames = (el) => [...el.querySelectorAll('.sb-code__name--highlighted')].map((n) => n.dataset.name);
+
+    // ---- Showing code ----
+
+    test('shows each line of the code, numbered from 1', () => {
+      const el = viewer();
+      assertEqual(el.querySelectorAll('.sb-code__line').length, 4);
+      assertEqual(line(el, 3).querySelector('.sb-code__number').textContent, '3');
+      assertEqual(line(el, 3).querySelector('.sb-code__text').textContent, '  total = total + n');
+    });
+
+    test('colours comments, strings and numbers lightly', () => {
+      const el = viewer();
+      assertEqual(line(el, 1).querySelector('.sb-code__comment').textContent, '# start');
+      assertEqual(line(el, 4).querySelector('.sb-code__string').textContent, '"done"');
+      assertEqual(line(el, 1).querySelector('.sb-code__number-literal').textContent, '0');
+    });
+
+    const kinds = (el, n) => [...line(el, n).querySelectorAll('span[class^="sb-code__"]:not(.sb-code__number):not(.sb-code__text)')].map((t) => [t.className.replace('sb-code__', ''), t.textContent]);
+
+    test('colours common keywords and literals, whatever their case', () => {
+      const el = mount('<sb-code></sb-code>');
+      el.code = 'IF found Is True then return NONE';
+      assertEqual(kinds(el, 1), [['keyword', 'IF'], ['name', 'found'], ['keyword', 'Is'], ['literal', 'True'], ['keyword', 'then'], ['keyword', 'return'], ['literal', 'NONE']]);
+    });
+
+    test('a syntax can add words, and change how comments start', () => {
+      const el = mount('<sb-code></sb-code>');
+      assert(el.syntax.keywords.includes('while'), 'reading it gives the defaults');
+      el.syntax = { ...el.syntax, keywords: [...el.syntax.keywords, 'reorder'], comments: ['--'] };
+      el.code = 'reorder stock -- when low # not a comment now';
+      assertEqual(kinds(el, 1).slice(0, 3), [['keyword', 'reorder'], ['name', 'stock'], ['comment', '-- when low # not a comment now']]);
+      el.syntax = { comments: ['*>'] };
+      el.code = 'move x *> a comment, as in COBOL';
+      assertEqual(kinds(el, 1).at(-1), ['comment', '*> a comment, as in COBOL'], 'markers are taken literally');
+    });
+
+    test('fields left out of a syntax keep their defaults', () => {
+      const el = mount('<sb-code></sb-code>');
+      el.syntax = { literals: ['empty'] };
+      el.code = 'while list is empty // waiting';
+      assertEqual(kinds(el, 1), [['keyword', 'while'], ['name', 'list'], ['keyword', 'is'], ['literal', 'empty'], ['comment', '// waiting']]);
+    });
+
+    test('shows the empty text without code', () => {
+      assertEqual(mount('<sb-code empty-text="Write some code."></sb-code>').querySelector('.sb-code__code').textContent, 'Write some code.');
+    });
+
+    // ---- Stepping through the trace ----
+
+    test('marks the line of the current step, and shows its variables and note', () => {
+      const el = viewer();
+      assertEqual(currentLine(el), 1, 'starts at the first step');
+      el.step = 1;
+      assertEqual(currentLine(el), 2);
+      assertEqual(variables(el), { total: '0', n: '4' });
+      assertEqual(el.querySelector('.sb-code__note').textContent, 'First number');
+    });
+
+    test('shows values as people write them', () => {
+      const el = viewer();
+      el.trace = [{ line: 1, variables: { list: [3, 1], person: { name: 'Ada', age: 36 }, word: 'hi', nothing: null, missing: undefined } }];
+      assertEqual(variables(el), { list: '[3, 1]', person: '{ name: "Ada", age: 36 }', word: '"hi"', nothing: 'null', missing: 'undefined' });
+    });
+
+    test('marks the variables that changed since the step before, or are new', () => {
+      const el = viewer();
+      assertEqual(changed(el), [], 'nothing on the first step');
+      el.step = 1;
+      assertEqual(changed(el), ['n'], 'new');
+      el.step = 2;
+      assertEqual(changed(el), ['total']);
+      assertEqual(variable(el, 'total').title, 'was 0');
+      el.step = 3;
+      assertEqual(changed(el), [], 'nothing changed');
+      el.trace = [{ line: 1, variables: {} }, { line: 1, variables: { later: undefined } }];
+      el.step = 1;
+      assertEqual(changed(el), ['later'], 'new, even with no value yet');
+    });
+
+    test('compares lists and objects by their contents', () => {
+      const el = viewer();
+      el.trace = [{ line: 1, variables: { list: [1, 2] } }, { line: 1, variables: { list: [1, 2] } }, { line: 1, variables: { list: [2, 1] } }];
+      el.step = 1;
+      assertEqual(changed(el), [], 'same contents');
+      el.step = 2;
+      assertEqual(changed(el), ['list']);
+    });
+
+    test('step stays within the trace, and setting it fires nothing', () => {
+      const el = viewer();
+      const events = recordEvents(el, 'sb-step');
+      el.step = 99;
+      assertEqual(el.step, 3);
+      el.step = -5;
+      assertEqual(el.step, 0);
+      el.step = 2;
+      el.trace = TRACE.slice(0, 2);
+      assertEqual(el.step, 1, 'a shorter trace pulls it back');
+      assertEqual(events.length, 0);
+    });
+
+    test('keeps the current line in view in a long piece of code', () => {
+      const el = mount('<sb-code style="--sb-code-height: 80px"></sb-code>');
+      el.code = Array.from({ length: 40 }, (_, i) => `line ${i + 1}`).join('\n');
+      el.trace = [{ line: 35, variables: {} }, { line: 2, variables: {} }];
+      const inView = (n) => {
+        const pane = el.querySelector('.sb-code__code').getBoundingClientRect(), row = line(el, n).getBoundingClientRect();
+        return row.top >= pane.top - 1 && row.bottom <= pane.bottom + 1;
+      };
+      assert(inView(35), 'down to a late line');
+      el.step = 1;
+      assert(inView(2), 'and back up');
+    });
+
+    test('the note keeps its place while any step has one, and is gone when none do', () => {
+      const el = viewer();
+      const note = el.querySelector('.sb-code__note');
+      assert(isShown(note) && note.textContent === '', 'kept, empty, on a step without a note');
+      el.trace = [{ line: 1, variables: {} }];
+      assert(!isShown(note), 'gone');
+    });
+
+    // ---- Controls ----
+
+    test('the controls appear only when asked for', () => {
+      assert(!isShown(viewer().querySelector('.sb-code__slider')), 'hidden by default');
+      assert(isShown(viewer('controls').querySelector('.sb-code__slider')), 'shown');
+    });
+
+    test('the buttons and slider move through the trace, firing sb-step', () => {
+      const el = viewer('controls');
+      const events = recordEvents(el, 'sb-step');
+      button(el, 'forward').click();
+      button(el, 'forward').click();
+      button(el, 'back').click();
+      button(el, 'last').click();
+      const slider = el.querySelector('.sb-code__slider');
+      slider.value = '2';
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
+      button(el, 'first').click();
+      assertEqual(events.map((e) => e.detail.step), [1, 2, 1, 3, 2, 0]);
+      assertEqual(events[0].detail.entry, TRACE[1], 'with the step\'s entry');
+      assertEqual(el.querySelector('.sb-code__count').textContent, 'Step 1 of 4');
+      slider.value = '0';
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
+      assertEqual(events.length, 6, 'staying put fires nothing');
+    });
+
+    test('the buttons that can\'t move are disabled', () => {
+      const el = viewer('controls');
+      assertEqual(['first', 'back', 'forward', 'last'].map((m) => button(el, m).disabled), [true, true, false, false]);
+      el.step = 3;
+      assertEqual(['first', 'back', 'forward', 'last'].map((m) => button(el, m).disabled), [false, false, true, true]);
+      el.trace = [];
+      assertEqual(el.querySelector('.sb-code__count').textContent, 'No steps');
+    });
+
+    // ---- Pointing ----
+
+    test('highlights lines, and every mention of a variable', () => {
+      const el = viewer();
+      el.highlight = { lines: [3], names: ['total'] };
+      assert(line(el, 3).classList.contains('sb-code__line--highlighted'), 'line');
+      assertEqual(litNames(el), ['total', 'total', 'total'], 'every mention');
+      assert(variable(el, 'total').classList.contains('sb-code__variable--highlighted'), 'and its row');
+      el.highlight = {};
+      assertEqual(el.querySelectorAll('[class*="--highlighted"]').length, 0, 'cleared');
+    });
+
+    test('pointing at a variable, beside the code or in it, lights every mention', () => {
+      const el = viewer();
+      el.step = 1;
+      const over = (node) => node.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      over(variable(el, 'n').querySelector('th'));
+      assertEqual(litNames(el), ['n', 'n'], 'from the row');
+      over(line(el, 3).querySelector('[data-name="total"]'));
+      assertEqual(litNames(el), ['total', 'total', 'total'], 'from the code');
+      over(line(el, 2).querySelector('[data-name="numbers"]'));
+      assertEqual(litNames(el), [], 'a name that isn\'t a variable at this step');
+      over(variable(el, 'n'));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(litNames(el), [], 'cleared when the pointer leaves');
+    });
+
+    test('clicking a line fires sb-select with its number', () => {
+      const el = viewer();
+      const events = recordEvents(el, 'sb-select');
+      line(el, 3).querySelector('.sb-code__text').click();
+      assertEqual(events[0].detail, { line: 3 });
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two viewers on one page keep their own step', () => {
+      mount('<div><sb-code></sb-code><sb-code></sb-code></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-code');
+      for (const el of [a, b]) { el.code = CODE; el.trace = TRACE; }
+      a.step = 2;
+      assertEqual([currentLine(a), currentLine(b)], [3, 1]);
+    });
+
+    test('displays code, values and notes as text, never as markup', () => {
+      const el = mount('<sb-code></sb-code>');
+      el.code = '<b>bold</b> = "<i>x</i>"';
+      el.trace = [{ line: 1, variables: { '<b>v</b>': '<i>w</i>' }, note: '<b>n</b>' }];
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(line(el, 1).querySelector('.sb-code__text').textContent, '<b>bold</b> = "<i>x</i>"');
+    });
+  </script>
+</body>
+</html>
