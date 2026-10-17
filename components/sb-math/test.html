@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-math tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-math.js"></script>
+</head>
+<body>
+  <script>
+    const EQUATION = `
+      <sb-math>
+        <math>
+          <mi data-ref="x">x</mi><mo>·</mo><mrow data-ref="i-hat"><mi>î</mi></mrow>
+          <mo>+</mo>
+          <mi data-ref="y">y</mi><mo>·</mo><mrow data-ref="j-hat"><mi>ĵ</mi></mrow>
+        </math>
+      </sb-math>`;
+
+    const part = (el, ref) => el.querySelector(`[data-ref="${ref}"]`);
+    const lit = (el) => [...el.querySelectorAll('.sb-math--lit')].map((p) => p.dataset.ref);
+    const highlight = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+    const announced = () => recordEvents(document, 'sb-highlight');
+
+    test('keeps its MathML as written, for the browser to draw', () => {
+      const el = mount(EQUATION);
+      assertEqual(el.querySelectorAll('math').length, 1);
+      assertEqual(part(el, 'i-hat').textContent, 'î');
+    });
+
+    test('pointing at a marked part announces its ref, and leaving ends it', () => {
+      const el = mount(EQUATION);
+      const events = announced();
+      part(el, 'i-hat').querySelector('mi').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      part(el, 'i-hat').dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: el }));
+      assertEqual(events.map((e) => e.detail.ref), ['i-hat', null]);
+    });
+
+    test('moving from one marked part to another announces the new one, without ending in between', () => {
+      const el = mount(EQUATION);
+      const events = announced();
+      part(el, 'x').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      part(el, 'x').dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: part(el, 'i-hat') }));
+      part(el, 'i-hat').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assertEqual(events.map((e) => e.detail.ref), ['x', 'i-hat']);
+    });
+
+    test('lights up its parts when their ref is announced from anywhere, and clears them after', () => {
+      const el = mount(EQUATION);
+      highlight('j-hat');
+      assertEqual(lit(el), ['j-hat']);
+      highlight(null);
+      assertEqual(lit(el), []);
+    });
+
+    test('marked parts can be reached and announced with the keyboard', () => {
+      const el = mount(EQUATION);
+      assertEqual(part(el, 'y').getAttribute('tabindex'), '0');
+      const events = announced();
+      part(el, 'y').focus();
+      part(el, 'y').blur();
+      assertEqual(events.map((e) => e.detail.ref), ['y', null]);
+    });
+
+    test('parts marked later become focusable too', async () => {
+      const el = mount(EQUATION);
+      el.querySelector('math').insertAdjacentHTML('beforeend', '<mi data-ref="late">z</mi>');
+      await waitFor(() => part(el, 'late').getAttribute('tabindex') === '0');
+    });
+
+    test('every equation on the page lights up together', () => {
+      mount(`<div>${EQUATION}${EQUATION}</div>`);
+      const [a, b] = document.querySelectorAll('#test-fixture sb-math');
+      highlight('x');
+      assertEqual([lit(a), lit(b)], [['x'], ['x']]);
+      highlight(null);
+    });
+
+    test('a removed equation stops listening', () => {
+      const el = mount(EQUATION);
+      el.remove();
+      highlight('x');
+      assertEqual(lit(el), []);
+      highlight(null);
+    });
+  </script>
+</body>
+</html>

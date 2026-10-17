@@ -1,4 +1,4 @@
-// Sandkit sb-plane 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-plane 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A two-dimensional coordinate plane for vectors, points and shapes, which can be transformed by a
 // matrix, smoothly, so people watch space itself move. Vectors and points can be dragged.
 //
@@ -33,6 +33,9 @@
     .sb-plane__shaft { stroke-width: 3; stroke-linecap: round; }
     .sb-plane__polygon { stroke-width: 2; fill-opacity: 0.18; }
     .sb-plane__label { font-size: 14px; font-weight: 700; font-style: italic; paint-order: stroke; stroke: var(--sb-surface, #fff); stroke-width: 4px; stroke-linejoin: round; }
+    .sb-plane__lit .sb-plane__shaft { stroke-width: 5; }
+    .sb-plane__lit .sb-plane__dot { r: 8px; }
+    .sb-plane__polygon.sb-plane__lit { stroke-width: 3; fill-opacity: 0.4; }
     .sb-plane__handle { fill: transparent; cursor: grab; }
     .sb-plane--dragging, .sb-plane--dragging .sb-plane__handle { cursor: grabbing; }
     ${TONES.map((tone) => `
@@ -78,6 +81,7 @@
       this._objects = [];
       this._matrix = IDENTITY;
       this._progress = 1;
+      this._highlight = [];
       // Drawn at its real width, so the grid stays square and text keeps its size.
       this._resizeObserver = new ResizeObserver(() => { if (this.clientWidth !== this._drawnWidth) this.render(); });
       this.addEventListener('pointerdown', (e) => this._startDrag(e));
@@ -116,6 +120,13 @@
     get progress() { return this._progress; }
     set progress(t) {
       this._progress = Math.max(0, Math.min(1, Number(t)));
+      this.render();
+    }
+
+    // The ids of objects to light up, such as the ones a reference elsewhere points at.
+    get highlight() { return this._highlight; }
+    set highlight(ids) {
+      this._highlight = (ids || []).map(String);
       this.render();
     }
 
@@ -186,18 +197,19 @@
     _object(o, matrix) {
       const place = (point) => (o.fixed ? point : apply(matrix, point));
       const tone = TONES.includes(o.tone) ? o.tone : 'accent';
+      const lit = this._highlight.includes(String(o.id)) ? ' sb-plane__lit' : '';
       if (o.type === 'polygon') {
         const points = (o.points || []).map((p) => this._toScreen(place(p)).join(',')).join(' ');
-        return `<polygon class="sb-plane__polygon sb-plane--${tone}" points="${points}" data-object-id="${esc(o.id)}"><title>${esc(o.label ?? o.id)}</title></polygon>`;
+        return `<polygon class="sb-plane__polygon sb-plane--${tone}${lit}" points="${points}" data-object-id="${esc(o.id)}"><title>${esc(o.label ?? o.id)}</title></polygon>`;
       }
       const tip = place([o.x, o.y]);
       const handle = o.draggable ? this._handle(o, tip) : '';
       if (o.type === 'point') {
         const [x, y] = this._toScreen(tip);
-        return `<g data-object-id="${esc(o.id)}"><circle class="sb-plane__dot sb-plane--${tone}" cx="${x}" cy="${y}" r="5"/>${this._label(o.label, tip, [1, 1], tone)}${handle}</g>`;
+        return `<g class="${lit.trim()}" data-object-id="${esc(o.id)}"><circle class="sb-plane__dot sb-plane--${tone}" cx="${x}" cy="${y}" r="5"/>${this._label(o.label, tip, [1, 1], tone)}${handle}</g>`;
       }
       const tail = place(o.from || [0, 0]);
-      return `<g data-object-id="${esc(o.id)}">${this._arrow(tail, tip, tone, o.label)}${handle}</g>`;
+      return `<g class="${lit.trim()}" data-object-id="${esc(o.id)}">${this._arrow(tail, tip, tone, o.label)}${handle}</g>`;
     }
 
     // An arrow from tail to tip, with its head drawn as a triangle so it takes the arrow's tone.

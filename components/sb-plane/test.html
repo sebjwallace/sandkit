@@ -124,6 +124,15 @@
       assertEqual(heads, ['200,160', '160,200'], 'a quarter turn sends î up and ĵ left');
     });
 
+    test('lights up the objects named in highlight', () => {
+      const el = plane();
+      el.objects = [{ type: 'vector', id: 'v', x: 1, y: 1 }, { type: 'vector', id: 'w', x: -1, y: 1 }, { type: 'polygon', id: 'sq', points: [[0, 0], [1, 0], [1, 1]] }];
+      el.highlight = ['v', 'sq'];
+      assertEqual(['v', 'w', 'sq'].map((id) => object(el, id).classList.contains('sb-plane__lit')), [true, false, true]);
+      el.highlight = [];
+      assertEqual(el.querySelectorAll('.sb-plane__lit').length, 0);
+    });
+
     // ---- Dragging ----
 
     test('dragging a vector moves it and fires sb-change, without jumping to the pointer', () => {

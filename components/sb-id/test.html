@@ -137,6 +137,24 @@
       assertEqual(el.definition?.title, 'Defined a moment later');
       assert(!el.classList.contains('sb-id--unresolved'));
     });
+
+    // ---- Pointing into the rest of the page ----
+
+    test('hovering a pill announces its code page-wide, and leaving ends it', () => {
+      const el = mount('<sb-id code="RUL-001"></sb-id>');
+      const events = recordEvents(document, 'sb-highlight');
+      pill(el).dispatchEvent(new MouseEvent('mouseenter'));
+      pill(el).dispatchEvent(new MouseEvent('mouseleave'));
+      assertEqual(events.map((e) => e.detail.ref), ['RUL-001', null]);
+    });
+
+    test('a pill lights up when its code is announced from elsewhere', () => {
+      const [a, b] = pills('<p><sb-id code="RUL-001"></sb-id><sb-id code="ST-N"></sb-id></p>');
+      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: 'RUL-001' } }));
+      assertEqual([a.classList.contains('sb-id--lit'), b.classList.contains('sb-id--lit')], [true, false]);
+      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: null } }));
+      assert(!a.classList.contains('sb-id--lit'), 'cleared');
+    });
   </script>
 </body>
 </html>

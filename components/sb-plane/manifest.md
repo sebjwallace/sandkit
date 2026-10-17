@@ -53,6 +53,7 @@ Use this component through the interface below. You don't need to read its sourc
 | `objects` | The objects to draw. Setting them copies the list. |
 | `matrix` | The transformation `[[a, b], [c, d]]`. Its columns, `(a, c)` and `(b, d)`, are where î and ĵ land. |
 | `progress` | From `0` (no change) to `1` (the full matrix). Between, the matrix is blended evenly from the identity. |
+| `highlight` | A list of object ids to light up: thicker arrows, larger points, fuller shapes. Use it to point at objects from elsewhere, for example when a reference in the text is hovered (see the [highlighting practice](../../practices/highlighting.md)). |
 
 ## Events
 

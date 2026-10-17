@@ -1,7 +1,8 @@
-// Sandkit sb-id 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
-// A short identifying code, shown as a pill. Hover or focus shows what it refers to; clicking
-// highlights every mention of it on the page. Supports the identifiers practice
-// (practices/identifiers.md).
+// Sandkit sb-id 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// A short identifying code, shown as a pill. Hover or focus shows what it refers to; clicking it
+// highlights every mention of it on the page. Hovering also announces the code page-wide, so
+// anything else marked with it can light up. Supports the identifiers and highlighting practices
+// (practices/identifiers.md, practices/highlighting.md).
 //
 //   <sb-id code="RUL-001"></sb-id>
 //
@@ -29,6 +30,7 @@
     .sb-id__pill:focus-visible { outline: 2px solid var(--sb-accent, #2563eb); outline-offset: 1px; }
     .sb-id--unresolved .sb-id__pill { border-style: dashed; background: none; color: var(--sb-muted, #616e7c); }
     .sb-id--highlighted .sb-id__pill { border-color: var(--sb-accent, #2563eb); background: var(--sb-accent, #2563eb); color: var(--sb-accent-text, #fff); }
+    .sb-id--lit .sb-id__pill { border-color: var(--sb-accent, #2563eb); background: var(--sb-accent-soft, #eaf0ff); color: var(--sb-accent, #2563eb); }
     .sb-id__card { position: fixed; inset: auto; margin: 0; max-width: 280px; padding: 8px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); font: 13px/1.45 var(--sb-font, system-ui, sans-serif); }
     .sb-id__kind { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sb-muted, #616e7c); }
     .sb-id__title { font-weight: 600; }
@@ -51,6 +53,9 @@
     else fn();
   }
 
+  // The page-wide highlight (practices/highlighting.md): { ref } while pointed at, { ref: null } after.
+  const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+
   // Highlighting is page-wide: every mention of the highlighted code lights up together.
   let highlightedCode = null;
 
@@ -69,13 +74,19 @@
       super();
       this._cardId = `sb-id-card-${++instanceCount}`;
       this._definition = null;
+      this._onHighlight = (e) => this.classList.toggle('sb-id--lit', e.detail?.ref != null && e.detail.ref === this.code);
     }
 
     connectedCallback() {
       addStyle();
       this.classList.add('sb-id');
+      document.addEventListener('sb-highlight', this._onHighlight);
       this.render();
       whenParsed(() => this._resolveOnArrival());
+    }
+
+    disconnectedCallback() {
+      document.removeEventListener('sb-highlight', this._onHighlight);
     }
 
     attributeChangedCallback() {
@@ -117,10 +128,10 @@
       this.classList.toggle('sb-id--highlighted', highlightedCode !== null && this.code === highlightedCode);
 
       const pill = this.querySelector('.sb-id__pill');
-      pill.addEventListener('mouseenter', () => this._showCard());
-      pill.addEventListener('focus', () => this._showCard());
-      pill.addEventListener('mouseleave', () => this._hideCard());
-      pill.addEventListener('blur', () => this._hideCard());
+      pill.addEventListener('mouseenter', () => this._point());
+      pill.addEventListener('focus', () => this._point());
+      pill.addEventListener('mouseleave', () => this._leave());
+      pill.addEventListener('blur', () => this._leave());
       pill.addEventListener('click', () => this._toggleHighlight());
     }
 
@@ -135,6 +146,17 @@
 
     // The card sits in the top layer, so scrolling containers never clip it; it is placed below
     // the pill, kept within the viewport.
+    // Pointing at a pill explains it, and tells the page what is being pointed at.
+    _point() {
+      this._showCard();
+      announce(this.code);
+    }
+
+    _leave() {
+      this._hideCard();
+      announce(null);
+    }
+
     _showCard() {
       this.refresh();
       const card = this.querySelector('.sb-id__card');
