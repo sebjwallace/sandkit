@@ -27,7 +27,7 @@
     .actions button { font: inherit; padding: 4px 12px; color: var(--sb-text); background: var(--sb-surface-2); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
     .chosen { margin: 10px 0 0; font-size: 13px; color: var(--sb-muted); white-space: pre-line; }
     .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
-    button.link { font: inherit; padding: 0; background: none; border: 0; border-bottom: 1px dashed var(--sb-accent); cursor: pointer; }
+    .act { font: inherit; padding: 0; color: var(--sb-text); background: none; border: 0; border-bottom: 1px solid var(--sb-accent); cursor: pointer; }
   </style>
 </head>
 <body>
@@ -97,7 +97,7 @@
 
     <section class="example">
       <h2>An online shop</h2>
-      <p>The sandbox can drive the diagram too. Ask where something lives, and it opens the way: <button class="link point" data-reveal="checkout">checkout</button>, <button class="link point" data-reveal="stock">stock checking</button>, <button class="link point" data-reveal="queue">the order queue</button>. Point at <span class="point" data-relationship="pay">the payment</span> to light it at whatever level you're on. Click any box or line to see what it is.</p>
+      <p>The sandbox can drive the diagram too. Point at a part to see where it lives; click to go there: <button class="act" data-reveal="checkout">checkout</button>, <button class="act" data-reveal="stock">stock checking</button>, <button class="act" data-reveal="queue">the order queue</button>. Point at <span class="point" data-relationship="pay">the payment</span> to light it at whatever level you're on. Click any box or line to see what it is.</p>
       <sb-c4 id="shop" root-label="Shop"></sb-c4>
       <p class="chosen" id="shop-chosen">Nothing chosen yet.</p>
     </section>
@@ -183,12 +183,20 @@
       ]
     };
 
+    // Pointing shows where a part is; clicking goes there, and it stays lit until the viewer moves on.
+    let revealed = null;
+    const settle = () => { shop.highlight = revealed ? { elements: [revealed] } : {}; };
+    shop.addEventListener('sb-navigate', () => { revealed = null; settle(); });
+
     for (const button of document.querySelectorAll('[data-reveal]')) {
-      button.addEventListener('click', () => shop.reveal(button.dataset.reveal));
+      const id = button.dataset.reveal;
+      for (const start of ['pointerenter', 'focus']) button.addEventListener(start, () => { shop.highlight = { elements: [id] }; });
+      for (const end of ['pointerleave', 'blur']) button.addEventListener(end, settle);
+      button.addEventListener('click', () => { revealed = id; shop.reveal(id); });
     }
     for (const point of document.querySelectorAll('[data-relationship]')) {
       point.addEventListener('pointerenter', () => { shop.highlight = { relationships: [point.dataset.relationship] }; });
-      point.addEventListener('pointerleave', () => { shop.highlight = {}; });
+      point.addEventListener('pointerleave', settle);
     }
 
     const name = (id) => {

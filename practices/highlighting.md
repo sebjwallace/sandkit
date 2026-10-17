@@ -55,6 +55,24 @@ element.addEventListener('pointerenter', () => announce('i-hat'));
 element.addEventListener('pointerleave', () => announce(null));
 ```
 
+## Pointing shows, clicking acts
+
+People point to look and click to do, so keep the two apart everywhere in a sandbox:
+
+- **Pointing** (hover or keyboard focus) only lights things up, and clears when the pointer leaves.
+- **Clicking** does something lasting: selects, navigates, steps the model.
+
+Words in the prose show which they are:
+
+```css
+.point { border-bottom: 1px dashed var(--sb-accent); cursor: default; }   /* point at me */
+.act   { border-bottom: 1px solid var(--sb-accent); cursor: pointer; }    /* click me */
+```
+
+- **A click word previews on hover.** Pointing at it lights up what the click will act on, so nothing feels dead under the pointer.
+- **Make click words buttons,** so the keyboard reaches them.
+- **Say it once, near the words:** "Point at a part to see where it lives; click to go there." A [`sb-callout`](../components/sb-callout/manifest.md) tip works when a whole chapter uses both.
+
 ## Good practice
 
 - **Choose refs for what readers discuss,** not for every symbol. A handful of well-chosen refs beats dozens.
