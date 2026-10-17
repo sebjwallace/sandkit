@@ -1,4 +1,4 @@
-// Linear algebra model: vectors and their combinations.
+// Linear algebra model: vectors, their combinations, and matrices.
 // A vector is a pair of numbers [x, y]: how far across, and how far up, its tip is from the origin.
 // No UI here: the page draws what these functions describe.
 
@@ -27,6 +27,24 @@ const vectors = {
   }
 };
 
+// Matrices are rows of numbers, [[a, b], [c, d]]. Their columns are where î and ĵ land.
+const matrices = {
+  identity: [[1, 0], [0, 1]],
+
+  // How much the matrix scales areas. Negative when it flips space over; zero when it squashes
+  // space onto a line or a point.
+  determinant: ([[a, b], [c, d]]) => a * d - b * c,
+
+  // The single matrix that does `first`, then `second`: second · first.
+  then(first, second) {
+    const [[a, b], [c, d]] = second, [[p, q], [r, s]] = first;
+    return [[a * p + b * r, a * q + b * s], [c * p + d * r, c * q + d * s]];
+  },
+
+  // Partway from doing nothing (t = 0) to the whole matrix (t = 1).
+  blend: (m, t) => m.map((row, i) => row.map((value, j) => matrices.identity[i][j] + (value - matrices.identity[i][j]) * t))
+};
+
 // Numbers as people write them: a true minus sign, and no more than two decimal places.
 function number(n) {
   const rounded = Math.round(n * 100) / 100 || 0;
@@ -39,4 +57,4 @@ const term = (n) => (n < 0 ? `(${number(n)})` : number(n));
 const pair = ([x, y]) => `(${number(x)}, ${number(y)})`;
 
 // Lets Node load the model too, for model tests once the sandbox needs them.
-if (typeof module !== 'undefined') module.exports = { vectors, number, term, pair };
+if (typeof module !== 'undefined') module.exports = { vectors, matrices, number, term, pair };

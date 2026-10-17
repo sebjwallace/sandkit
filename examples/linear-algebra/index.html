@@ -68,6 +68,39 @@
             <div id="moving-explain"></div>
           </div>
         </div>
+        <p class="onward"><button type="button" class="next">Next: determinants →</button></p>
+      </section>
+
+      <section class="chapter" heading="4 · Determinants">
+        <h2>Chapter 4 · Determinants</h2>
+        <p>A matrix stretches some areas and squashes others, but it scales every area by the same amount. That amount is the <em>determinant</em>. Watch the unit square: it starts with area 1, so whatever area it ends up with is the determinant.</p>
+        <p>A negative determinant means space has been flipped over, like a page turned face down: ĵ ends up clockwise from î instead of anticlockwise. A determinant of zero means space has been squashed flat, onto a line or even a single point.</p>
+        <p class="try"><strong>Try:</strong> drag where î and ĵ land. Can you make the square twice as big? Flip it over? Squash it flat? Point at the two halves of the formula to see which entries of the matrix each one uses.</p>
+        <div class="panel stage">
+          <sb-plane id="stretching" range="3" snap="0.5" height="420"></sb-plane>
+          <div class="explain">
+            <p class="equation"><sb-matrix id="matrix-d" name="A" editable step="0.5"></sb-matrix></p>
+            <sb-math id="determinant"></sb-math>
+            <div id="stretching-explain"></div>
+          </div>
+        </div>
+        <p class="onward"><button type="button" class="next">Next: one transformation, then another →</button></p>
+      </section>
+
+      <section class="chapter" heading="5 · Composition">
+        <h2>Chapter 5 · One transformation, then another</h2>
+        <p>Apply one matrix, then another, and space has moved in some new way. That new way is a transformation too, so it has a matrix of its own: the <em>product</em> of the two. Its columns are simply where î and ĵ end up after both moves.</p>
+        <p>The order matters. Turning and then shearing is not the same as shearing and then turning. That is why matrix multiplication doesn't let you swap the order the way ordinary multiplication does.</p>
+        <p class="try"><strong>Try:</strong> play the two moves. Then swap the order and play again: does space end up in the same place? Edit A and B to find two moves where the order doesn't matter.</p>
+        <div class="panel stage">
+          <sb-plane id="composing" range="3" height="420"></sb-plane>
+          <div class="explain">
+            <p class="equation">First <sb-matrix id="matrix-first" name="A" editable step="0.5"></sb-matrix> then <sb-matrix id="matrix-second" name="B" editable step="0.5"></sb-matrix></p>
+            <sb-parameters id="composition"></sb-parameters>
+            <p><button type="button" class="next" id="play-composition">Play both moves</button> <button type="button" class="next" id="swap-order">Swap the order</button></p>
+            <div id="composing-explain"></div>
+          </div>
+        </div>
       </section>
     </sb-tabs>
   </main>
@@ -236,6 +269,111 @@
           : 'The grid stays straight, parallel and evenly spaced: that is what makes a transformation linear.'}</p>`;
     }
 
+    // ---- Chapter 4: determinants ----
+
+    const stretching = { plane: $('stretching'), matrix: [[1.5, 0.5], [0, 1]] };
+    $('matrix-d').tones = { columns: ['good', 'bad'] };
+
+    $('matrix-d').addEventListener('sb-change', (e) => {
+      stretching.matrix = e.detail.values;
+      renderStretching();
+    });
+    stretching.plane.addEventListener('sb-change', (e) => {
+      const column = e.detail.id === 'i-lands' ? 0 : 1;
+      stretching.matrix[0][column] = e.detail.x;
+      stretching.matrix[1][column] = e.detail.y;
+      renderStretching();
+    });
+
+    function renderStretching() {
+      const [[a, b], [c, d]] = stretching.matrix;
+      const det = matrices.determinant(stretching.matrix);
+      stretching.plane.matrix = stretching.matrix;
+      stretching.plane.objects = [
+        { type: 'polygon', id: 'square', points: [[0, 0], [1, 0], [1, 1], [0, 1]], tone: det < 0 ? 'bad' : 'warn', label: `area ${number(Math.abs(det))}` },
+        { type: 'vector', id: 'i-hat', x: 1, y: 0, label: 'î', tone: 'good' },
+        { type: 'vector', id: 'j-hat', x: 0, y: 1, label: 'ĵ', tone: 'bad' },
+        { type: 'point', id: 'i-lands', x: a, y: c, tone: 'good', draggable: true, fixed: true },
+        { type: 'point', id: 'j-lands', x: b, y: d, tone: 'bad', draggable: true, fixed: true }
+      ];
+      $('matrix-d').values = stretching.matrix;
+      $('determinant').innerHTML = `
+        <math display="block">
+          <mi>det</mi><mo>(</mo><mi>A</mi><mo>)</mo><mo>=</mo>
+          <mrow data-ref="ad"><mn>${number(a)}</mn><mo>·</mo><mn>${number(d)}</mn></mrow><mo>−</mo>
+          <mrow data-ref="bc"><mn>${number(b)}</mn><mo>·</mo><mn>${number(c)}</mn></mrow><mo>=</mo><mn>${number(det)}</mn>
+        </math>`;
+      $('stretching-explain').innerHTML = `<p>${
+        det === 0 ? 'Space is squashed flat: the square has no area left, and there is no way back.'
+        : det < 0 ? `Every area is scaled by ${number(-det)}, and space is flipped over: ĵ is now clockwise from î.`
+        : `Every area is scaled by ${number(det)}. The square started with area 1 and now has area ${number(det)}.`}</p>`;
+    }
+
+    // ---- Chapter 5: one transformation, then another ----
+
+    const composing = {
+      plane: $('composing'),
+      a: [[0, -1], [1, 0]],   // a quarter turn
+      b: [[1, 1], [0, 1]],    // a shear
+      swapped: false,         // false: A then B; true: B then A
+      progress: 2             // 0 to 1 is the first move, 1 to 2 the second
+    };
+
+    $('composition').definitions = [{
+      key: 'progress', label: 'Progress', min: 0, max: 2, step: 0.01, value: 2,
+      format: (t) => (t <= 1 ? `first move, ${Math.round(t * 100)}%` : `second move, ${Math.round((t - 1) * 100)}%`)
+    }];
+
+    const firstAndSecond = () => (composing.swapped ? [composing.b, composing.a] : [composing.a, composing.b]);
+
+    $('matrix-first').addEventListener('sb-change', (e) => { composing[composing.swapped ? 'b' : 'a'] = e.detail.values; renderComposing(); });
+    $('matrix-second').addEventListener('sb-change', (e) => { composing[composing.swapped ? 'a' : 'b'] = e.detail.values; renderComposing(); });
+    $('composition').addEventListener('sb-change', (e) => { composing.progress = e.detail.value; renderComposing(); });
+    $('swap-order').addEventListener('click', () => { composing.swapped = !composing.swapped; renderComposing(); });
+
+    let playingComposition = null;
+    $('play-composition').addEventListener('click', () => {
+      clearInterval(playingComposition);
+      composing.progress = 0;
+      playingComposition = setInterval(() => {
+        composing.progress = Math.min(2, composing.progress + 0.02);
+        $('composition').values = { progress: composing.progress };
+        renderComposing();
+        if (composing.progress >= 2) clearInterval(playingComposition);
+      }, 30);
+    });
+
+    // Where space is at this point of the journey: partway through the first move, or all of the
+    // first move and partway through the second.
+    function journey(first, second, t) {
+      return t <= 1 ? matrices.blend(first, t) : matrices.then(first, matrices.blend(second, t - 1));
+    }
+
+    function renderComposing() {
+      const [first, second] = firstAndSecond();
+      const [firstName, secondName] = composing.swapped ? ['B', 'A'] : ['A', 'B'];
+      const both = matrices.then(first, second), otherWay = matrices.then(second, first);
+      composing.plane.matrix = journey(first, second, composing.progress);
+      composing.plane.objects = [
+        { type: 'polygon', id: 'square', points: [[0, 0], [1, 0], [1, 1], [0, 1]], tone: 'warn', label: 'the unit square' },
+        { type: 'vector', id: 'i-hat', x: 1, y: 0, label: 'î', tone: 'good' },
+        { type: 'vector', id: 'j-hat', x: 0, y: 1, label: 'ĵ', tone: 'bad' }
+      ];
+      $('matrix-first').values = first;
+      $('matrix-second').values = second;
+      $('matrix-first').setAttribute('name', firstName);
+      $('matrix-second').setAttribute('name', secondName);
+      const same = JSON.stringify(both) === JSON.stringify(otherWay);
+      $('composing-explain').innerHTML = `
+        <p>${firstName}, then ${secondName}, is the single matrix <span class="vector">${secondName}·${firstName}</span>:</p>
+        <p class="equation"><sb-matrix class="both"></sb-matrix></p>
+        <p class="steps">The other way round, ${secondName} then ${firstName}, gives <sb-matrix class="other-way"></sb-matrix>${same ? ': the same, so for these two the order doesn’t matter.' : ': a different place altogether.'}</p>`;
+      const bothBlock = document.querySelector('#composing-explain .both');
+      bothBlock.values = both;
+      bothBlock.tones = { columns: ['good', 'bad'] };
+      document.querySelector('#composing-explain .other-way').values = otherWay;
+    }
+
     // ---- Pointing (practices/highlighting.md) ----
     // î and ĵ are refs: pointing at a pill, an equation column, a matrix column or an arrow
     // announces one, and every other place it appears lights up.
@@ -266,11 +404,19 @@
     });
     $('matrix-a').addEventListener('pointerleave', () => announce(null));
 
+    // Chapter 4: each half of the determinant formula uses two entries of the matrix.
+    const CELLS_OF_REF = { ad: [[0, 0], [1, 1]], bc: [[0, 1], [1, 0]] };
+    document.addEventListener('sb-highlight', (e) => {
+      $('matrix-d').highlight = { cells: CELLS_OF_REF[e.detail.ref] ?? [] };
+    });
+
     // ---- Start ----
 
     renderAdding();
     renderCombining();
     renderMoving();
+    renderStretching();
+    renderComposing();
   </script>
 </body>
 </html>
