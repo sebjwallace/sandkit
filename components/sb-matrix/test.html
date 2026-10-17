@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-matrix tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-matrix.js"></script>
+</head>
+<body>
+  <script>
+    function matrix(attrs = '', values = [[1, 2], [3, 4]]) {
+      const el = mount(`<sb-matrix ${attrs}></sb-matrix>`);
+      el.values = values;
+      return el;
+    }
+
+    const cells = (el) => [...el.querySelectorAll('.sb-matrix__cell')];
+    const shown = (el) => cells(el).map((c) => c.textContent.trim());
+    const input = (el, row, column) => el.querySelector(`input[data-row="${row}"][data-column="${column}"]`);
+
+    function type(el, row, column, text) {
+      const field = input(el, row, column);
+      field.value = text;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    // ---- Showing values ----
+
+    test('shows the entries row by row, in a grid with a column per entry', () => {
+      const el = matrix();
+      assertEqual(shown(el), ['1', '2', '3', '4']);
+      assertEqual(el.querySelector('.sb-matrix__grid').style.gridTemplateColumns, 'repeat(2, auto)');
+    });
+
+    test('a flat list is a column vector', () => {
+      const el = matrix('', [2, 1]);
+      assertEqual(el.values, [[2], [1]]);
+      assertEqual(el.querySelector('.sb-matrix__grid').style.gridTemplateColumns, 'repeat(1, auto)');
+    });
+
+    test('writes numbers as people do: a true minus sign, at most two decimal places', () => {
+      assertEqual(shown(matrix('', [[-1, 0.3333]])), ['−1', '0.33']);
+    });
+
+    test('shows its name, as in "A = …"', () => {
+      const el = matrix('name="A"');
+      assertEqual(el.querySelector('.sb-matrix__name').textContent, 'A');
+      assertEqual(el.getAttribute('aria-label'), 'Matrix A');
+    });
+
+    test('labels each entry by its row and column, for screen readers', () => {
+      assertEqual(cells(matrix())[1].firstElementChild.getAttribute('aria-label'), 'row 1, column 2: 2');
+    });
+
+    // ---- Colour and highlight ----
+
+    test('colours whole columns or rows, with columns taking precedence', () => {
+      const el = matrix();
+      el.tones = { columns: ['good', 'bad'], rows: ['warn'] };
+      assertEqual(cells(el).map((c) => [...c.classList].find((k) => k.startsWith('sb-matrix--'))), ['sb-matrix--good', 'sb-matrix--bad', 'sb-matrix--good', 'sb-matrix--bad']);
+    });
+
+    test('highlights rows, columns and single cells', () => {
+      const el = matrix('', [[1, 2, 3], [4, 5, 6]]);
+      const lit = () => cells(el).map((c) => c.classList.contains('sb-matrix__cell--highlighted'));
+      el.highlight = { columns: [1] };
+      assertEqual(lit(), [false, true, false, false, true, false]);
+      el.highlight = { rows: [0] };
+      assertEqual(lit(), [true, true, true, false, false, false]);
+      el.highlight = { cells: [[1, 2]] };
+      assertEqual(lit(), [false, false, false, false, false, true]);
+    });
+
+    // ---- Editing ----
+
+    test('is read-only unless editable', () => {
+      assertEqual(matrix().querySelector('input'), null);
+    });
+
+    test('an editable matrix has a number field per entry, with the step given', () => {
+      const el = matrix('editable step="0.5"');
+      assertEqual(el.querySelectorAll('input').length, 4);
+      assertEqual(input(el, 1, 0).value, '3');
+      assertEqual(input(el, 1, 0).step, '0.5');
+    });
+
+    test('typing a number updates the values and fires sb-change', () => {
+      const el = matrix('editable');
+      const changes = recordEvents(el, 'sb-change');
+      type(el, 0, 1, '-2.5');
+      assertEqual(changes[0].detail, { row: 0, column: 1, value: -2.5, values: [[1, -2.5], [3, 4]] });
+      assertEqual(el.values, [[1, -2.5], [3, 4]]);
+    });
+
+    test('keeps the field being typed in, rather than redrawing it', () => {
+      const el = matrix('editable');
+      const field = input(el, 0, 0);
+      type(el, 0, 0, '7');
+      assertEqual(input(el, 0, 0), field);
+    });
+
+    test('ignores an entry that isn\'t a number yet', () => {
+      const el = matrix('editable');
+      const changes = recordEvents(el, 'sb-change');
+      type(el, 0, 0, '');
+      assertEqual(changes.length, 0);
+      assertEqual(el.values[0][0], 1);
+    });
+
+    // ---- Safety ----
+
+    test('changing the values given or returned does not change the matrix', () => {
+      const given = [[1, 2], [3, 4]];
+      const el = matrix('', given);
+      given[0][0] = 9;
+      el.values[0][1] = 9;
+      assertEqual(el.values, [[1, 2], [3, 4]]);
+    });
+
+    test('two matrices on one page keep their own values', () => {
+      mount('<p><sb-matrix editable></sb-matrix> and <sb-matrix editable></sb-matrix></p>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-matrix');
+      a.values = [[1]];
+      b.values = [[1]];
+      type(a, 0, 0, '5');
+      assertEqual([a.values[0][0], b.values[0][0]], [5, 1]);
+    });
+
+    test('sits inline in a sentence', () => {
+      const p = mount('<p>The vector <sb-matrix></sb-matrix> points up.</p>');
+      p.querySelector('sb-matrix').values = [0, 1];
+      assertEqual(getComputedStyle(p.querySelector('sb-matrix')).display, 'inline-flex');
+    });
+
+    test('shows its name as text, never as markup', () => {
+      assertEqual(matrix('name="<b>A</b>"').querySelector('b'), null);
+    });
+  </script>
+</body>
+</html>
