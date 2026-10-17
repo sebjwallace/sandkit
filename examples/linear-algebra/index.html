@@ -11,6 +11,8 @@
   <script src="../../components/sb-parameters/sb-parameters.js"></script>
   <script src="../../components/sb-tabs/sb-tabs.js"></script>
   <script src="../../components/sb-matrix/sb-matrix.js"></script>
+  <script src="../../components/sb-math/sb-math.js"></script>
+  <script src="../../components/sb-id/sb-id.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
@@ -53,13 +55,14 @@
 
       <section class="chapter" heading="3 · Matrices">
         <h2>Chapter 3 · Matrices as moving space</h2>
-        <p>A matrix is a way of moving the whole of space, and it needs only two pairs of numbers to say how. Its first column is where <span class="vector vector--i">î</span>, the arrow one step right, lands. Its second column is where <span class="vector vector--j">ĵ</span>, the arrow one step up, lands.</p>
+        <p>A matrix is a way of moving the whole of space, and it needs only two pairs of numbers to say how. Its first column is where <sb-id code="î"></sb-id>, the arrow one step right, lands. Its second column is where <sb-id code="ĵ"></sb-id>, the arrow one step up, lands.</p>
         <p>Why is that enough? Every vector is a combination of î and ĵ: <span class="vector">(2, 1)</span> is 2·î + 1·ĵ. Move î and ĵ, keep the same combination, and you know where every vector goes. The grid lines follow, staying straight, parallel and evenly spaced.</p>
-        <p class="try"><strong>Try:</strong> drag the green and red points to choose where <span class="vector vector--i">î</span> and <span class="vector vector--j">ĵ</span> land, or type into the matrix. Slide the transformation back to the start and play it forward. Can you make a quarter turn? A mirror image? What happens if î and ĵ land on the same line?</p>
+        <p class="try"><strong>Try:</strong> drag the green and red points to choose where î and ĵ land, or type into the matrix. Point at <sb-id code="î"></sb-id> or <sb-id code="ĵ"></sb-id>, at a column, or at an arrow, and watch everything it stands for light up. Then slide the transformation back to the start and play it forward. Can you make a quarter turn? A mirror image?</p>
         <div class="panel stage">
-          <sb-plane id="moving" range="3" basis snap="0.5" height="420"></sb-plane>
+          <sb-plane id="moving" range="3" snap="0.5" height="420"></sb-plane>
           <div class="explain">
             <p class="equation"><sb-matrix id="matrix-a" name="A" editable step="0.5"></sb-matrix></p>
+            <sb-math id="product"></sb-math>
             <sb-parameters id="transformation"></sb-parameters>
             <p><button type="button" class="next" id="play-transformation">Play the transformation</button></p>
             <div id="moving-explain"></div>
@@ -201,6 +204,10 @@
       }, 30);
     });
 
+    // A column vector in MathML, marked so it can be pointed at.
+    const columnVector = ([top, bottom], ref) => `
+      <mrow${ref ? ` data-ref="${ref}"` : ''}><mo>[</mo><mtable><mtr><mtd><mn>${number(top)}</mn></mtd></mtr><mtr><mtd><mn>${number(bottom)}</mn></mtd></mtr></mtable><mo>]</mo></mrow>`;
+
     function renderMoving() {
       const [[a, b], [c, d]] = moving.matrix;
       const [x, y] = moving.v;
@@ -210,18 +217,54 @@
       moving.plane.objects = [
         { type: 'polygon', id: 'square', points: [[0, 0], [1, 0], [1, 1], [0, 1]], tone: 'warn', label: 'the unit square' },
         { type: 'vector', id: 'v', x, y, label: 'v', tone: 'accent' },
+        { type: 'vector', id: 'i-hat', x: 1, y: 0, label: 'î', tone: 'good' },
+        { type: 'vector', id: 'j-hat', x: 0, y: 1, label: 'ĵ', tone: 'bad' },
         { type: 'point', id: 'i-lands', x: a, y: c, tone: 'good', draggable: true, fixed: true },
         { type: 'point', id: 'j-lands', x: b, y: d, tone: 'bad', draggable: true, fixed: true }
       ];
       $('matrix-a').values = moving.matrix;
+      $('product').innerHTML = `
+        <math display="block">
+          <mi>A</mi><mo>·</mo><mi>v</mi><mo>=</mo>
+          <mn>${number(x)}</mn><mo>·</mo>${columnVector([a, c], 'î')}<mo>+</mo>
+          <mn>${number(y)}</mn><mo>·</mo>${columnVector([b, d], 'ĵ')}<mo>=</mo>${columnVector(lands)}
+        </math>`;
       $('moving-explain').innerHTML = `
-        <p><span class="vector vector--i">î lands on ${pair([a, c])}</span>, <span class="vector vector--j">ĵ lands on ${pair([b, d])}</span>.</p>
-        <p><span class="vector vector--v">v = ${pair(moving.v)} = ${number(x)}·î + ${number(y)}·ĵ</span>, so it lands on
-          ${number(x)}·${pair([a, c])} + ${number(y)}·${pair([b, d])} = <span class="vector">${pair(lands)}</span>.</p>
+        <p><span class="vector vector--v">v = ${pair(moving.v)} = ${number(x)}·î + ${number(y)}·ĵ</span>, so it lands on ${number(x)} lots of where î lands, plus ${number(y)} of where ĵ lands.</p>
         <p>${vectors.lineUp([a, c], [b, d])
           ? 'î and ĵ have landed on the same line, so the whole plane is squashed onto that line.'
           : 'The grid stays straight, parallel and evenly spaced: that is what makes a transformation linear.'}</p>`;
     }
+
+    // ---- Pointing (practices/highlighting.md) ----
+    // î and ĵ are refs: pointing at a pill, an equation column, a matrix column or an arrow
+    // announces one, and every other place it appears lights up.
+
+    const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+    const REF_OF_OBJECT = { 'i-hat': 'î', 'i-lands': 'î', 'j-hat': 'ĵ', 'j-lands': 'ĵ' };
+    const COLUMN_OF_REF = { 'î': 0, 'ĵ': 1 };
+
+    const DEFINITIONS = {
+      'î': { kind: 'Basis vector', title: 'î, one step right', description: 'The vector (1, 0). A matrix’s first column is where it lands.' },
+      'ĵ': { kind: 'Basis vector', title: 'ĵ, one step up', description: 'The vector (0, 1). A matrix’s second column is where it lands.' }
+    };
+    document.addEventListener('sb-resolve', (e) => { e.detail.definition = DEFINITIONS[e.detail.code] ?? null; });
+
+    document.addEventListener('sb-highlight', (e) => {
+      const ref = e.detail.ref;
+      const column = COLUMN_OF_REF[ref];
+      $('matrix-a').highlight = column === undefined ? {} : { columns: [column] };
+      moving.plane.highlight = Object.keys(REF_OF_OBJECT).filter((id) => REF_OF_OBJECT[id] === ref);
+    });
+
+    // The plane's arrows and the matrix's columns point back.
+    moving.plane.addEventListener('pointerover', (e) => announce(REF_OF_OBJECT[e.target.closest('[data-object-id]')?.dataset.objectId] ?? null));
+    moving.plane.addEventListener('pointerleave', () => announce(null));
+    $('matrix-a').addEventListener('pointerover', (e) => {
+      const column = e.target.closest('[data-column]')?.dataset.column;
+      announce(column === undefined ? null : ['î', 'ĵ'][column]);
+    });
+    $('matrix-a').addEventListener('pointerleave', () => announce(null));
 
     // ---- Start ----
 

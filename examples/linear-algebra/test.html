@@ -72,7 +72,19 @@
       field.value = '2';
       field.dispatchEvent(new Event('input', { bubbles: true }));
       assertEqual(page.getElementById('moving').matrix, [[2, 1], [0, 1]]);
-      assert(page.getElementById('moving-explain').textContent.includes('î lands on (2, 0)'), 'explains where î lands');
+      const iColumn = [...page.querySelectorAll('#product [data-ref="î"] mn')].map((n) => n.textContent);
+      assertEqual(iColumn, ['2', '0'], 'the equation shows where î lands');
+    });
+
+    test('chapter 3: pointing at î lights its column, its term and its arrows everywhere', async () => {
+      const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
+      await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      const page = frame.contentDocument;
+      page.querySelector('#product [data-ref="î"]').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      const litColumn = [...page.querySelectorAll('#matrix-a .sb-matrix__cell--highlighted input')].map((i) => i.dataset.column);
+      assertEqual(litColumn, ['0', '0'], 'the first column of A');
+      assertEqual(page.getElementById('moving').highlight, ['i-hat', 'i-lands'], 'î and where it lands');
+      assert([...page.querySelectorAll('sb-id')].some((pill) => pill.code === 'î' && pill.classList.contains('sb-id--lit')), 'the î pill');
     });
   </script>
 </body>
