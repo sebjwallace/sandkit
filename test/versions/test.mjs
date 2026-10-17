@@ -32,7 +32,8 @@ function checkChangelog(path) {
   return list[0].version;
 }
 
-for (const name of readdirSync(join(ROOT, 'components'))) {
+// Hidden entries, such as macOS's .DS_Store, are never components.
+for (const name of readdirSync(join(ROOT, 'components')).filter((name) => !name.startsWith('.'))) {
   test(`${name}: its script states its changelog's latest version`, () => {
     const version = checkChangelog(`components/${name}/CHANGELOG.md`);
     assert(headerVersion(`components/${name}/${name}.js`) === version, `header says ${headerVersion(`components/${name}/${name}.js`)}, changelog says ${version}`);
