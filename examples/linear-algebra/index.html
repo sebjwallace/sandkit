@@ -8,6 +8,7 @@
   <script src="../../shell/sb-theme-settings.js"></script>
   <script src="../../shell/sb-shell.js"></script>
   <script src="../../components/sb-plane/sb-plane.js"></script>
+  <script src="../../components/sb-parameters/sb-parameters.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
@@ -25,44 +26,122 @@
     </section>
 
     <section class="panel stage">
-      <sb-plane id="plane" range="5" snap="1" height="420"></sb-plane>
-      <div class="explain" id="explain"></div>
+      <sb-plane id="adding" range="5" snap="1" height="420"></sb-plane>
+      <div class="explain" id="adding-explain"></div>
+    </section>
+
+    <section class="chapter">
+      <h2>Chapter 2 · Scaling, combinations and span</h2>
+      <p>Multiplying a vector by a number stretches it. <span class="vector">2·v</span> is twice as long; <span class="vector">½·v</span> is half; <span class="vector">−1·v</span> points the opposite way. The number is called a <em>scalar</em>, because it scales.</p>
+      <p>Scale two vectors, then add them, and you have a <em>linear combination</em>: <span class="vector">a·v + b·w</span>. Every choice of <em>a</em> and <em>b</em> reaches some point. All the points you can reach this way are the <em>span</em> of v and w.</p>
+      <p class="try"><strong>Try:</strong> slide <em>a</em> and <em>b</em> until the tip lands on the red point <span class="vector vector--target">P</span>. Then show the span, and drag <span class="vector vector--w">w</span> until it lines up with <span class="vector vector--v">v</span>. What happens to everywhere you can reach?</p>
+    </section>
+
+    <section class="panel stage">
+      <sb-plane id="combining" range="5" snap="1" height="420"></sb-plane>
+      <div class="explain">
+        <sb-parameters id="scalars"></sb-parameters>
+        <label class="toggle"><input type="checkbox" id="show-span"> Show the span</label>
+        <div id="combining-explain"></div>
+      </div>
     </section>
   </main>
 
   <script>
     // Declare everything first; the sandbox starts at the bottom.
 
-    const plane = document.getElementById('plane');
-    const state = { v: [2, 1], w: [-1, 2] };
+    const $ = (id) => document.getElementById(id);
+    const SPAN_REACH = 4;     // the span is shown for scalars from −4 to 4
+    const SPAN_STEP = 0.5;
+    const TARGET = [3, -1];   // 1·v + (−1)·w, with the starting vectors
 
-    plane.addEventListener('sb-change', (e) => {
-      state[e.detail.id] = [e.detail.x, e.detail.y];
-      render();
+    // ---- Chapter 1: adding vectors ----
+
+    const adding = { plane: $('adding'), v: [2, 1], w: [-1, 2] };
+
+    adding.plane.addEventListener('sb-change', (e) => {
+      adding[e.detail.id] = [e.detail.x, e.detail.y];
+      renderAdding();
     });
 
-    // ---- Rendering ----
-
-    function render() {
-      const { v, w } = state;
+    function renderAdding() {
+      const { v, w } = adding;
       const sum = vectors.add(v, w);
-      plane.objects = [
+      adding.plane.objects = [
         { type: 'vector', id: 'v', x: v[0], y: v[1], label: 'v', draggable: true },
         { type: 'vector', id: 'w', x: w[0], y: w[1], label: 'w', tone: 'good', draggable: true },
         { type: 'vector', id: 'w-after-v', from: v, x: sum[0], y: sum[1], tone: 'muted' },
         { type: 'vector', id: 'sum', x: sum[0], y: sum[1], label: 'v + w', tone: 'warn' }
       ];
-      document.getElementById('explain').innerHTML = `
-        <p><span class="vector vector--v">v = (${v.join(', ')})</span><br><span class="steps">${vectors.describe(v)}</span></p>
-        <p><span class="vector vector--w">w = (${w.join(', ')})</span><br><span class="steps">${vectors.describe(w)}</span></p>
-        <p><span class="vector vector--sum">v + w = (${v[0]} + ${w[0]}, ${v[1]} + ${w[1]}) = (${sum.join(', ')})</span><br>
+      $('adding-explain').innerHTML = `
+        <p><span class="vector vector--v">v = ${pair(v)}</span><br><span class="steps">${vectors.describe(v)}</span></p>
+        <p><span class="vector vector--w">w = ${pair(w)}</span><br><span class="steps">${vectors.describe(w)}</span></p>
+        <p><span class="vector vector--sum">v + w = (${term(v[0])} + ${term(w[0])}, ${term(v[1])} + ${term(w[1])}) = ${pair(sum)}</span><br>
           <span class="steps">${vectors.describe(sum)}</span></p>
         <p>The grey arrow is <span class="vector vector--w">w</span> again, starting from the tip of <span class="vector vector--v">v</span>: walking v, then w, ends exactly where the sum points.</p>`;
     }
 
+    // ---- Chapter 2: scaling, combinations and span ----
+
+    const combining = { plane: $('combining'), v: [2, 1], w: [-1, 2], a: 1.5, b: 0.5 };
+
+    $('scalars').definitions = [
+      { key: 'a', label: 'a, the scalar for v', min: -3, max: 3, step: 0.5, value: combining.a },
+      { key: 'b', label: 'b, the scalar for w', min: -3, max: 3, step: 0.5, value: combining.b }
+    ];
+
+    $('scalars').addEventListener('sb-change', (e) => {
+      combining[e.detail.key] = e.detail.value;
+      renderCombining();
+    });
+    combining.plane.addEventListener('sb-change', (e) => {
+      combining[e.detail.id] = [e.detail.x, e.detail.y];
+      renderCombining();
+    });
+    $('show-span').addEventListener('change', renderCombining);
+
+    // Every point reached by a·v + b·w for a grid of scalars: a filled plane, or a single line.
+    function spanPoints(v, w) {
+      const points = [];
+      for (let a = -SPAN_REACH; a <= SPAN_REACH; a += SPAN_STEP) {
+        for (let b = -SPAN_REACH; b <= SPAN_REACH; b += SPAN_STEP) {
+          const [x, y] = vectors.combine(a, v, b, w);
+          points.push({ type: 'point', id: `span-${a}-${b}`, x, y, tone: 'muted' });
+        }
+      }
+      return points;
+    }
+
+    function renderCombining() {
+      const { v, w, a, b } = combining;
+      const av = vectors.scale(a, v), bw = vectors.scale(b, w);
+      const tip = vectors.add(av, bw);
+      const reached = vectors.same(tip, TARGET);
+      combining.plane.objects = [
+        ...($('show-span').checked ? spanPoints(v, w) : []),
+        { type: 'point', id: 'target', x: TARGET[0], y: TARGET[1], label: 'P', tone: 'bad' },
+        { type: 'vector', id: 'v', x: v[0], y: v[1], label: 'v', tone: 'muted', draggable: true },
+        { type: 'vector', id: 'w', x: w[0], y: w[1], label: 'w', tone: 'muted', draggable: true },
+        { type: 'vector', id: 'av', x: av[0], y: av[1], label: 'a·v' },
+        { type: 'vector', id: 'bw', from: av, x: tip[0], y: tip[1], tone: 'good' }, // unlabelled: it shares its tip with the sum
+        { type: 'vector', id: 'combination', x: tip[0], y: tip[1], label: 'a·v + b·w', tone: 'warn' }
+      ];
+
+      const spanNote = vectors.lineUp(v, w)
+        ? 'v and w line up, so every combination stays on one line through the origin. Their span is just that line.'
+        : 'v and w point in different directions, so some choice of a and b reaches any point at all. Their span is the whole plane.';
+      $('combining-explain').innerHTML = `
+        <p><span class="vector vector--v">a·v = ${number(a)}·${pair(v)} = ${pair(av)}</span></p>
+        <p><span class="vector vector--w">b·w = ${number(b)}·${pair(w)} = ${pair(bw)}</span></p>
+        <p><span class="vector vector--sum">a·v + b·w = ${pair(tip)}</span></p>
+        <p class="${reached ? 'reached' : 'steps'}">${reached ? `You reached P with a = ${number(a)} and b = ${number(b)}.` : `P is at ${pair(TARGET)}.`}</p>
+        <p>${spanNote}</p>`;
+    }
+
     // ---- Start ----
 
-    render();
+    renderAdding();
+    renderCombining();
   </script>
 </body>
 </html>

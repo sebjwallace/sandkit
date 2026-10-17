@@ -26,3 +26,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 16px 24px 40px; display: grid
 .vector--w { color: var(--sb-good); }
 .vector--sum { color: var(--sb-warn); }
 .steps { color: var(--sb-muted); }
+.vector--target { color: var(--sb-bad); }
+.reached { color: var(--sb-good); font-weight: 600; }
+.toggle { display: flex; align-items: center; gap: 8px; margin: 12px 0; font-size: 14px; }
+.toggle input { accent-color: var(--sb-accent); }
