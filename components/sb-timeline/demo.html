@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-timeline demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-timeline.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-accent-text); background: var(--sb-accent); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button.quiet { color: var(--sb-text); background: var(--sb-surface-2); }
+    .example .readout { margin: 10px 0 0; min-height: 1.5em; color: var(--sb-text); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-timeline">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Events laid out in time, in lanes, with a line for now and the stretch that matters in view.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Many subjects are stories of things happening: a war, an illness, a project, the history of an idea. Told in words, the events come one after another, and what's lost is how they sat against each other: which ran at the same time, what came just before what, how long one thing took next to another. A timeline puts every event in its place in time, in lanes for the people, places or threads involved, so all of that shows at a glance.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>What overlapped.</strong> Spans in separate lanes show what was going on at once, and what had to wait for what.</li>
+        <li><strong>Where things stood at a moment.</strong> Set <code>now</code> and everything still to come fades, while spans running through it fill up to it. Let viewers drag it, and the model says what was true then.</li>
+        <li><strong>Pointing the reader at a stretch.</strong> Prose about a single year can set <code>view</code>, and the timeline glides there.</li>
+        <li><strong>A running model's history.</strong> Add events as the model makes them, and the timeline becomes a record of what happened, and when.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>A measure that changes over time.</strong> A chart draws it as a line; a timeline is for events.</li>
+        <li><strong>Moving through bounded progress.</strong> A scrubber is the control for that; pair one with a timeline to play history at a steady pace.</li>
+        <li><strong>Who said what to whom.</strong> A sequence diagram shows messages between parties, in order.</li>
+        <li><strong>Many things moving through the same stages.</strong> A board shows where each one is now.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-timeline/sb-timeline.js"&gt;&lt;/script&gt;
+&lt;sb-timeline scrubbable&gt;&lt;/sb-timeline&gt;
+
+&lt;script&gt;
+  const timeline = document.querySelector('sb-timeline');
+  timeline.lanes = [{ id: 'body', label: 'Body' }, { id: 'immune', label: 'Immune system' }];
+  timeline.events = model.events;                  // [{ id, label, at, end, lane, note, tone }]
+  timeline.format = (day) =&gt; `Day ${day}`;
+  timeline.now = model.day;
+
+  // Dragging now asks the model; the model decides, and the timeline shows it.
+  timeline.addEventListener('sb-now', (e) =&gt; { model.goTo(e.detail.value); timeline.now = model.day; });
+&lt;/script&gt;</pre>
+      <p>Times are plain numbers in the sandbox's own unit, and <code>format</code> says how to show them. An event with an <code>end</code> is a span; without one, it's a moment. Viewers drag to pan and hold Ctrl or ⌘ to zoom, and the timeline keeps their view until the sandbox sets <code>view</code> again.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Choose lanes that make the point.</strong> Two sides of a race, cause and effect, plan and reality: whatever should be read side by side.</li>
+        <li><strong>Let now tell the story.</strong> Step or drag now forward and say, beside the timeline, what's true at that moment.</li>
+        <li><strong>Glide to the part that matters.</strong> Give prose buttons or links that set <code>view</code>, so the reader looks where the words are.</li>
+        <li><strong>Colour the turning points.</strong> A <code>tone</code> on the few events that changed everything makes them stand out from the rest.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Fighting off a virus</h2>
+      <p>Three weeks of a viral infection, from the body's side and the immune system's. Drag the line for now, or play it, and watch the order things happen in: <span class="point" data-lanes="symptoms">the symptoms</span> aren't the virus itself but the body fighting it, which is why they arrive after <span class="point" data-events="peak">the peak</span> and linger after it has passed. <span class="point" data-events="antibodies,memory">Lasting protection</span> comes last of all.</p>
+      <div class="actions">
+        <button id="virus-play">Play</button><button id="virus-reset" class="quiet">Start again</button>
+      </div>
+      <sb-timeline id="virus" scrubbable></sb-timeline>
+      <p class="readout" id="virus-readout"></p>
+    </section>
+
+    <section class="example">
+      <h2>The Space Race</h2>
+      <p>The Soviet Union and the United States racing into space, from the first satellite to the last Moon landing. The Soviets took nearly every early first, from <span class="point" data-events="sputnik">Sputnik</span> to <span class="point" data-events="gagarin">Gagarin</span>; the Americans won the race that was declared in 1961, with <span class="point" data-events="apollo11">Apollo 11</span>. Click an event for its story, or look closer:</p>
+      <div class="actions">
+        <button class="quiet" data-view="">The whole race</button>
+        <button class="quiet" data-view="1960.9,1962.5">1961: the first people in space</button>
+        <button class="quiet" data-view="1966.6,1970.4">The race to the Moon</button>
+      </div>
+      <sb-timeline id="race"></sb-timeline>
+      <p class="readout" id="race-readout">Click an event.</p>
+    </section>
+  </main>
+
+  <script>
+    // ---- Fighting off a virus ----
+
+    const virus = document.getElementById('virus');
+    virus.lanes = [
+      { id: 'virus', label: 'Virus' },
+      { id: 'symptoms', label: 'Symptoms' },
+      { id: 'innate', label: 'First response' },
+      { id: 'adaptive', label: 'Targeted response' }
+    ];
+    virus.events = [
+      { id: 'infection', label: 'Infection', at: 0, lane: 'virus', note: 'a few virus particles get into the cells lining the nose' },
+      { id: 'multiplying', label: 'Multiplying', at: 0, end: 4, lane: 'virus', tone: 'bad', note: 'each infected cell releases thousands of copies' },
+      { id: 'peak', label: 'Peak', at: 4, lane: 'virus', tone: 'bad', note: 'the most virus there will be, and the most contagious' },
+      { id: 'declining', label: 'Declining', at: 4, end: 10, lane: 'virus', note: 'killed faster than it can copy itself' },
+      { id: 'cleared', label: 'Cleared', at: 10, lane: 'virus', tone: 'good', note: 'no virus left to find' },
+      { id: 'incubation', label: 'Feeling fine', at: 0, end: 2, lane: 'symptoms', note: 'the virus spreads before anything is felt' },
+      { id: 'fever', label: 'Fever', at: 2, end: 6, lane: 'symptoms', tone: 'warn', note: 'raised by the immune system, to slow the virus down' },
+      { id: 'tired', label: 'Tiredness', at: 2, end: 9, lane: 'symptoms', note: 'the body putting its energy into fighting' },
+      { id: 'cough', label: 'Cough', at: 3, end: 13, lane: 'symptoms', note: 'clearing the damaged airways; it outlasts the virus' },
+      { id: 'alarm', label: 'Alarm raised', at: 1, lane: 'innate', note: 'infected cells release interferon, warning their neighbours' },
+      { id: 'innate', label: 'General defences', at: 1, end: 7, lane: 'innate', note: 'cells that attack anything foreign, holding the virus back' },
+      { id: 'tcells', label: 'T cells', at: 5, end: 12, lane: 'adaptive', note: 'cells trained on this virus, killing infected cells' },
+      { id: 'antibodies', label: 'Antibodies', at: 7, end: 21, lane: 'adaptive', tone: 'good', note: 'made for this virus alone, they stop it entering cells' },
+      { id: 'memory', label: 'Memory cells', at: 14, lane: 'adaptive', tone: 'good', note: 'kept for years, ready to answer the same virus within hours' }
+    ];
+    virus.format = (day) => `Day ${day}`;
+    virus.view = [-0.5, 21.5];
+    const LAST_DAY = 21;
+    const virusReadout = document.getElementById('virus-readout');
+    const playButton = document.getElementById('virus-play');
+    let playing = null;
+
+    // What is happening on the day: every event that has begun and not yet ended.
+    function showDay(day) {
+      virus.now = Math.min(Math.max(Math.round(day * 2) / 2, 0), LAST_DAY);
+      const now = virus.now;
+      const happening = virus.events.filter((e) => (e.end == null ? e.at === now : e.at <= now && now <= e.end));
+      virusReadout.textContent = `Day ${now}: ${happening.map((e) => e.label).join(', ') || 'recovering'}.`;
+    }
+
+    function pause() {
+      clearInterval(playing);
+      playing = null;
+      playButton.textContent = 'Play';
+    }
+
+    playButton.addEventListener('click', () => {
+      if (playing) return pause();
+      if (virus.now >= LAST_DAY) showDay(0);
+      playButton.textContent = 'Pause';
+      playing = setInterval(() => (virus.now >= LAST_DAY ? pause() : showDay(virus.now + 0.5)), 150);
+    });
+    document.getElementById('virus-reset').addEventListener('click', () => { pause(); showDay(0); });
+    virus.addEventListener('sb-now', (e) => { pause(); showDay(e.detail.value); });
+    virus.addEventListener('sb-select', (e) => { virusReadout.textContent = `${e.detail.event.label}: ${e.detail.event.note}.`; });
+
+    // ---- The Space Race ----
+    // Times are years, with the month as a fraction.
+
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const date = (year, month) => year + (month - 1) / 12;
+    const showDate = (t) => (Number.isInteger(t) ? String(t) : `${MONTHS[Math.floor((t % 1) * 12 + 1e-9)]} ${Math.floor(t)}`);
+
+    const race = document.getElementById('race');
+    race.lanes = [{ id: 'ussr', label: 'Soviet Union' }, { id: 'usa', label: 'United States' }];
+    race.events = [
+      { id: 'sputnik', label: 'Sputnik 1', at: date(1957, 10), lane: 'ussr', tone: 'bad', note: 'the first satellite; America woke to its beeping overhead' },
+      { id: 'laika', label: 'Laika', at: date(1957, 11), lane: 'ussr', note: 'the first animal to orbit the Earth' },
+      { id: 'luna3', label: 'Far side of the Moon', at: date(1959, 10), lane: 'ussr', note: 'Luna 3 photographs what no one had ever seen' },
+      { id: 'vostok', label: 'Vostok', at: date(1961, 4), end: date(1963, 6), lane: 'ussr', note: 'six one-person flights' },
+      { id: 'gagarin', label: 'Gagarin', at: date(1961, 4), lane: 'ussr', tone: 'bad', note: 'Yuri Gagarin, the first person in space, orbits once' },
+      { id: 'tereshkova', label: 'Tereshkova', at: date(1963, 6), lane: 'ussr', note: 'Valentina Tereshkova, the first woman in space' },
+      { id: 'leonov', label: 'First spacewalk', at: date(1965, 3), lane: 'ussr', note: 'Alexei Leonov, who nearly could not get back inside' },
+      { id: 'luna9', label: 'Soft landing', at: date(1966, 2), lane: 'ussr', note: 'Luna 9 lands gently on the Moon and sends pictures' },
+      { id: 'soyuz1', label: 'Soyuz 1', at: date(1967, 4), lane: 'ussr', tone: 'warn', note: 'Vladimir Komarov killed when the parachute fails' },
+      { id: 'n1', label: 'N1 rocket failures', at: date(1969, 2), end: date(1972, 11), lane: 'ussr', tone: 'warn', note: 'the Soviet Moon rocket fails all four launches' },
+      { id: 'explorer', label: 'Explorer 1', at: date(1958, 2), lane: 'usa', note: 'the first American satellite' },
+      { id: 'nasa', label: 'NASA', at: date(1958, 10), lane: 'usa', note: 'founded in answer to Sputnik' },
+      { id: 'mercury', label: 'Mercury', at: date(1961, 5), end: date(1963, 5), lane: 'usa', note: 'six one-person flights' },
+      { id: 'shepard', label: 'Shepard', at: date(1961, 5), lane: 'usa', note: 'Alan Shepard, fifteen minutes up and down, weeks after Gagarin' },
+      { id: 'kennedy', label: 'Moon declared', at: date(1961, 5), lane: 'usa', note: 'Kennedy commits to landing on the Moon within the decade' },
+      { id: 'glenn', label: 'Glenn orbits', at: date(1962, 2), lane: 'usa', note: 'John Glenn, the first American to orbit the Earth' },
+      { id: 'gemini', label: 'Gemini', at: date(1965, 3), end: date(1966, 11), lane: 'usa', note: 'two-person flights, practising the steps a Moon landing needs' },
+      { id: 'apollo1', label: 'Apollo 1 fire', at: date(1967, 1), lane: 'usa', tone: 'warn', note: 'three astronauts killed in a test on the launch pad' },
+      { id: 'apollo8', label: 'Apollo 8', at: date(1968, 12), lane: 'usa', note: 'the first people to orbit the Moon' },
+      { id: 'apollo11', label: 'Apollo 11', at: date(1969, 7), lane: 'usa', tone: 'good', note: 'Neil Armstrong and Buzz Aldrin walk on the Moon' },
+      { id: 'apollo', label: 'Moon landings', at: date(1969, 7), end: date(1972, 12), lane: 'usa', note: 'six landings, twelve people on the Moon' }
+    ];
+    race.format = showDate;
+
+    const raceReadout = document.getElementById('race-readout');
+    race.addEventListener('sb-select', (e) => { raceReadout.textContent = `${showDate(e.detail.event.at)}, ${e.detail.event.label}: ${e.detail.event.note}.`; });
+    for (const button of document.querySelectorAll('[data-view]')) {
+      button.addEventListener('click', () => { race.view = button.dataset.view ? button.dataset.view.split(',').map(Number) : null; });
+    }
+
+    // ---- Pointing from the prose ----
+
+    const ids = (list) => (list ? list.split(',') : []);
+    for (const point of document.querySelectorAll('.point')) {
+      const timeline = point.closest('.example').querySelector('sb-timeline');
+      point.addEventListener('pointerenter', () => { timeline.highlight = { events: ids(point.dataset.events), lanes: ids(point.dataset.lanes) }; });
+      point.addEventListener('pointerleave', () => { timeline.highlight = {}; });
+    }
+
+    // ---- Start ----
+
+    showDay(6);
+  </script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-timeline tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-timeline.js"></script>
+  <style>sb-timeline { width: 700px; }</style>
+</head>
+<body>
+  <script>
+    const LANES = [{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Beta' }];
+    const EVENTS = [
+      { id: 'start', label: 'Start', at: 0, lane: 'a' },
+      { id: 'build', label: 'Build', at: 10, end: 40, lane: 'a', tone: 'warn', note: 'slow' },
+      { id: 'test', label: 'Test', at: 30, end: 60, lane: 'b' },
+      { id: 'ship', label: 'Ship', at: 100, lane: 'b' }
+    ];
+
+    function timeline(attrs = '') {
+      const el = mount(`<sb-timeline ${attrs}></sb-timeline>`);
+      el.lanes = LANES;
+      el.events = EVENTS;
+      return el;
+    }
+
+    const event = (el, id) => el.querySelector(`.sb-timeline__event[data-id="${id}"]`);
+    const left = (el, id) => parseFloat(event(el, id).style.left);
+    const inTrack = (el, lane) => [...el.querySelectorAll(`.sb-timeline__track[data-lane="${lane}"] .sb-timeline__event`)].map((e) => e.dataset.id);
+    const press = (target, x) => target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: x }));
+    const moveTo = (x) => window.dispatchEvent(new PointerEvent('pointermove', { clientX: x }));
+    const release = () => window.dispatchEvent(new PointerEvent('pointerup'));
+    const near = (a, b) => Math.abs(a - b) < 1e-3; // the browser keeps percentages to a few places
+
+    // ---- Lanes and events ----
+
+    test('shows a lane per lane, with each event in its lane', () => {
+      const el = timeline();
+      assertEqual([...el.querySelectorAll('.sb-timeline__label')].map((l) => l.textContent), ['Alpha', 'Beta']);
+      assertEqual(inTrack(el, 'a'), ['start', 'build']);
+      assertEqual(inTrack(el, 'b'), ['test', 'ship']);
+    });
+
+    test('with no lanes, every event shares one lane', () => {
+      const el = mount('<sb-timeline></sb-timeline>');
+      el.events = EVENTS;
+      assertEqual(el.querySelectorAll('.sb-timeline__track').length, 1);
+      assertEqual(el.querySelectorAll('.sb-timeline__event').length, 4);
+    });
+
+    test('an event with an end is a span; without one, a moment', () => {
+      const el = timeline();
+      assert(event(el, 'build').classList.contains('sb-timeline__event--span'));
+      assert(event(el, 'start').classList.contains('sb-timeline__event--point'));
+    });
+
+    test('an event says what it is, when, and its note, and exposes its tone', () => {
+      const el = timeline();
+      assertEqual(event(el, 'build').getAttribute('aria-label'), 'Build, 10 to 40, slow');
+      assertEqual(event(el, 'build').dataset.tone, 'warn');
+      el.format = (t) => `day ${t}`;
+      assertEqual(event(el, 'start').getAttribute('aria-label'), 'Start, day 0');
+    });
+
+    test('shows the empty text with no events', () => {
+      assertEqual(mount('<sb-timeline empty-text="No events yet."></sb-timeline>').textContent.trim(), 'No events yet.');
+    });
+
+    // ---- Placing in time ----
+
+    test('fits every event by default, with a margin', () => {
+      const el = timeline();
+      assertEqual(el.shown, [-5, 105]);
+      assert(near(left(el, 'start'), (5 / 110) * 100), 'placed by its time');
+      assert(near(parseFloat(event(el, 'build').style.width), (30 / 110) * 100), 'a span is as wide as it lasts');
+    });
+
+    test('labels the axis in round steps, through format', () => {
+      const el = timeline();
+      el.view = [0, 100];
+      el.format = (t) => `${t}s`;
+      const labels = [...el.querySelectorAll('.sb-timeline__tick')].map((t) => t.textContent);
+      assertEqual(labels[0], '0s');
+      assertEqual(labels.at(-1), '100s');
+      assert(labels.length >= 3 && labels.length <= 11, `a readable number of labels, got ${labels.length}`);
+    });
+
+    test('events that would overlap share out rows in their lane', () => {
+      const el = mount('<sb-timeline></sb-timeline>');
+      el.events = [
+        { id: 'x', label: 'Long running', at: 0, end: 50 },
+        { id: 'y', label: 'Overlaps', at: 20, end: 70 },
+        { id: 'z', label: 'Later', at: 90 }
+      ];
+      assertEqual(['x', 'y', 'z'].map((id) => event(el, id).style.top), ['4px', '30px', '4px']);
+      assertEqual(el.querySelector('.sb-timeline__track').style.height, '56px', 'the lane grows to fit');
+    });
+
+    // ---- The view, zooming and panning ----
+
+    test('setting view shows that stretch, gliding there', () => {
+      const el = timeline();
+      el.view = [0, 50];
+      assertEqual(el.shown, [0, 50]);
+      assertEqual(el.view, [0, 50]);
+      assert(el.classList.contains('sb-timeline--glide'), 'glides');
+      assert(near(left(el, 'build'), 20));
+      el.view = null;
+      assertEqual(el.shown, [-5, 105], 'null fits the events again');
+    });
+
+    test('the zoom buttons zoom about the middle, and reset glides back', () => {
+      const el = timeline();
+      el.view = [0, 60];
+      el.querySelector('[data-tool="in"]').click();
+      assertEqual(el.shown, [10, 50]);
+      el.querySelector('[data-tool="out"]').click();
+      assertEqual(el.shown.map(Math.round), [0, 60]);
+      el.querySelector('[data-tool="in"]').click();
+      el.querySelector('[data-tool="reset"]').click();
+      assertEqual(el.shown, [0, 60]);
+    });
+
+    test('ctrl-scrolling zooms, but plain scrolling is left to the page', () => {
+      const el = timeline();
+      el.view = [0, 100];
+      el.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true }));
+      assertEqual(el.shown, [0, 100]);
+      el.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, bubbles: true, cancelable: true }));
+      assert(el.shown[1] - el.shown[0] < 100, 'zoomed in');
+    });
+
+    test('dragging a lane pans, without selecting', () => {
+      const el = timeline();
+      el.view = [0, 100];
+      const selections = recordEvents(el, 'sb-select');
+      const box = el.querySelector('.sb-timeline__axis').getBoundingClientRect();
+      press(event(el, 'ship'), box.left + 300);
+      moveTo(box.left + 300 - box.width / 10);
+      release();
+      event(el, 'ship').click();
+      assertEqual(el.shown.map(Math.round), [10, 110], 'moved a tenth later');
+      assertEqual(selections.length, 0);
+    });
+
+    test("viewers' zooming survives new events, until reset", () => {
+      const el = timeline();
+      el.querySelector('[data-tool="in"]').click();
+      const zoomed = el.shown;
+      el.events = [...EVENTS, { id: 'more', at: 50 }];
+      assertEqual(el.shown, zoomed);
+      el.reset();
+      assertEqual(el.shown, [-5, 105]);
+    });
+
+    // ---- Now ----
+
+    test('events after now are faded, and a span running through it shows how far along', () => {
+      const el = timeline();
+      el.now = 20;
+      assertEqual([...el.querySelectorAll('.sb-timeline__event--future')].map((e) => e.dataset.id), ['test', 'ship']);
+      assert(event(el, 'build').classList.contains('sb-timeline__event--ongoing'));
+      assertEqual(event(el, 'build').style.getPropertyValue('--sb-timeline-done'), '33.33333333333333%');
+      el.now = null;
+      assertEqual(el.querySelectorAll('.sb-timeline__now, .sb-timeline__event--future').length, 0, 'none without now');
+    });
+
+    test('marks now with a line and a label on the axis', () => {
+      const el = timeline();
+      el.view = [0, 100];
+      el.now = 25;
+      assertEqual(el.querySelector('.sb-timeline__now').style.left, '25%');
+      assertEqual(el.querySelector('.sb-timeline__now-label').textContent, '25');
+    });
+
+    test('on a scrubbable timeline, dragging along the axis asks to move now, without moving it', () => {
+      const el = timeline('scrubbable');
+      el.view = [0, 100];
+      el.now = 10;
+      const requests = recordEvents(el, 'sb-now');
+      const box = el.querySelector('.sb-timeline__axis').getBoundingClientRect();
+      press(el.querySelector('.sb-timeline__axis'), box.left + box.width / 2);
+      moveTo(box.left + box.width * 0.75);
+      release();
+      moveTo(box.left);
+      assertEqual(requests.map((e) => Math.round(e.detail.value)), [50, 75]);
+      assertEqual(el.now, 10, 'now stays until the sandbox sets it');
+    });
+
+    test('only a scrubbable timeline asks to move now', () => {
+      const el = timeline();
+      el.now = 10;
+      const requests = recordEvents(el, 'sb-now');
+      press(el.querySelector('.sb-timeline__axis'), 100);
+      release();
+      assertEqual(requests.length, 0);
+      assert(!el.querySelector('.sb-timeline__now').hasAttribute('tabindex'), 'and the line takes no focus');
+    });
+
+    test('the arrow keys on now ask for the previous or next moment, keeping focus', () => {
+      const el = timeline('scrubbable');
+      el.now = 20;
+      el.addEventListener('sb-now', (e) => { el.now = e.detail.value; });
+      const key = (k) => el.querySelector('.sb-timeline__now').dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+      el.querySelector('.sb-timeline__now').focus();
+      key('ArrowRight');
+      assertEqual(el.now, 30);
+      key('ArrowRight');
+      assertEqual(el.now, 40);
+      key('ArrowLeft');
+      key('ArrowLeft');
+      assertEqual(el.now, 10);
+      assert(document.activeElement.classList.contains('sb-timeline__now'), 'focus stays on now');
+    });
+
+    // ---- Selecting, pointing and highlighting ----
+
+    test('clicking an event fires sb-select with it, as does Enter', () => {
+      const el = timeline();
+      const selections = recordEvents(el, 'sb-select');
+      event(el, 'test').click();
+      event(el, 'ship').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      assertEqual(selections.map((e) => e.detail.event), [EVENTS[2], EVENTS[3]]);
+    });
+
+    test('pointing at an event fires sb-point with it, then null on leaving', () => {
+      const el = timeline();
+      const points = recordEvents(el, 'sb-point');
+      event(el, 'start').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(points.map((e) => e.detail?.event.id ?? null), ['start', null]);
+    });
+
+    test('highlights events and lanes by id', () => {
+      const el = timeline();
+      el.highlight = { events: ['ship'], lanes: ['a'] };
+      assertEqual([...el.querySelectorAll('.sb-timeline__event--highlighted')], [event(el, 'ship')]);
+      assertEqual([...el.querySelectorAll('.sb-timeline__label--highlighted, .sb-timeline__track--highlighted')].map((e) => e.dataset.lane), ['a', 'a']);
+      el.highlight = {};
+      assertEqual(el.querySelectorAll('[class*="highlighted"]').length, 0, 'cleared');
+    });
+
+    // A page that shrinks, even for a moment, pulls a viewer scrolled to the bottom up with it.
+    // Scrolling catches up a frame later, so this watches the page's height whenever anything is measured.
+    test('updating never shrinks the page for a moment', () => {
+      const el = mount('<div><div style="height: 3000px"></div><sb-timeline></sb-timeline></div>').lastElementChild;
+      el.lanes = LANES;
+      el.events = EVENTS;
+      const height = document.documentElement.scrollHeight;
+      const clientWidth = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
+      let least = height;
+      Object.defineProperty(Element.prototype, 'clientWidth', {
+        configurable: true,
+        get() { least = Math.min(least, document.documentElement.scrollHeight); return clientWidth.get.call(this); }
+      });
+      try { el.highlight = { events: ['ship'] }; } finally { Object.defineProperty(Element.prototype, 'clientWidth', clientWidth); }
+      assertEqual(least, height);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two timelines on one page keep their own events, now and view', () => {
+      mount('<div><sb-timeline></sb-timeline><sb-timeline></sb-timeline></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-timeline');
+      for (const el of [a, b]) { el.lanes = LANES; el.events = EVENTS; }
+      a.now = 50;
+      a.view = [0, 10];
+      assertEqual(b.querySelectorAll('.sb-timeline__now').length, 0);
+      assertEqual(b.shown, [-5, 105]);
+      assertEqual(a.shown, [0, 10]);
+    });
+
+    test('displays text as text, never as markup', () => {
+      const el = mount('<sb-timeline></sb-timeline>');
+      el.lanes = [{ id: 'x', label: '<i>x</i>' }];
+      el.events = [{ id: 'r', label: '<b>bold</b>', note: '<b>note</b>', at: 1, lane: 'x' }];
+      el.format = (t) => `<b>${t}</b>`;
+      el.now = 1;
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(event(el, 'r').textContent, '<b>bold</b>');
+    });
+  </script>
+</body>
+</html>
