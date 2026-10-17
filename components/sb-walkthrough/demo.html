@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-walkthrough demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-walkthrough.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 1100px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; max-width: 900px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+
+    /* The views: plain blocks here; in a sandbox, panels holding components. */
+    .view { box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); font-size: 13px; }
+    .view h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .view svg { display: block; width: 100%; height: calc(100% - 26px); }
+    [slot] [data-ref]:not(svg *) { border-radius: 4px; outline: 2px solid transparent; outline-offset: 1px; }
+    [slot] .lit:not(svg *) { background: var(--sb-accent-soft); outline-color: var(--sb-accent); }
+    svg .lit { stroke: var(--sb-accent); stroke-width: 3; }
+    svg .box.lit { fill: var(--sb-accent-soft); }
+
+    /* Card payment */
+    .mock { display: grid; gap: 8px; max-width: 260px; }
+    .mock .field { padding: 6px 8px; border: 1px solid var(--sb-border); border-radius: 6px; background: var(--sb-surface-2); color: var(--sb-muted); }
+    .mock .pay { padding: 7px; border-radius: 6px; background: var(--sb-text); color: var(--sb-surface); text-align: center; font-weight: 600; }
+    .code { margin: 0; font: 12px/1.7 ui-monospace, Menlo, Consolas, monospace; white-space: pre; }
+    .code span { display: block; padding: 0 4px; }
+    .messages { margin: 0; padding-left: 20px; }
+    .messages li { padding: 1px 4px; }
+    .box { fill: var(--sb-surface-2); stroke: var(--sb-border); stroke-width: 1.5; }
+    .label { fill: var(--sb-text); font: 600 12px var(--sb-font); text-anchor: middle; }
+    .arrow { stroke: var(--sb-muted); stroke-width: 1.5; fill: none; marker-end: url(#tip); }
+
+    /* Moon */
+    .sunlight { fill: #f5b700; }
+    .earth { fill: #3b82c4; }
+    .moon-dark { fill: #4b5563; }
+    .moon-light { fill: #f3f4f6; }
+    .orbit { fill: none; stroke: var(--sb-border); stroke-dasharray: 4 4; }
+    .caption { fill: var(--sb-muted); font: 12px var(--sb-font); text-anchor: middle; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-walkthrough">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A story told across several views, one step at a time.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Some things can't be explained by one picture. A card payment is a screen, a set of systems, some code and a string of messages, all at once; the moon's phases are where it is in space and what we see from here. A walkthrough puts the views side by side and tells the story across them, one step at a time, outlining the view to look at and lighting up the part being talked about.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Joining several views into one explanation,</strong> so readers see how a click on a screen becomes a line of code and a message to another system.</li>
+        <li><strong>Guiding attention.</strong> Readers never wonder where to look: the step tells them, and they can point at its words to look again.</li>
+        <li><strong>Opening a sandbox.</strong> A short walkthrough is a good first chapter, before readers explore on their own.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>One view.</strong> Prose beside it, with words that point, is enough.</li>
+        <li><strong>Free exploration.</strong> Once readers know their way, let them roam the views without steps.</li>
+        <li><strong>Progress over time.</strong> A timeline or play controls step a model; a walkthrough steps an explanation.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-walkthrough/sb-walkthrough.js"&gt;&lt;/script&gt;
+
+&lt;sb-walkthrough&gt;
+  &lt;section data-step data-focus="screen" data-highlight="pay"&gt;
+    &lt;p&gt;The shopper presses &lt;span data-ref="pay"&gt;Pay&lt;/span&gt;.&lt;/p&gt;
+  &lt;/section&gt;
+  &lt;section data-step data-focus="code" data-highlight="charge"&gt;…&lt;/section&gt;
+  &lt;div slot="screen"&gt;…&lt;/div&gt;
+  &lt;div slot="code"&gt;…&lt;/div&gt;
+&lt;/sb-walkthrough&gt;
+
+&lt;script&gt;
+  const walk = document.querySelector('sb-walkthrough');
+  const show = (refs) =&gt; { /* set each view's highlight */ };
+  show(walk.current.highlight);
+  walk.addEventListener('sb-step', (e) =&gt; show(e.detail.highlight));
+  walk.addEventListener('sb-point', (e) =&gt; show(e.detail.ref ? [e.detail.ref] : walk.current.highlight));
+&lt;/script&gt;</pre>
+      <p>Children marked <code>data-step</code> are the narration; children with a <code>slot</code> are the views, one to four of them, laid out beside it (on the left, or along the bottom with <code>narration="bottom"</code>). Each step names the views to outline in <code>data-focus</code> and the refs to light in <code>data-highlight</code>. The walkthrough doesn't know what's in the views, so the sandbox passes the refs on, as above. Anything else a step should do, such as which line of code is running, goes on it as a <code>data-</code> attribute. Panels make good views: readers can pop one out and the outline follows it.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>One idea per step,</strong> and point at it. A step that lights nothing is usually two steps or none.</li>
+        <li><strong>Move the reader's eye on purpose.</strong> Change the focused view when the story crosses from one view to another, and say so in the words.</li>
+        <li><strong>Mark the words that name things,</strong> so readers can point back at them.</li>
+        <li><strong>Leave the views working.</strong> Readers who stop to poke at a view learn the most.</li>
+      </ul>
+
+      <p>The full contract, including every property, method, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Paying by card</h2>
+      <p>Four views, one story. Step through it, and point at the underlined words to look again.</p>
+      <sb-walkthrough id="payment" style="height: 560px">
+        <section data-step data-focus="screen" data-highlight="card pay">
+          <h3>1 · The shopper pays</h3>
+          <p>It starts on the checkout page. The shopper types <span data-ref="card">their card number</span> and presses <span data-ref="pay">Pay</span>.</p>
+          <p>Everything after this happens in about two seconds, between four systems.</p>
+        </section>
+        <section data-step data-focus="systems messages" data-highlight="to-shop m1">
+          <h3>2 · The browser tells the shop</h3>
+          <p>The browser sends the order to <span data-ref="shop" data-focus="systems">the shop's server</span>. Not the card number itself: <span data-ref="m1" data-focus="messages">a token</span> standing for it, which the payment provider gave the page.</p>
+        </section>
+        <section data-step data-focus="code" data-highlight="charge">
+          <h3>3 · The shop asks for the money</h3>
+          <p>The server never sees the card. <span data-ref="charge">It asks the provider</span> to charge the token for the order's total, and waits.</p>
+          <p>Notice what happens if <span data-ref="declined">it's declined</span>: nothing is saved, and the shopper is told.</p>
+        </section>
+        <section data-step data-focus="systems messages" data-highlight="to-bank m2 m3">
+          <h3>4 · The bank decides</h3>
+          <p>The provider asks <span data-ref="bank" data-focus="systems">the shopper's bank</span>, which checks the balance and fraud rules, and <span data-ref="m3" data-focus="messages">approves</span>.</p>
+        </section>
+        <section data-step data-focus="code screen" data-highlight="save done">
+          <h3>5 · Back to the shopper</h3>
+          <p>Approved, the server <span data-ref="save" data-focus="code">saves the order</span>, and the page shows <span data-ref="done" data-focus="screen">the confirmation</span>. The money itself moves days later, between banks.</p>
+        </section>
+
+        <div slot="screen" class="view">
+          <h4>Checkout page</h4>
+          <div class="mock">
+            <div>Total: £42.00</div>
+            <div class="field" data-ref="card">•••• •••• •••• 4242</div>
+            <div class="pay" data-ref="pay">Pay £42.00</div>
+            <div data-ref="done">✓ Order placed. Thank you!</div>
+          </div>
+        </div>
+        <div slot="systems" class="view">
+          <h4>Systems</h4>
+          <svg viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet">
+            <defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--sb-muted)"/></marker></defs>
+            <rect class="box" x="10" y="20" width="110" height="44" rx="6" data-ref="browser"/><text class="label" x="65" y="47">Browser</text>
+            <rect class="box" x="200" y="20" width="110" height="44" rx="6" data-ref="shop"/><text class="label" x="255" y="47">Shop server</text>
+            <rect class="box" x="200" y="136" width="110" height="44" rx="6" data-ref="provider"/><text class="label" x="255" y="163">Payment provider</text>
+            <rect class="box" x="10" y="136" width="110" height="44" rx="6" data-ref="bank"/><text class="label" x="65" y="163">Bank</text>
+            <path class="arrow" d="M122 42 H198" data-ref="to-shop"/>
+            <path class="arrow" d="M255 66 V134" data-ref="to-provider"/>
+            <path class="arrow" d="M198 158 H122" data-ref="to-bank"/>
+          </svg>
+        </div>
+        <div slot="code" class="view">
+          <h4>Shop server · checkout</h4>
+          <pre class="code"><span>function checkout(order, token):</span><span data-ref="charge">  result = provider.charge(token, order.total)</span><span data-ref="declined">  if result is declined: return "Card declined"</span><span data-ref="save">  save(order, paid = true)</span><span>  return "Order placed"</span></pre>
+        </div>
+        <div slot="messages" class="view">
+          <h4>Messages</h4>
+          <ol class="messages">
+            <li data-ref="m1">Browser → Shop: order + token</li>
+            <li data-ref="m2">Provider → Bank: may we charge £42?</li>
+            <li data-ref="m3">Bank → Provider: approved</li>
+            <li data-ref="m4">Provider → Shop: paid</li>
+          </ol>
+        </div>
+      </sb-walkthrough>
+    </section>
+
+    <section class="example">
+      <h2>Why the moon has phases</h2>
+      <p>The narration along the bottom, with two views beside each other. Each step carries the moon's place in its orbit as <code>data-angle</code>, and the sandbox moves both views to it.</p>
+      <sb-walkthrough id="moon" narration="bottom" style="height: 520px">
+        <section data-step data-focus="above" data-highlight="lit-half" data-angle="45">
+          <p><strong>Half the moon is always lit.</strong> The sun lights <span data-ref="lit-half">the half facing it</span>, wherever the moon is. What changes is how much of that half we can see from <span data-ref="earth">Earth</span>.</p>
+        </section>
+        <section data-step data-focus="above sky" data-highlight="moon" data-angle="0">
+          <p><strong>New moon.</strong> The moon sits between us and the sun, its lit half facing away. <span data-ref="phase" data-focus="sky">We see almost nothing.</span></p>
+        </section>
+        <section data-step data-focus="sky" data-highlight="phase" data-angle="90">
+          <p><strong>First quarter.</strong> A quarter of the way round, we look at the moon side-on and see <span data-ref="phase">half its face lit</span>, on the right.</p>
+        </section>
+        <section data-step data-focus="above sky" data-highlight="moon phase" data-angle="180">
+          <p><strong>Full moon.</strong> Opposite the sun, the whole lit half faces us. Compare <span data-ref="moon" data-focus="above">where it is</span> with <span data-ref="phase" data-focus="sky">what we see</span>.</p>
+        </section>
+        <section data-step data-focus="sky" data-highlight="phase" data-angle="270">
+          <p><strong>Last quarter.</strong> Three quarters round, the left half is lit, shrinking each night until the next new moon, about 29½ days after the last.</p>
+        </section>
+
+        <div slot="above" class="view">
+          <h4>From above</h4>
+          <svg viewBox="0 0 300 220">
+            <rect class="sunlight" x="0" y="20" width="10" height="180" rx="3"/>
+            <text class="caption" x="40" y="212">sunlight →</text>
+            <circle class="orbit" cx="170" cy="110" r="80"/>
+            <circle class="earth" cx="170" cy="110" r="18" data-ref="earth"/>
+            <g id="moon-above" data-ref="moon">
+              <circle class="moon-dark" r="12"/>
+              <path class="moon-light" d="M0 -12 A12 12 0 0 0 0 12 Z" data-ref="lit-half"/>
+            </g>
+          </svg>
+        </div>
+        <div slot="sky" class="view">
+          <h4>From Earth</h4>
+          <svg viewBox="0 0 300 220">
+            <g transform="translate(150 105)" data-ref="phase">
+              <circle class="moon-dark" r="70"/>
+              <path class="moon-light" id="moon-face"/>
+            </g>
+            <text class="caption" x="150" y="205" id="moon-name"></text>
+          </svg>
+        </div>
+      </sb-walkthrough>
+    </section>
+  </main>
+
+  <script>
+    // Lights the parts marked with these refs inside a walkthrough's views. In a sandbox, this is
+    // where each component's highlight would be set.
+    function light(walk, refs) {
+      for (const part of walk.querySelectorAll('[slot] [data-ref]')) part.classList.toggle('lit', refs.includes(part.dataset.ref));
+    }
+
+    // Every step lights what it names; pointing at a word lights its ref until it's let go.
+    function follow(walk, onStep = () => {}) {
+      const show = (step) => { light(walk, step.highlight); onStep(step); };
+      show(walk.current);
+      walk.addEventListener('sb-step', (e) => show(e.detail));
+      walk.addEventListener('sb-point', (e) => light(walk, e.detail.ref ? [e.detail.ref] : walk.current.highlight));
+    }
+
+    // ---- The moon: each step carries an angle, and both views move to it ----
+
+    const NAMES = { 0: 'New moon', 45: 'Waxing crescent', 90: 'First quarter', 180: 'Full moon', 270: 'Last quarter' };
+
+    function placeMoon(angle) {
+      const radians = angle * Math.PI / 180;
+      const x = 170 - 80 * Math.cos(radians);
+      const y = 110 + 80 * Math.sin(radians);
+      document.getElementById('moon-above').setAttribute('transform', `translate(${x} ${y})`);
+
+      // Seen from Earth: the lit limb is on the right while waxing, and the terminator is an
+      // ellipse whose width follows the cosine of the angle.
+      const r = 70;
+      const edge = r * Math.abs(Math.cos(radians));
+      const bulge = Math.cos(radians) > 0 ? 0 : 1;
+      const face = document.getElementById('moon-face');
+      face.setAttribute('d', `M0 ${-r} A${r} ${r} 0 0 1 0 ${r} A${edge} ${r} 0 0 ${bulge} 0 ${-r} Z`);
+      face.setAttribute('transform', angle > 180 ? 'scale(-1 1)' : '');
+      document.getElementById('moon-name').textContent = NAMES[angle] ?? '';
+    }
+
+    // ---- Start ----
+
+    follow(document.getElementById('payment'));
+    follow(document.getElementById('moon'), (step) => placeMoon(Number(step.element.dataset.angle)));
+  </script>
+</body>
+</html>

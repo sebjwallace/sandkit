@@ -8,4 +8,4 @@ Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking
 - Highlighting practice: pointing shows, clicking acts, with dashed and solid underlines telling prose words apart.
 
 ## 0.1.0 · 2026-10-17
-- First release: the building-a-sandbox, highlighting and identifiers practices, the sandbox template, `tools/setup.mjs`, the shell, and twenty-five components (`sb-bars`, `sb-c4`, `sb-callout`, `sb-chart`, `sb-code`, `sb-controls`, `sb-erd`, `sb-flowchart`, `sb-graph`, `sb-grid`, `sb-id`, `sb-log`, `sb-math`, `sb-matrix`, `sb-panel`, `sb-parameters`, `sb-plane`, `sb-rules`, `sb-sequence`, `sb-stat`, `sb-table`, `sb-tabs`, `sb-timeline`, `sb-tree`, `sb-wireframe`).
+- First release: the building-a-sandbox, highlighting and identifiers practices, the sandbox template, `tools/setup.mjs`, the shell, and twenty-six components (`sb-bars`, `sb-c4`, `sb-callout`, `sb-chart`, `sb-code`, `sb-controls`, `sb-erd`, `sb-flowchart`, `sb-graph`, `sb-grid`, `sb-id`, `sb-log`, `sb-math`, `sb-matrix`, `sb-panel`, `sb-parameters`, `sb-plane`, `sb-rules`, `sb-sequence`, `sb-stat`, `sb-table`, `sb-tabs`, `sb-timeline`, `sb-tree`, `sb-walkthrough`, `sb-wireframe`).

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-walkthrough tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-walkthrough.js"></script>
+</head>
+<body>
+  <script>
+    const STORY = `
+      <section data-step data-focus="screen" data-highlight="checkout">
+        The shopper presses <span data-ref="checkout">Checkout</span>, and <span data-ref="charge" data-focus="code">the card is charged</span>.
+      </section>
+      <section data-step data-focus="code map" data-highlight="charge pay">Second</section>
+      <section data-step>Third, looking at nothing in particular</section>
+      <div slot="screen">Screen</div>
+      <div slot="code">Code</div>
+      <div slot="map">Map</div>`;
+
+    const walkthrough = (attrs = '', content = STORY) => mount(`<sb-walkthrough ${attrs}>${content}</sb-walkthrough>`);
+    const showing = (el) => el.steps.filter((s) => !s.hidden).map((s) => el.steps.indexOf(s));
+    const focused = (el) => el.views.filter((v) => v.classList.contains('sb-walkthrough--focused')).map((v) => v.slot);
+    const button = (el, move) => el.querySelector(`[data-move="${move}"]`);
+    const count = (el) => el.querySelector('.sb-walkthrough__count').textContent;
+    const point = (target) => target.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+
+    // ---- Steps ----
+
+    test('shows the first step, and how far through the story it is', () => {
+      const el = walkthrough();
+      assertEqual(showing(el), [0]);
+      assertEqual(count(el), '1 of 3');
+    });
+
+    test('starts at the step named by the step attribute', () => {
+      assertEqual(showing(walkthrough('step="2"')), [2]);
+    });
+
+    test('Next and Back move through the steps, firing sb-step with what the step asks for', () => {
+      const el = walkthrough();
+      const moves = recordEvents(el, 'sb-step');
+      button(el, 1).click();
+      assertEqual(showing(el), [1]);
+      const { step, focus, highlight, element } = moves[0].detail;
+      assertEqual([step, focus, highlight], [1, ['code', 'map'], ['charge', 'pay']]);
+      assertEqual(element, el.steps[1]);
+      button(el, -1).click();
+      assertEqual([showing(el), moves.length], [[0], 2]);
+    });
+
+    test('Back is off at the start and Next at the end', () => {
+      const el = walkthrough();
+      assertEqual([button(el, -1).disabled, button(el, 1).disabled], [true, false]);
+      el.step = 2;
+      assertEqual([button(el, -1).disabled, button(el, 1).disabled], [false, true]);
+    });
+
+    test('arrow keys move through the steps', () => {
+      const el = walkthrough();
+      const key = (name) => button(el, 1).dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true }));
+      key('ArrowRight');
+      key('ArrowRight');
+      key('ArrowLeft');
+      assertEqual(el.step, 1);
+    });
+
+    test('setting step shows it without firing sb-step, and stays within the story', () => {
+      const el = walkthrough();
+      const moves = recordEvents(el, 'sb-step');
+      el.step = 9;
+      assertEqual([el.step, moves.length], [2, 0]);
+      el.step = -1;
+      assertEqual(el.step, 0);
+    });
+
+    test('next() and previous() move as a viewer would, and never past the ends', () => {
+      const el = walkthrough();
+      const moves = recordEvents(el, 'sb-step');
+      el.previous();
+      el.next();
+      assertEqual([el.step, moves.length], [1, 1]);
+    });
+
+    test('current says what the step showing asks for', () => {
+      const el = walkthrough();
+      assertEqual([el.current.step, el.current.focus, el.current.highlight], [0, ['screen'], ['checkout']]);
+      el.step = 2;
+      assertEqual([el.current.focus, el.current.highlight], [[], []]);
+    });
+
+    test('a step can carry anything else as data attributes, for the sandbox', () => {
+      const el = walkthrough('', '<section data-step data-screen="pay" data-line="4">x</section>');
+      assertEqual({ ...el.current.element.dataset }, { step: '', screen: 'pay', line: '4' });
+    });
+
+    // ---- Views ----
+
+    test('lays the views out beside the narration, each in a cell of its own', () => {
+      const el = walkthrough();
+      assertEqual(el.views.map((v) => v.slot), ['screen', 'code', 'map']);
+      assertEqual(el.querySelector('.sb-walkthrough__views').dataset.count, '3');
+      assert(el.views.every((v) => v.parentElement.classList.contains('sb-walkthrough__view')));
+    });
+
+    test('outlines the views each step focuses', () => {
+      const el = walkthrough();
+      assertEqual(focused(el), ['screen']);
+      el.step = 1;
+      assertEqual(focused(el), ['code', 'map']);
+      el.step = 2;
+      assertEqual(focused(el), []);
+    });
+
+    test('something a view leaves in its place stays in its cell', () => {
+      const el = walkthrough();
+      const view = el.views[0];
+      view.before(Object.assign(document.createElement('div'), { className: 'placeholder' }));
+      assertEqual(el.querySelector('.placeholder').parentElement, view.parentElement);
+      assertEqual(el.views[0], view);
+    });
+
+    test('steps and views added later take their places', async () => {
+      const el = walkthrough();
+      el.insertAdjacentHTML('beforeend', '<section data-step>Fourth</section><div slot="log">Log</div>');
+      await waitFor(() => el.steps.length === 4 && el.views.length === 4);
+      assertEqual(count(el), '1 of 4');
+      assertEqual(el.querySelector('.sb-walkthrough__views').dataset.count, '4');
+    });
+
+    // ---- Pointing ----
+
+    test('pointing at a word fires sb-point, and outlines its own focus while pointed at', () => {
+      const el = walkthrough();
+      const points = recordEvents(el, 'sb-point');
+      point(el.querySelector('[data-ref="charge"]'));
+      assertEqual(focused(el), ['code']);
+      point(el.querySelector('[data-ref="checkout"]'));
+      assertEqual(focused(el), ['screen'], 'a word without a focus leaves the step\'s');
+      el.querySelector('.sb-walkthrough__steps').dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(points.map((e) => e.detail.ref), ['charge', 'checkout', null]);
+    });
+
+    test('moving within a word fires sb-point only once', () => {
+      const el = walkthrough('', '<section data-step><span data-ref="a">two <b>parts</b></span></section>');
+      const points = recordEvents(el, 'sb-point');
+      point(el.querySelector('[data-ref]'));
+      point(el.querySelector('b'));
+      assertEqual(points.length, 1);
+    });
+
+    // ---- Loading, and instances ----
+
+    test('a walkthrough moved while the page loads is built once', () => {
+      Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
+      let el;
+      try {
+        el = walkthrough();
+        document.body.append(el);
+      } finally {
+        delete document.readyState;
+      }
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      assertEqual(el.querySelectorAll('.sb-walkthrough__narration').length, 1);
+      assertEqual(el.steps.length, 3);
+      el.remove();
+    });
+
+    test('two walkthroughs side by side keep their own steps and focus', () => {
+      const area = mount(`<div><sb-walkthrough>${STORY}</sb-walkthrough><sb-walkthrough>${STORY}</sb-walkthrough></div>`);
+      const [one, two] = area.querySelectorAll('sb-walkthrough');
+      button(one, 1).click();
+      assertEqual([one.step, two.step], [1, 0]);
+      assertEqual([focused(one), focused(two)], [['code', 'map'], ['screen']]);
+    });
+  </script>
+</body>
+</html>
