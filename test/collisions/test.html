@@ -9,11 +9,12 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-id', 'sb-plane', 'sb-panel', 'sb-rules', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings'];
+    window.TAGS = ['sb-id', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rules', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
   <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="../../components/sb-tabs/sb-tabs.js"></script>
   <script src="../../components/sb-plane/sb-plane.js"></script>
   <script src="../../components/sb-panel/sb-panel.js"></script>
   <script src="../../components/sb-rules/sb-rules.js"></script>

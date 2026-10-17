@@ -9,6 +9,7 @@
   <script src="../../shell/sb-shell.js"></script>
   <script src="../../components/sb-plane/sb-plane.js"></script>
   <script src="../../components/sb-parameters/sb-parameters.js"></script>
+  <script src="../../components/sb-tabs/sb-tabs.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
@@ -18,33 +19,36 @@
   </sb-shell>
 
   <main>
-    <section class="chapter">
-      <h2>Chapter 1 · Vectors</h2>
-      <p>A vector is an arrow that starts at the origin. It is also a pair of numbers, and the two are the same thing: the numbers say how to reach the arrow's tip. <span class="vector">(2, 1)</span> means two steps right and one step up.</p>
-      <p>Adding two vectors means walking along one, then along the other. In numbers, add the first parts together and the second parts together.</p>
-      <p class="try"><strong>Try:</strong> drag the tips of <span class="vector vector--v">v</span> and <span class="vector vector--w">w</span>. Watch where <span class="vector vector--sum">v + w</span> lands, and check it against the numbers. Can you make the sum land back on the origin?</p>
-    </section>
+    <sb-tabs id="chapters">
+      <section class="chapter" heading="1 · Vectors">
+        <h2>Chapter 1 · Vectors</h2>
+        <p>A vector is an arrow that starts at the origin. It is also a pair of numbers, and the two are the same thing: the numbers say how to reach the arrow's tip. <span class="vector">(2, 1)</span> means two steps right and one step up.</p>
+        <p>Adding two vectors means walking along one, then along the other. In numbers, add the first parts together and the second parts together.</p>
+        <p class="try"><strong>Try:</strong> drag the tips of <span class="vector vector--v">v</span> and <span class="vector vector--w">w</span>. Watch where <span class="vector vector--sum">v + w</span> lands, and check it against the numbers. Can you make the sum land back on the origin?</p>
 
-    <section class="panel stage">
-      <sb-plane id="adding" range="5" snap="1" height="420"></sb-plane>
-      <div class="explain" id="adding-explain"></div>
-    </section>
+        <div class="panel stage">
+          <sb-plane id="adding" range="5" snap="1" height="420"></sb-plane>
+          <div class="explain" id="adding-explain"></div>
+        </div>
+        <p class="onward"><button type="button" class="next">Next: scaling, combinations and span →</button></p>
+      </section>
 
-    <section class="chapter">
-      <h2>Chapter 2 · Scaling, combinations and span</h2>
-      <p>Multiplying a vector by a number stretches it. <span class="vector">2·v</span> is twice as long; <span class="vector">½·v</span> is half; <span class="vector">−1·v</span> points the opposite way. The number is called a <em>scalar</em>, because it scales.</p>
-      <p>Scale two vectors, then add them, and you have a <em>linear combination</em>: <span class="vector">a·v + b·w</span>. Every choice of <em>a</em> and <em>b</em> reaches some point. All the points you can reach this way are the <em>span</em> of v and w.</p>
-      <p class="try"><strong>Try:</strong> slide <em>a</em> and <em>b</em> until the tip lands on the red point <span class="vector vector--target">P</span>. Then show the span, and drag <span class="vector vector--w">w</span> until it lines up with <span class="vector vector--v">v</span>. What happens to everywhere you can reach?</p>
-    </section>
+      <section class="chapter" heading="2 · Combinations and span">
+        <h2>Chapter 2 · Scaling, combinations and span</h2>
+        <p>Multiplying a vector by a number stretches it. <span class="vector">2·v</span> is twice as long; <span class="vector">½·v</span> is half; <span class="vector">−1·v</span> points the opposite way. The number is called a <em>scalar</em>, because it scales.</p>
+        <p>Scale two vectors, then add them, and you have a <em>linear combination</em>: <span class="vector">a·v + b·w</span>. Every choice of <em>a</em> and <em>b</em> reaches some point. All the points you can reach this way are the <em>span</em> of v and w.</p>
+        <p class="try"><strong>Try:</strong> slide <em>a</em> and <em>b</em> until the tip lands on the red point <span class="vector vector--target">P</span>. Then show the span, and drag <span class="vector vector--w">w</span> until it lines up with <span class="vector vector--v">v</span>. What happens to everywhere you can reach?</p>
 
-    <section class="panel stage">
-      <sb-plane id="combining" range="5" snap="1" height="420"></sb-plane>
-      <div class="explain">
-        <sb-parameters id="scalars"></sb-parameters>
-        <label class="toggle"><input type="checkbox" id="show-span"> Show the span</label>
-        <div id="combining-explain"></div>
-      </div>
-    </section>
+        <div class="panel stage">
+          <sb-plane id="combining" range="5" snap="1" height="420"></sb-plane>
+          <div class="explain">
+            <sb-parameters id="scalars"></sb-parameters>
+            <label class="toggle"><input type="checkbox" id="show-span"> Show the span</label>
+            <div id="combining-explain"></div>
+          </div>
+        </div>
+      </section>
+    </sb-tabs>
   </main>
 
   <script>
@@ -54,6 +58,10 @@
     const SPAN_REACH = 4;     // the span is shown for scalars from −4 to 4
     const SPAN_STEP = 0.5;
     const TARGET = [3, -1];   // 1·v + (−1)·w, with the starting vectors
+
+    // ---- Chapters ----
+
+    document.querySelectorAll('.next').forEach((button) => button.addEventListener('click', () => $('chapters').next()));
 
     // ---- Chapter 1: adding vectors ----
 

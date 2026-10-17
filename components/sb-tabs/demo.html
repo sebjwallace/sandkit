@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-tabs demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-tabs.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example .note { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .example p { font-size: 14px; }
+    .next { font: inherit; font-size: 13px; padding: 5px 12px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); cursor: pointer; }
+    .next:hover { background: var(--sb-surface-2); }
+    .stage { padding: 10px; border-radius: var(--sb-radius); background: var(--sb-surface-2); }
+    .stage table { border-collapse: collapse; font-size: 13px; }
+    .stage td, .stage th { padding: 3px 10px; text-align: left; }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-tabs">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>One part at a time: chapters, views, anything.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Understanding builds a step at a time, and a sandbox that shows everything at once asks too much of whoever opens it. <code>sb-tabs</code> lets a sandbox present one part at a time: one chapter, one view of the model, one stage of an argument. Each panel keeps its state while it's hidden, so people can wander between parts and find everything as they left it. Tab sets nest, so a chapter can have tabs of its own.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Chapters.</strong> Introduce one idea, then the next, as a well-designed game introduces one mechanic at a time.</li>
+        <li><strong>Different views of the same model.</strong> The diagram, the rules and the log, side by side in tabs rather than stacked down a long page.</li>
+        <li><strong>Levels of detail.</strong> An explorable view, with the algebra behind it in a tab for those who want it.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Things people need to compare at a glance.</strong> Hiding one to see the other makes comparing hard; show both.</li>
+        <li><strong>A handful of words.</strong> Tabs around short text are more effort than reading it.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-tabs/sb-tabs.js"&gt;&lt;/script&gt;
+
+&lt;sb-tabs id="chapters"&gt;
+  &lt;section heading="1 · The idea"&gt;…&lt;/section&gt;
+  &lt;section heading="2 · Going further"&gt;…&lt;/section&gt;
+&lt;/sb-tabs&gt;</pre>
+      <p>With an <code>id</code>, each viewer returns to the tab they last chose.</p>
+
+      <h3>Making it reveal, not just hide</h3>
+      <ul>
+        <li><strong>Order tabs as a path.</strong> Each chapter should build on the one before, and say what's next.</li>
+        <li><strong>End each chapter with a way on.</strong> A "Next chapter" button that calls <code>next()</code> keeps people moving.</li>
+        <li><strong>Keep headings short and specific,</strong> so the tab list reads like a table of contents.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Chapters of a lesson</h2>
+      <p class="note">A short lesson on the water cycle, one chapter at a time. Use the tabs, the arrow keys, or the button at the end of each chapter.</p>
+      <sb-tabs id="demo-chapters">
+        <section heading="1 · Evaporation">
+          <p>The sun warms seas, lakes and rivers. Some water becomes vapour and rises with warm air, leaving salt and dirt behind.</p>
+          <button type="button" class="next">Next chapter →</button>
+        </section>
+        <section heading="2 · Condensation">
+          <p>Higher up, the air is cooler. The vapour condenses on specks of dust into tiny droplets, and the droplets gather into clouds.</p>
+          <button type="button" class="next">Next chapter →</button>
+        </section>
+        <section heading="3 · Precipitation">
+          <p>Droplets collide and grow until they are too heavy to stay aloft, and fall as rain, snow or hail, back into the seas, lakes and rivers it all began from.</p>
+        </section>
+      </sb-tabs>
+    </section>
+
+    <section class="example">
+      <h2>Tabs inside tabs</h2>
+      <p class="note">The outer tabs split exploring from reading about it. Inside Explore, a second tab set offers three views of the same small model. Each set only knows its own tabs.</p>
+      <sb-tabs>
+        <section heading="Explore">
+          <sb-tabs>
+            <div heading="Picture" class="stage">A rain cloud over a lake, with arrows for water rising and falling.</div>
+            <div heading="Numbers" class="stage">
+              <table>
+                <tr><th>Stage</th><th>Water a day</th></tr>
+                <tr><td>Evaporation</td><td>1,400 km³</td></tr>
+                <tr><td>Precipitation</td><td>1,400 km³</td></tr>
+              </table>
+            </div>
+            <div heading="Notes" class="stage">Over a year, what rises and what falls balance out.</div>
+          </sb-tabs>
+        </section>
+        <section heading="Read about it">
+          <p>The water cycle moves about 500,000 cubic kilometres of water a year, yet the total amount of water on Earth barely changes.</p>
+        </section>
+      </sb-tabs>
+    </section>
+  </main>
+
+  <script>
+    document.querySelectorAll('.next').forEach((button) => button.addEventListener('click', () => button.closest('sb-tabs').next()));
+  </script>
+</body>
+</html>

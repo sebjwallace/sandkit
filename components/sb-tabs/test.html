@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-tabs tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-tabs.js"></script>
+</head>
+<body>
+  <script>
+    function tabs(attrs = '', panels = '<section heading="One">first</section><section heading="Two">second</section><section heading="Three">third</section>') {
+      return mount(`<sb-tabs ${attrs}>${panels}</sb-tabs>`);
+    }
+
+    const tabButtons = (el) => [...el.querySelector(':scope > .sb-tabs__list').children];
+    const visible = (el) => el.panels.filter((p) => !p.hidden).map((p) => p.getAttribute('heading'));
+    const key = (el, name) => tabButtons(el)[el.selected].dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true }));
+
+    // ---- Tabs and panels ----
+
+    test('makes a tab for each panel, titled by its heading', () => {
+      assertEqual(tabButtons(tabs()).map((t) => t.textContent.trim()), ['One', 'Two', 'Three']);
+    });
+
+    test('shows only the first panel to begin with', () => {
+      assertEqual(visible(tabs()), ['One']);
+    });
+
+    test('starts on the panel named by the selected attribute', () => {
+      assertEqual(visible(tabs('selected="2"')), ['Three']);
+    });
+
+    test('clicking a tab shows its panel, and fires sb-select', () => {
+      const el = tabs();
+      const selections = recordEvents(el, 'sb-select');
+      tabButtons(el)[1].click();
+      assertEqual(visible(el), ['Two']);
+      assertEqual(selections[0].detail, { index: 1, heading: 'Two' });
+    });
+
+    test('a hidden panel stays hidden, even when the sandbox styles it with a display of its own', () => {
+      const el = tabs('', '<section heading="A" style="display: grid">a</section><section heading="B" style="display: grid">b</section>');
+      assertEqual(getComputedStyle(el.panels[1]).display, 'none');
+    });
+
+    test('links tabs and panels for assistive technology', () => {
+      const el = tabs();
+      const [tab] = tabButtons(el);
+      assertEqual(tab.getAttribute('role'), 'tab');
+      assertEqual(tab.getAttribute('aria-controls'), el.panels[0].id);
+      assertEqual(el.panels[0].getAttribute('aria-labelledby'), tab.id);
+      assertEqual(tabButtons(el).map((t) => t.getAttribute('aria-selected')), ['true', 'false', 'false']);
+    });
+
+    // ---- Keyboard ----
+
+    test('arrow keys move between tabs, wrapping round', () => {
+      const el = tabs();
+      key(el, 'ArrowLeft');
+      assertEqual(visible(el), ['Three'], 'left from the first wraps to the last');
+      key(el, 'ArrowRight');
+      assertEqual(visible(el), ['One'], 'right from the last wraps to the first');
+    });
+
+    test('Home and End jump to the first and last tabs', () => {
+      const el = tabs();
+      key(el, 'End');
+      assertEqual(visible(el), ['Three']);
+      key(el, 'Home');
+      assertEqual(visible(el), ['One']);
+    });
+
+    test('only the selected tab is reached with the Tab key', () => {
+      const el = tabs('selected="1"');
+      assertEqual(tabButtons(el).map((t) => t.tabIndex), [-1, 0, -1]);
+    });
+
+    // ---- Methods ----
+
+    test('next and previous move one panel, stopping at the ends', () => {
+      const el = tabs();
+      const selections = recordEvents(el, 'sb-select');
+      el.previous();
+      assertEqual(selections.length, 0, 'nothing before the first');
+      el.next();
+      el.next();
+      el.next();
+      assertEqual(visible(el), ['Three'], 'stops at the last');
+      assertEqual(selections.length, 2);
+    });
+
+    test('setting selected changes the panel without firing sb-select', () => {
+      const el = tabs();
+      const selections = recordEvents(el, 'sb-select');
+      el.selected = 2;
+      assertEqual(visible(el), ['Three']);
+      assertEqual(selections.length, 0);
+    });
+
+    // ---- Nesting and change ----
+
+    test('nested tabs only see their own panels', () => {
+      const outer = tabs('', `
+        <section heading="Outer A"><sb-tabs><div heading="Inner 1">i</div><div heading="Inner 2">ii</div></sb-tabs></section>
+        <section heading="Outer B">b</section>`);
+      const inner = outer.querySelector('sb-tabs');
+      assertEqual(tabButtons(outer).map((t) => t.textContent.trim()), ['Outer A', 'Outer B']);
+      assertEqual(tabButtons(inner).map((t) => t.textContent.trim()), ['Inner 1', 'Inner 2']);
+      tabButtons(inner)[1].click();
+      assertEqual([visible(outer), visible(inner)], [['Outer A'], ['Inner 2']]);
+    });
+
+    test('a panel added later gets a tab', async () => {
+      const el = tabs();
+      el.append(Object.assign(document.createElement('section'), { textContent: 'fourth' }));
+      el.lastElementChild.setAttribute('heading', 'Four');
+      await waitFor(() => tabButtons(el).length === 4);
+      assertEqual(tabButtons(el).at(-1).textContent.trim(), 'Four');
+    });
+
+    test('moving the tabs elsewhere on the page keeps a single tab list', () => {
+      const el = tabs();
+      const home = el.parentElement;
+      el.remove();
+      home.append(el);
+      assertEqual(el.querySelectorAll(':scope > .sb-tabs__list').length, 1);
+    });
+
+    // ---- Remembering ----
+
+    test('tabs with an id remember the viewer\'s choice', () => {
+      localStorage.removeItem('sb-tabs:chapters');
+      tabButtons(tabs('id="chapters"'))[2].click();
+      assertEqual(visible(tabs('id="chapters"')), ['Three']);
+      localStorage.removeItem('sb-tabs:chapters');
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two tab sets on one page choose independently, with their own ids', () => {
+      mount('<div><sb-tabs><p heading="A">a</p><p heading="B">b</p></sb-tabs><sb-tabs><p heading="A">a</p><p heading="B">b</p></sb-tabs></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-tabs');
+      tabButtons(a)[1].click();
+      assertEqual([a.selected, b.selected], [1, 0]);
+      assert(tabButtons(a)[0].id !== tabButtons(b)[0].id, 'unique tab ids');
+    });
+
+    test('shows headings as text, never as markup', () => {
+      const el = tabs('', '<section heading="<b>bold</b>">x</section>');
+      assertEqual(el.querySelector('.sb-tabs__list b'), null);
+    });
+  </script>
+</body>
+</html>
