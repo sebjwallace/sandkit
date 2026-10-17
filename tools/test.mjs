@@ -15,7 +15,7 @@ function test(name, fn) {
     fn(sandbox);
     console.log(`✓ ${name}`);
   } catch (err) {
-    console.log(`✗ ${name}: ${err.message}`);
+    console.log(`✗ ${name} — ${err.message}`);
     process.exitCode = 1;
   } finally {
     rmSync(sandbox, { recursive: true, force: true });
@@ -102,4 +102,61 @@ test('an in-progress component (one without a manifest yet) is refused, saying w
 test('without a folder, it explains how to use it', () => {
   const result = setup();
   assert(!result.ok && result.output.includes('Usage'), 'usage shown');
+});
+
+// ---- Versions ----
+
+// A temporary component in Sandkit, with the given changelog, for testing updates.
+function withComponent(name, changelog, fn) {
+  const folder = join(COMPONENTS, name);
+  mkdirSync(folder);
+  const version = changelog.match(/## (\d+\.\d+\.\d+)/)[1];
+  writeFileSync(join(folder, `${name}.js`), `// Sandkit ${name} ${version} · MIT Licence\n`);
+  writeFileSync(join(folder, 'manifest.md'), `# ${name}\n`);
+  writeFileSync(join(folder, 'CHANGELOG.md'), changelog);
+  try { fn(); } finally { rmSync(folder, { recursive: true, force: true }); }
+}
+
+// Pretends the sandbox has an older copy of a component installed.
+function installOlder(sandbox, name, version) {
+  const script = join(sandbox, `lib/sandkit/components/${name}/${name}.js`);
+  writeFileSync(script, readFileSync(script, 'utf8').replace(/^(\/\/ Sandkit \S+) \S+/, `$1 ${version}`));
+}
+
+test('changelogs are copied with each component and the shell', (sandbox) => {
+  setup(sandbox, 'sb-log');
+  for (const file of ['CHANGELOG.md', 'shell/CHANGELOG.md', 'components/sb-log/CHANGELOG.md']) {
+    assert(existsSync(join(sandbox, 'lib/sandkit', file)), `missing ${file}`);
+  }
+});
+
+test('SOURCE.md records the version of Sandkit, the shell and every component', (sandbox) => {
+  setup(sandbox, 'sb-log');
+  const source = read(sandbox, 'lib/sandkit/SOURCE.md');
+  assert(/- Sandkit \d+\.\d+\.\d+/.test(source), 'Sandkit version');
+  assert(/- shell \d+\.\d+\.\d+/.test(source) && /- sb-log \d+\.\d+\.\d+/.test(source), 'shell and component versions');
+});
+
+test('updating reports what changed since the installed version, breaking changes first', (sandbox) => {
+  withComponent('sb-test-versioned', [
+    '## 0.3.0 · 2026-12-01', '- Added a colour option.', '- **Breaking:** `sb-old` renamed to `sb-new`; listen for `sb-new` instead.', '',
+    '## 0.2.0 · 2026-11-01', '- Faster drawing.', '',
+    '## 0.1.0 · 2026-10-01', '- First release.', ''
+  ].join('\n'), () => {
+    setup(sandbox, 'sb-test-versioned');
+    installOlder(sandbox, 'sb-test-versioned', '0.1.0');
+    const { output } = setup(sandbox);
+    const lines = output.split('\n');
+    const start = lines.indexOf('sb-test-versioned 0.1.0 → 0.3.0');
+    assert(start >= 0, `version change reported:\n${output}`);
+    assert(lines[start + 1].includes('**Breaking:**'), 'breaking change listed first');
+    assert(output.includes('0.2.0: Faster drawing.') && output.includes('0.3.0: Added a colour option.'), 'every change since 0.1.0');
+    assert(!output.includes('First release'), 'nothing from the installed version or earlier');
+    assert(output.includes('apply them before using the sandbox'), 'migration reminder');
+  });
+});
+
+test('nothing is reported when versions are unchanged', (sandbox) => {
+  setup(sandbox, 'sb-log');
+  assert(!setup(sandbox).output.includes('→'), 'no version changes');
 });

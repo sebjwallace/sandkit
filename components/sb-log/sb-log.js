@@ -1,4 +1,4 @@
-// Sandkit sb-log · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-log 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A stream of things that happened, in the order they happened. Domain-agnostic: the sandbox
 // decides what an entry says; the log shows the stream and lets people look into it.
 //

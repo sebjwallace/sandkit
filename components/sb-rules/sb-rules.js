@@ -1,4 +1,4 @@
-// Sandkit sb-rules · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-rules 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A table of the rules a model follows, showing which one is about to apply and which one just
 // did. "A table that lists rules displays; one that highlights the rule that just fired reveals."
 //

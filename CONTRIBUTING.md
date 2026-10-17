@@ -25,13 +25,29 @@ Every component, and every change to one, should hold to these. [DECISIONS.md](D
 
 ```
 components/sb-example/
-  sb-example.js   the component, with the one-line licence header
+  sb-example.js   the component; its first line names it, with its version and licence
   manifest.md     the contract agents read: purpose, usage, data, members, events, styling, works well with, notes
+  CHANGELOG.md    one entry per release, newest first
   test.html       tests of the public contract, including two instances side by side
   demo.html       About, then Examples in contrasting sandboxes
 ```
 
 `sb-log` is a good model to follow. Add the component to [CATALOG.md](CATALOG.md), and its tag to the lists in `test/collisions/test.html` and `test/isolation/test.html`.
+
+## Versions and changelogs
+
+Every change to a component, the shell or Sandkit itself gets a changelog entry, and a new version:
+
+```md
+## 0.2.0 · 2026-11-01
+- **Breaking:** `sb-step` removed. Listen for `sb-tick` and take `detail.steps` steps.
+- Added a `height` attribute.
+```
+
+- **Choose the version by semantic versioning.** Until 1.0, a breaking change raises the minor version (0.1.0 to 0.2.0) and anything else the patch (0.1.0 to 0.1.1). From 1.0, breaking changes raise the major version.
+- **Breaking entries say how to migrate,** so an agent updating a sandbox can apply them without reading the source.
+- **Update the version in the script's first line too.** `test/versions` checks they agree.
+- **Add an entry to the root `CHANGELOG.md`** for changes to practices, the template or tools, and when releasing Sandkit as a whole.
 
 ## Running the tests
 

@@ -45,18 +45,24 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 
 1. **Copy the template.** Copy the contents of `templates/sandbox/` into the sandbox folder.
 2. **Copy what the sandbox uses into `lib/sandkit/`, keeping Sandkit's own paths.** Links between manifests and practices then still work.
-   - Always: `CATALOG.md`, `practices/building-a-sandbox.md` (this guide), `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/manifest.md`.
-   - For each component used: `components/<name>/<name>.js` and `components/<name>/manifest.md`.
+   - Always: `CATALOG.md`, `CHANGELOG.md`, `practices/building-a-sandbox.md` (this guide), `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/manifest.md`, `shell/CHANGELOG.md`.
+   - For each component used: `components/<name>/<name>.js`, `components/<name>/manifest.md` and `components/<name>/CHANGELOG.md`.
    - Every practice the sandbox follows, from `practices/`.
    - Not tests or demos. They stay in Sandkit.
-3. **Record the source** in `lib/sandkit/SOURCE.md`:
+3. **Record the source and versions** in `lib/sandkit/SOURCE.md`. Each version is the top entry of its changelog, and also appears in its script's first line.
    ```md
    # Source
-   Copied from https://github.com/sebjwallace/sandkit at commit <hash>, on <date>.
-   - CATALOG.md, practices/building-a-sandbox.md
-   - shell/sb-theme-settings.js, shell/sb-shell.js, shell/manifest.md
-   - components/sb-log/sb-log.js, components/sb-log/manifest.md
-   - practices/identifiers.md
+   Copied from Sandkit 0.1.0 (https://github.com/sebjwallace/sandkit) at commit <hash>, on <date>.
+
+   ## Versions
+   - Sandkit 0.1.0
+   - shell 0.1.0
+   - sb-log 0.1.0
+
+   ## Files
+   - CATALOG.md, CHANGELOG.md, practices/building-a-sandbox.md, practices/identifiers.md
+   - shell/sb-theme-settings.js, shell/sb-shell.js, shell/manifest.md, shell/CHANGELOG.md
+   - components/sb-log/sb-log.js, components/sb-log/manifest.md, components/sb-log/CHANGELOG.md
    ```
 4. **Add a script tag** to `index.html` for each component, after the shell's.
 
@@ -64,9 +70,9 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 my-sandbox/
   index.html  model.js  style.css  AGENTS.md
   lib/sandkit/
-    SOURCE.md  CATALOG.md
-    shell/        sb-theme-settings.js  sb-shell.js  manifest.md
-    components/   sb-log/  sb-log.js  manifest.md
+    SOURCE.md  CATALOG.md  CHANGELOG.md
+    shell/        sb-theme-settings.js  sb-shell.js  manifest.md  CHANGELOG.md
+    components/   sb-log/  sb-log.js  manifest.md  CHANGELOG.md
     practices/    building-a-sandbox.md  identifiers.md
 ```
 
@@ -165,4 +171,11 @@ That loop, explore, question, correct, extend, is the point of a sandbox.
 
 ## Updating Sandkit in a sandbox
 
-Re-copy the files listed in `lib/sandkit/SOURCE.md` from the latest Sandkit, keeping their paths, and update `SOURCE.md`. With Node, `node <sandkit>/tools/setup.mjs <sandbox-folder>` does both. Then open the sandbox to see it still works. Each sandbox carries its own copy, so nothing changes under it until someone chooses to update.
+Sandkit, the shell and each component have their own version, recorded in `lib/sandkit/SOURCE.md`, and their own changelog. Versions follow semantic versioning: until 1.0, a breaking change raises the minor version (0.1 to 0.2).
+
+1. **Note the installed versions** in `SOURCE.md`.
+2. **Re-copy the files** listed there from the latest Sandkit, keeping their paths, and update `SOURCE.md`. With Node, `node <sandkit>/tools/setup.mjs <sandbox-folder>` does this and lists everything that changed since the installed versions, breaking changes first.
+3. **Read each changelog** for the entries newer than the installed version. Entries marked **Breaking** say how to migrate: apply them to the sandbox's own code.
+4. **Open the sandbox** to see it still works.
+
+Each sandbox carries its own copy, so nothing changes under it until someone chooses to update.

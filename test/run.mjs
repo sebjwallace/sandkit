@@ -41,7 +41,7 @@ function findTests(dir) {
   });
 }
 
-// Node tests print one line per test, "✓ name" or "✗ name: error", and fail with a non-zero exit.
+// Node tests print one line per test, "✓ name" or "✗ name — error", and fail with a non-zero exit.
 function runNodeTest(file) {
   let output;
   try {
@@ -50,7 +50,7 @@ function runNodeTest(file) {
     output = err.stdout || err.stderr;
   }
   const results = output.split('\n').filter((line) => /^[✓✗] /.test(line)).map((line) => {
-    const [name, error] = line.slice(2).split(/: (.*)/s);
+    const [name, error] = line.slice(2).split(' — ');
     return { name, passed: line.startsWith('✓'), error };
   });
   return results.length ? results : [{ name: 'Test file', passed: false, error: output.trim() || NO_RESULTS }];

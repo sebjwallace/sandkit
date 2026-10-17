@@ -65,6 +65,16 @@
   const TEST_TIMEOUT_MS = 3000;
   const timeout = () => new Promise((_, reject) => setTimeout(() => reject(new Error(`timed out after ${TEST_TIMEOUT_MS} ms`)), TEST_TIMEOUT_MS));
 
+  // Waits until `condition()` is true, checking often, for things that happen at the browser's pace
+  // (layout, resize observers). Better than waiting a fixed time, which is either slow or flaky.
+  async function waitFor(condition, { timeout = 1000, message = 'condition never became true' } = {}) {
+    const start = Date.now();
+    while (!condition()) {
+      if (Date.now() - start > timeout) throw new Error(message);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
+
   // Collects the events of one type that bubble up to `target`.
   function recordEvents(target, type) {
     const events = [];
@@ -105,6 +115,6 @@
 
   const escapeHtml = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 
-  Object.assign(window, { test, assert, assertEqual, assertThrows, mount, nextFrame, recordEvents });
+  Object.assign(window, { test, assert, assertEqual, assertThrows, mount, nextFrame, waitFor, recordEvents });
   window.addEventListener('load', runAll);
 })();

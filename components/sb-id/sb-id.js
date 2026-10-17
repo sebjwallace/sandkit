@@ -1,4 +1,4 @@
-// Sandkit sb-id · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-id 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A short identifying code, shown as a pill. Hover or focus shows what it refers to; clicking
 // highlights every mention of it on the page. Supports the identifiers practice
 // (practices/identifiers.md).

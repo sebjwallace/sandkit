@@ -1,4 +1,4 @@
-// Sandkit sb-chart · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-chart 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Values over time, as lines, with reference lines for thresholds and targets. The latest value
 // of each line is marked, so it's always clear where things stand now.
 //

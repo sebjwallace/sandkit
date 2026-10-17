@@ -110,6 +110,7 @@ sandkit/
   tools/            optional helpers, such as setting up a sandbox in one command
   examples/         complete sandboxes, built with the parts above
   test/             the test runner, and tests that span the whole library
+  CHANGELOG.md      what changed in each release (components keep their own)
   DECISIONS.md      the decisions behind Sandkit, and why
 ```
 

@@ -1,4 +1,4 @@
-// Sandkit sb-graph · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-graph 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Things joined by connections: state machines, workflows, networks, flows. Highlights what is
 // active, and can show things moving along the connections.
 //
