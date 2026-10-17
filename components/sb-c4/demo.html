@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-c4 demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-c4.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-text); background: var(--sb-surface-2); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .chosen { margin: 10px 0 0; font-size: 13px; color: var(--sb-muted); white-space: pre-line; }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+    button.link { font: inherit; padding: 0; background: none; border: 0; border-bottom: 1px dashed var(--sb-accent); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-c4">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A software architecture you can walk into, one level at a time.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Software systems are built from parts inside parts: a system is made of apps and databases, an app of components. The C4 model draws them one level at a time: who uses the system and what it talks to; then the apps and databases inside it; then the components inside one app. Here you can walk in and out of those levels, with a path at the top showing where you are.</p>
+      <p>The whole architecture is described once. Every view is drawn from it, and relationships deep inside roll up to the boxes you can see: if a component inside the API calls the mainframe, the overview shows the system calling the mainframe. However far out you are, the lines tell the truth about the detail underneath.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Understanding a system from the outside in.</strong> Start with who uses it, then open up the part you care about.</li>
+        <li><strong>Seeing what depends on what.</strong> Point at a box to light everything it talks to.</li>
+        <li><strong>Explaining a design.</strong> The prose can take readers straight to a part, wherever it lives.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>The order things happen in.</strong> A sequence diagram shows one request passing from part to part.</li>
+        <li><strong>How data is shaped.</strong> An entity relationship diagram shows tables and the fields that link them.</li>
+        <li><strong>A flat set of connected things.</strong> A graph, without the levels.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-c4/sb-c4.js"&gt;&lt;/script&gt;
+&lt;sb-c4&gt;&lt;/sb-c4&gt;
+
+&lt;script&gt;
+  document.querySelector('sb-c4').model = {
+    elements: [
+      { id: 'you', name: 'Shopper', kind: 'person' },
+      { id: 'shop', name: 'Shop', kind: 'system', description: 'Sells things online', children: [
+        { id: 'web', name: 'Web app', kind: 'container', technology: 'React' },
+        { id: 'db', name: 'Orders', kind: 'database', technology: 'PostgreSQL' }
+      ] }
+    ],
+    relationships: [
+      { from: 'you', to: 'web', label: 'Shops using' },
+      { from: 'web', to: 'db', label: 'Saves orders in', technology: 'SQL' }
+    ]
+  };
+&lt;/script&gt;</pre>
+      <p>Kinds are <code>person</code>, <code>system</code>, <code>container</code>, <code>component</code>, <code>database</code> and <code>queue</code>; mark anything outside your own estate <code>external</code>. Relationships can join any two elements, at any depth. Boxes with something inside say so: click "inside", or double-click the box, to go in; use the path, or Escape, to come back out.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Describe relationships at the level they really happen,</strong> between the components that call each other, and let them roll up.</li>
+        <li><strong>Give every box a one-line description</strong> of what it's for, not what it is.</li>
+        <li><strong>Take readers there.</strong> Call <code>reveal(id)</code> when the prose mentions a part, so the diagram opens the way to it.</li>
+        <li><strong>Use tone for trouble,</strong> such as a part that's down or overloaded, so it shows at every level above it too.</li>
+      </ul>
+
+      <p>The full contract, including every property, method, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Internet banking</h2>
+      <p>The classic C4 example, three levels deep. Go inside the banking system, then inside its API, and watch how the three ways a customer reaches the bank become one line at the top. Hover a line that says "relationships" to list them.</p>
+      <sb-c4 id="bank" root-label="Big Bank"></sb-c4>
+    </section>
+
+    <section class="example">
+      <h2>An online shop</h2>
+      <p>The sandbox can drive the diagram too. Ask where something lives, and it opens the way: <button class="link point" data-reveal="checkout">checkout</button>, <button class="link point" data-reveal="stock">stock checking</button>, <button class="link point" data-reveal="queue">the order queue</button>. Point at <span class="point" data-relationship="pay">the payment</span> to light it at whatever level you're on. Click any box or line to see what it is.</p>
+      <sb-c4 id="shop" root-label="Shop"></sb-c4>
+      <p class="chosen" id="shop-chosen">Nothing chosen yet.</p>
+    </section>
+  </main>
+
+  <script>
+    // ---- Internet banking ----
+
+    const bank = document.getElementById('bank');
+    bank.model = {
+      elements: [
+        { id: 'customer', name: 'Personal banking customer', kind: 'person', description: 'A customer of the bank, with personal accounts' },
+        { id: 'banking', name: 'Internet banking system', kind: 'system', description: 'Lets customers view their accounts and make payments', children: [
+          { id: 'web', name: 'Web application', kind: 'container', technology: 'Java and Spring MVC', description: 'Delivers the single-page app' },
+          { id: 'spa', name: 'Single-page app', kind: 'container', technology: 'JavaScript', description: 'All of internet banking, in the browser' },
+          { id: 'mobile', name: 'Mobile app', kind: 'container', technology: 'Swift and Kotlin', description: 'A slimmer set of features, on a phone' },
+          { id: 'api', name: 'API application', kind: 'container', technology: 'Java and Spring', description: 'Internet banking over JSON and HTTPS', children: [
+            { id: 'signin', name: 'Sign in controller', kind: 'component', technology: 'Spring controller', description: 'Lets users sign in' },
+            { id: 'reset', name: 'Reset password controller', kind: 'component', technology: 'Spring controller', description: 'Lets users reset their password' },
+            { id: 'accounts', name: 'Accounts controller', kind: 'component', technology: 'Spring controller', description: 'Gives a summary of accounts' },
+            { id: 'security', name: 'Security component', kind: 'component', technology: 'Spring bean', description: 'Signing in, changing passwords' },
+            { id: 'facade', name: 'Mainframe facade', kind: 'component', technology: 'Spring bean', description: 'A tidy way to talk to the mainframe' },
+            { id: 'mailer', name: 'Email component', kind: 'component', technology: 'Spring bean', description: 'Sends emails to users' }
+          ] },
+          { id: 'db', name: 'Database', kind: 'database', technology: 'Oracle', description: 'Users, hashed passwords, access logs' }
+        ] },
+        { id: 'email', name: 'Email system', kind: 'system', external: true, description: 'The bank\'s email server' },
+        { id: 'mainframe', name: 'Mainframe banking system', kind: 'system', external: true, description: 'Customers, accounts and transactions' }
+      ],
+      relationships: [
+        { from: 'customer', to: 'web', label: 'Visits the website', technology: 'HTTPS' },
+        { from: 'customer', to: 'spa', label: 'Views balances and makes payments' },
+        { from: 'customer', to: 'mobile', label: 'Views balances and makes payments' },
+        { from: 'web', to: 'spa', label: 'Delivers to the browser' },
+        { from: 'spa', to: 'signin', label: 'Signs in using', technology: 'JSON/HTTPS' },
+        { from: 'spa', to: 'reset', label: 'Resets passwords using', technology: 'JSON/HTTPS' },
+        { from: 'spa', to: 'accounts', label: 'Gets balances using', technology: 'JSON/HTTPS' },
+        { from: 'mobile', to: 'signin', label: 'Signs in using', technology: 'JSON/HTTPS' },
+        { from: 'mobile', to: 'accounts', label: 'Gets balances using', technology: 'JSON/HTTPS' },
+        { from: 'signin', to: 'security', label: 'Uses' },
+        { from: 'reset', to: 'security', label: 'Uses' },
+        { from: 'reset', to: 'mailer', label: 'Uses' },
+        { from: 'accounts', to: 'facade', label: 'Uses' },
+        { from: 'security', to: 'db', label: 'Reads from and writes to', technology: 'SQL' },
+        { from: 'facade', to: 'mainframe', label: 'Makes API calls to', technology: 'XML/HTTPS' },
+        { from: 'mailer', to: 'email', label: 'Sends email using', technology: 'SMTP' },
+        { from: 'email', to: 'customer', label: 'Sends emails to' }
+      ]
+    };
+
+    // ---- An online shop ----
+
+    const shop = document.getElementById('shop');
+    shop.model = {
+      elements: [
+        { id: 'shopper', name: 'Shopper', kind: 'person', description: 'Buys things online' },
+        { id: 'staff', name: 'Warehouse staff', kind: 'person', description: 'Pick, pack and send orders' },
+        { id: 'store', name: 'Shop system', kind: 'system', description: 'Takes orders and gets them out of the door', children: [
+          { id: 'storefront', name: 'Storefront', kind: 'container', technology: 'Web app', description: 'Where shoppers browse and buy' },
+          { id: 'orders', name: 'Orders service', kind: 'container', technology: 'Node.js', description: 'Turns baskets into orders', children: [
+            { id: 'basket', name: 'Basket', kind: 'component', description: 'Holds what the shopper wants' },
+            { id: 'checkout', name: 'Checkout', kind: 'component', description: 'Takes payment and places the order' },
+            { id: 'stock', name: 'Stock checker', kind: 'component', description: 'Makes sure it\'s on the shelf' }
+          ] },
+          { id: 'products', name: 'Products', kind: 'database', technology: 'PostgreSQL', description: 'What we sell, and how many' },
+          { id: 'queue', name: 'Order queue', kind: 'queue', technology: 'Message queue', description: 'Orders waiting to be packed' },
+          { id: 'picking', name: 'Picking app', kind: 'container', technology: 'Tablet app', description: 'Tells staff what to pack' }
+        ] },
+        { id: 'payments', name: 'Payment provider', kind: 'system', external: true, description: 'Takes card payments' },
+        { id: 'courier', name: 'Courier', kind: 'system', external: true, description: 'Delivers parcels' }
+      ],
+      relationships: [
+        { from: 'shopper', to: 'storefront', label: 'Browses and buys using' },
+        { from: 'storefront', to: 'basket', label: 'Adds items to' },
+        { from: 'storefront', to: 'checkout', label: 'Checks out with' },
+        { from: 'basket', to: 'stock', label: 'Checks with' },
+        { from: 'stock', to: 'products', label: 'Reads stock from', technology: 'SQL' },
+        { id: 'pay', from: 'checkout', to: 'payments', label: 'Takes payment through', technology: 'HTTPS' },
+        { from: 'checkout', to: 'queue', label: 'Places orders on' },
+        { from: 'picking', to: 'queue', label: 'Takes orders from' },
+        { from: 'staff', to: 'picking', label: 'Packs orders using' },
+        { from: 'picking', to: 'courier', label: 'Books collections with', technology: 'HTTPS' }
+      ]
+    };
+
+    for (const button of document.querySelectorAll('[data-reveal]')) {
+      button.addEventListener('click', () => shop.reveal(button.dataset.reveal));
+    }
+    for (const point of document.querySelectorAll('[data-relationship]')) {
+      point.addEventListener('pointerenter', () => { shop.highlight = { relationships: [point.dataset.relationship] }; });
+      point.addEventListener('pointerleave', () => { shop.highlight = {}; });
+    }
+
+    const name = (id) => {
+      const find = (list) => list.flatMap((e) => [e, ...find(e.children ?? [])]);
+      return find(shop.model.elements).find((e) => e.id === id)?.name ?? id;
+    };
+    shop.addEventListener('sb-select', (e) => {
+      document.getElementById('shop-chosen').textContent = e.detail.type === 'element'
+        ? `Chosen: ${name(e.detail.id)}`
+        : `Chosen: ${e.detail.relationships.map((r) => `${name(r.from)} → ${name(r.to)}: ${r.label}`).join('\n')}`;
+    });
+  </script>
+</body>
+</html>

@@ -23,6 +23,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | Component | What it does |
 |---|---|
 | [`sb-bars`](components/sb-bars/manifest.md) | Things compared on one measure: bars on one scale, sorted or not, with reference lines and each bar's change since the last update. |
+| [`sb-c4`](components/sb-c4/manifest.md) | A C4 software architecture walked into level by level, with a path back out; relationships deep inside roll up to every view. |
 | [`sb-callout`](components/sb-callout/manifest.md) | A stand-out block for definitions, notes, tips, questions, answers and warnings; optionally collapsible. |
 | [`sb-chart`](components/sb-chart/manifest.md) | Values over time as lines, with reference lines, the latest values marked, and a legend. |
 | [`sb-code`](components/sb-code/manifest.md) | Code or pseudocode stepped through a trace the model records: the running line marked, variables beside it with changes shown. |

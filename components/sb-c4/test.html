@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-c4 tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-c4.js"></script>
+</head>
+<body>
+  <script>
+    // A shop: a shopper, the shop (a web app and an API holding two components, and a database),
+    // and an outside payment provider.
+    const MODEL = {
+      elements: [
+        { id: 'shopper', name: 'Shopper', kind: 'person' },
+        { id: 'shop', name: 'Shop', kind: 'system', description: 'Sells things', children: [
+          { id: 'web', name: 'Web app', kind: 'container', technology: 'React' },
+          { id: 'api', name: 'API', kind: 'container', children: [
+            { id: 'basket', name: 'Basket', kind: 'component' },
+            { id: 'checkout', name: 'Checkout', kind: 'component' }
+          ] },
+          { id: 'db', name: 'Orders', kind: 'database' }
+        ] },
+        { id: 'pay', name: 'Payments', kind: 'system', external: true },
+        { id: 'bank', name: 'Bank', kind: 'system', external: true }
+      ],
+      relationships: [
+        { id: 'r1', from: 'shopper', to: 'web', label: 'Shops using', technology: 'HTTPS' },
+        { id: 'r2', from: 'web', to: 'basket', label: 'Adds to' },
+        { id: 'r3', from: 'web', to: 'checkout', label: 'Checks out with' },
+        { id: 'r4', from: 'checkout', to: 'db', label: 'Saves orders in' },
+        { id: 'r5', from: 'checkout', to: 'pay', label: 'Takes payment through' },
+        { id: 'r6', from: 'pay', to: 'bank', label: 'Settles with' }
+      ]
+    };
+
+    function diagram(path) {
+      const el = mount('<sb-c4></sb-c4>');
+      el.model = MODEL;
+      if (path) el.path = path;
+      return el;
+    }
+
+    const boxes = (el) => [...el.querySelectorAll('.sb-c4__element')].map((b) => b.dataset.element);
+    const box = (el, id) => [...el.querySelectorAll('.sb-c4__element')].find((b) => b.dataset.element === id);
+    const link = (el, key) => [...el.querySelectorAll('.sb-c4__relationship')].find((l) => l.dataset.link === key);
+    const links = (el) => [...el.querySelectorAll('.sb-c4__relationship')].map((l) => l.dataset.link);
+    const label = (el, key) => link(el, key).querySelector('.sb-c4__label').textContent;
+    const crumbs = (el) => [...el.querySelectorAll('.sb-c4__step')].map((s) => s.textContent);
+    const rect = (node) => node.getBoundingClientRect();
+    const has = (node, state) => [...node.classList].some((c) => c.endsWith(`--${state}`));
+    const click = (node) => node.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    // ---- The overview ----
+
+    test('the overview shows the top-level elements, without a boundary', () => {
+      const el = diagram();
+      assertEqual(boxes(el), ['shopper', 'shop', 'pay', 'bank']);
+      assertEqual(el.querySelector('.sb-c4__boundary'), null);
+      assertEqual(crumbs(el), ['Overview']);
+    });
+
+    test('each box shows its name, kind and technology, and what\'s inside', () => {
+      const el = diagram(['shop']);
+      assertEqual(box(el, 'web').querySelector('.sb-c4__kind').textContent, '[Container: React]');
+      assertEqual(box(el, 'api').querySelector('.sb-c4__inside').textContent, '⤢ 2 inside');
+      assertEqual(box(el, 'web').querySelector('.sb-c4__inside'), null, 'nothing inside, no link');
+      const top = diagram();
+      assert(has(box(top, 'pay'), 'external') && !has(box(top, 'shop'), 'external'), 'externals marked');
+    });
+
+    test('relationships deep inside roll up to the boxes that can be seen', () => {
+      const el = diagram();
+      assertEqual(links(el), ['shopper->shop', 'shop->pay', 'pay->bank']);
+      assertEqual(label(el, 'shop->pay'), 'Takes payment through', 'checkout → payments, at the top');
+    });
+
+    test('several relationships rolled into one line say how many, and list them', () => {
+      const el = diagram(['shop']);
+      assertEqual(label(el, 'web->api'), '2 relationships');
+      assertEqual(link(el, 'web->api').querySelector('title').textContent, 'Web app → Basket: Adds to\nWeb app → Checkout: Checks out with');
+    });
+
+    test('a single relationship shows its label and technology', () => {
+      assertEqual(label(diagram(), 'shopper->shop'), 'Shops using[HTTPS]');
+    });
+
+    // ---- Inside ----
+
+    test('inside an element, its children sit in a boundary named after it', () => {
+      const el = diagram(['shop']);
+      const boundary = rect(el.querySelector('.sb-c4__boundary'));
+      for (const id of ['web', 'api', 'db']) {
+        const r = rect(box(el, id));
+        assert(r.left > boundary.left && r.right < boundary.right && r.top > boundary.top && r.bottom < boundary.bottom, `${id} inside`);
+      }
+      assertEqual(el.querySelector('.sb-c4__boundary-label').textContent, 'Shop [Software system]');
+      assertEqual(crumbs(el), ['Overview', 'Shop']);
+    });
+
+    test('what the children talk to is shown outside: callers above, the called below', () => {
+      const el = diagram(['shop']);
+      const boundary = rect(el.querySelector('.sb-c4__boundary'));
+      assert(rect(box(el, 'shopper')).bottom < boundary.top, 'the shopper above');
+      assert(rect(box(el, 'pay')).top > boundary.bottom, 'payments below');
+      assertEqual(box(el, 'bank'), undefined, 'the bank only talks to payments, so it isn\'t here');
+      assertEqual(link(el, 'pay->bank'), undefined, 'nor that line');
+    });
+
+    test('deeper still, neighbours outside stand for what they are at that level', () => {
+      const el = diagram(['shop', 'api']);
+      assertEqual(boxes(el).sort(), ['basket', 'checkout', 'db', 'pay', 'web'].sort());
+      assertEqual(links(el).sort(), ['checkout->db', 'checkout->pay', 'web->basket', 'web->checkout'].sort());
+      assertEqual(crumbs(el), ['Overview', 'Shop', 'API']);
+    });
+
+    test('lines go round boxes rather than through them', () => {
+      const el = mount('<sb-c4></sb-c4>');
+      el.model = {
+        elements: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }],
+        relationships: [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }, { from: 'a', to: 'c' }]
+      };
+      const path = link(el, 'a->c').querySelector('.sb-c4__line');
+      const middle = rect(box(el, 'b').querySelector('.sb-c4__shape'));
+      const svg = el.querySelector('svg');
+      for (let i = 1; i < 20; i++) {
+        const p = path.getPointAtLength((path.getTotalLength() * i) / 20);
+        const at = Object.assign(svg.createSVGPoint(), { x: p.x, y: p.y }).matrixTransform(svg.getScreenCTM());
+        assert(!(at.x > middle.left && at.x < middle.right && at.y > middle.top && at.y < middle.bottom), 'clear of B');
+      }
+    });
+
+    test('labels sit clear of each other and of the boxes, even where lines cross', () => {
+      const el = mount('<sb-c4></sb-c4>');
+      el.model = {
+        elements: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }, { id: 'd', name: 'D' }],
+        relationships: [{ from: 'a', to: 'd', label: 'A long label for A to D' }, { from: 'b', to: 'c', label: 'A long label for B to C' }]
+      };
+      const labels = [...el.querySelectorAll('.sb-c4__label')].map(rect);
+      const shapes = [...el.querySelectorAll('.sb-c4__shape')].map(rect);
+      const overlap = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+      labels.forEach((l, i) => {
+        assert(!labels.some((o, j) => j !== i && overlap(l, o)), `label ${i} clear of the others`);
+        assert(!shapes.some((s) => overlap(l, s)), `label ${i} clear of the boxes`);
+      });
+    });
+
+    // ---- Moving about ----
+
+    test('clicking "inside" goes in, firing sb-navigate', () => {
+      const el = diagram();
+      const events = recordEvents(el, 'sb-navigate');
+      click(box(el, 'shop').querySelector('.sb-c4__inside'));
+      assertEqual(el.path, ['shop']);
+      assertEqual(events[0].detail, { path: ['shop'] });
+    });
+
+    test('double-clicking a box with something inside goes in; one without, nowhere', () => {
+      const el = diagram(['shop']);
+      box(el, 'web').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      assertEqual(el.path, ['shop']);
+      box(el, 'api').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      assertEqual(el.path, ['shop', 'api']);
+    });
+
+    test('the path goes back up, as does Escape', () => {
+      const el = diagram(['shop', 'api']);
+      const events = recordEvents(el, 'sb-navigate');
+      click(el.querySelectorAll('.sb-c4__step')[1]);
+      assertEqual(el.path, ['shop']);
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      assertEqual(el.path, []);
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      assertEqual(events.map((e) => e.detail.path), [['shop'], []], 'nothing above the top');
+      assert(el.querySelector('.sb-c4__step[aria-current]').textContent === 'Overview', 'the current step is marked');
+      click(el.querySelector('.sb-c4__step[aria-current]'));
+      assertEqual(events.length, 2, 'staying put fires nothing');
+    });
+
+    test('setting the path moves silently, and a path that doesn\'t lead anywhere stops short', () => {
+      const el = diagram();
+      const events = recordEvents(el, 'sb-navigate');
+      el.path = ['shop', 'api'];
+      assertEqual(el.path, ['shop', 'api']);
+      el.path = ['shop', 'web'];
+      assertEqual(el.path, ['shop'], 'the web app has nothing inside');
+      el.path = ['api'];
+      assertEqual(el.path, [], 'not from the top');
+      assertEqual(events.length, 0);
+    });
+
+    test('the path survives the model being set again, as far as it still leads', () => {
+      const el = diagram(['shop', 'api']);
+      el.model = { ...MODEL };
+      assertEqual(el.path, ['shop', 'api']);
+      el.model = { elements: MODEL.elements.filter((e) => e.id !== 'shop'), relationships: [] };
+      assertEqual(el.path, []);
+    });
+
+    test('reveal goes to where an element can be seen, and highlights it', () => {
+      const el = diagram();
+      el.reveal('checkout');
+      assertEqual(el.path, ['shop', 'api']);
+      assert(has(box(el, 'checkout'), 'highlighted'));
+    });
+
+    // ---- Pointing ----
+
+    test('highlighting an element folded inside a box marks that box', () => {
+      const el = diagram();
+      el.highlight = { elements: ['checkout', 'pay'] };
+      assert(has(box(el, 'shop'), 'holds-highlight') && !has(box(el, 'shop'), 'highlighted'), 'the box holding it');
+      assert(has(box(el, 'pay'), 'highlighted'), 'one that can be seen');
+    });
+
+    test('highlighting a relationship lights the line it rolls into', () => {
+      const el = diagram();
+      el.highlight = { relationships: ['r5'] };
+      assert(has(link(el, 'shop->pay'), 'highlighted') && !has(link(el, 'shopper->shop'), 'highlighted'));
+      el.path = ['shop'];
+      assert(has(link(el, 'api->pay'), 'highlighted'), 'and again, one level down');
+    });
+
+    test('pointing at a box lights its lines and neighbours, fading the rest', () => {
+      const el = diagram(['shop']);
+      box(el, 'db').querySelector('.sb-c4__shape').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assert(has(box(el, 'db'), 'highlighted') && has(link(el, 'api->db'), 'highlighted'), 'it and its line');
+      assert(!has(box(el, 'api'), 'faded') && has(box(el, 'web'), 'faded') && has(link(el, 'web->api'), 'faded'), 'its neighbour kept, the rest faded');
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(el.querySelectorAll('[class*="--faded"], [class*="--highlighted"]').length, 0, 'cleared');
+    });
+
+    test('pointing at a line lights it and its two boxes', () => {
+      const el = diagram(['shop']);
+      link(el, 'shopper->web').querySelector('.sb-c4__line').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assert(has(link(el, 'shopper->web'), 'highlighted') && !has(box(el, 'shopper'), 'faded') && !has(box(el, 'web'), 'faded') && has(box(el, 'db'), 'faded'));
+    });
+
+    test('clicking a box or a line fires sb-select', () => {
+      const el = diagram(['shop']);
+      const events = recordEvents(el, 'sb-select');
+      click(box(el, 'db').querySelector('.sb-c4__shape'));
+      click(link(el, 'web->api').querySelector('.sb-c4__line'));
+      assertEqual(events[0].detail, { type: 'element', id: 'db' });
+      assertEqual(events[1].detail.relationships.map((r) => r.id), ['r2', 'r3']);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two diagrams on one page keep their own place', () => {
+      mount('<div><sb-c4></sb-c4><sb-c4></sb-c4></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-c4');
+      a.model = MODEL;
+      b.model = MODEL;
+      a.path = ['shop'];
+      assertEqual([a.path, b.path], [['shop'], []]);
+    });
+
+    test('shows the empty text without elements, and text never as markup', () => {
+      assertEqual(mount('<sb-c4></sb-c4>').textContent.trim(), 'Nothing yet.');
+      const el = mount('<sb-c4 root-label="<b>Top</b>"></sb-c4>');
+      el.model = { elements: [{ id: 'x', name: '<i>X</i>', description: '<b>d</b>', technology: '<i>t</i>' }, { id: 'y' }], relationships: [{ from: 'x', to: 'y', label: '<b>l</b>' }] };
+      assertEqual(el.querySelectorAll('b, i').length, 0, 'anywhere, since the parser moves such tags out of an svg');
+      assertEqual(crumbs(el), ['<b>Top</b>']);
+    });
+  </script>
+</body>
+</html>
