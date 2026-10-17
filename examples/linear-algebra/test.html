@@ -44,7 +44,7 @@
       const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
       await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
       const chapters = frame.contentDocument.getElementById('chapters');
-      assertEqual(chapters.panels.map((p) => p.getAttribute('heading')), ['1 · Vectors', '2 · Combinations and span']);
+      assertEqual(chapters.panels.map((p) => p.getAttribute('heading')), ['1 · Vectors', '2 · Combinations and span', '3 · Matrices']);
       frame.contentWindow.localStorage.removeItem('sb-tabs:chapters');
       chapters.selected = 0;
       frame.contentDocument.querySelector('.next').click();
@@ -62,6 +62,17 @@
       page.getElementById('show-span').click();
       assert(combining.querySelectorAll('.sb-plane__dot').length > 100, 'the span fills in');
       assert(page.getElementById('combining-explain').textContent.includes('the whole plane'), 'explains the span');
+    });
+
+    test('chapter 3: editing the matrix moves space, and its columns are where î and ĵ land', async () => {
+      const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
+      await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      const page = frame.contentDocument;
+      const field = page.querySelector('#matrix-a input[data-row="0"][data-column="0"]');
+      field.value = '2';
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      assertEqual(page.getElementById('moving').matrix, [[2, 1], [0, 1]]);
+      assert(page.getElementById('moving-explain').textContent.includes('î lands on (2, 0)'), 'explains where î lands');
     });
   </script>
 </body>

@@ -1,4 +1,4 @@
-// Sandkit sb-tabs 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-tabs 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Tabs over the panels inside it: chapters of a sandbox, views of a model, anything. Each panel is
 // a direct child titled by its `heading`; only the selected one shows. Tab sets only ever look at
 // their own direct children, so they nest freely.
@@ -57,7 +57,7 @@
     constructor() {
       super();
       this._id = `sb-tabs-${++instanceCount}`;
-      this._selected = 0;
+      this._selected = null; // null until chosen, by the sandbox or the viewer
       // Panels added or removed later get their tabs too.
       this._observer = new MutationObserver(() => this._renderTabs());
     }
@@ -89,7 +89,7 @@
     }
 
     // The index of the panel showing. Setting it fires no event: sb-select reports the viewer's choices.
-    get selected() { return this._selected; }
+    get selected() { return this._selected ?? 0; }
     set selected(index) {
       this._selected = this._clamp(Number(index));
       this._showSelected();
@@ -106,8 +106,9 @@
       this._list.setAttribute('role', 'tablist');
       this.prepend(this._list);
 
+      // A viewer's remembered choice wins; then one the sandbox set before the tabs were built.
       const saved = this.id ? storage.read(`sb-tabs:${this.id}`) : null;
-      this._selected = saved ?? Number(this.getAttribute('selected') ?? 0);
+      this._selected = saved ?? this._selected ?? Number(this.getAttribute('selected') ?? 0);
 
       this._list.addEventListener('click', (e) => {
         const tab = e.target.closest('[role="tab"]');

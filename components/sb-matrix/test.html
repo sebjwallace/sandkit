@@ -99,6 +99,14 @@
       assertEqual(input(el, 0, 0), field);
     });
 
+    test('setting the values it already has keeps the field being typed in', () => {
+      const el = matrix('editable');
+      el.addEventListener('sb-change', (e) => { el.values = e.detail.values; }); // as a sandbox re-rendering would
+      const field = input(el, 0, 0);
+      type(el, 0, 0, '7');
+      assertEqual(input(el, 0, 0), field);
+    });
+
     test('ignores an entry that isn\'t a number yet', () => {
       const el = matrix('editable');
       const changes = recordEvents(el, 'sb-change');

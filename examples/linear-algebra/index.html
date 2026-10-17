@@ -10,6 +10,7 @@
   <script src="../../components/sb-plane/sb-plane.js"></script>
   <script src="../../components/sb-parameters/sb-parameters.js"></script>
   <script src="../../components/sb-tabs/sb-tabs.js"></script>
+  <script src="../../components/sb-matrix/sb-matrix.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
@@ -45,6 +46,23 @@
             <sb-parameters id="scalars"></sb-parameters>
             <label class="toggle"><input type="checkbox" id="show-span"> Show the span</label>
             <div id="combining-explain"></div>
+          </div>
+        </div>
+        <p class="onward"><button type="button" class="next">Next: matrices as moving space →</button></p>
+      </section>
+
+      <section class="chapter" heading="3 · Matrices">
+        <h2>Chapter 3 · Matrices as moving space</h2>
+        <p>A matrix is a way of moving the whole of space, and it needs only two pairs of numbers to say how. Its first column is where <span class="vector vector--i">î</span>, the arrow one step right, lands. Its second column is where <span class="vector vector--j">ĵ</span>, the arrow one step up, lands.</p>
+        <p>Why is that enough? Every vector is a combination of î and ĵ: <span class="vector">(2, 1)</span> is 2·î + 1·ĵ. Move î and ĵ, keep the same combination, and you know where every vector goes. The grid lines follow, staying straight, parallel and evenly spaced.</p>
+        <p class="try"><strong>Try:</strong> drag the green and red points to choose where <span class="vector vector--i">î</span> and <span class="vector vector--j">ĵ</span> land, or type into the matrix. Slide the transformation back to the start and play it forward. Can you make a quarter turn? A mirror image? What happens if î and ĵ land on the same line?</p>
+        <div class="panel stage">
+          <sb-plane id="moving" range="3" basis snap="0.5" height="420"></sb-plane>
+          <div class="explain">
+            <p class="equation"><sb-matrix id="matrix-a" name="A" editable step="0.5"></sb-matrix></p>
+            <sb-parameters id="transformation"></sb-parameters>
+            <p><button type="button" class="next" id="play-transformation">Play the transformation</button></p>
+            <div id="moving-explain"></div>
           </div>
         </div>
       </section>
@@ -146,10 +164,70 @@
         <p>${spanNote}</p>`;
     }
 
+    // ---- Chapter 3: matrices as moving space ----
+
+    const moving = { plane: $('moving'), matrix: [[1, 1], [0, 1]], progress: 1, v: [2, 1] };
+
+    $('matrix-a').tones = { columns: ['good', 'bad'] };
+    $('transformation').definitions = [
+      { key: 'progress', label: 'Transformation', min: 0, max: 1, step: 0.01, value: 1, format: (t) => `${Math.round(t * 100)}% applied` }
+    ];
+
+    $('matrix-a').addEventListener('sb-change', (e) => {
+      moving.matrix = e.detail.values;
+      renderMoving();
+    });
+    $('transformation').addEventListener('sb-change', (e) => {
+      moving.progress = e.detail.value;
+      renderMoving();
+    });
+    // The green and red points are where î and ĵ land: the matrix's columns.
+    moving.plane.addEventListener('sb-change', (e) => {
+      const column = e.detail.id === 'i-lands' ? 0 : 1;
+      moving.matrix[0][column] = e.detail.x;
+      moving.matrix[1][column] = e.detail.y;
+      renderMoving();
+    });
+
+    let playing = null;
+    $('play-transformation').addEventListener('click', () => {
+      clearInterval(playing);
+      moving.progress = 0;
+      playing = setInterval(() => {
+        moving.progress = Math.min(1, moving.progress + 0.02);
+        $('transformation').values = { progress: moving.progress };
+        renderMoving();
+        if (moving.progress >= 1) clearInterval(playing);
+      }, 30);
+    });
+
+    function renderMoving() {
+      const [[a, b], [c, d]] = moving.matrix;
+      const [x, y] = moving.v;
+      const lands = vectors.combine(x, [a, c], y, [b, d]);
+      moving.plane.matrix = moving.matrix;
+      moving.plane.progress = moving.progress;
+      moving.plane.objects = [
+        { type: 'polygon', id: 'square', points: [[0, 0], [1, 0], [1, 1], [0, 1]], tone: 'warn', label: 'the unit square' },
+        { type: 'vector', id: 'v', x, y, label: 'v', tone: 'accent' },
+        { type: 'point', id: 'i-lands', x: a, y: c, tone: 'good', draggable: true, fixed: true },
+        { type: 'point', id: 'j-lands', x: b, y: d, tone: 'bad', draggable: true, fixed: true }
+      ];
+      $('matrix-a').values = moving.matrix;
+      $('moving-explain').innerHTML = `
+        <p><span class="vector vector--i">î lands on ${pair([a, c])}</span>, <span class="vector vector--j">ĵ lands on ${pair([b, d])}</span>.</p>
+        <p><span class="vector vector--v">v = ${pair(moving.v)} = ${number(x)}·î + ${number(y)}·ĵ</span>, so it lands on
+          ${number(x)}·${pair([a, c])} + ${number(y)}·${pair([b, d])} = <span class="vector">${pair(lands)}</span>.</p>
+        <p>${vectors.lineUp([a, c], [b, d])
+          ? 'î and ĵ have landed on the same line, so the whole plane is squashed onto that line.'
+          : 'The grid stays straight, parallel and evenly spaced: that is what makes a transformation linear.'}</p>`;
+    }
+
     // ---- Start ----
 
     renderAdding();
     renderCombining();
+    renderMoving();
   </script>
 </body>
 </html>

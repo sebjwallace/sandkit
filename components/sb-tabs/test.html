@@ -89,6 +89,14 @@
       assertEqual(selections.length, 2);
     });
 
+    test('a panel chosen before the tabs are built is kept', () => {
+      const el = document.createElement('sb-tabs');
+      el.innerHTML = '<p heading="A">a</p><p heading="B">b</p><p heading="C">c</p>';
+      el.selected = 2;
+      mount(el);
+      assertEqual(visible(el), ['C']);
+    });
+
     test('setting selected changes the panel without firing sb-select', () => {
       const el = tabs();
       const selections = recordEvents(el, 'sb-select');

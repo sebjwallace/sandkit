@@ -1,4 +1,4 @@
-// Sandkit sb-matrix 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-matrix 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A matrix, or a vector (a matrix with one column), shown as a block of numbers in brackets, inline
 // in a sentence or on its own. Entries can be edited, and rows, columns or cells highlighted and
 // coloured, so the numbers can point at what they mean elsewhere in the sandbox.
@@ -76,9 +76,13 @@
     // ---- Public API ----
 
     // Rows of numbers: [[1, 0], [0, 1]]. A flat list, such as [2, 1], is a column vector.
+    // Setting the values it already has does nothing, so a field being typed in keeps its focus
+    // when a sandbox passes the edited values straight back.
     get values() { return this._rows.map((row) => [...row]); }
     set values(values) {
-      this._rows = toRows(values);
+      const rows = toRows(values);
+      if (JSON.stringify(rows) === JSON.stringify(this._rows)) return;
+      this._rows = rows;
       this.render();
     }
 
