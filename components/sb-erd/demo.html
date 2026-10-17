@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-erd demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-erd.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+    .chosen { margin: 10px 0 0; font-size: 13px; color: var(--sb-muted); }
+    .chosen code { color: var(--sb-text); font: 12px ui-monospace, Menlo, Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-erd">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>An entity relationship diagram whose lines run from the exact field to the exact field.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Wherever information is kept, it is kept as things that refer to each other: a loan refers to a book and a member, an order to a customer. An entity relationship diagram draws those things as boxes listing their fields, and each reference as a line. Here, every line starts at the very field that holds the reference and ends at the very field it refers to, so you never have to guess which field a line belongs to.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Seeing how information hangs together.</strong> What a library, a shop, a clinic or a school needs to keep, and how each piece points at the others.</li>
+        <li><strong>Following a reference.</strong> Point at a field and its line lights up, along with the field at the other end. Point at a key and every field that refers to it lights up.</li>
+        <li><strong>Explaining a design.</strong> Point at fields from the prose, so a sentence about "who borrowed what" lights the fields that record it.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>States and transitions, or flows.</strong> Use a graph of nodes and edges.</li>
+        <li><strong>The records themselves.</strong> A diagram shows the shape of the information; a table shows what's in it.</li>
+        <li><strong>Very large schemas.</strong> Fifty boxes are hard to read anywhere. Draw the part the question is about.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-erd/sb-erd.js"&gt;&lt;/script&gt;
+&lt;sb-erd&gt;&lt;/sb-erd&gt;
+
+&lt;script&gt;
+  document.querySelector('sb-erd').entities = [
+    { id: 'customers', name: 'Customer', x: 0, y: 0, fields: [
+      { name: 'id', type: 'int', key: 'primary' },
+      { name: 'name', type: 'text' }
+    ] },
+    { id: 'orders', name: 'Order', x: 260, y: 0, fields: [
+      { name: 'id', type: 'int', key: 'primary' },
+      { name: 'customer_id', type: 'int', references: 'customers.id' }
+    ] }
+  ];
+&lt;/script&gt;</pre>
+      <p>Give each entity a position, its top-left corner in pixels, and leave room between boxes for the lines. A field with <code>references</code> draws a line to the field it names; name only the entity (<code>'customers'</code>) and the line ends at its title.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Place related entities side by side,</strong> so lines run across rather than around. The line leaves from whichever side faces its target.</li>
+        <li><strong>Show the fields that matter for the question,</strong> not every column a real database has.</li>
+        <li><strong>Point at relationships from the prose.</strong> Set <code>highlight</code> when a sentence talks about a field; the line and the other end light up with it.</li>
+        <li><strong>Connect it.</strong> Listen for <code>sb-select</code> to show an entity's records, or explain a field, elsewhere in the sandbox.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A library</h2>
+      <p>Point at any field to follow its line. A loan joins <span class="point" data-fields="loans.book_id loans.member_id">a book and a member</span>; each book has <span class="point" data-fields="books.author_id">an author</span>.</p>
+      <sb-erd id="library"></sb-erd>
+    </section>
+
+    <section class="example">
+      <h2>An online shop</h2>
+      <p>An order line joins an order to a product. Categories nest inside each other, so a category refers to its own parent. Click a field to choose it.</p>
+      <sb-erd id="shop"></sb-erd>
+      <p class="chosen" id="chosen">Nothing chosen yet.</p>
+    </section>
+  </main>
+
+  <script>
+    const primary = (name = 'id') => ({ name, type: 'int', key: 'primary' });
+
+    // ---- A library ----
+
+    const library = document.getElementById('library');
+    library.entities = [
+      { id: 'authors', name: 'Author', x: 0, y: 0, fields: [primary(), { name: 'name', type: 'text' }, { name: 'born', type: 'year' }] },
+      { id: 'books', name: 'Book', x: 250, y: 0, fields: [
+        primary(), { name: 'title', type: 'text' }, { name: 'author_id', type: 'int', references: 'authors.id' }, { name: 'published', type: 'year' }
+      ] },
+      { id: 'members', name: 'Member', x: 250, y: 190, fields: [primary(), { name: 'name', type: 'text' }, { name: 'joined', type: 'date' }] },
+      { id: 'loans', name: 'Loan', x: 520, y: 70, fields: [
+        primary(), { name: 'book_id', type: 'int', references: 'books.id' }, { name: 'member_id', type: 'int', references: 'members.id' },
+        { name: 'borrowed', type: 'date' }, { name: 'due', type: 'date' }, { name: 'returned', type: 'date' }
+      ] }
+    ];
+
+    for (const point of document.querySelectorAll('.point')) {
+      point.addEventListener('pointerenter', () => { library.highlight = { fields: point.dataset.fields.split(' ') }; });
+      point.addEventListener('pointerleave', () => { library.highlight = {}; });
+    }
+
+    // ---- An online shop ----
+
+    const shop = document.getElementById('shop');
+    shop.entities = [
+      { id: 'customers', name: 'Customer', x: 0, y: 0, fields: [primary(), { name: 'name', type: 'text' }, { name: 'email', type: 'text' }] },
+      { id: 'orders', name: 'Order', x: 0, y: 150, fields: [
+        primary(), { name: 'customer_id', type: 'int', references: 'customers.id' }, { name: 'placed', type: 'date' }, { name: 'status', type: 'text' }
+      ] },
+      { id: 'order_lines', name: 'Order line', x: 270, y: 120, fields: [
+        primary(), { name: 'order_id', type: 'int', references: 'orders.id' }, { name: 'product_id', type: 'int', references: 'products.id' },
+        { name: 'quantity', type: 'int' }
+      ] },
+      { id: 'products', name: 'Product', x: 540, y: 60, fields: [
+        primary(), { name: 'name', type: 'text' }, { name: 'price', type: 'money' }, { name: 'category_id', type: 'int', references: 'categories.id' }
+      ] },
+      { id: 'categories', name: 'Category', x: 540, y: 250, fields: [
+        primary(), { name: 'name', type: 'text' }, { name: 'parent_id', type: 'int', references: 'categories.id' }
+      ] }
+    ];
+
+    shop.addEventListener('sb-select', (e) => {
+      const { entity, field } = e.detail;
+      document.getElementById('chosen').innerHTML = `Chosen: <code></code>`;
+      document.querySelector('#chosen code').textContent = field ? `${entity}.${field}` : entity;
+      shop.highlight = field ? { fields: [`${entity}.${field}`] } : { entities: [entity] };
+    });
+  </script>
+</body>
+</html>

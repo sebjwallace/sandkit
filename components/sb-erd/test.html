@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-erd tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-erd.js"></script>
+</head>
+<body>
+  <script>
+    const ENTITIES = [
+      { id: 'members', name: 'Member', x: 0, y: 0, fields: [{ name: 'id', type: 'int', key: 'primary' }, { name: 'name', type: 'text' }] },
+      { id: 'loans', name: 'Loan', x: 300, y: 40, fields: [
+        { name: 'id', type: 'int', key: 'primary' },
+        { name: 'book_id', type: 'int', references: 'books.id' },
+        { name: 'member_id', type: 'int', references: 'members.id' }
+      ] },
+      { id: 'books', name: 'Book', x: 600, y: 0, fields: [{ name: 'title', type: 'text' }, { name: 'id', type: 'int', key: 'primary' }] }
+    ];
+
+    function diagram(entities = ENTITIES) {
+      const el = mount('<sb-erd></sb-erd>');
+      el.entities = entities;
+      return el;
+    }
+
+    const byData = (el, selector, key, value) => [...el.querySelectorAll(selector)].find((node) => node.dataset[key] === value);
+    const field = (el, ref) => byData(el, '.sb-erd__field', 'field', ref);
+    const link = (el, ref) => byData(el, '.sb-erd__link', 'field', ref);
+    const entity = (el, id) => byData(el, '.sb-erd__entity', 'entity', id);
+    const lit = (node) => [...node.classList].some((c) => c.endsWith('--highlighted'));
+    const litFields = (el) => [...el.querySelectorAll('.sb-erd__field--highlighted')].map((f) => f.dataset.field);
+
+    // Where things are on screen, so the tests check what people see rather than the sizes used.
+    const box = (node) => node.getBoundingClientRect();
+    const middleY = (node) => box(node).top + box(node).height / 2;
+    const near = (a, b, message) => assert(Math.abs(a - b) < 1, `${message}: ${a} is not ${b}`);
+    const start = (el, ref) => box(link(el, ref).querySelector('circle'));
+    const tip = (el, ref) => {
+      const [x, y] = link(el, ref).querySelectorAll('.sb-erd__end')[1].getAttribute('d').match(/^M([-\d.]+),([-\d.]+)/).slice(1).map(Number);
+      const point = Object.assign(el.querySelector('svg').createSVGPoint(), { x, y }).matrixTransform(el.querySelector('svg').getScreenCTM());
+      return point;
+    };
+
+    // ---- Drawing ----
+
+    test('draws a box per entity, titled, with a row per field marked PK or FK', () => {
+      const el = diagram();
+      assertEqual(el.querySelectorAll('.sb-erd__entity').length, 3);
+      assertEqual(entity(el, 'loans').querySelector('.sb-erd__name').textContent, 'Loan');
+      const keys = [...entity(el, 'loans').querySelectorAll('.sb-erd__key')].map((k) => k.textContent);
+      assertEqual(keys, ['PK', 'FK', 'FK']);
+      assertEqual(field(el, 'loans.book_id').querySelector('.sb-erd__type').textContent, 'int');
+    });
+
+    test('draws a line for each reference to an entity that exists', () => {
+      const el = diagram([...ENTITIES, { id: 'x', x: 0, y: 300, fields: [{ name: 'y', references: 'nowhere.id' }] }]);
+      assertEqual([...el.querySelectorAll('.sb-erd__link')].map((l) => l.dataset.field), ['loans.book_id', 'loans.member_id']);
+    });
+
+    test('a line starts level with its own field\'s row', () => {
+      const el = diagram();
+      for (const ref of ['loans.book_id', 'loans.member_id']) {
+        near(start(el, ref).top + start(el, ref).height / 2, middleY(field(el, ref).querySelector('.sb-erd__row')), ref);
+      }
+    });
+
+    test('a line ends level with the field it refers to', () => {
+      const el = diagram();
+      near(tip(el, 'loans.book_id').y, middleY(field(el, 'books.id').querySelector('.sb-erd__row')), 'books.id, the second row');
+      near(tip(el, 'loans.member_id').y, middleY(field(el, 'members.id').querySelector('.sb-erd__row')), 'members.id');
+    });
+
+    test('a line leaves the side facing its target, and enters the target\'s facing side', () => {
+      const el = diagram();
+      const loans = box(entity(el, 'loans').querySelector('.sb-erd__outline'));
+      near(start(el, 'loans.book_id').left + start(el, 'loans.book_id').width / 2, loans.right, 'leaves right, towards books');
+      near(start(el, 'loans.member_id').left + start(el, 'loans.member_id').width / 2, loans.left, 'leaves left, towards members');
+      near(tip(el, 'loans.book_id').x, box(entity(el, 'books').querySelector('.sb-erd__outline')).left, 'enters books on the left');
+      near(tip(el, 'loans.member_id').x, box(entity(el, 'members').querySelector('.sb-erd__outline')).right, 'enters members on the right');
+    });
+
+    test('a reference to its own entity loops out on the right', () => {
+      const el = diagram([{ id: 'people', x: 0, y: 0, fields: [{ name: 'id', key: 'primary' }, { name: 'parent_id', references: 'people.id' }] }]);
+      const outline = box(el.querySelector('.sb-erd__outline'));
+      near(start(el, 'people.parent_id').left + 3, outline.right, 'starts on the right');
+      near(tip(el, 'people.parent_id').x, outline.right, 'ends on the right');
+      near(tip(el, 'people.parent_id').y, middleY(field(el, 'people.id')), 'at the key');
+    });
+
+    test('naming only the entity ends the line at its title', () => {
+      const el = diagram([ENTITIES[0], { id: 'notes', x: 300, y: 0, fields: [{ name: 'about', references: 'members' }] }]);
+      const head = box(entity(el, 'members').querySelector('.sb-erd__head'));
+      near(tip(el, 'notes.about').y, head.top + head.height / 2, 'title');
+    });
+
+    test('entities without positions are placed side by side', () => {
+      const el = diagram(ENTITIES.map(({ x, y, ...rest }) => rest));
+      const [a, b, c] = [...el.querySelectorAll('.sb-erd__outline')].map(box);
+      assert(a.right < b.left && b.right < c.left, 'no overlaps, left to right');
+    });
+
+    test('is drawn at its real size, never scaled up', () => {
+      const svg = diagram().querySelector('svg');
+      assertEqual(Number(svg.getAttribute('width')), svg.viewBox.baseVal.width);
+    });
+
+    test('a tone is exposed for colouring', () => {
+      const el = diagram([{ ...ENTITIES[0], tone: 'bad' }]);
+      assert(el.querySelector('.sb-erd__entity').classList.contains('sb-erd__entity--bad'));
+    });
+
+    test('shows nothing without entities', () => {
+      assertEqual(mount('<sb-erd></sb-erd>').innerHTML, '');
+    });
+
+    // ---- Pointing and highlighting ----
+
+    test('pointing at a foreign key lights it, its line and the field it refers to', () => {
+      const el = diagram();
+      field(el, 'loans.member_id').querySelector('text').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assertEqual(litFields(el), ['members.id', 'loans.member_id']);
+      assert(lit(link(el, 'loans.member_id')) && !lit(link(el, 'loans.book_id')), 'only its line');
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(litFields(el), [], 'cleared when the pointer leaves');
+    });
+
+    test('pointing at a line lights it like its field', () => {
+      const el = diagram();
+      link(el, 'loans.book_id').querySelector('.sb-erd__line').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assertEqual(litFields(el), ['loans.book_id', 'books.id']);
+    });
+
+    test('pointing at a key lights every field that refers to it', () => {
+      const el = diagram([...ENTITIES, { id: 'fines', x: 300, y: 300, fields: [{ name: 'member_id', references: 'members.id' }] }]);
+      el.highlight = { fields: ['members.id'] };
+      assertEqual(litFields(el), ['members.id', 'loans.member_id', 'fines.member_id']);
+      assertEqual(el.querySelectorAll('.sb-erd__link--highlighted').length, 2);
+    });
+
+    test('highlights entities, and survives the entities being set again', () => {
+      const el = diagram();
+      el.highlight = { entities: ['books'] };
+      el.entities = ENTITIES.slice();
+      assert(lit(entity(el, 'books')) && !lit(entity(el, 'loans')));
+      el.highlight = {};
+      assert(!lit(entity(el, 'books')), 'cleared');
+    });
+
+    test('a reference to a whole entity lights that entity', () => {
+      const el = diagram([ENTITIES[0], { id: 'notes', x: 300, y: 0, fields: [{ name: 'about', references: 'members' }] }]);
+      el.highlight = { fields: ['notes.about'] };
+      assert(lit(entity(el, 'members')));
+    });
+
+    // ---- Selection ----
+
+    test('clicking a field, a line or a title fires sb-select', () => {
+      const el = diagram();
+      const selections = recordEvents(el, 'sb-select');
+      field(el, 'members.name').querySelector('text').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      link(el, 'loans.book_id').querySelector('.sb-erd__line').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      entity(el, 'books').querySelector('.sb-erd__name').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      assertEqual(selections.map((e) => e.detail), [
+        { entity: 'members', field: 'name' }, { entity: 'loans', field: 'book_id' }, { entity: 'books', field: null }
+      ]);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two diagrams on one page keep their own highlights', () => {
+      mount('<div><sb-erd></sb-erd><sb-erd></sb-erd></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-erd');
+      a.entities = ENTITIES;
+      b.entities = ENTITIES;
+      a.highlight = { fields: ['loans.book_id'] };
+      assertEqual([litFields(a).length, litFields(b).length], [2, 0]);
+    });
+
+    test('displays names and types as text, never as markup', () => {
+      const el = diagram([{ id: 'e', name: '<b>E</b>', x: 0, y: 0, fields: [{ name: '<i>f</i>', type: '<b>t</b>', references: '<i>e</i>' }] }]);
+      assertEqual(el.querySelectorAll('b, i').length, 0, 'anywhere, since the parser moves such tags out of an svg');
+      assertEqual(el.querySelector('.sb-erd__name').textContent, '<b>E</b>');
+    });
+  </script>
+</body>
+</html>
