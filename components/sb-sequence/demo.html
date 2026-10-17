@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-sequence demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-sequence.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-accent-text); background: var(--sb-accent); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button.quiet { color: var(--sb-text); background: var(--sb-surface-2); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-sequence">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Who says what to whom, in what order, played a step at a time.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Much of how the world works is a conversation: you ask, someone answers, they ask someone else, and eventually something comes back. A sequence diagram lays that conversation out. Everyone involved stands along the top, time runs down the page, and each message is an arrow from whoever sends it to whoever receives it. Playing it a message at a time shows how the work passes from hand to hand.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Following who does what, in order.</strong> Ordering food, booking an appointment, a payment going through, two computers talking.</li>
+        <li><strong>Seeing the waiting.</strong> A reply only comes after everything it depends on, which shows why some things take as long as they do.</li>
+        <li><strong>Telling a process as a story.</strong> Step through it with the sandbox, adding a note where something needs explaining.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Branches and loops.</strong> A sequence diagram shows one way through. When the choices are the point, use a flowchart.</li>
+        <li><strong>A long record of what happened.</strong> For hundreds of messages, a log reads better.</li>
+        <li><strong>How things are connected,</strong> rather than what they say to each other: use a graph.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-sequence/sb-sequence.js"&gt;&lt;/script&gt;
+&lt;sb-sequence numbered&gt;&lt;/sb-sequence&gt;
+
+&lt;script&gt;
+  const seq = document.querySelector('sb-sequence');
+  seq.participants = [{ id: 'you', label: 'You' }, { id: 'cafe', label: 'Café' }];
+  seq.messages = [
+    { id: 'ask', from: 'you', to: 'cafe', label: 'A flat white, please' },
+    { kind: 'note', over: 'cafe', label: 'Makes the coffee' },
+    { id: 'give', from: 'cafe', to: 'you', label: 'Here you go', kind: 'reply' }
+  ];
+  seq.current = 'ask';
+&lt;/script&gt;</pre>
+      <p>Messages are drawn in the order given. A <code>call</code> (the default) is a solid line with a filled arrow; a <code>reply</code> is dashed; an <code>async</code> message, sent without waiting, has an open arrow. A message to oneself loops back. A <code>note</code> sits over one participant, or across several.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Play it.</strong> Set <code>current</code> to the message happening now; the ones still to come fade, so the story unfolds.</li>
+        <li><strong>Add notes for the why,</strong> such as a rule being applied or time passing, not for what the arrows already say.</li>
+        <li><strong>Use tone for what goes wrong,</strong> such as a refusal or an error, and only that.</li>
+        <li><strong>Point at it from the prose.</strong> Set <code>highlight</code> when a sentence mentions a participant or a message.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Ordering a takeaway</h2>
+      <p>Step through an order from the app to your door. Messages still to come are faded.</p>
+      <div class="actions"><button id="order-next">Next</button><button id="order-reset" class="quiet">Start again</button><button id="order-all" class="quiet">Show all</button></div>
+      <sb-sequence id="order" numbered></sb-sequence>
+    </section>
+
+    <section class="example">
+      <h2>Booking a doctor's appointment</h2>
+      <p>The patient asks <span class="point" data-participants="reception">the receptionist</span>, who checks and gives <span class="point" data-messages="full">a disappointing first answer</span>. <span class="point" data-messages="rule">A rule about urgent cases</span> leads to <span class="point" data-messages="urgent triage yes">a quick back and forth</span> with <span class="point" data-participants="doctor">the doctor</span>. Point at the words, or at the diagram itself: a participant lights everything it says and hears, and a message lights who sends and receives it.</p>
+      <sb-sequence id="doctor"></sb-sequence>
+    </section>
+  </main>
+
+  <script>
+    // ---- Ordering a takeaway ----
+
+    const order = document.getElementById('order');
+    order.participants = [
+      { id: 'you', label: 'You' }, { id: 'app', label: 'Delivery app' },
+      { id: 'kitchen', label: 'Restaurant' }, { id: 'rider', label: 'Rider' }
+    ];
+    order.messages = [
+      { id: 'place', from: 'you', to: 'app', label: 'Order a pizza and pay' },
+      { id: 'send', from: 'app', to: 'kitchen', label: 'New order' },
+      { id: 'accept', from: 'kitchen', to: 'app', label: 'Accepted: 20 minutes', kind: 'reply' },
+      { id: 'confirm', from: 'app', to: 'you', label: 'Confirmed', kind: 'reply' },
+      { id: 'book', from: 'app', to: 'rider', label: 'Pick up at 19:20', kind: 'async' },
+      { id: 'cook', from: 'kitchen', to: 'kitchen', label: 'Make the pizza' },
+      { id: 'collect', from: 'rider', to: 'kitchen', label: 'Collect the order' },
+      { id: 'wait', kind: 'note', over: ['kitchen', 'rider'], label: 'Pizza changes hands' },
+      { id: 'deliver', from: 'rider', to: 'you', label: 'Deliver' },
+      { id: 'rate', from: 'you', to: 'app', label: 'Rate: five stars', kind: 'async' }
+    ];
+
+    const ORDER = order.messages.map((m) => m.id);
+    let step = 0;
+    const showOrder = () => { order.current = ORDER[step]; };
+    document.getElementById('order-next').addEventListener('click', () => { step = Math.min(step + 1, ORDER.length - 1); showOrder(); });
+    document.getElementById('order-reset').addEventListener('click', () => { step = 0; showOrder(); });
+    document.getElementById('order-all').addEventListener('click', () => { order.current = null; });
+
+    // ---- Booking a doctor's appointment ----
+
+    const doctor = document.getElementById('doctor');
+    doctor.participants = [{ id: 'patient', label: 'Patient' }, { id: 'reception', label: 'Receptionist' }, { id: 'doctor', label: 'Doctor' }];
+    doctor.messages = [
+      { id: 'ask', from: 'patient', to: 'reception', label: 'Can I see a doctor today?' },
+      { id: 'check', from: 'reception', to: 'reception', label: 'Checks the diary' },
+      { id: 'full', from: 'reception', to: 'patient', label: 'Fully booked', kind: 'reply', tone: 'bad' },
+      { id: 'urgent', from: 'patient', to: 'reception', label: 'It\'s urgent' },
+      { id: 'rule', kind: 'note', over: 'reception', label: 'Urgent cases go\nto the duty doctor' },
+      { id: 'triage', from: 'reception', to: 'doctor', label: 'Can you call them back?' },
+      { id: 'yes', from: 'doctor', to: 'reception', label: 'Yes, within the hour', kind: 'reply' },
+      { id: 'booked', from: 'reception', to: 'patient', label: 'The doctor will ring you', kind: 'reply', tone: 'good' }
+    ];
+
+    for (const point of document.querySelectorAll('.point')) {
+      point.addEventListener('pointerenter', () => {
+        const ids = (key) => point.dataset[key]?.split(' ') ?? [];
+        doctor.highlight = { participants: ids('participants'), messages: ids('messages') };
+      });
+      point.addEventListener('pointerleave', () => { doctor.highlight = {}; });
+    }
+
+    // ---- Start ----
+
+    showOrder();
+  </script>
+</body>
+</html>

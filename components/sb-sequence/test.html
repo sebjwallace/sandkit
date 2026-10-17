@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-sequence tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-sequence.js"></script>
+</head>
+<body>
+  <script>
+    const PARTICIPANTS = [{ id: 'you', label: 'You' }, { id: 'cafe', label: 'Café' }, { id: 'bank', label: 'Bank' }];
+    const MESSAGES = [
+      { id: 'ask', from: 'you', to: 'cafe', label: 'A flat white, please' },
+      { id: 'charge', from: 'cafe', to: 'bank', label: 'Charge £3', kind: 'async' },
+      { id: 'make', from: 'cafe', to: 'cafe', label: 'Make it' },
+      { id: 'note', kind: 'note', over: 'cafe', label: 'Takes a minute' },
+      { id: 'give', from: 'cafe', to: 'you', label: 'Here you go', kind: 'reply' }
+    ];
+
+    function diagram(messages = MESSAGES, attrs = '') {
+      const el = mount(`<sb-sequence ${attrs}></sb-sequence>`);
+      el.participants = PARTICIPANTS;
+      el.messages = messages;
+      return el;
+    }
+
+    const byData = (el, selector, key, value) => [...el.querySelectorAll(selector)].find((n) => n.dataset[key] === value);
+    const message = (el, id) => byData(el, '.sb-sequence__message', 'messageId', id);
+    const participant = (el, id) => byData(el, '.sb-sequence__participant', 'participantId', id);
+    const has = (node, state) => [...node.classList].some((c) => c.endsWith(`--${state}`));
+
+    // Positions on screen, so the tests check what people see rather than the sizes used.
+    const rect = (node) => node.getBoundingClientRect();
+    const lifelineX = (el, id) => { const r = rect(participant(el, id).querySelector('.sb-sequence__head')); return r.left + r.width / 2; };
+    const points = (el, id) => {
+      const svg = el.querySelector('svg');
+      const d = message(el, id).querySelector('.sb-sequence__line').getAttribute('d');
+      // Paths are absolute: M x,y then H x, V y and H x steps.
+      let x = 0, y = 0;
+      const out = [];
+      for (const [, cmd, a, b] of d.matchAll(/([MHV])([-\d.]+)(?:,([-\d.]+))?/g)) {
+        if (cmd === 'M') [x, y] = [+a, +b];
+        else if (cmd === 'H') x = +a;
+        else y = +a;
+        out.push(Object.assign(svg.createSVGPoint(), { x, y }).matrixTransform(svg.getScreenCTM()));
+      }
+      return out;
+    };
+    const near = (a, b, message) => assert(Math.abs(a - b) < 1, `${message}: ${a} is not ${b}`);
+
+    // ---- Drawing ----
+
+    test('draws each participant with a head and a lifeline, left to right', () => {
+      const el = diagram();
+      assertEqual([...el.querySelectorAll('.sb-sequence__name')].map((n) => n.textContent), ['You', 'Café', 'Bank']);
+      assert(lifelineX(el, 'you') < lifelineX(el, 'cafe') && lifelineX(el, 'cafe') < lifelineX(el, 'bank'));
+      assertEqual(el.querySelectorAll('.sb-sequence__lifeline').length, 3);
+    });
+
+    test('a message runs from its sender\'s lifeline to its receiver\'s', () => {
+      const el = diagram();
+      const ask = points(el, 'ask'), give = points(el, 'give');
+      near(ask[0].x, lifelineX(el, 'you'), 'from');
+      near(ask.at(-1).x, lifelineX(el, 'cafe'), 'to');
+      near(give[0].x, lifelineX(el, 'cafe'), 'a reply runs back');
+      near(give.at(-1).x, lifelineX(el, 'you'), 'to the asker');
+    });
+
+    test('messages run down the page in order', () => {
+      const el = diagram();
+      const ys = ['ask', 'charge', 'make', 'give'].map((id) => points(el, id)[0].y);
+      assert(ys.every((y, i) => i === 0 || y > ys[i - 1]), `in order: ${ys}`);
+      assert(rect(message(el, 'note')).top > points(el, 'make').at(-1).y, 'notes take their place too');
+    });
+
+    test('each kind has its own line and arrowhead', () => {
+      const el = diagram([...MESSAGES, { id: 'odd', from: 'you', to: 'cafe', kind: 'shout' }]);
+      assert(message(el, 'ask').querySelector('.sb-sequence__head-filled'), 'a call has a filled head');
+      assert(has(message(el, 'give'), 'reply') && message(el, 'give').querySelector('.sb-sequence__head-open'), 'a reply is dashed with an open head');
+      assertEqual(getComputedStyle(message(el, 'give').querySelector('.sb-sequence__line')).strokeDasharray, '5px, 4px');
+      assert(message(el, 'charge').querySelector('.sb-sequence__head-open') && !has(message(el, 'charge'), 'reply'), 'async: an open head, solid');
+      assert(has(message(el, 'odd'), 'call'), 'an unknown kind is a call');
+    });
+
+    test('a message to oneself loops out to the right and back', () => {
+      const el = diagram();
+      const loop = points(el, 'make'), x = lifelineX(el, 'cafe');
+      near(loop[0].x, x, 'starts on its lifeline');
+      near(loop.at(-1).x, x, 'ends on it');
+      assert(loop.at(-1).y > loop[0].y, 'lower down');
+      assert(Math.max(...loop.map((p) => p.x)) > x + 10, 'out to the right');
+    });
+
+    test('a note sits over its participant, or across several', () => {
+      const el = diagram([{ kind: 'note', id: 'one', over: 'cafe', label: 'x' }, { kind: 'note', id: 'two', over: ['you', 'bank'], label: 'y' }]);
+      const one = rect(message(el, 'one').querySelector('rect'));
+      near(one.left + one.width / 2, lifelineX(el, 'cafe'), 'centred over one');
+      const two = rect(message(el, 'two').querySelector('rect'));
+      assert(two.left < lifelineX(el, 'you') && two.right > lifelineX(el, 'bank'), 'covers both ends');
+    });
+
+    test('lifelines move apart to fit long labels', () => {
+      const el = diagram([{ id: 'long', from: 'you', to: 'cafe', label: 'A very long message that needs plenty of room to sit between' }]);
+      const label = rect(message(el, 'long').querySelector('.sb-sequence__label'));
+      assert(label.left >= lifelineX(el, 'you') && label.right <= lifelineX(el, 'cafe'), 'the label fits between its lifelines');
+    });
+
+    test('numbered numbers the messages, not the notes', () => {
+      const el = diagram(MESSAGES, 'numbered');
+      assertEqual([...el.querySelectorAll('.sb-sequence__number')].map((n) => n.textContent.trim()), ['1.', '2.', '3.', '4.']);
+      assertEqual(message(el, 'give').querySelector('.sb-sequence__label').textContent, '4. Here you go');
+    });
+
+    test('messages naming someone unknown are left out; ids default to positions', () => {
+      const el = diagram([{ from: 'you', to: 'cafe', label: 'a' }, { from: 'you', to: 'nobody' }, { kind: 'note', over: 'ghost' }, { from: 'cafe', to: 'you' }]);
+      assertEqual([...el.querySelectorAll('.sb-sequence__message')].map((m) => m.dataset.messageId), ['0', '3']);
+    });
+
+    test('is drawn at its real size, never scaled', () => {
+      const svg = diagram().querySelector('svg');
+      assertEqual(Number(svg.getAttribute('width')), svg.viewBox.baseVal.width);
+    });
+
+    test('shows nothing without participants', () => {
+      assertEqual(mount('<sb-sequence></sb-sequence>').innerHTML, '');
+    });
+
+    test('a tone is exposed for colouring', () => {
+      const el = diagram([{ id: 'no', from: 'cafe', to: 'you', label: 'Declined', tone: 'bad' }]);
+      assert(has(message(el, 'no'), 'bad'));
+    });
+
+    // ---- Playing it, and pointing ----
+
+    test('current marks the message happening now and fades the ones to come, without redrawing', () => {
+      const el = diagram();
+      const svg = el.querySelector('svg');
+      el.current = 'make';
+      assert(has(message(el, 'make'), 'current') && !has(message(el, 'make'), 'upcoming'), 'current, and not faded');
+      assertEqual(['ask', 'charge'].map((id) => has(message(el, id), 'upcoming')), [false, false], 'earlier ones plain');
+      assertEqual(['note', 'give'].map((id) => has(message(el, id), 'upcoming')), [true, true], 'later ones faded');
+      assertEqual(el.querySelector('svg'), svg, 'same drawing');
+      el.current = null;
+      assertEqual(el.querySelectorAll('[class*="--upcoming"], [class*="--current"]').length, 0, 'null shows them all');
+    });
+
+    test('current survives the messages being set again', () => {
+      const el = diagram();
+      el.current = 'charge';
+      el.messages = MESSAGES.slice();
+      assert(has(message(el, 'charge'), 'current') && has(message(el, 'give'), 'upcoming'));
+    });
+
+    const lit = (el) => [...el.querySelectorAll('[class*="--highlighted"]')].map((n) => n.dataset.participantId ?? n.dataset.messageId);
+
+    test('highlighting a participant lights it, and the messages and notes it takes part in', () => {
+      const el = diagram();
+      el.highlight = { participants: ['bank'] };
+      assertEqual(lit(el), ['bank', 'charge']);
+      el.highlight = { participants: ['cafe'] };
+      assertEqual(lit(el), ['cafe', 'ask', 'charge', 'make', 'note', 'give'], 'including its note');
+      el.highlight = {};
+      assertEqual(lit(el), [], 'cleared');
+    });
+
+    test('highlighting a message lights it, and whoever sends and receives it', () => {
+      const el = diagram();
+      el.highlight = { messages: ['charge'] };
+      assertEqual(lit(el), ['cafe', 'bank', 'charge']);
+    });
+
+    test('pointing at a participant or a message lights them the same way, until the pointer leaves', () => {
+      const el = diagram();
+      const over = (node) => node.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      over(participant(el, 'bank').querySelector('.sb-sequence__lifeline'));
+      assertEqual(lit(el), ['bank', 'charge'], 'a lifeline');
+      over(message(el, 'ask').querySelector('.sb-sequence__label'));
+      assertEqual(lit(el), ['you', 'cafe', 'ask'], 'a message');
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(lit(el), [], 'cleared');
+    });
+
+    test('clicking a message or a participant fires sb-select', () => {
+      const el = diagram();
+      const selections = recordEvents(el, 'sb-select');
+      message(el, 'ask').querySelector('.sb-sequence__label').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      participant(el, 'bank').querySelector('.sb-sequence__head').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      assertEqual(selections.map((e) => e.detail), [{ type: 'message', id: 'ask' }, { type: 'participant', id: 'bank' }]);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two diagrams on one page keep their own current message', () => {
+      mount('<div><sb-sequence></sb-sequence><sb-sequence></sb-sequence></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-sequence');
+      for (const el of [a, b]) { el.participants = PARTICIPANTS; el.messages = MESSAGES; }
+      a.current = 'ask';
+      assertEqual([a.querySelectorAll('[class*="--upcoming"]').length, b.querySelectorAll('[class*="--upcoming"]').length], [4, 0]);
+    });
+
+    test('displays names and labels as text, never as markup', () => {
+      const el = mount('<sb-sequence numbered></sb-sequence>');
+      el.participants = [{ id: 'a', label: '<b>A</b>' }, { id: 'b' }];
+      el.messages = [{ from: 'a', to: 'b', label: '<i>hi</i>' }, { kind: 'note', over: 'a', label: '<b>n</b>' }];
+      assertEqual(el.querySelectorAll('b, i').length, 0, 'anywhere, since the parser moves such tags out of an svg');
+      assertEqual(el.querySelector('.sb-sequence__name').textContent, '<b>A</b>');
+    });
+  </script>
+</body>
+</html>
