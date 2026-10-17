@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linear Algebra Sandbox</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-plane/sb-plane.js"></script>
+  <script src="model.js"></script>
+</head>
+<body>
+  <sb-shell heading="Linear Algebra Sandbox">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p><strong>Goal:</strong> see linear algebra rather than memorise it: vectors as arrows, and matrices as ways of moving the whole of space.</p>
+  </sb-shell>
+
+  <main>
+    <section class="chapter">
+      <h2>Chapter 1 · Vectors</h2>
+      <p>A vector is an arrow that starts at the origin. It is also a pair of numbers, and the two are the same thing: the numbers say how to reach the arrow's tip. <span class="vector">(2, 1)</span> means two steps right and one step up.</p>
+      <p>Adding two vectors means walking along one, then along the other. In numbers, add the first parts together and the second parts together.</p>
+      <p class="try"><strong>Try:</strong> drag the tips of <span class="vector vector--v">v</span> and <span class="vector vector--w">w</span>. Watch where <span class="vector vector--sum">v + w</span> lands, and check it against the numbers. Can you make the sum land back on the origin?</p>
+    </section>
+
+    <section class="panel stage">
+      <sb-plane id="plane" range="5" snap="1" height="420"></sb-plane>
+      <div class="explain" id="explain"></div>
+    </section>
+  </main>
+
+  <script>
+    // Declare everything first; the sandbox starts at the bottom.
+
+    const plane = document.getElementById('plane');
+    const state = { v: [2, 1], w: [-1, 2] };
+
+    plane.addEventListener('sb-change', (e) => {
+      state[e.detail.id] = [e.detail.x, e.detail.y];
+      render();
+    });
+
+    // ---- Rendering ----
+
+    function render() {
+      const { v, w } = state;
+      const sum = vectors.add(v, w);
+      plane.objects = [
+        { type: 'vector', id: 'v', x: v[0], y: v[1], label: 'v', draggable: true },
+        { type: 'vector', id: 'w', x: w[0], y: w[1], label: 'w', tone: 'good', draggable: true },
+        { type: 'vector', id: 'w-after-v', from: v, x: sum[0], y: sum[1], tone: 'muted' },
+        { type: 'vector', id: 'sum', x: sum[0], y: sum[1], label: 'v + w', tone: 'warn' }
+      ];
+      document.getElementById('explain').innerHTML = `
+        <p><span class="vector vector--v">v = (${v.join(', ')})</span><br><span class="steps">${vectors.describe(v)}</span></p>
+        <p><span class="vector vector--w">w = (${w.join(', ')})</span><br><span class="steps">${vectors.describe(w)}</span></p>
+        <p><span class="vector vector--sum">v + w = (${v[0]} + ${w[0]}, ${v[1]} + ${w[1]}) = (${sum.join(', ')})</span><br>
+          <span class="steps">${vectors.describe(sum)}</span></p>
+        <p>The grey arrow is <span class="vector vector--w">w</span> again, starting from the tip of <span class="vector vector--v">v</span>: walking v, then w, ends exactly where the sum points.</p>`;
+    }
+
+    // ---- Start ----
+
+    render();
+  </script>
+</body>
+</html>
