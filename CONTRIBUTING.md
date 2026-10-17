@@ -17,6 +17,7 @@ Every component, and every change to one, should hold to these. [DECISIONS.md](D
 - **Reveal, don't merely display.** A table that lists rules displays; one that highlights the rule that just fired, and why, reveals.
 - **Domain-agnostic.** A component gives a domain its tooling, and never names domain concepts.
 - **Independent.** Components never reference one another, not even optionally. Sandboxes combine them, using slots where a component accepts the sandbox's content, and "Works well with" suggestions in manifests.
+- **Extend before adding.** Before proposing a new component, check whether an existing one could do the job by growing its own capabilities, and say which you chose. A new component is for a job with its own needs, however similar it looks.
 - **Contained.** A custom element without Shadow DOM, prefixed `sb-`, with no globals beyond its tag, prefixed and documented CSS classes, and colours from the theme tokens.
 - **Small and clear.** Plain JavaScript, no build step, no installs. Code that reads almost like an explanation of itself, without growing bigger for the sake of it.
 - **Safe to package.** A classic script with no fetches or external assets, so it survives single-file export.

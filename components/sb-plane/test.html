@@ -187,7 +187,7 @@
     test('shows labels as text, never as markup', () => {
       const el = plane();
       el.objects = [{ type: 'vector', id: 'v', x: 1, y: 1, label: '<b>v</b>' }];
-      assertEqual(el.querySelector('svg b'), null);
+      assertEqual(el.querySelector('b'), null, 'anywhere, since the parser moves such tags out of an svg');
     });
   </script>
 </body>

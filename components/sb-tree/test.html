@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-tree tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-tree.js"></script>
+</head>
+<body>
+  <script>
+    const NODES = [
+      { id: 'src', label: 'src', children: [
+        { id: 'app', label: 'app.js', meta: '2 KB' },
+        { id: 'lib', label: 'lib', children: [{ id: 'util', label: 'util.js' }] },
+        { id: 'empty', label: 'empty', children: [] }
+      ] },
+      { id: 'readme', label: 'README.md', tone: 'warn' }
+    ];
+
+    function tree(attrs = '') {
+      const el = mount(`<sb-tree ${attrs}></sb-tree>`);
+      el.nodes = NODES;
+      return el;
+    }
+
+    const item = (el, id) => [...el.querySelectorAll('.sb-tree__item')].find((i) => i.dataset.id === id);
+    const isOpen = (el, id) => item(el, id).getAttribute('aria-expanded') === 'true';
+    const visible = (el) => [...el.querySelectorAll('.sb-tree__item')].filter((i) => !i.parentElement.closest('[hidden]')).map((i) => i.dataset.id);
+    const has = (el, id, state) => item(el, id).classList.contains(`sb-tree__item--${state}`);
+    const click = (node) => node.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const press = (el, key) => document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+    const focused = () => document.activeElement.dataset.id;
+
+    // ---- Showing the tree ----
+
+    test('shows every node nested under its parent, with labels, meta and levels', () => {
+      const el = tree();
+      assertEqual(item(el, 'util').parentElement.closest('.sb-tree__item').dataset.id, 'lib');
+      assertEqual(item(el, 'app').querySelector('.sb-tree__label').textContent, 'app.js');
+      assertEqual(item(el, 'app').querySelector('.sb-tree__meta').textContent, '2 KB');
+      assertEqual(item(el, 'util').getAttribute('aria-level'), '3');
+    });
+
+    test('a node with children, even none, is a branch; others are leaves', () => {
+      const el = tree();
+      assert(item(el, 'src').hasAttribute('aria-expanded') && item(el, 'empty').hasAttribute('aria-expanded'), 'branches');
+      assert(!item(el, 'app').hasAttribute('aria-expanded'), 'leaf');
+    });
+
+    test('branches start closed', () => {
+      assertEqual(visible(tree()), ['src', 'readme']);
+    });
+
+    test('lines join nested items to their parent, not the outermost', () => {
+      const el = tree();
+      el.expandAll();
+      assertEqual(getComputedStyle(item(el, 'app'), '::before').borderLeftStyle, 'solid');
+      assertEqual(getComputedStyle(item(el, 'app'), '::after').borderTopStyle, 'solid');
+      assertEqual(getComputedStyle(item(el, 'src'), '::before').content, 'none');
+    });
+
+    test('a tone is exposed for colouring', () => {
+      assertEqual(item(tree(), 'readme').dataset.tone, 'warn');
+    });
+
+    test('shows the empty text when there are no nodes', () => {
+      assertEqual(mount('<sb-tree empty-text="No files."></sb-tree>').textContent.trim(), 'No files.');
+    });
+
+    // ---- Driven from outside ----
+
+    test('expanded opens branches, and is kept by id when the nodes are set again', () => {
+      const el = tree();
+      el.expanded = ['src', 'lib'];
+      assertEqual(visible(el), ['src', 'app', 'lib', 'util', 'empty', 'readme']);
+      el.nodes = structuredClone(NODES);
+      assert(isOpen(el, 'lib'), 'still open');
+      assertEqual(el.expanded, ['src', 'lib']);
+    });
+
+    test('expand, collapse, toggle, expandAll and collapseAll, quietly', () => {
+      const el = tree();
+      const events = recordEvents(el, 'sb-toggle');
+      el.expand('src');
+      assert(isOpen(el, 'src'), 'expand');
+      el.toggle('src');
+      assert(!isOpen(el, 'src'), 'toggle');
+      el.expandAll();
+      assertEqual(el.expanded.sort(), ['empty', 'lib', 'src']);
+      el.collapse('lib');
+      assert(!isOpen(el, 'lib'), 'collapse');
+      el.collapseAll();
+      assertEqual(visible(el), ['src', 'readme']);
+      assertEqual(events.length, 0, 'no viewer events');
+    });
+
+    test('ids may be numbers', () => {
+      const el = mount('<sb-tree></sb-tree>');
+      el.nodes = [{ id: 1, label: 'one', children: [{ id: 2, label: 'two', children: [{ id: 3, label: 'three' }] }] }];
+      el.expanded = [1];
+      el.selected = 2;
+      assertEqual(visible(el), ['1', '2']);
+      assert(has(el, '2', 'selected'), 'selected');
+      el.reveal(3);
+      assert(visible(el).includes('3'), 'revealed');
+    });
+
+    test('reveal opens the way to a node, without selecting it', () => {
+      const el = tree();
+      el.reveal('util');
+      assert(visible(el).includes('util'));
+      assertEqual(el.selected, null);
+    });
+
+    test('selected marks a node, and can be cleared', () => {
+      const el = tree();
+      el.selected = 'readme';
+      assert(has(el, 'readme', 'selected') && item(el, 'readme').getAttribute('aria-selected') === 'true');
+      el.selected = null;
+      assertEqual(el.querySelectorAll('.sb-tree__item--selected').length, 0);
+    });
+
+    test('highlight marks nodes, and a closed branch holding one says so', () => {
+      const el = tree();
+      el.highlight = ['util'];
+      assert(has(el, 'util', 'highlighted'), 'the node');
+      assert(has(el, 'src', 'holds-highlight'), 'the closed branch you can see');
+      el.expand('src');
+      assert(!has(el, 'src', 'holds-highlight') && has(el, 'lib', 'holds-highlight'), 'moves inward as branches open');
+      el.highlight = [];
+      assertEqual(el.querySelectorAll('[class*="highlight"]').length, 0, 'cleared');
+    });
+
+    // ---- Viewers ----
+
+    test('clicking a twisty opens and closes its branch, firing sb-toggle', () => {
+      const el = tree();
+      const events = recordEvents(el, 'sb-toggle');
+      click(item(el, 'src').querySelector('.sb-tree__twisty'));
+      assert(isOpen(el, 'src'));
+      click(item(el, 'src').querySelector('.sb-tree__twisty'));
+      assertEqual(events.map((e) => [e.detail.node.id, e.detail.expanded]), [['src', true], ['src', false]]);
+      assertEqual(el.selected, null, 'without selecting');
+    });
+
+    test('clicking a row selects it, firing sb-select', () => {
+      const el = tree();
+      const events = recordEvents(el, 'sb-select');
+      click(item(el, 'readme').querySelector('.sb-tree__label'));
+      click(item(el, 'src').querySelector('.sb-tree__label'));
+      assertEqual(events.map((e) => e.detail.node.id), ['readme', 'src']);
+      assertEqual(el.selected, 'src');
+      assert(!isOpen(el, 'src'), 'selecting a branch leaves it as it was');
+    });
+
+    test('a leaf\'s twisty space selects, as the rest of its row does', () => {
+      const el = tree();
+      click(item(el, 'readme').querySelector('.sb-tree__twisty'));
+      assertEqual(el.selected, 'readme');
+    });
+
+    test('arrow keys move through what can be seen', () => {
+      const el = tree();
+      el.expanded = ['src'];
+      item(el, 'src').focus();
+      press(el, 'ArrowDown');
+      press(el, 'ArrowDown');
+      assertEqual(focused(), 'lib');
+      press(el, 'ArrowDown');
+      press(el, 'ArrowDown');
+      assertEqual(focused(), 'readme', 'past the closed branch');
+      press(el, 'ArrowUp');
+      assertEqual(focused(), 'empty');
+      press(el, 'Home');
+      assertEqual(focused(), 'src');
+      press(el, 'End');
+      assertEqual(focused(), 'readme');
+    });
+
+    test('right opens a branch then goes in; left closes it then goes out', () => {
+      const el = tree();
+      const events = recordEvents(el, 'sb-toggle');
+      item(el, 'src').focus();
+      press(el, 'ArrowRight');
+      assert(isOpen(el, 'src'), 'opened');
+      press(el, 'ArrowRight');
+      assertEqual(focused(), 'app', 'went in');
+      press(el, 'ArrowLeft');
+      assertEqual(focused(), 'src', 'went out');
+      press(el, 'ArrowLeft');
+      assert(!isOpen(el, 'src'), 'closed');
+      assertEqual(events.length, 2, 'viewer toggles fire sb-toggle');
+    });
+
+    test('right on an open, empty branch stays put', () => {
+      const el = tree();
+      el.expanded = ['src', 'empty'];
+      item(el, 'empty').focus();
+      press(el, 'ArrowRight');
+      assertEqual(focused(), 'empty');
+    });
+
+    test('Enter selects', () => {
+      const el = tree();
+      const events = recordEvents(el, 'sb-select');
+      item(el, 'readme').focus();
+      press(el, 'Enter');
+      assertEqual([el.selected, events.length], ['readme', 1]);
+    });
+
+    test('Tab reaches one item: the last one focused', () => {
+      const el = tree();
+      const tabbable = () => [...el.querySelectorAll('[tabindex="0"]')].map((i) => i.dataset.id);
+      assertEqual(tabbable(), ['src']);
+      item(el, 'src').focus();
+      press(el, 'ArrowDown');
+      assertEqual(tabbable(), ['readme']);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two trees on one page keep their own state', () => {
+      mount('<div><sb-tree></sb-tree><sb-tree></sb-tree></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-tree');
+      a.nodes = NODES;
+      b.nodes = NODES;
+      a.expandAll();
+      a.selected = 'util';
+      assertEqual([b.expanded, b.selected, visible(b)], [[], null, ['src', 'readme']]);
+    });
+
+    test('displays labels as text, never as markup', () => {
+      const el = mount('<sb-tree></sb-tree>');
+      el.nodes = [{ id: '<i>x</i>', label: '<b>bold</b>', meta: '<i>m</i>' }];
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(el.querySelector('.sb-tree__label').textContent, '<b>bold</b>');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-tree demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-tree.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-text); background: var(--sb-surface-2); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .chosen { margin: 8px 0 0; font-size: 13px; color: var(--sb-muted); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+    sb-tree { max-height: 320px; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-tree">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Nested things, as in a file system or an outline, opened and closed by viewers and by the sandbox alike.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Many subjects are things inside things: folders in folders, chapters in a book, teams in a company, species in a family. A tree shows that nesting, with lines joining each thing to the one it belongs to. Branches open and close, so people can look at the part they care about and fold the rest away. Anything a viewer can do, the sandbox can do too: open the way to something, select it, or point at it.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Finding your way around a hierarchy.</strong> A file system, an organisation, a classification, the parts of a machine.</li>
+        <li><strong>Showing where something lives.</strong> The sandbox can open the way to a node and select it, so "where is this?" gets a visible answer.</li>
+        <li><strong>Pointing into hidden places.</strong> A highlighted node inside a closed branch marks the branch, so you can see where to look.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Things with several parents, or cross-links.</strong> A tree gives each thing one place. Use a graph when things connect more freely.</li>
+        <li><strong>Comparing many things on several measures.</strong> A table lines them up; a tree only nests them.</li>
+        <li><strong>A shallow list.</strong> One level of nesting rarely needs a tree.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-tree/sb-tree.js"&gt;&lt;/script&gt;
+&lt;sb-tree&gt;&lt;/sb-tree&gt;
+
+&lt;script&gt;
+  const tree = document.querySelector('sb-tree');
+  tree.nodes = [
+    { id: 'docs', label: 'Documents', children: [
+      { id: 'cv', label: 'CV.pdf', meta: '120 KB' }
+    ] }
+  ];
+  tree.reveal('cv');      // open the way to it
+  tree.selected = 'cv';
+&lt;/script&gt;</pre>
+      <p>A node with <code>children</code> is a branch, even with none yet. Give it <code>meta</code> for a quiet detail on the right, such as a size or a count, and a <code>tone</code> where it deserves attention. Viewers click the arrow to open a branch, and the row to select it, or use the arrow keys.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Open the way to what matters.</strong> When the model does something to a node, <code>reveal</code> it, so people see where in the hierarchy it happened.</li>
+        <li><strong>Point from the prose.</strong> Set <code>highlight</code> when a sentence mentions a node; if it's folded away, its branch is marked.</li>
+        <li><strong>Put the telling number in <code>meta</code>,</strong> such as a size or a count, so a glance down the tree compares them.</li>
+        <li><strong>Connect it.</strong> Listen for <code>sb-select</code> to show the chosen node's details elsewhere in the sandbox.</li>
+      </ul>
+
+      <p>The full contract, including every property, method, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A computer's files</h2>
+      <p>Folders and files with their sizes; the one that's eating the disk is marked. Open and close things yourself, or let the buttons do it.</p>
+      <div class="actions">
+        <button id="files-expand">Open everything</button>
+        <button id="files-collapse">Close everything</button>
+        <button id="files-find">Find my CV</button>
+        <button id="files-big">Find the biggest file</button>
+      </div>
+      <sb-tree id="files"></sb-tree>
+      <p class="chosen" id="files-chosen">Click a file or folder to choose it.</p>
+    </section>
+
+    <section class="example">
+      <h2>Living things</h2>
+      <p>A small part of the tree of life. Point at <span class="point" data-ref="whales">whales</span>, <span class="point" data-ref="bats">bats</span> or <span class="point" data-ref="mushrooms">mushrooms</span>: if they're folded away, the branch that holds them is marked with a dot.</p>
+      <sb-tree id="life"></sb-tree>
+    </section>
+  </main>
+
+  <script>
+    // ---- A computer's files ----
+
+    const files = document.getElementById('files');
+    const file = (id, label, meta, extra) => ({ id, label, meta, ...extra });
+    files.nodes = [
+      { id: 'documents', label: 'Documents', meta: '3 files', children: [
+        { id: 'work', label: 'Work', meta: '1 file', children: [file('cv', 'CV.pdf', '120 KB')] },
+        { id: 'home', label: 'Home', meta: '2 files', children: [file('bills', 'Energy bills.xlsx', '48 KB'), file('recipes', 'Recipes.docx', '2 MB')] }
+      ] },
+      { id: 'photos', label: 'Photos', meta: '3 files', children: [
+        { id: 'holiday', label: 'Holiday 2025', meta: '3 files', children: [
+          file('beach', 'Beach.jpg', '4 MB'), file('sunset', 'Sunset.jpg', '5 MB'), file('video', 'Boat trip.mov', '4.2 GB', { tone: 'warn' })
+        ] }
+      ] },
+      { id: 'music', label: 'Music', meta: 'empty', children: [] },
+      file('notes', 'Notes.txt', '2 KB')
+    ];
+    files.expanded = ['documents'];
+
+    const choose = (id) => { files.reveal(id); files.selected = id; };
+    document.getElementById('files-expand').addEventListener('click', () => files.expandAll());
+    document.getElementById('files-collapse').addEventListener('click', () => files.collapseAll());
+    document.getElementById('files-find').addEventListener('click', () => choose('cv'));
+    document.getElementById('files-big').addEventListener('click', () => choose('video'));
+    files.addEventListener('sb-select', (e) => {
+      document.getElementById('files-chosen').textContent = `Chosen: ${e.detail.node.label}${e.detail.node.meta ? ` (${e.detail.node.meta})` : ''}`;
+    });
+
+    // ---- Living things ----
+
+    const life = document.getElementById('life');
+    const group = (id, label, children) => ({ id, label, meta: `${children.length}`, children });
+    const leaf = (id, label) => ({ id, label });
+    life.nodes = [
+      group('animals', 'Animals', [
+        group('mammals', 'Mammals', [leaf('whales', 'Whales'), leaf('bats', 'Bats'), leaf('cats', 'Cats')]),
+        group('birds', 'Birds', [leaf('owls', 'Owls'), leaf('penguins', 'Penguins')]),
+        group('insects', 'Insects', [leaf('bees', 'Bees'), leaf('beetles', 'Beetles')])
+      ]),
+      group('plants', 'Plants', [leaf('ferns', 'Ferns'), leaf('trees', 'Flowering trees')]),
+      group('fungi', 'Fungi', [leaf('mushrooms', 'Mushrooms'), leaf('yeasts', 'Yeasts')])
+    ];
+    life.expanded = ['animals'];
+
+    for (const point of document.querySelectorAll('.point')) {
+      point.addEventListener('pointerenter', () => { life.highlight = [point.dataset.ref]; });
+      point.addEventListener('pointerleave', () => { life.highlight = []; });
+    }
+  </script>
+</body>
+</html>
