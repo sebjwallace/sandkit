@@ -40,6 +40,7 @@ Settled decisions for Sandkit, newest last. One line each, with the reason.
 - **One `sb-matrix` covers vectors too:** a vector is a matrix with one column. Its value over MathML's static matrices is editing, tones and highlighting, so numbers can point at what they mean. Symbolic expressions stay a separate, later component; the two can light each other up through a page-wide event without knowing about each other.
 - **Pointing works through one page-wide event, `sb-highlight`** (`{ ref }`, or `null` when pointing stops), described in the highlighting practice. `sb-id` pills and `sb-math` terms announce and light up; other components keep their own `highlight` properties and the sandbox routes refs to them, so no component listens for things it can't own. A ref names a single thing.
 - **Maths is native MathML,** wrapped by `sb-math`: no library, no fonts, export-safe. Parts marked `data-ref` become pointable.
+- **Bounded progress is `sb-timeline`; unbounded is `sb-controls`.** A timeline has a start and an end to scrub between, plays at a steady pace (`duration` for the whole range), can loop, and names moments with marks. Scrubbing pauses, so the viewer stays in control.
 - **Interaction outranks tone.** A selected or active element shows as such even when it also carries a warning tone.
 
 ## Sandbox shell and theming

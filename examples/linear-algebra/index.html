@@ -13,6 +13,7 @@
   <script src="../../components/sb-matrix/sb-matrix.js"></script>
   <script src="../../components/sb-math/sb-math.js"></script>
   <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="../../components/sb-timeline/sb-timeline.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
@@ -57,14 +58,13 @@
         <h2>Chapter 3 · Matrices as moving space</h2>
         <p>A matrix is a way of moving the whole of space, and it needs only two pairs of numbers to say how. Its first column is where <sb-id code="î"></sb-id>, the arrow one step right, lands. Its second column is where <sb-id code="ĵ"></sb-id>, the arrow one step up, lands.</p>
         <p>Why is that enough? Every vector is a combination of î and ĵ: <span class="vector">(2, 1)</span> is 2·î + 1·ĵ. Move î and ĵ, keep the same combination, and you know where every vector goes. The grid lines follow, staying straight, parallel and evenly spaced.</p>
-        <p class="try"><strong>Try:</strong> drag the green and red points to choose where î and ĵ land, or type into the matrix. Point at <sb-id code="î"></sb-id> or <sb-id code="ĵ"></sb-id>, at a column, or at an arrow, and watch everything it stands for light up. Then slide the transformation back to the start and play it forward. Can you make a quarter turn? A mirror image?</p>
+        <p class="try"><strong>Try:</strong> drag the green and red points to choose where î and ĵ land, or type into the matrix. Point at <sb-id code="î"></sb-id> or <sb-id code="ĵ"></sb-id>, at a column, or at an arrow, and watch everything it stands for light up. Then drag the timeline back to the start and play it forward. Can you make a quarter turn? A mirror image?</p>
         <div class="panel stage">
           <sb-plane id="moving" range="3" snap="0.5" height="420"></sb-plane>
           <div class="explain">
             <p class="equation"><sb-matrix id="matrix-a" name="A" editable step="0.5"></sb-matrix></p>
             <sb-math id="product"></sb-math>
-            <sb-parameters id="transformation"></sb-parameters>
-            <p><button type="button" class="next" id="play-transformation">Play the transformation</button></p>
+            <sb-timeline id="transformation" min="0" max="1" step="0.01" duration="2" label="Transformation"></sb-timeline>
             <div id="moving-explain"></div>
           </div>
         </div>
@@ -91,13 +91,13 @@
         <h2>Chapter 5 · One transformation, then another</h2>
         <p>Apply one matrix, then another, and space has moved in some new way. That new way is a transformation too, so it has a matrix of its own: the <em>product</em> of the two. Its columns are simply where î and ĵ end up after both moves.</p>
         <p>The order matters. Turning and then shearing is not the same as shearing and then turning. That is why matrix multiplication doesn't let you swap the order the way ordinary multiplication does.</p>
-        <p class="try"><strong>Try:</strong> play the two moves. Then swap the order and play again: does space end up in the same place? Edit A and B to find two moves where the order doesn't matter.</p>
+        <p class="try"><strong>Try:</strong> play both moves. Then swap the order and play again: does space end up in the same place? Edit A and B to find two moves where the order doesn't matter.</p>
         <div class="panel stage">
           <sb-plane id="composing" range="3" height="420"></sb-plane>
           <div class="explain">
             <p class="equation">First <sb-matrix id="matrix-first" name="A" editable step="0.5"></sb-matrix> then <sb-matrix id="matrix-second" name="B" editable step="0.5"></sb-matrix></p>
-            <sb-parameters id="composition"></sb-parameters>
-            <p><button type="button" class="next" id="play-composition">Play both moves</button> <button type="button" class="next" id="swap-order">Swap the order</button></p>
+            <sb-timeline id="composition" min="0" max="2" step="0.01" duration="4" label="Both moves"></sb-timeline>
+            <p><button type="button" class="next" id="swap-order">Swap the order</button></p>
             <div id="composing-explain"></div>
           </div>
         </div>
@@ -205,9 +205,9 @@
     const moving = { plane: $('moving'), matrix: [[1, 1], [0, 1]], progress: 1, v: [2, 1] };
 
     $('matrix-a').tones = { columns: ['good', 'bad'] };
-    $('transformation').definitions = [
-      { key: 'progress', label: 'Transformation', min: 0, max: 1, step: 0.01, value: 1, format: (t) => `${Math.round(t * 100)}% applied` }
-    ];
+    $('transformation').value = moving.progress;
+    $('transformation').format = (t) => `${Math.round(t * 100)}% applied`;
+    $('transformation').marks = [{ value: 0, label: 'no change' }, { value: 1, label: 'the full matrix' }];
 
     $('matrix-a').addEventListener('sb-change', (e) => {
       moving.matrix = e.detail.values;
@@ -223,18 +223,6 @@
       moving.matrix[0][column] = e.detail.x;
       moving.matrix[1][column] = e.detail.y;
       renderMoving();
-    });
-
-    let playing = null;
-    $('play-transformation').addEventListener('click', () => {
-      clearInterval(playing);
-      moving.progress = 0;
-      playing = setInterval(() => {
-        moving.progress = Math.min(1, moving.progress + 0.02);
-        $('transformation').values = { progress: moving.progress };
-        renderMoving();
-        if (moving.progress >= 1) clearInterval(playing);
-      }, 30);
     });
 
     // A column vector in MathML, marked so it can be pointed at.
@@ -319,10 +307,8 @@
       progress: 2             // 0 to 1 is the first move, 1 to 2 the second
     };
 
-    $('composition').definitions = [{
-      key: 'progress', label: 'Progress', min: 0, max: 2, step: 0.01, value: 2,
-      format: (t) => (t <= 1 ? `first move, ${Math.round(t * 100)}%` : `second move, ${Math.round((t - 1) * 100)}%`)
-    }];
+    $('composition').value = composing.progress;
+    $('composition').format = (t) => (t <= 1 ? `first move, ${Math.round(t * 100)}%` : `second move, ${Math.round((t - 1) * 100)}%`);
 
     const firstAndSecond = () => (composing.swapped ? [composing.b, composing.a] : [composing.a, composing.b]);
 
@@ -331,17 +317,6 @@
     $('composition').addEventListener('sb-change', (e) => { composing.progress = e.detail.value; renderComposing(); });
     $('swap-order').addEventListener('click', () => { composing.swapped = !composing.swapped; renderComposing(); });
 
-    let playingComposition = null;
-    $('play-composition').addEventListener('click', () => {
-      clearInterval(playingComposition);
-      composing.progress = 0;
-      playingComposition = setInterval(() => {
-        composing.progress = Math.min(2, composing.progress + 0.02);
-        $('composition').values = { progress: composing.progress };
-        renderComposing();
-        if (composing.progress >= 2) clearInterval(playingComposition);
-      }, 30);
-    });
 
     // Where space is at this point of the journey: partway through the first move, or all of the
     // first move and partway through the second.
@@ -363,6 +338,9 @@
       $('matrix-second').values = second;
       $('matrix-first').setAttribute('name', firstName);
       $('matrix-second').setAttribute('name', secondName);
+      $('composition').marks = [
+        { value: 0, label: 'start' }, { value: 1, label: firstName }, { value: 2, label: `${firstName}, then ${secondName}` }
+      ];
       const same = JSON.stringify(both) === JSON.stringify(otherWay);
       $('composing-explain').innerHTML = `
         <p>${firstName}, then ${secondName}, is the single matrix <span class="vector">${secondName}·${firstName}</span>:</p>
