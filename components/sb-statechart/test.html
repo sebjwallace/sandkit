@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-statechart tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-statechart.js"></script>
+</head>
+<body>
+  <script>
+    // A media player: nested states, two parallel regions, history, guards and actions.
+    const PLAYER = { initial: 'off', states: {
+      off: { on: { POWER: 'on' } },
+      on: { type: 'parallel', entry: 'light up', on: { POWER: 'off' }, states: {
+        playback: { initial: 'stopped', states: {
+          stopped: { on: { PLAY: 'playing' } },
+          playing: { initial: 'normal', entry: 'start audio', exit: 'stop audio', on: { PAUSE: 'paused', STOP: 'stopped' }, states: {
+            normal: { on: { FF: 'fast' } },
+            fast: { on: { FF: 'normal', STOP: { target: 'normal', actions: 'slow down' } } },
+            recent: { type: 'history' },
+            everything: { type: 'history', history: 'deep' }
+          } },
+          paused: { on: { PLAY: 'recent', RESUME: 'everything', STOP: 'stopped' } }
+        } },
+        volume: { initial: 'sound', states: {
+          sound: { on: { MUTE: 'muted', LOUDER: { guard: 'below max', actions: 'raise volume' } } },
+          muted: { on: { MUTE: 'sound', PLAY: 'sound' } }
+        } }
+      } },
+      broken: { type: 'final' }
+    } };
+
+    function chart(machine = PLAYER, attrs = '') {
+      const el = mount(`<sb-statechart ${attrs}></sb-statechart>`);
+      el.machine = machine;
+      return el;
+    }
+
+    // Runs events from the start.
+    const run = (el, ...events) => events.reduce((s, e) => el.next(s, e), el.initial());
+
+    const byData = (el, selector, key, value) => [...el.querySelectorAll(selector)].find((n) => n.dataset[key] === value);
+    const state = (el, id) => byData(el, '.sb-statechart__state', 'stateId', id);
+    const transition = (el, id) => byData(el, '.sb-statechart__transition', 'transitionId', id);
+    const label = (el, id) => byData(el, '.sb-statechart__transition-label', 'transitionId', id);
+    const has = (element, modifier) => element.classList.contains(`${element.classList[0]}--${modifier}`);
+    const click = (target) => target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    // Positions on screen, so the tests check what people see rather than the sizes used.
+    const box = (el, id) => state(el, id).querySelector('.sb-statechart__shape').getBoundingClientRect();
+    const within = (inner, outer) => inner.left >= outer.left && inner.right <= outer.right && inner.top >= outer.top && inner.bottom <= outer.bottom;
+    const apart = (a, b) => a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top;
+
+    // ---- How it moves ----
+
+    test('initial() enters the initial states all the way down, and every parallel region', () => {
+      const el = chart();
+      assertEqual(el.initial().active, ['off']);
+      const on = el.next(el.initial(), 'POWER');
+      assertEqual(on.active, ['stopped', 'sound']);
+      assertEqual(on.last.entered, ['on', 'playback', 'stopped', 'volume', 'sound'], 'outside in, in order');
+      assertEqual(on.last.actions, ['light up']);
+    });
+
+    test('next() exits innermost first, and runs exit, transition and entry actions in that order', () => {
+      const el = chart();
+      const s = run(el, 'POWER', 'PLAY', 'FF', 'PAUSE');
+      assertEqual(s.active, ['paused', 'sound']);
+      assertEqual(s.last.transitions, ['playing:PAUSE']);
+      assertEqual(s.last.exited, ['fast', 'playing']);
+      assertEqual(s.last.entered, ['paused']);
+      assertEqual(s.last.actions, ['stop audio']);
+    });
+
+    test('a transition on a compound state applies in every state inside it', () => {
+      const el = chart();
+      assertEqual(run(el, 'POWER', 'PLAY', 'PAUSE').last.transitions, ['playing:PAUSE'], 'from normal');
+      assertEqual(run(el, 'POWER', 'PLAY', 'FF', 'PAUSE').last.transitions, ['playing:PAUSE'], 'from fast');
+      assertEqual(run(el, 'POWER', 'PLAY', 'FF', 'POWER').active, ['off'], 'from deep inside a region');
+    });
+
+    test('a state\'s own transition wins over its ancestor\'s for the same event', () => {
+      const s = run(chart(), 'POWER', 'PLAY', 'FF', 'STOP');
+      assertEqual(s.active, ['normal', 'sound']);
+      assertEqual(s.last.actions, ['slow down']);
+    });
+
+    test('an event fires in every region that has a transition for it', () => {
+      const s = run(chart(), 'POWER', 'MUTE', 'PLAY');
+      assertEqual(s.active, ['normal', 'sound']);
+      assertEqual(s.last.transitions, ['stopped:PLAY', 'muted:PLAY']);
+    });
+
+    test('a transition in one region leaves the others as they are', () => {
+      const s = run(chart(), 'POWER', 'PLAY', 'MUTE');
+      assertEqual(s.active, ['normal', 'muted']);
+      assertEqual(s.last.exited, ['sound']);
+    });
+
+    test('a guard that fails holds its transition back; one not named passes', () => {
+      const el = chart();
+      const on = run(el, 'POWER');
+      assertEqual(el.next(on, 'LOUDER', { 'below max': false }).last.transitions, []);
+      assertEqual(el.next(on, 'LOUDER').last.actions, ['raise volume']);
+      el.guards = { 'below max': false };
+      assertEqual(el.next(on, 'LOUDER').last.transitions, [], 'next() uses the guards set by default');
+    });
+
+    test('of several transitions for one event, the first whose guard passes fires', () => {
+      const el = chart({ initial: 'a', states: { a: { on: { GO: [{ target: 'b', guard: 'left' }, { target: 'c' }] } }, b: {}, c: {} } });
+      assertEqual(el.next(el.initial(), 'GO', { left: true }).active, ['b']);
+      assertEqual(el.next(el.initial(), 'GO', { left: false }).active, ['c']);
+      assertEqual(el.next(el.initial(), 'GO', { left: false }).last.transitions, ['a:GO:1'], 'numbered when there are several');
+    });
+
+    test('a transition without a target runs its actions and leaves nothing', () => {
+      const s = run(chart(), 'POWER', 'LOUDER');
+      assertEqual(s.active, ['stopped', 'sound']);
+      assertEqual([s.last.exited, s.last.entered, s.last.actions], [[], [], ['raise volume']]);
+    });
+
+    test('a transition back to its own state leaves it and comes in again', () => {
+      const el = chart({ initial: 'a', states: { a: { entry: 'in', exit: 'out', on: { AGAIN: 'a' } } } });
+      const s = el.next(el.initial(), 'AGAIN');
+      assertEqual([s.last.exited, s.last.entered, s.last.actions], [['a'], ['a'], ['out', 'in']]);
+    });
+
+    test('shallow history brings back the child that was active; deep history everything inside', () => {
+      const el = chart({ initial: 'work', states: {
+        work: { initial: 'writing', on: { BREAK: 'rest' }, states: {
+          writing: { initial: 'draft', states: { draft: { on: { NEXT: 'edit' } }, edit: {} } },
+          reading: {},
+          child: { type: 'history' },
+          all: { type: 'history', history: 'deep' }
+        } },
+        rest: { on: { BACK: 'child', BACK_FULLY: 'all' } }
+      } });
+      const resting = run(el, 'NEXT', 'BREAK');
+      assertEqual(resting.history, { child: ['writing'], all: ['edit'] }, 'remembered on leaving');
+      assertEqual(el.next(resting, 'BACK').active, ['draft'], 'shallow: writing again, from its start');
+      assertEqual(el.next(resting, 'BACK_FULLY').active, ['edit'], 'deep: where it was');
+    });
+
+    test('history with nothing remembered enters the initial state', () => {
+      const el = chart();
+      const paused = { active: ['paused', 'sound'] };
+      assertEqual(el.next(paused, 'RESUME').active, ['normal', 'sound']);
+    });
+
+    test('an event nothing answers changes nothing, and says so', () => {
+      const el = chart();
+      const s = el.next(el.initial(), 'NOPE');
+      assertEqual(s.active, ['off']);
+      assertEqual(s.last, { event: 'NOPE', transitions: [], exited: [], entered: [], actions: [] });
+    });
+
+    test('next() takes any state, naming only its innermost states', () => {
+      const el = chart();
+      assertEqual(el.next({ active: ['fast', 'muted'] }, 'PAUSE').active, ['paused', 'muted']);
+    });
+
+    test('a target that isn\'t a state is reported', () => {
+      assertThrows(() => chart({ initial: 'a', states: { a: { on: { GO: 'nowhere' } } } }));
+    });
+
+    // ---- Drawing ----
+
+    test('draws every state, with its kind', () => {
+      const el = chart();
+      assertEqual(state(el, 'off').textContent.trim(), 'off');
+      assert(has(state(el, 'off'), 'atomic'), 'atomic');
+      assert(has(state(el, 'on'), 'parallel'), 'parallel');
+      assert(has(state(el, 'playback'), 'region'), 'a compound child of a parallel state is a region');
+      assert(has(state(el, 'playing'), 'compound'), 'compound');
+      assert(has(state(el, 'broken'), 'final'), 'final');
+      assertEqual(state(el, 'recent').textContent.trim(), 'H');
+      assertEqual(state(el, 'everything').querySelector('.sb-statechart__history-label').textContent, 'H*');
+    });
+
+    test('a state shows its label, tone, and entry, exit and internal lines', () => {
+      const el = chart({ initial: 'a', states: { a: { label: 'Ready', tone: 'good', entry: 'greet', on: { TICK: { actions: ['count', 'beep'] } } } } });
+      assertEqual(state(el, 'a').querySelector('.sb-statechart__label').textContent, 'Ready');
+      assert(has(state(el, 'a'), 'good'));
+      assertEqual([...state(el, 'a').querySelectorAll('.sb-statechart__detail')].map((d) => d.textContent), ['entry / greet', 'TICK / count, beep']);
+    });
+
+    test('states sit inside their parents, and regions stack, sharing one width', () => {
+      const el = chart();
+      assert(within(box(el, 'fast'), box(el, 'playing')) && within(box(el, 'playing'), box(el, 'playback')) && within(box(el, 'playback'), box(el, 'on')));
+      const [a, b] = [box(el, 'playback'), box(el, 'volume')];
+      assert(a.bottom <= b.top + 1, 'one above the other');
+      assertEqual([a.left, a.width], [b.left, b.width]);
+    });
+
+    test('siblings never overlap, and each sits to the right of the way into it', () => {
+      const el = chart();
+      const siblings = [['off', 'on', 'broken'], ['stopped', 'playing', 'paused'], ['normal', 'fast'], ['sound', 'muted']];
+      for (const group of siblings) for (const p of group) for (const q of group) if (p < q) assert(apart(box(el, p), box(el, q)), `${p} and ${q}`);
+      assert(box(el, 'stopped').right < box(el, 'playing').left && box(el, 'playing').right < box(el, 'paused').left);
+    });
+
+    test('draws each transition with its event, guard and actions, and each initial state\'s dot', () => {
+      const el = chart();
+      assertEqual(el.querySelectorAll('.sb-statechart__transition').length, 14);
+      assertEqual([...label(el, 'fast:STOP').children].map((l) => l.textContent), ['STOP', '/ slow down']);
+      const guarded = chart({ initial: 'idle', states: { idle: { on: { START: { target: 'on', guard: 'door closed', actions: 'beep' } } }, on: {} } });
+      assertEqual([...label(guarded, 'idle:START').children].map((l) => l.textContent), ['START', '[door closed] / beep'], 'guard and actions beneath the event');
+      assertEqual(el.querySelectorAll('.sb-statechart__initial').length, 4, 'the machine\'s, two regions\' and playing\'s');
+    });
+
+    test('no two transition labels overlap', () => {
+      const el = chart();
+      const labels = [...el.querySelectorAll('.sb-statechart__transition-label')].map((l) => [l.dataset.transitionId, l.getBoundingClientRect()]);
+      for (const [p, a] of labels) for (const [q, b] of labels) if (p < q) assert(apart(a, b), `${p} and ${q}`);
+    });
+
+    test('is drawn at its real size, never scaled', () => {
+      const svg = chart().querySelector('svg');
+      assert(Math.abs(Number(svg.getAttribute('width')) - svg.viewBox.baseVal.width) < 0.01);
+    });
+
+    test('shows nothing without a machine', () => {
+      assertEqual(mount('<sb-statechart></sb-statechart>').innerHTML, '');
+      const el = chart();
+      el.machine = null;
+      assertEqual(el.innerHTML, '');
+    });
+
+    // ---- Showing the state ----
+
+    test('marks every active state, ancestors and regions included, without redrawing', () => {
+      const el = chart();
+      const svg = el.querySelector('svg');
+      el.state = { active: ['fast', 'muted'] };
+      const active = [...el.querySelectorAll('.sb-statechart__state--active')].map((s) => s.dataset.stateId).sort();
+      assertEqual(active, ['fast', 'muted', 'on', 'playback', 'playing', 'volume']);
+      assertEqual(el.querySelector('svg'), svg);
+    });
+
+    test('marks the transitions that can fire now, including those of ancestors', () => {
+      const el = chart();
+      el.state = { active: ['fast', 'sound'] };
+      const enabled = [...el.querySelectorAll('.sb-statechart__transition--enabled')].map((t) => t.dataset.transitionId).sort();
+      assertEqual(enabled, ['fast:FF', 'fast:STOP', 'on:POWER', 'playing:PAUSE', 'sound:MUTE']);
+      assert(!has(transition(el, 'playing:STOP'), 'enabled'), 'overridden by fast\'s own STOP');
+      assert(has(label(el, 'on:POWER'), 'enabled'), 'labels too');
+    });
+
+    test('marks transitions held back by a guard', () => {
+      const el = chart({ initial: 'a', states: { a: { on: { GO: { target: 'b', guard: 'ready' } } }, b: {} } });
+      el.state = el.initial();
+      el.guards = { ready: false };
+      assert(has(transition(el, 'a:GO'), 'blocked') && !has(transition(el, 'a:GO'), 'enabled'));
+      el.guards = { ready: true };
+      assert(!has(transition(el, 'a:GO'), 'blocked') && has(transition(el, 'a:GO'), 'enabled'));
+    });
+
+    test('numbers the last step\'s exits, transitions and entries in order, and says it in words', () => {
+      const el = chart();
+      el.state = run(el, 'POWER', 'PLAY', 'FF', 'PAUSE');
+      assert(has(transition(el, 'playing:PAUSE'), 'taken'));
+      const badges = [...el.querySelectorAll('.sb-statechart__badge')].map((b) => `${b.textContent} ${b.dataset.badgeFor}`);
+      assertEqual(badges, ['1 fast', '2 playing', '3 playing:PAUSE', '4 paused']);
+      assertEqual(el.querySelector('.sb-statechart__step').textContent, 'Last: PAUSE: 1 exit fast · 2 exit playing (stop audio) · 3 playing → paused · 4 enter paused');
+    });
+
+    test('an event that changed nothing says so', () => {
+      const el = chart();
+      el.state = el.next(el.initial(), 'NOPE');
+      assertEqual(el.querySelector('.sb-statechart__step').textContent, 'Last: NOPE: nothing happened');
+      assertEqual(el.querySelectorAll('.sb-statechart__badge').length, 0);
+    });
+
+    test('a history state shows what it remembers', () => {
+      const el = chart();
+      el.state = run(el, 'POWER', 'PLAY', 'FF', 'PAUSE');
+      const remembered = (id) => state(el, id).querySelector('.sb-statechart__remembered').textContent;
+      assertEqual([remembered('recent'), remembered('everything')], ['fast', 'fast']);
+    });
+
+    test('a state set by hand works too, for a model that maps its own states', () => {
+      const el = chart();
+      el.state = { active: ['paused', 'sound'], last: { transitions: ['playing:PAUSE'] } };
+      assert(has(state(el, 'paused'), 'active') && has(transition(el, 'playing:PAUSE'), 'taken'));
+      assertEqual(el.querySelector('.sb-statechart__step').textContent, 'Last: 1 playing → paused');
+    });
+
+    test('clearing the state clears every mark', () => {
+      const el = chart();
+      el.state = run(el, 'POWER', 'PLAY');
+      el.state = null;
+      assertEqual(el.querySelectorAll('[class*="--active"], [class*="--enabled"], [class*="--taken"], .sb-statechart__badge').length, 0);
+      assertEqual(el.querySelector('.sb-statechart__step').textContent, '');
+    });
+
+    test('the state survives the machine being set again', () => {
+      const el = chart();
+      el.state = run(el, 'POWER');
+      el.machine = { ...PLAYER };
+      assert(has(state(el, 'stopped'), 'active'));
+    });
+
+    test('highlights the states and transitions named', () => {
+      const el = chart();
+      el.highlight = ['paused', 'stopped:PLAY'];
+      assert(has(state(el, 'paused'), 'highlighted') && has(transition(el, 'stopped:PLAY'), 'highlighted'));
+      assert(!has(state(el, 'stopped'), 'highlighted'));
+    });
+
+    test('a highlighted region shows, though regions have no outline of their own', () => {
+      const el = chart();
+      const shape = () => getComputedStyle(state(el, 'volume').querySelector('.sb-statechart__shape'));
+      assertEqual(shape().stroke, 'none', 'no outline normally');
+      el.highlight = ['volume'];
+      assert(shape().stroke !== 'none' && shape().fill !== 'none', 'outlined and filled when pointed at');
+    });
+
+    // ---- Folding ----
+
+    test('a folded state is drawn as one box, its transitions joining it from inside', () => {
+      const el = chart();
+      el.folded = ['playing'];
+      assert(has(state(el, 'playing'), 'folded') && !state(el, 'fast'), 'its insides hidden');
+      assert(transition(el, 'paused:PLAY') && !transition(el, 'fast:FF'), 'transitions inside it dropped, those into it kept');
+      el.state = run(el, 'POWER', 'PLAY', 'FF');
+      assert(has(state(el, 'playing'), 'active'));
+    });
+
+    test('a viewer folds and unfolds with the control, firing sb-toggle', () => {
+      const el = chart();
+      const toggles = recordEvents(el, 'sb-toggle');
+      click(el.querySelector('[data-fold-id="playing"]'));
+      assertEqual(el.folded, ['playing']);
+      click(el.querySelector('[data-fold-id="playing"]'));
+      assertEqual(el.folded, []);
+      assertEqual(toggles.map((e) => e.detail), [{ id: 'playing', folded: true }, { id: 'playing', folded: false }]);
+    });
+
+    test('the last step is numbered on the folded state its states are inside', () => {
+      const el = chart();
+      el.folded = ['on'];
+      el.state = run(el, 'POWER');
+      assertEqual([...el.querySelectorAll('.sb-statechart__badge')].length, 7);
+    });
+
+    // ---- Sending events ----
+
+    test('with sendable, clicking a transition that can fire sends its event', () => {
+      const el = chart(PLAYER, 'sendable');
+      el.state = run(el, 'POWER');
+      const sends = recordEvents(el, 'sb-send');
+      click(transition(el, 'stopped:PLAY').querySelector('path'));
+      click(label(el, 'sound:MUTE'));
+      click(transition(el, 'paused:PLAY').querySelector('path'));
+      assertEqual(sends.map((e) => e.detail), [{ event: 'PLAY' }, { event: 'MUTE' }], 'not one that can\'t fire');
+    });
+
+    test('with sendable, the events that can happen now are buttons; those held back are disabled', () => {
+      const el = chart(PLAYER, 'sendable');
+      el.state = run(el, 'POWER');
+      el.guards = { 'below max': false };
+      const buttons = [...el.querySelectorAll('.sb-statechart__event')];
+      assertEqual(buttons.map((b) => [b.textContent, b.disabled]), [['POWER', false], ['PLAY', false], ['MUTE', false], ['LOUDER', true]]);
+      const sends = recordEvents(el, 'sb-send');
+      click(buttons[1]);
+      assertEqual(sends.map((e) => e.detail.event), ['PLAY']);
+    });
+
+    test('without sendable, nothing is sent and no buttons show', () => {
+      const el = chart();
+      el.state = run(el, 'POWER');
+      const sends = recordEvents(el, 'sb-send');
+      click(transition(el, 'stopped:PLAY').querySelector('path'));
+      assertEqual(sends.length, 0);
+      assertEqual(el.querySelectorAll('.sb-statechart__event').length, 0);
+    });
+
+    // ---- Pointing and selecting ----
+
+    test('clicking a state fires sb-select with it', () => {
+      const el = chart();
+      const selections = recordEvents(el, 'sb-select');
+      click(state(el, 'paused').querySelector('text'));
+      assertEqual(selections.map((e) => e.detail.id), ['paused']);
+      assertEqual(selections[0].detail.state, PLAYER.states.on.states.playback.states.paused, 'its definition as given');
+    });
+
+    test('pointing at a state or transition fires sb-point once, and null on leaving', () => {
+      const el = chart();
+      const points = recordEvents(el, 'sb-point');
+      const over = (target) => target.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      over(state(el, 'fast').querySelector('rect'));
+      over(state(el, 'fast').querySelector('text'));
+      over(label(el, 'fast:STOP'));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(points.map((e) => e.detail?.id ?? e.detail?.transition?.id ?? null), ['fast', 'fast:STOP', null]);
+      assertEqual(points[1].detail.transition, { id: 'fast:STOP', source: 'fast', event: 'STOP', target: 'normal', guard: null, actions: ['slow down'] });
+    });
+
+    test('setting properties, and initial() and next(), fire no events', () => {
+      const el = chart(PLAYER, 'sendable');
+      const all = ['sb-select', 'sb-point', 'sb-send', 'sb-toggle'].map((type) => recordEvents(el, type));
+      el.state = run(el, 'POWER', 'PLAY');
+      el.guards = { 'below max': false };
+      el.highlight = ['on'];
+      el.folded = ['playing'];
+      assertEqual(all.flat().length, 0);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two charts on one page keep their own state and folding', () => {
+      mount('<div><sb-statechart></sb-statechart><sb-statechart></sb-statechart></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-statechart');
+      a.machine = PLAYER;
+      b.machine = PLAYER;
+      a.state = run(a, 'POWER');
+      b.folded = ['on'];
+      assertEqual([a.querySelectorAll('.sb-statechart__state--active').length, b.querySelectorAll('.sb-statechart__state--active').length], [5, 0]);
+      assert(a.querySelector('[data-state-id="stopped"]') && !b.querySelector('[data-state-id="stopped"]'));
+    });
+
+    test('displays text as text, never as markup', () => {
+      const el = chart({ initial: 'a', states: {
+        a: { label: '<b>A</b>', entry: '<i>e</i>', on: { '<b>GO</b>': { target: 'b', guard: '<i>g</i>', actions: '<b>x</b>' } } }, b: {}
+      } }, 'sendable');
+      el.state = el.next(el.initial(), '<b>GO</b>');
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(state(el, 'a').querySelector('.sb-statechart__label').textContent, '<b>A</b>');
+    });
+  </script>
+</body>
+</html>

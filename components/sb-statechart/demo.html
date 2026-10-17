@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-statechart demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-statechart.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0 0 10px; font-size: 13px; }
+    .actions label { display: flex; align-items: center; gap: 6px; }
+    .actions input { accent-color: var(--sb-accent); }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-text); background: var(--sb-surface-2); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button[aria-pressed="true"] { color: var(--sb-accent-text); background: var(--sb-accent); border-color: var(--sb-accent); }
+    .example .readout { margin: 10px 0 0; min-height: 1.5em; color: var(--sb-text); font-variant-numeric: tabular-nums; }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-statechart">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A statechart that shows every state that's active, what can happen now, and what the last step did, in order.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Many things behave according to the state they're in: a machine, a protocol, an order, a character in a game. A flat diagram of states soon tangles, so statecharts add three ideas. States can hold other states, so one transition on the outside covers everything inside. Parallel regions let independent parts of a thing each be in their own state at once. History lets a state pick up where it left off. These ideas are powerful, but they make it harder to see where a machine is, and what one event will do to it. This component shows both.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Seeing where it is.</strong> Every active state is marked: the innermost ones, and every state around them, in each parallel region.</li>
+        <li><strong>Seeing what can happen now.</strong> The transitions that would fire are marked, including those inherited from an enclosing state, and those a guard is holding back are crossed out.</li>
+        <li><strong>Seeing what one step did.</strong> The states left, the transitions fired and the states entered are numbered in the order they happened, with the actions each ran, on the chart and in words.</li>
+        <li><strong>Seeing what history remembers,</strong> beside each history state, and folding a compound state away when its insides don't matter.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>A plain network or a flat machine with a layout of your own.</strong> A graph with nodes placed by hand is simpler.</li>
+        <li><strong>A process that runs from start to end,</strong> with decisions and lanes for who does what. A flowchart reads better.</li>
+        <li><strong>Many things moving through the same stages,</strong> such as orders or tickets. A board of cards in columns shows where they pile up; a statechart shows one thing at a time.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-statechart/sb-statechart.js"&gt;&lt;/script&gt;
+&lt;sb-statechart sendable&gt;&lt;/sb-statechart&gt;
+
+&lt;script&gt;
+  const chart = document.querySelector('sb-statechart');
+  chart.machine = { initial: 'stopped', states: {
+    stopped: { on: { PLAY: 'playing' } },
+    playing: { initial: 'normal', on: { STOP: 'stopped' }, states: {
+      normal: { on: { FF: 'fast' } },
+      fast: { on: { FF: 'normal' } }
+    } }
+  } };
+  chart.state = chart.initial();
+  chart.addEventListener('sb-send', (e) => { chart.state = chart.next(chart.state, e.detail.event); });
+&lt;/script&gt;</pre>
+      <p>The machine is written like an XState config: <code>states</code> inside states, <code>on</code> for transitions, <code>type: 'parallel'</code>, <code>'history'</code> or <code>'final'</code>. You never place anything; it lays itself out. <code>initial()</code> and <code>next()</code> work out where the machine goes, following the statechart rules, and hand back the answer without changing anything.</p>
+
+      <h3>Two ways to use it</h3>
+      <ul>
+        <li><strong>The chart is the model.</strong> For a concept explained on its own page, or a small model of state beside the main one. Set <code>state</code> from <code>next()</code> on each event, as above. The first example works this way.</li>
+        <li><strong>The model has states of its own.</strong> When the sandbox's main model already moves between states, draw them as a machine and set <code>state</code> from the model: where it is, and what it just did. The second example works this way.</li>
+      </ul>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Keep <code>last</code>.</strong> The numbered step is the reveal. Pass on what <code>next()</code> returns, or, when mapping a model, say which transitions it took.</li>
+        <li><strong>Feed it the guards.</strong> Set <code>guards</code> from the model, so viewers see which transitions are open and which are held back, and why.</li>
+        <li><strong>Put transitions where they belong.</strong> One transition on an enclosing state, rather than a copy on every state inside, is what makes a statechart readable, and the chart shows it covering them all.</li>
+        <li><strong>Connect it.</strong> Point the prose at states and transitions with <code>highlight</code>, and let <code>sendable</code> turn the chart into the controls.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A washing machine</h2>
+      <p>The chart is the model here: click an event, below the chart or on it. While <span class="point" data-refs="running">running</span>, the wash goes through its <span class="point" data-refs="cycle">cycle</span> as the <span class="point" data-refs="heater">heater</span> keeps the water warm alongside it. <span class="point" data-refs="running:PAUSE">Pausing</span> from any state inside leaves them all, unlocking the door, and the <span class="point" data-refs="resume">history</span> remembers where both were, so <span class="point" data-refs="paused:RESUME">resuming</span> goes straight back. Open the door and <span class="point" data-refs="idle:START,paused:RESUME">starting and resuming</span> are held back.</p>
+      <div class="actions">
+        <label><input id="door" type="checkbox" checked> Door closed</label>
+        <button type="button" id="wash-reset">Start again</button>
+      </div>
+      <sb-statechart id="wash" sendable></sb-statechart>
+    </section>
+
+    <section class="example">
+      <h2>A pedestrian crossing</h2>
+      <p>Here the model is the junction's own code, keeping time in seconds, and the chart is drawn from it. <span class="point" data-refs="cars">Traffic</span> and <span class="point" data-refs="walkers">walkers</span> are parallel regions, tied together only by guards: <span class="point" data-refs="green:TIMER">green ends</span> only when someone is waiting, and <span class="point" data-refs="wait:TIMER">walking begins</span> only once the cars have stopped. Press the button, let it run, and fold the <span class="point" data-refs="working">working</span> state away to see the junction as just working or <span class="point" data-refs="fault">faulty</span>.</p>
+      <div class="actions">
+        <button type="button" id="cross-run" aria-pressed="false">Run</button>
+        <button type="button" id="cross-tick">Next second</button>
+        <button type="button" id="cross-press">Press the button</button>
+        <button type="button" id="cross-fault">Fault</button>
+        <button type="button" id="cross-repair">Repair</button>
+      </div>
+      <sb-statechart id="crossing"></sb-statechart>
+      <p class="readout" id="cross-readout"></p>
+    </section>
+  </main>
+
+  <script>
+    // ---- A washing machine ----
+
+    const wash = document.getElementById('wash');
+    const door = document.getElementById('door');
+    wash.machine = { initial: 'idle', states: {
+      idle: { on: { START: { target: 'running', guard: 'door closed' } } },
+      running: { type: 'parallel', entry: 'lock door', exit: 'unlock door', on: { PAUSE: 'paused' }, states: {
+        cycle: { initial: 'filling', states: {
+          filling: { on: { FULL: 'washing' } },
+          washing: { on: { DRAINED: 'spinning' } },
+          spinning: { on: { STOPPED: 'idle' } }
+        } },
+        heater: { initial: 'heating', states: {
+          heating: { on: { HOT: 'holding' } },
+          holding: { on: { COOL: 'heating' } }
+        } },
+        resume: { type: 'history', history: 'deep' }
+      } },
+      paused: { on: { RESUME: { target: 'resume', guard: 'door closed' }, CANCEL: 'idle' } }
+    } };
+
+    function showDoor() {
+      wash.guards = { 'door closed': door.checked };
+    }
+
+    wash.addEventListener('sb-send', (e) => { wash.state = wash.next(wash.state, e.detail.event); });
+    door.addEventListener('change', showDoor);
+    document.getElementById('wash-reset').addEventListener('click', () => { wash.state = wash.initial(); });
+
+    // ---- A pedestrian crossing ----
+
+    const crossing = document.getElementById('crossing');
+    crossing.machine = { initial: 'working', states: {
+      working: { type: 'parallel', on: { FAULT: 'fault' }, states: {
+        cars: { initial: 'green', states: {
+          green: { tone: 'good', on: { TIMER: { target: 'amber', guard: 'someone waiting' } } },
+          amber: { tone: 'warn', on: { TIMER: 'red' } },
+          red: { tone: 'bad', on: { TIMER: { target: 'green', guard: 'crossing clear' } } }
+        } },
+        walkers: { initial: 'wait', states: {
+          wait: { on: { TIMER: { target: 'walk', guard: 'cars stopped' }, PRESS: { actions: 'light "wait"' } } },
+          walk: { entry: 'beep', on: { TIMER: 'flashing' } },
+          flashing: { on: { TIMER: 'wait' } }
+        } }
+      } },
+      fault: { tone: 'warn', entry: 'flash amber', on: { REPAIR: 'working' } }
+    } };
+
+    // The junction's model: its own state, and how long each light holds, in seconds.
+    const HOLD = { green: 4, amber: 2, red: 2, walk: 4, flashing: 2 };
+    const junction = { cars: 'green', walkers: 'wait', fault: false, waiting: false, held: 0 };
+
+    // One second on. Returns the transitions taken, by the chart's ids, if any.
+    function tick() {
+      junction.held += 1;
+      if (junction.fault) return [];
+      const { cars, walkers, held } = junction;
+      const taken = [];
+      const move = (region, from, to) => { junction[region] = to; taken.push(`${from}:TIMER`); };
+      if (cars === 'green' && junction.waiting && held >= HOLD.green) move('cars', 'green', 'amber');
+      else if (cars === 'amber' && held >= HOLD.amber) move('cars', 'amber', 'red');
+      else if (cars === 'red' && walkers === 'wait' && held >= HOLD.red) { move('walkers', 'wait', 'walk'); junction.waiting = false; }
+      else if (walkers === 'walk' && held >= HOLD.walk) move('walkers', 'walk', 'flashing');
+      else if (walkers === 'flashing' && held >= HOLD.flashing) { move('walkers', 'flashing', 'wait'); move('cars', 'red', 'green'); }
+      if (taken.length) junction.held = 0;
+      return taken;
+    }
+
+    // The chart drawn from the model: where it is, which guards pass, and what it just did.
+    function showCrossing(event, transitions = []) {
+      crossing.state = {
+        active: junction.fault ? ['fault'] : [junction.cars, junction.walkers],
+        last: { event, transitions }
+      };
+      crossing.guards = {
+        'someone waiting': junction.waiting,
+        'cars stopped': junction.cars === 'red',
+        'crossing clear': junction.walkers === 'flashing'
+      };
+      document.getElementById('cross-readout').textContent = junction.fault ? 'Out of order: amber flashing.'
+        : `Traffic ${junction.cars}, walkers ${junction.walkers === 'wait' ? 'waiting' : junction.walkers}, for ${junction.held} s${junction.waiting ? ' · someone is waiting' : ''}.`;
+    }
+
+    let running = null;
+    const runButton = document.getElementById('cross-run');
+    runButton.addEventListener('click', () => {
+      if (running) clearInterval(running);
+      running = running ? null : setInterval(() => showCrossing('TIMER', tick()), 700);
+      runButton.setAttribute('aria-pressed', String(Boolean(running)));
+    });
+    document.getElementById('cross-tick').addEventListener('click', () => showCrossing('TIMER', tick()));
+    document.getElementById('cross-press').addEventListener('click', () => {
+      const pressed = !junction.fault && junction.walkers === 'wait';
+      if (pressed) junction.waiting = true;
+      showCrossing('PRESS', pressed ? ['wait:PRESS'] : []);
+    });
+    document.getElementById('cross-fault').addEventListener('click', () => {
+      if (junction.fault) return;
+      Object.assign(junction, { fault: true, held: 0 });
+      showCrossing('FAULT', ['working:FAULT']);
+    });
+    document.getElementById('cross-repair').addEventListener('click', () => {
+      if (!junction.fault) return;
+      Object.assign(junction, { fault: false, cars: 'green', walkers: 'wait', waiting: false, held: 0 });
+      showCrossing('REPAIR', ['fault:REPAIR']);
+    });
+
+    // ---- Pointing from the prose ----
+
+    // Pointing at a phrase highlights the states and transitions it names.
+    for (const point of document.querySelectorAll('.point')) {
+      const chart = point.closest('.example').querySelector('sb-statechart');
+      point.addEventListener('pointerenter', () => { chart.highlight = point.dataset.refs.split(','); });
+      point.addEventListener('pointerleave', () => { chart.highlight = []; });
+    }
+
+    // ---- Start ----
+
+    showDoor();
+    wash.state = ['START', 'FULL', 'HOT'].reduce((s, e) => wash.next(s, e), wash.initial());
+    junction.waiting = true;
+    junction.held = HOLD.green;
+    showCrossing('TIMER', tick());
+  </script>
+</body>
+</html>
