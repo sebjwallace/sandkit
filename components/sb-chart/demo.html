@@ -25,6 +25,7 @@
     .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
     .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
     .guide a { color: var(--sb-accent); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
   </style>
 </head>
 <body>
@@ -68,6 +69,8 @@
         <li><strong>Add the lines that give values meaning.</strong> A level is just a level until it sits next to a limit or a target.</li>
         <li><strong>Use tones for what matters.</strong> A warning line in amber, a limit in red, everything else calm.</li>
         <li><strong>Show enough history to see the pattern,</strong> and no more. A week of stock shows the sawtooth; a year flattens it.</li>
+        <li><strong>Mark the events that explain the shape,</strong> such as a price rise or a new rule, so a sudden turn has its reason beside it.</li>
+        <li><strong>Show where you are.</strong> When the sandbox scrubs through history, set <code>current</code>, so the chart and the rest of the sandbox point at the same moment.</li>
       </ul>
 
       <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
@@ -76,16 +79,18 @@
     <h2 class="part">Examples</h2>
     <section class="example">
       <h2>Predators and prey</h2>
-      <p class="note">Foxes eat rabbits; with fewer rabbits, foxes go hungry; with fewer foxes, rabbits recover. The two populations chase each other in cycles.</p>
+      <p class="note"><span class="point" data-highlight="Foxes">Foxes</span> eat <span class="point" data-highlight="Rabbits">rabbits</span>; with fewer rabbits, foxes go hungry; with fewer foxes, rabbits recover. The two populations chase each other in cycles, the foxes always a little behind: compare <span class="point" data-moment="Rabbits">the rabbits' last peak</span> with <span class="point" data-moment="Foxes">the foxes'</span>. Point at the chart to read both at any moment, or at a name below to bring its line forward.</p>
       <sb-chart id="populations" heading="Population over time" height="180"></sb-chart>
     </section>
 
     <section class="example">
       <h2>A household budget</h2>
-      <p class="note">A month's balance, with rent leaving at the start and wages arriving at the end. Raise the spending and watch it dip into the overdraft.</p>
+      <p class="note">A month's <span class="point" data-highlight="Balance">balance</span>, with <span class="point" data-highlight="Rent">rent</span> leaving at the start and <span class="point" data-highlight="Wages">wages</span> arriving at the end, both marked. The <span class="point" data-highlight="Overdraft limit">overdraft limit</span> is the line not to cross; <span class="point" data-moment="Balance">the lowest point</span> comes just before payday. Raise the spending and watch it dip into the overdraft; move through the month to see where things stand on any day. Clicking the chart jumps there too.</p>
       <div class="actions">
         <label>Daily spending <input type="range" id="spending" min="20" max="80" value="40"></label>
         <output id="spending-out"></output>
+        <label>Day <input type="range" id="day" min="1" max="30" value="12"></label>
+        <output id="day-out"></output>
       </div>
       <sb-chart id="budget" heading="Balance over a month"></sb-chart>
     </section>
@@ -122,24 +127,62 @@
     const budget = document.getElementById('budget');
     const spending = document.getElementById('spending');
 
+    const day = document.getElementById('day');
+
     function drawBudget() {
       const perDay = Number(spending.value);
-      let balance = 400;
-      const balances = [];
-      for (let day = 1; day <= 30; day++) {
-        if (day === 1) balance -= 950;       // rent
+      let balance = 400, spent = 0;
+      const balances = [], spentSoFar = [];
+      for (let d = 1; d <= 30; d++) {
+        if (d === 1) balance -= 950;       // rent
         balance -= perDay;
-        if (day === 30) balance += 2100;     // wages
+        spent += perDay;
+        if (d === 30) balance += 2100;     // wages
         balances.push(balance);
+        spentSoFar.push(spent);
       }
       document.getElementById('spending-out').textContent = `£${perDay} a day`;
       budget.data = {
-        series: [{ label: 'Balance', values: balances }],
-        lines: [{ value: -1000, label: 'Overdraft limit', tone: 'bad' }]
+        series: [{ label: 'Balance', values: balances }, { label: 'Spent so far', values: spentSoFar, tone: 'muted' }],
+        lines: [{ value: -1000, label: 'Overdraft limit', tone: 'bad' }],
+        xLabels: balances.map((_, i) => `Day ${i + 1}`),
+        marks: [{ at: 0, label: 'Rent' }, { at: 29, label: 'Wages', tone: 'good' }]
       };
     }
 
+    // The day is the sandbox's own state: the slider and clicks on the chart both set it.
+    function showDay(d) {
+      day.value = d;
+      budget.current = d - 1;
+      document.getElementById('day-out').textContent = `Day ${d}`;
+    }
+
     spending.addEventListener('input', drawBudget);
+    day.addEventListener('input', () => showDay(Number(day.value)));
+    budget.addEventListener('sb-select', (e) => showDay(e.detail.position + 1));
+
+    // ---- Pointing from the text ----
+    // data-highlight names a line, a reference line or a mark; data-moment points at the latest
+    // peak (or, for the balance, the lowest point) of a series, by moving the cursor there for a while.
+
+    const extreme = (chart, label) => {
+      const series = chart.data.series.find((s) => s.label === label);
+      const values = series.values, lowest = label === 'Balance';
+      const best = values.reduce((at, v, i) => ((lowest ? v <= values[at] : v >= values[at]) ? i : at), 0);
+      return best + (chart.data.series.reduce((n, s) => Math.max(n, s.values.length), 0) - values.length);
+    };
+
+    for (const point of document.querySelectorAll('.point')) {
+      const chart = point.closest('.example').querySelector('sb-chart');
+      point.addEventListener('pointerenter', () => {
+        if (point.dataset.highlight) chart.highlight = [point.dataset.highlight];
+        if (point.dataset.moment) { chart.highlight = [point.dataset.moment]; chart.current = extreme(chart, point.dataset.moment); }
+      });
+      point.addEventListener('pointerleave', () => {
+        chart.highlight = [];
+        if (point.dataset.moment) chart.current = chart === budget ? Number(day.value) - 1 : null;
+      });
+    }
 
     // ---- Start ----
 
@@ -147,6 +190,7 @@
     drawPopulations();
     setInterval(() => { stepPopulations(); drawPopulations(); }, 60);
     drawBudget();
+    showDay(12);
   </script>
 </body>
 </html>

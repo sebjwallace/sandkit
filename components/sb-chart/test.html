@@ -140,6 +140,114 @@
       assertEqual(chart.querySelector('svg').getAttribute('width'), '300');
     });
 
+    // ---- Reading values, labelling time, pointing and the cursor ----
+
+    const WEEK = { series: [{ id: 'stock', label: 'Stock', values: [80, 64, 51, 70, 66] }, { label: 'Sales', values: [12, 18, 15] }] };
+
+    function weekChart(extra = {}) {
+      const chart = mount('<sb-chart style="width: 500px"></sb-chart>');
+      chart.data = { ...WEEK, ...extra };
+      return chart;
+    }
+
+    // Moves the pointer to a position along the chart.
+    function pointAt(chart, position, type = 'pointermove') {
+      const svg = chart.querySelector('svg');
+      const line = chart.querySelector('.sb-chart__series');
+      const [first, last] = [pointsOf(line)[0][0], pointsOf(line).at(-1)[0]];
+      const x = svg.getBoundingClientRect().left + first + (position / 4) * (last - first);
+      line.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: svg.getBoundingClientRect().top + 40 }));
+    }
+    const readout = (chart) => [...chart.querySelectorAll('.sb-chart__readout')].map((t) => t.textContent);
+
+    test('pointing at the chart shows the values there, with its label along the bottom', () => {
+      const chart = weekChart({ xLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] });
+      pointAt(chart, 1);
+      assertEqual(readout(chart), ['Tue', 'Stock: 64']);
+      pointAt(chart, 3);
+      assertEqual(readout(chart), ['Thu', 'Stock: 70', 'Sales: 18'], 'a shorter series joins where it starts');
+      assert(chart.querySelector('.sb-chart__guide'), 'with a guide line');
+      chart.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(chart.querySelector('.sb-chart__guide'), null, 'gone when the pointer leaves');
+    });
+
+    test('pointing fires sb-point as the position changes, and clicking fires sb-select', () => {
+      const chart = weekChart();
+      const points = recordEvents(chart, 'sb-point'), selections = recordEvents(chart, 'sb-select');
+      pointAt(chart, 2);
+      pointAt(chart, 2);
+      pointAt(chart, 4);
+      chart.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(points.map((e) => e.detail.position), [2, 4, null]);
+      pointAt(chart, 1, 'click');
+      assertEqual(selections[0].detail, { position: 1 });
+    });
+
+    test('labels along the bottom line up with the latest positions, the latest always shown', () => {
+      const chart = weekChart({ xLabels: ['Wed', 'Thu', 'Fri'] });
+      const labels = [...chart.querySelectorAll('.sb-chart__x-label')];
+      assertEqual(labels.at(-1).textContent, 'Fri');
+      const fri = Number(labels.at(-1).getAttribute('x'));
+      assertEqual(fri, pointsOf(chart.querySelector('.sb-chart__series')).at(-1)[0], 'under the latest values');
+    });
+
+    test('labels along the bottom thin out to fit', () => {
+      const chart = mount('<sb-chart style="width: 300px"></sb-chart>');
+      chart.data = { series: [{ label: 'A', values: Array.from({ length: 30 }, (_, i) => i) }], xLabels: Array.from({ length: 30 }, (_, i) => `D${i + 1}`) };
+      const shown = [...chart.querySelectorAll('.sb-chart__x-label')].map((t) => t.textContent);
+      assert(shown.length > 1 && shown.length <= 5, `a few: ${shown}`);
+      assertEqual(shown.at(-1), 'D30');
+    });
+
+    test('marks events with a labelled line at their position', () => {
+      const chart = weekChart({ marks: [{ at: 2, label: 'Price rise', tone: 'warn' }, { at: 9, label: 'Out of range' }] });
+      const marks = chart.querySelectorAll('.sb-chart__mark');
+      assertEqual(marks.length, 1, 'only marks within the chart');
+      assertEqual(Number(marks[0].getAttribute('x1')), pointsOf(chart.querySelector('.sb-chart__series'))[2][0]);
+      assertEqual(chart.querySelector('.sb-chart__mark-label').textContent, 'Price rise');
+      assert(marks[0].classList.contains('sb-chart--warn'), 'toned');
+    });
+
+    test('highlight brings series forward and fades the rest, by id or label', () => {
+      const chart = weekChart();
+      chart.highlight = ['Sales'];
+      const [stock, sales] = chart.querySelectorAll('.sb-chart__series');
+      assert(sales.classList.contains('sb-chart__series--highlighted') && stock.classList.contains('sb-chart__series--faded'));
+      assert(chart.querySelector('.sb-chart__key[data-series="stock"]').classList.contains('sb-chart__key--faded'), 'its legend too');
+      chart.highlight = [];
+      assertEqual(chart.querySelectorAll('[class*="--faded"], [class*="--highlighted"]').length, 0, 'cleared');
+    });
+
+    test('highlight also makes reference lines and marks stand out, by label, without fading the series', () => {
+      const chart = weekChart({ lines: [{ value: 40, label: 'Reorder' }], marks: [{ at: 2, label: 'Price rise' }, { at: 3, id: 'sale', label: 'Sale' }] });
+      chart.highlight = ['Reorder', 'sale'];
+      assert(chart.querySelector('.sb-chart__line').classList.contains('sb-chart__line--highlighted'), 'the line');
+      assert(chart.querySelector('.sb-chart__line-label').classList.contains('sb-chart__line-label--highlighted'), 'its label');
+      const marks = chart.querySelectorAll('.sb-chart__mark');
+      assert(!marks[0].classList.contains('sb-chart__mark--highlighted') && marks[1].classList.contains('sb-chart__mark--highlighted'), 'the mark, by its id');
+      assertEqual(chart.querySelectorAll('.sb-chart__series--faded').length, 0, 'series untouched');
+    });
+
+    test('pointing at a legend entry or a line brings it forward', () => {
+      const chart = weekChart();
+      chart.querySelector('.sb-chart__key[data-series="stock"]').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assert(chart.querySelector('.sb-chart__series[data-series="stock"]').classList.contains('sb-chart__series--highlighted'));
+      chart.querySelector('.sb-chart__series[data-series="Sales"]').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assert(chart.querySelector('.sb-chart__series[data-series="stock"]').classList.contains('sb-chart__series--faded'), 'the other line');
+      chart.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(chart.querySelectorAll('.sb-chart__series--faded').length, 0, 'cleared');
+    });
+
+    test('current marks a position with a cursor, and the legend gives the values there', () => {
+      const chart = weekChart();
+      chart.current = 1;
+      assertEqual(Number(chart.querySelector('.sb-chart__cursor').getAttribute('x1')), pointsOf(chart.querySelector('.sb-chart__series'))[1][0]);
+      assertEqual([...chart.querySelectorAll('.sb-chart__latest')].map((v) => v.textContent), ['64', '—'], 'sales had not started');
+      chart.current = null;
+      assertEqual(chart.querySelector('.sb-chart__cursor'), null);
+      assertEqual([...chart.querySelectorAll('.sb-chart__latest')].map((v) => v.textContent), ['66', '15'], 'back to the latest');
+    });
+
     test('two charts on one page draw their own data', () => {
       mount('<div><sb-chart></sb-chart><sb-chart></sb-chart></div>');
       const [a, b] = document.querySelectorAll('#test-fixture sb-chart');
