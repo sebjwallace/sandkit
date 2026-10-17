@@ -9,7 +9,7 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-id', 'sb-bars', 'sb-callout', 'sb-code', 'sb-erd', 'sb-flowchart', 'sb-timeline', 'sb-tree', 'sb-math', 'sb-matrix', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-table', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings'];
+    window.TAGS = ['sb-id', 'sb-bars', 'sb-callout', 'sb-code', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-timeline', 'sb-tree', 'sb-math', 'sb-matrix', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-table', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
@@ -19,6 +19,7 @@
   <script src="../../components/sb-code/sb-code.js"></script>
   <script src="../../components/sb-erd/sb-erd.js"></script>
   <script src="../../components/sb-flowchart/sb-flowchart.js"></script>
+  <script src="../../components/sb-grid/sb-grid.js"></script>
   <script src="../../components/sb-timeline/sb-timeline.js"></script>
   <script src="../../components/sb-tree/sb-tree.js"></script>
   <script src="../../components/sb-math/sb-math.js"></script>

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-grid tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-grid.js"></script>
+</head>
+<body>
+  <script>
+    const RED = 'rgb(255, 0, 0)', BLUE = 'rgb(0, 0, 255)';
+    const STATES = { 0: { label: 'Empty', color: 'rgb(255, 255, 255)' }, 1: { label: 'Tree', color: BLUE }, 2: { label: 'Fire', color: RED } };
+    const CELLS = [[1, 1, 0, 2], [0, 1, 2, 2], [1, 1, 1, 1]];
+
+    function grid(attrs = '', cells = CELLS, width = 240) {
+      const el = mount(`<sb-grid style="width: ${width}px" ${attrs}></sb-grid>`);
+      el.states = STATES;
+      el.cells = cells;
+      return el;
+    }
+
+    // The colour drawn at a point in a cell, as [r, g, b]. (dx, dy) is from the cell's top left, in cells.
+    function pixel(el, row, column, dx = 0.5, dy = 0.5) {
+      const canvas = el.querySelector('canvas');
+      const ratio = canvas.width / parseFloat(canvas.style.width);
+      const size = parseFloat(canvas.style.width) / CELLS[0].length;
+      const [r, g, b] = canvas.getContext('2d').getImageData(Math.floor((column + dx) * size * ratio), Math.floor((row + dy) * size * ratio), 1, 1).data;
+      return [r, g, b];
+    }
+    const BACKGROUND = [238, 240, 243];   // --sb-surface-2's fallback
+    const ACCENT = [37, 99, 235];          // --sb-accent's fallback
+    const close = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 12);
+
+    // A pointer event over the middle of a cell.
+    function at(el, type, row, column) {
+      const canvas = el.querySelector('canvas');
+      const box = canvas.getBoundingClientRect(), size = box.width / CELLS[0].length;
+      canvas.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: box.left + (column + 0.5) * size, clientY: box.top + (row + 0.5) * size }));
+    }
+
+    // ---- Drawing ----
+
+    test('cells are as big as fit the width, up to a limit', () => {
+      assertEqual(grid('', CELLS, 60).querySelector('canvas').style.width, '60px', 'four cells of 15');
+      assertEqual(grid('', CELLS, 400).querySelector('canvas').style.width, '96px', 'never more than 24 each');
+    });
+
+    test('colours each cell by its state', () => {
+      const el = grid();
+      assertEqual(pixel(el, 0, 0), [0, 0, 255]);
+      assertEqual(pixel(el, 0, 3), [255, 0, 0]);
+      assertEqual(pixel(el, 0, 2), [255, 255, 255]);
+    });
+
+    test('a state without a colour takes its tone from the theme', () => {
+      const el = grid();
+      el.states = { 1: { tone: 'accent' } };
+      assert(close(pixel(el, 0, 0), ACCENT), `accent: ${pixel(el, 0, 0)}`);
+      assert(close(pixel(el, 0, 3), BACKGROUND), 'values with no state are left as background');
+    });
+
+    test('a scale colours numbers from faint to full', () => {
+      const el = mount('<sb-grid style="width: 240px"></sb-grid>');
+      el.scale = { min: 0, max: 100, tone: 'accent' };
+      el.cells = [[0, 50, 100, 100]];
+      assert(close(pixel(el, 0, 2), ACCENT), 'max is full');
+      const [low, mid] = [pixel(el, 0, 0), pixel(el, 0, 1)];
+      assert(low[0] > mid[0] && mid[0] > ACCENT[0], `fainter for less: ${low} ${mid}`);
+    });
+
+    test('shows the empty text with no cells', () => {
+      assertEqual(mount('<sb-grid empty-text="Plant a forest."></sb-grid>').textContent.trim(), 'Plant a forest.');
+    });
+
+    // ---- Legend ----
+
+    test('the legend names each state with how many cells are in it', () => {
+      const el = grid();
+      const keys = [...el.querySelectorAll('.sb-grid__key')].map((k) => k.textContent.replace(/\s+/g, ' ').trim());
+      assertEqual(keys, ['Empty 2', 'Tree 7', 'Fire 3']);
+      el.cells = [[2, 2, 2, 2], [2, 2, 2, 2], [2, 2, 2, 2]];
+      assertEqual(el.querySelector('.sb-grid__key[data-state="2"] .sb-grid__count').textContent, '12', 'kept up to date');
+    });
+
+    test('a heat map has no legend', () => {
+      const el = mount('<sb-grid></sb-grid>');
+      el.scale = { min: 0, max: 1 };
+      el.cells = [[0, 1]];
+      assertEqual(el.querySelectorAll('.sb-grid__key').length, 0);
+    });
+
+    test('pointing at a legend entry fades every other cell, and lights the entry', () => {
+      const el = grid();
+      el.querySelector('.sb-grid__key[data-state="2"]').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assertEqual(pixel(el, 0, 3), [255, 0, 0], 'fire stays');
+      assert(close(pixel(el, 0, 0), BACKGROUND.map((v, i) => v + ([0, 0, 255][i] - v) * 0.15)), `trees fade: ${pixel(el, 0, 0)}`);
+      assert(el.querySelector('.sb-grid__key[data-state="2"]').classList.contains('sb-grid__key--highlighted'));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(pixel(el, 0, 0), [0, 0, 255], 'back when the pointer leaves');
+    });
+
+    // ---- Highlighting and changes ----
+
+    test('highlight outlines cells, rows and columns, and can pick out states', () => {
+      const el = grid();
+      el.highlight = { cells: [[0, 0]] };
+      assert(close(pixel(el, 0, 0, 0.02, 0.5), ACCENT), 'a cell');
+      el.highlight = { rows: [2] };
+      assert(close(pixel(el, 2, 3, 0.98, 0.5), ACCENT) && !close(pixel(el, 2, 1, 0.98, 0.5), ACCENT), 'a row, as one outline');
+      el.highlight = { columns: [1] };
+      assert(close(pixel(el, 1, 1, 0.02, 0.5), ACCENT), 'a column');
+      el.highlight = { states: [1] };
+      assert(!close(pixel(el, 0, 3), [255, 0, 0]), 'fire fades');
+      assert(el.querySelector('.sb-grid__key[data-state="1"]').classList.contains('sb-grid__key--highlighted'), 'and its entry lights');
+      el.highlight = {};
+      assertEqual(pixel(el, 0, 3), [255, 0, 0], 'cleared');
+    });
+
+    test('mark-changes outlines the cells that changed since the last update', () => {
+      const el = grid('mark-changes');
+      const outlined = (row, column) => close(pixel(el, row, column, 0.02, 0.5), [31, 41, 51]);
+      assert(!outlined(0, 0), 'nothing the first time');
+      el.cells = CELLS.map((row, r) => row.map((v, c) => (r === 0 && c === 0 ? 2 : v)));
+      assert(outlined(0, 0) && !outlined(0, 1), 'only the changed cell');
+      el.removeAttribute('mark-changes');
+      assert(!outlined(0, 0), 'off without the attribute');
+    });
+
+    test('changes are seen even when the model edits its cells in place', () => {
+      const cells = CELLS.map((row) => [...row]);
+      const el = grid('mark-changes', cells);
+      cells[1][1] = 2;
+      el.cells = cells;
+      assert(close(pixel(el, 1, 1, 0.02, 0.5), [31, 41, 51]));
+    });
+
+    // ---- Pointing, selecting and painting ----
+
+    test('pointing at a cell reads it out and fires sb-point', () => {
+      const el = grid();
+      const events = recordEvents(el, 'sb-point');
+      at(el, 'pointermove', 1, 2);
+      assertEqual(el.querySelector('.sb-grid__readout').textContent, 'Row 2, column 3: Fire');
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(el.querySelector('.sb-grid__readout').textContent, '');
+      assertEqual(events.map((e) => e.detail), [{ row: 1, column: 2, value: 2 }, null]);
+    });
+
+    test('pressing a cell fires sb-select; painting only when paintable', () => {
+      const plain = grid();
+      const selections = recordEvents(plain, 'sb-select'), paints = recordEvents(plain, 'sb-paint');
+      at(plain, 'pointerdown', 2, 0);
+      assertEqual([selections[0].detail, paints.length], [{ row: 2, column: 0, value: 1 }, 0]);
+    });
+
+    test('dragging over a paintable grid fires sb-paint once per cell, and changes nothing itself', () => {
+      const el = grid('paintable');
+      const paints = recordEvents(el, 'sb-paint');
+      at(el, 'pointerdown', 0, 0);
+      at(el, 'pointermove', 0, 0);
+      at(el, 'pointermove', 0, 1);
+      at(el, 'pointermove', 1, 1);
+      at(el, 'pointerup', 1, 1);
+      at(el, 'pointermove', 2, 2);
+      assertEqual(paints.map((e) => [e.detail.row, e.detail.column]), [[0, 0], [0, 1], [1, 1]]);
+      assertEqual(pixel(el, 0, 1), [0, 0, 255], 'the model decides what changes');
+    });
+
+    test('describes itself for screen readers', () => {
+      assertEqual(grid().querySelector('canvas').getAttribute('aria-label'), 'Grid of 3 by 4. Empty: 2, Tree: 7, Fire: 3');
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two grids on one page draw their own cells', () => {
+      mount('<div><sb-grid style="width: 240px"></sb-grid><sb-grid style="width: 240px"></sb-grid></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-grid');
+      for (const el of [a, b]) el.states = STATES;
+      a.cells = CELLS;
+      b.cells = CELLS.map((row) => row.map(() => 2));
+      assertEqual([pixel(a, 0, 0), pixel(b, 0, 0)], [[0, 0, 255], [255, 0, 0]]);
+    });
+
+    test('displays state labels as text, never as markup', () => {
+      const el = grid();
+      el.states = { 1: { label: '<b>Tree</b>', color: '<i>x</i>' } };
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(el.querySelector('.sb-grid__key').textContent.trim().startsWith('<b>Tree</b>'), true);
+    });
+  </script>
+</body>
+</html>

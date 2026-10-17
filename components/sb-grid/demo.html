@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-grid demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-grid.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-accent-text); background: var(--sb-accent); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button.quiet { color: var(--sb-text); background: var(--sb-surface-2); }
+    .actions label { display: flex; align-items: center; gap: 6px; }
+    .actions input[type="range"] { accent-color: var(--sb-accent); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-grid">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A grid of cells coloured by state or value, painted by viewers and changed by the model.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Some things happen across space: a fire moving through a forest, a rumour through a town, heat through a pan, life and death in a petri dish. A grid divides the space into cells, each in a state or holding a value, and the model decides how each cell changes from its neighbours. Simple rules, run over many cells, can make surprising patterns, and seeing them unfold is the best way to understand them.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Spread and contagion.</strong> Fire, disease, gossip, a new idea taking hold.</li>
+        <li><strong>Cellular automata.</strong> The Game of Life, sand piles, traffic on a road.</li>
+        <li><strong>Fields of values.</strong> Heat, pressure, density or rainfall across an area, as a heat map.</li>
+        <li><strong>Trying things directly.</strong> Paint cells to start a fire, add heat or place walls, and watch what follows.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>A few named things in places.</strong> A graph or a diagram says more than a grid of mostly empty cells.</li>
+        <li><strong>Positions that aren't on a grid.</strong> A coordinate plane places things anywhere.</li>
+        <li><strong>The totals over time.</strong> Plot the legend's counts on a chart to see the whole story.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-grid/sb-grid.js"&gt;&lt;/script&gt;
+&lt;sb-grid paintable&gt;&lt;/sb-grid&gt;
+
+&lt;script&gt;
+  const grid = document.querySelector('sb-grid');
+  grid.states = { 0: { label: 'Empty', tone: 'surface' }, 1: { label: 'Tree', tone: 'good' }, 2: { label: 'Fire', tone: 'bad' } };
+  grid.cells = model.forest;                         // rows of values
+
+  // Painting asks the model; the model changes, and the grid shows it.
+  grid.addEventListener('sb-paint', (e) => { model.ignite(e.detail.row, e.detail.column); grid.cells = model.forest; });
+&lt;/script&gt;</pre>
+      <p>Give <code>states</code> for cells that are one of a few kinds, or a <code>scale</code> for numbers, shown as a heat map. The legend counts each state as the model runs. With <code>paintable</code>, dragging across cells fires <code>sb-paint</code> for each one; the grid never changes itself, so the model stays in charge.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Let people poke it.</strong> Painting a spark or a wall and watching the response teaches more than any number of runs.</li>
+        <li><strong>Point at a state</strong> in the legend, or with <code>highlight</code>, to see where all of its cells are at once.</li>
+        <li><strong>Mark what changed</strong> with <code>mark-changes</code> when few cells change at a time, so each step's effect stands out.</li>
+        <li><strong>Pair the counts with a chart,</strong> so the pattern in space and the story over time sit side by side.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A forest fire</h2>
+      <p>Click or drag across the trees to start a fire. Each step, burning trees burn out and may set their neighbours alight; the drier the forest, the more likely. Point at <span class="point" data-states="2">the fire</span> or <span class="point" data-states="1">the trees still standing</span> to see where they are, or at the legend.</p>
+      <div class="actions">
+        <button id="fire-play">Play</button><button id="fire-step" class="quiet">Step</button><button id="fire-reset" class="quiet">New forest</button>
+        <label>Dry <input type="range" id="dryness" min="0.3" max="1" step="0.05" value="0.7"></label>
+      </div>
+      <sb-grid id="forest" paintable></sb-grid>
+    </section>
+
+    <section class="example">
+      <h2>Heat spreading through a plate</h2>
+      <p>A metal plate whose edges are kept cold. Drag across it to place heaters, and watch the heat spread until it settles. Each cell becomes the average of itself and its neighbours; outlined cells are still changing, and as the plate settles they disappear. Look along <span class="point" data-rows="10">the middle row</span>: however you place the heaters, it smooths into a gentle slope.</p>
+      <div class="actions"><button id="heat-play">Play</button><button id="heat-clear" class="quiet">Remove heaters</button></div>
+      <sb-grid id="plate" paintable mark-changes></sb-grid>
+    </section>
+
+    <section class="example">
+      <h2>The Game of Life</h2>
+      <p>A cellular automaton with two rules. A live cell with two or three live neighbours survives; a dead cell with exactly three comes to life; everything else dies or stays empty. Draw cells, or drop in a glider, and press Play: outlined cells are the ones just born or just died. Point at <span class="point" data-states="1">the living cells</span> to see them all.</p>
+      <div class="actions">
+        <button id="life-play">Play</button><button id="life-step" class="quiet">Step</button>
+        <button id="life-glider" class="quiet">Add a glider</button><button id="life-random" class="quiet">Random</button><button id="life-clear" class="quiet">Clear</button>
+        <span id="life-generation"></span>
+      </div>
+      <sb-grid id="life" paintable mark-changes></sb-grid>
+    </section>
+  </main>
+
+  <script>
+    // ---- A forest fire ----
+    // States: 0 empty ground, 1 tree, 2 burning, 3 burnt.
+
+    const forest = document.getElementById('forest');
+    const [ROWS, COLUMNS] = [36, 64];
+    forest.states = {
+      1: { label: 'Tree', tone: 'good' },
+      2: { label: 'Burning', tone: 'bad' },
+      3: { label: 'Burnt', tone: 'muted' },
+      0: { label: 'Bare ground', tone: 'surface' }
+    };
+    let trees;
+
+    function plant() {
+      trees = Array.from({ length: ROWS }, () => Array.from({ length: COLUMNS }, () => (Math.random() < 0.8 ? 1 : 0)));
+      forest.cells = trees;
+    }
+
+    const neighbours = (r, c) => [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]].filter(([y, x]) => trees[y]?.[x] != null);
+
+    function burn() {
+      const dry = Number(document.getElementById('dryness').value);
+      trees = trees.map((row, r) => row.map((cell, c) => {
+        if (cell === 2) return 3;
+        if (cell === 1 && neighbours(r, c).some(([y, x]) => trees[y][x] === 2) && Math.random() < dry) return 2;
+        return cell;
+      }));
+      forest.cells = trees;
+    }
+
+    forest.addEventListener('sb-paint', (e) => {
+      if (trees[e.detail.row][e.detail.column] !== 1) return;
+      trees[e.detail.row][e.detail.column] = 2;
+      forest.cells = trees;
+    });
+
+    // ---- Heat spreading through a plate ----
+
+    const plate = document.getElementById('plate');
+    const [H, W] = [20, 40];
+    plate.scale = { min: 0, max: 100, tone: 'bad' };
+    let heat = Array.from({ length: H }, () => Array(W).fill(0));
+    let heaters = new Set();   // painted cells, kept at full heat
+    const isHeater = (r, c) => heaters.has(`${r},${c}`);
+    plate.cells = heat;
+
+    function spread() {
+      heat = heat.map((row, r) => row.map((t, c) => {
+        if (isHeater(r, c)) return 100;
+        if (r === 0 || c === 0 || r === H - 1 || c === W - 1) return 0;   // the cold edges
+        const around = heat[r - 1][c] + heat[r + 1][c] + heat[r][c - 1] + heat[r][c + 1];
+        return Math.round((t + around) / 5);
+      }));
+      plate.cells = heat;
+    }
+
+    plate.addEventListener('sb-paint', (e) => {
+      heaters.add(`${e.detail.row},${e.detail.column}`);
+      heat[e.detail.row][e.detail.column] = 100;
+      plate.cells = heat;
+    });
+
+    // ---- The Game of Life ----
+    // The edges wrap round, so what leaves one side comes back on the other.
+
+    const life = document.getElementById('life');
+    const [LR, LC] = [30, 60];
+    life.states = { 1: { label: 'Alive', tone: 'accent' }, 0: { label: 'Empty', tone: 'surface' } };
+    let board = Array.from({ length: LR }, () => Array(LC).fill(0));
+    let generation = 0;
+
+    function showLife() {
+      life.cells = board;
+      document.getElementById('life-generation').textContent = `Generation ${generation}`;
+    }
+
+    const liveNeighbours = (r, c) => {
+      let count = 0;
+      for (const dr of [-1, 0, 1]) for (const dc of [-1, 0, 1]) {
+        if (dr || dc) count += board[(r + dr + LR) % LR][(c + dc + LC) % LC];
+      }
+      return count;
+    };
+
+    function generate() {
+      board = board.map((row, r) => row.map((alive, c) => {
+        const n = liveNeighbours(r, c);
+        return n === 3 || (alive && n === 2) ? 1 : 0;
+      }));
+      generation += 1;
+      showLife();
+    }
+
+    function addGlider() {
+      const [r, c] = [2 + Math.floor(Math.random() * (LR - 6)), 2 + Math.floor(Math.random() * (LC - 6))];
+      for (const [dr, dc] of [[0, 1], [1, 2], [2, 0], [2, 1], [2, 2]]) board[r + dr][c + dc] = 1;
+      showLife();
+    }
+
+    // Pressing a dead cell draws; pressing a live one rubs out, for the rest of that drag.
+    let drawing = 1;
+    life.addEventListener('sb-select', (e) => { drawing = e.detail.value === 1 ? 0 : 1; });
+    life.addEventListener('sb-paint', (e) => {
+      board[e.detail.row][e.detail.column] = drawing;
+      showLife();
+    });
+
+    document.getElementById('life-step').addEventListener('click', generate);
+    document.getElementById('life-glider').addEventListener('click', addGlider);
+    document.getElementById('life-random').addEventListener('click', () => {
+      board = board.map((row) => row.map(() => (Math.random() < 0.25 ? 1 : 0)));
+      generation = 0;
+      showLife();
+    });
+    document.getElementById('life-clear').addEventListener('click', () => {
+      board = board.map((row) => row.map(() => 0));
+      generation = 0;
+      showLife();
+    });
+
+    // ---- Playing ----
+    // A tiny clock for each example: play, pause, and a step at a time.
+
+    function player(button, step, interval) {
+      let timer = null;
+      button.addEventListener('click', () => {
+        if (timer) { clearInterval(timer); timer = null; button.textContent = 'Play'; return; }
+        timer = setInterval(step, interval);
+        button.textContent = 'Pause';
+      });
+    }
+
+    player(document.getElementById('fire-play'), burn, 120);
+    player(document.getElementById('heat-play'), spread, 120);
+    player(document.getElementById('life-play'), generate, 150);
+    document.getElementById('fire-step').addEventListener('click', burn);
+    document.getElementById('fire-reset').addEventListener('click', plant);
+    document.getElementById('heat-clear').addEventListener('click', () => { heaters = new Set(); heat = heat.map((row) => row.map(() => 0)); plate.cells = heat; });
+
+    // ---- Pointing from the text ----
+
+    for (const point of document.querySelectorAll('.point')) {
+      const grid = point.closest('.example').querySelector('sb-grid');
+      point.addEventListener('pointerenter', () => {
+        grid.highlight = { states: point.dataset.states?.split(' ') ?? [], rows: point.dataset.rows?.split(' ').map(Number) ?? [] };
+      });
+      point.addEventListener('pointerleave', () => { grid.highlight = {}; });
+    }
+
+    // ---- Start ----
+
+    plant();
+    addGlider();
+    addGlider();
+  </script>
+</body>
+</html>
