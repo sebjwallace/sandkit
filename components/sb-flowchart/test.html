@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-flowchart tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-flowchart.js"></script>
+</head>
+<body>
+  <script>
+    // Brew until strong, then milk or not: a loop back, and a branch that skips a step.
+    const TEA = {
+      nodes: [
+        { id: 'start', label: 'Fancy a cup', kind: 'start' },
+        { id: 'brew', label: 'Brew' },
+        { id: 'strong', label: 'Strong enough?', kind: 'decision' },
+        { id: 'milk', label: 'Milk?', kind: 'decision' },
+        { id: 'add', label: 'Add milk' },
+        { id: 'enjoy', label: 'Enjoy', kind: 'end' }
+      ],
+      edges: [
+        { from: 'start', to: 'brew' }, { from: 'brew', to: 'strong' },
+        { from: 'strong', to: 'brew', label: 'no' }, { from: 'strong', to: 'milk', label: 'yes' },
+        { from: 'milk', to: 'add', label: 'yes' }, { from: 'add', to: 'enjoy' }, { from: 'milk', to: 'enjoy', label: 'no' }
+      ]
+    };
+
+    const LANES = {
+      lanes: [{ id: 'guest', label: 'Guest' }, { id: 'host', label: 'Host' }],
+      nodes: [
+        { id: 'ask', label: 'Asks', lane: 'guest', kind: 'start' },
+        { id: 'pour', label: 'Pours', lane: 'host' },
+        { id: 'drink', label: 'Drinks', lane: 'guest', kind: 'end' }
+      ],
+      edges: [{ from: 'ask', to: 'pour' }, { from: 'pour', to: 'drink' }]
+    };
+
+    function chart(data = TEA, attrs = '') {
+      const el = mount(`<sb-flowchart ${attrs}></sb-flowchart>`);
+      el.data = data;
+      return el;
+    }
+
+    const byData = (el, selector, key, value) => [...el.querySelectorAll(selector)].find((n) => n.dataset[key] === value);
+    const node = (el, id) => byData(el, '.sb-flowchart__node', 'nodeId', id);
+    const edge = (el, id) => byData(el, '.sb-flowchart__edge', 'edgeId', id);
+
+    // Positions on screen, so the tests check what people see rather than the sizes used.
+    const box = (el, id) => node(el, id).querySelector('.sb-flowchart__shape').getBoundingClientRect();
+    const centre = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+    const points = (el, id) => {
+      const svg = el.querySelector('svg');
+      return [...edge(el, id).querySelector('.sb-flowchart__line').getAttribute('d').matchAll(/([-\d.]+),([-\d.]+)/g)]
+        .map(([, x, y]) => Object.assign(svg.createSVGPoint(), { x: +x, y: +y }).matrixTransform(svg.getScreenCTM()));
+    };
+    const near = (a, b, message) => assert(Math.abs(a - b) < 1, `${message}: ${a} is not ${b}`);
+
+    // Whether a straight stretch from p to q passes through a box, beyond its edges.
+    function crosses(p, q, r) {
+      const inside = (v, lo, hi) => v > lo + 1 && v < hi - 1;
+      if (Math.abs(p.x - q.x) < 0.5) return inside(p.x, r.left, r.right) && Math.max(p.y, q.y) > r.top + 1 && Math.min(p.y, q.y) < r.bottom - 1;
+      return inside(p.y, r.top, r.bottom) && Math.max(p.x, q.x) > r.left + 1 && Math.min(p.x, q.x) < r.right - 1;
+    }
+    const passesThrough = (path, r) => path.slice(1).some((q, i) => crosses(path[i], q, r));
+
+    // ---- Drawing ----
+
+    test('draws each kind with its own shape, and its label', () => {
+      const el = chart();
+      assertEqual(node(el, 'start').querySelector('.sb-flowchart__shape').tagName, 'rect');
+      assertEqual(node(el, 'strong').querySelector('.sb-flowchart__shape').tagName, 'polygon');
+      assert(node(el, 'strong').classList.contains('sb-flowchart__node--decision'), 'kind exposed as a class');
+      assert(node(el, 'brew').classList.contains('sb-flowchart__node--step'), 'step by default');
+      assertEqual(node(el, 'strong').querySelector('text').textContent, 'Strong enough?');
+    });
+
+    test('a label can run over several lines', () => {
+      const el = chart({ nodes: [{ id: 'a', label: 'Boil\nthe kettle' }] });
+      assertEqual([...el.querySelectorAll('tspan')].map((t) => t.textContent), ['Boil', 'the kettle']);
+    });
+
+    test('draws a line with its label for each edge between nodes that exist, other than to itself', () => {
+      const el = chart({ ...TEA, edges: [...TEA.edges, { from: 'brew', to: 'nowhere' }, { from: 'brew', to: 'brew' }] });
+      assertEqual(el.querySelectorAll('.sb-flowchart__edge').length, TEA.edges.length);
+      assertEqual(byData(el, '.sb-flowchart__edge-label', 'edgeId', 'strong->brew').textContent, 'no');
+    });
+
+    test('is drawn at its real size, never scaled', () => {
+      const svg = chart().querySelector('svg');
+      assertEqual(Number(svg.getAttribute('width')), svg.viewBox.baseVal.width);
+    });
+
+    test('shows nothing without nodes', () => {
+      assertEqual(mount('<sb-flowchart></sb-flowchart>').innerHTML, '');
+    });
+
+    // ---- Layout ----
+
+    test('each step comes after the steps that lead to it, down the page', () => {
+      const el = chart();
+      const order = ['start', 'brew', 'strong', 'milk', 'add', 'enjoy'].map((id) => box(el, id).top);
+      assert(order.every((top, i) => i === 0 || top > order[i - 1]), `tops in order: ${order}`);
+    });
+
+    test('a step reached by a short way and a long way comes after the long one', () => {
+      const el = chart({
+        nodes: [{ id: 's' }, { id: 'x' }, { id: 'y' }, { id: 'z' }, { id: 't' }],
+        edges: [{ from: 's', to: 'z' }, { from: 'z', to: 't' }, { from: 's', to: 'x' }, { from: 'x', to: 'y' }, { from: 'y', to: 't' }]
+      });
+      assert(box(el, 'y').bottom < box(el, 't').top);
+    });
+
+    test('a loop back doesn\'t push its target further on', () => {
+      const el = chart();
+      assert(box(el, 'brew').bottom < box(el, 'strong').top, 'brew stays above the decision that loops back to it');
+    });
+
+    test('steps in the same place sit side by side without overlapping', () => {
+      const el = chart({ nodes: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], edges: [{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }] });
+      near(box(el, 'b').top, box(el, 'c').top, 'same rank');
+      assert(box(el, 'b').right < box(el, 'c').left, 'side by side');
+    });
+
+    test('direction="right" runs the chart left to right', () => {
+      const el = chart(TEA, 'direction="right"');
+      assert(box(el, 'start').right < box(el, 'brew').left && box(el, 'brew').right < box(el, 'strong').left);
+      el.direction = 'down';
+      assert(box(el, 'start').bottom < box(el, 'brew').top, 'and back down');
+    });
+
+    test('lanes are columns going down, and rows going right, each holding its own steps', () => {
+      for (const direction of ['down', 'right']) {
+        const el = chart(LANES, `direction="${direction}"`);
+        const lane = (id) => byData(el, '[data-lane-id]', 'laneId', id).querySelector('.sb-flowchart__lane').getBoundingClientRect();
+        for (const n of LANES.nodes) {
+          const c = centre(box(el, n.id)), r = lane(n.lane);
+          assert(c.x > r.left && c.x < r.right && c.y > r.top && c.y < r.bottom, `${direction}: ${n.id} in ${n.lane}`);
+        }
+        const [guest, host] = [lane('guest'), lane('host')];
+        assert(direction === 'down' ? guest.right <= host.left + 1 : guest.bottom <= host.top + 1, `${direction}: lanes in order`);
+        assertEqual(el.querySelector('.sb-flowchart__lane-label').textContent, 'Guest');
+      }
+    });
+
+    // ---- Lines ----
+
+    test('a line runs from one step into the next, ending at its edge', () => {
+      const el = chart();
+      const path = points(el, 'start->brew'), target = box(el, 'brew');
+      near(path[0].y, box(el, 'start').bottom, 'leaves the bottom');
+      near(path.at(-1).y, target.top, 'enters the top');
+      near(path.at(-1).x, centre(target).x, 'in the middle');
+    });
+
+    test('a decision\'s branch to one side leaves from that side', () => {
+      const el = chart({ nodes: [{ id: 'd', kind: 'decision' }, { id: 'l' }, { id: 'r' }], edges: [{ from: 'd', to: 'l' }, { from: 'd', to: 'r' }] });
+      const d = box(el, 'd');
+      near(points(el, 'd->l')[0].x, d.left, 'left branch');
+      near(points(el, 'd->r')[0].x, d.right, 'right branch');
+    });
+
+    test('a branch that skips a step goes around it', () => {
+      const el = chart();
+      const path = points(el, 'milk->enjoy');
+      assert(!passesThrough(path, box(el, 'add')), 'clear of the step it skips');
+      near(path.at(-1).y, box(el, 'enjoy').top, 'enters the top');
+    });
+
+    test('a loop goes back around the steps between, and joins the way into its target', () => {
+      const el = chart();
+      const path = points(el, 'strong->brew'), brew = box(el, 'brew');
+      assert(!passesThrough(path, brew) && !passesThrough(path, box(el, 'strong')), 'clear of both steps');
+      near(path.at(-1).y, brew.top, 'enters the top');
+      near(path.at(-1).x, centre(brew).x, 'where the line from above does');
+    });
+
+    test('lines between lanes stay clear of the steps', () => {
+      for (const direction of ['down', 'right']) {
+        const el = chart(LANES, `direction="${direction}"`);
+        for (const id of ['ask->pour', 'pour->drink']) {
+          assert(LANES.nodes.every((n) => !passesThrough(points(el, id), box(el, n.id))), `${direction}: ${id}`);
+        }
+      }
+    });
+
+    // ---- Where the process is ----
+
+    test('marks active and visited steps and edges, without redrawing', () => {
+      const el = chart();
+      const svg = el.querySelector('svg');
+      el.visited = { nodes: ['start', 'brew'], edges: ['start->brew'] };
+      el.active = { nodes: ['strong'], edges: ['brew->strong'] };
+      assert(node(el, 'brew').classList.contains('sb-flowchart__node--visited'), 'visited step');
+      assert(edge(el, 'start->brew').classList.contains('sb-flowchart__edge--visited'), 'visited edge');
+      assert(node(el, 'strong').classList.contains('sb-flowchart__node--active'), 'active step');
+      assert(edge(el, 'brew->strong').classList.contains('sb-flowchart__edge--active'), 'active edge');
+      assertEqual(el.querySelector('svg'), svg, 'same drawing');
+      el.active = {};
+      assertEqual(el.querySelectorAll('.sb-flowchart__node--active').length, 0, 'cleared');
+    });
+
+    test('the marks survive the data being set again', () => {
+      const el = chart();
+      el.active = { nodes: ['milk'] };
+      el.data = { ...TEA };
+      assert(node(el, 'milk').classList.contains('sb-flowchart__node--active'));
+    });
+
+    test('an edge can be named by its own id', () => {
+      const el = chart({ nodes: [{ id: 'a' }, { id: 'b' }], edges: [{ id: 'go', from: 'a', to: 'b' }] });
+      el.active = { edges: ['go'] };
+      assert(edge(el, 'go').classList.contains('sb-flowchart__edge--active'));
+    });
+
+    test('a tone is exposed for colouring', () => {
+      const el = chart({ nodes: [{ id: 'a', tone: 'bad' }] });
+      assert(node(el, 'a').classList.contains('sb-flowchart__node--bad'));
+    });
+
+    // ---- Selection ----
+
+    test('clicking a step or a line fires sb-select', () => {
+      const el = chart();
+      const selections = recordEvents(el, 'sb-select');
+      node(el, 'brew').querySelector('text').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      edge(el, 'strong->brew').querySelector('.sb-flowchart__line').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      assertEqual(selections.map((e) => e.detail), [{ type: 'node', id: 'brew' }, { type: 'edge', id: 'strong->brew' }]);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two charts on one page keep their own marks and direction', () => {
+      mount('<div><sb-flowchart></sb-flowchart><sb-flowchart direction="right"></sb-flowchart></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-flowchart');
+      a.data = TEA;
+      b.data = TEA;
+      a.active = { nodes: ['brew'] };
+      assertEqual([a.querySelectorAll('.sb-flowchart__node--active').length, b.querySelectorAll('.sb-flowchart__node--active').length], [1, 0]);
+      assertEqual([a.direction, b.direction], ['down', 'right']);
+    });
+
+    test('displays labels as text, never as markup', () => {
+      const el = chart({
+        lanes: [{ id: 'l', label: '<b>lane</b>' }],
+        nodes: [{ id: 'a', label: '<i>a</i>', lane: 'l' }, { id: 'b', lane: 'l' }],
+        edges: [{ from: 'a', to: 'b', label: '<b>go</b>' }]
+      });
+      assertEqual(el.querySelectorAll('b, i').length, 0, 'anywhere, since the parser moves such tags out of an svg');
+      assertEqual(node(el, 'a').querySelector('text').textContent, '<i>a</i>');
+    });
+  </script>
+</body>
+</html>

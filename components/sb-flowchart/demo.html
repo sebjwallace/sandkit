@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-flowchart demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-flowchart.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-accent-text); background: var(--sb-accent); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button.quiet { color: var(--sb-text); background: var(--sb-surface-2); }
+    .actions label { display: flex; align-items: center; gap: 6px; }
+    .actions select { font: inherit; color: inherit; background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-flowchart">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A flowchart, optionally in swim lanes, that shows where a process is and how it got there.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>A process is a series of steps and decisions: do this, then that; if so, go here, otherwise there. A flowchart lays them out so the whole process can be seen at once. Swim lanes add who does each step, so the hand-overs between people, teams or systems stand out. As the sandbox runs the process, the chart marks the step it's on and the way it came.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Following a process through.</strong> Step through it and watch the current step move, the path behind it lit up.</li>
+        <li><strong>Seeing who does what.</strong> With lanes, every line that crosses from one lane to another is a hand-over, which is often where things wait or go wrong.</li>
+        <li><strong>Seeing where a process branches and loops.</strong> Decisions and the loops back to earlier steps are easy to miss in prose.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>States a thing moves between.</strong> When it's about what state something is in rather than the steps someone takes, draw a state machine as a graph.</li>
+        <li><strong>Exact positions.</strong> The flowchart lays itself out. If the arrangement itself carries meaning, such as a map, place nodes by hand in a graph.</li>
+        <li><strong>Long, strictly linear procedures.</strong> A numbered list reads better than a column of boxes.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-flowchart/sb-flowchart.js"&gt;&lt;/script&gt;
+&lt;sb-flowchart direction="down"&gt;&lt;/sb-flowchart&gt;
+
+&lt;script&gt;
+  document.querySelector('sb-flowchart').data = {
+    nodes: [
+      { id: 'start', label: 'Thirsty', kind: 'start' },
+      { id: 'tea', label: 'Tea or coffee?', kind: 'decision' },
+      { id: 'kettle', label: 'Boil the kettle' },
+      { id: 'machine', label: 'Use the machine' }
+    ],
+    edges: [
+      { from: 'start', to: 'tea' },
+      { from: 'tea', to: 'kettle', label: 'tea' },
+      { from: 'tea', to: 'machine', label: 'coffee' }
+    ]
+  };
+&lt;/script&gt;</pre>
+      <p>You never place anything: each step goes one rank after the steps that lead to it. Add <code>lanes</code> and give each node a <code>lane</code> for swim lanes. <code>direction="right"</code> runs the chart left to right, with lanes as rows. Kinds are <code>start</code>, <code>end</code>, <code>step</code> (the default), <code>decision</code> and <code>data</code>.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Run the process through it.</strong> As the model moves, set <code>active</code> to where it is and <code>visited</code> to the way it came.</li>
+        <li><strong>Label every branch of a decision,</strong> so the question and its answers read together.</li>
+        <li><strong>Use lanes when hand-overs matter,</strong> and colour a step with a <code>tone</code> where work piles up or fails.</li>
+        <li><strong>Connect it.</strong> Listen for <code>sb-select</code> to explain a step, or to jump the model to it.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Making a cup of tea</h2>
+      <p>A plain flowchart. Step through making a cup: the current step is marked, and the way you came stays lit. It loops while the tea isn't strong enough.</p>
+      <div class="actions"><button id="tea-next">Next step</button><button id="tea-reset" class="quiet">Start again</button><span id="tea-status"></span></div>
+      <sb-flowchart id="tea"></sb-flowchart>
+    </section>
+
+    <section class="example">
+      <h2>Eating at a restaurant</h2>
+      <p>Swim lanes for the customer, the waiter and the kitchen. Every line crossing between lanes is a hand-over. Choose which way it runs.</p>
+      <div class="actions"><label>Direction
+        <select id="restaurant-direction"><option value="right">Left to right, lanes as rows</option><option value="down">Top to bottom, lanes as columns</option></select>
+      </label></div>
+      <sb-flowchart id="restaurant" direction="right"></sb-flowchart>
+    </section>
+  </main>
+
+  <script>
+    // ---- Making a cup of tea ----
+
+    const tea = document.getElementById('tea');
+    tea.data = {
+      nodes: [
+        { id: 'want', label: 'Fancy a cup', kind: 'start' },
+        { id: 'boil', label: 'Boil the kettle' },
+        { id: 'bag', label: 'Teabag in a cup' },
+        { id: 'pour', label: 'Pour the water' },
+        { id: 'brew', label: 'Leave it a minute' },
+        { id: 'strong', label: 'Strong enough?', kind: 'decision' },
+        { id: 'remove', label: 'Take the bag out' },
+        { id: 'milk', label: 'Milk?', kind: 'decision' },
+        { id: 'add', label: 'Add a splash' },
+        { id: 'enjoy', label: 'Enjoy', kind: 'end' }
+      ],
+      edges: [
+        { from: 'want', to: 'boil' }, { from: 'boil', to: 'bag' }, { from: 'bag', to: 'pour' }, { from: 'pour', to: 'brew' },
+        { from: 'brew', to: 'strong' },
+        { from: 'strong', to: 'brew', label: 'no' },
+        { from: 'strong', to: 'remove', label: 'yes' },
+        { from: 'remove', to: 'milk' },
+        { from: 'milk', to: 'add', label: 'yes' },
+        { from: 'add', to: 'enjoy' },
+        { from: 'milk', to: 'enjoy', label: 'no' }
+      ]
+    };
+
+    // One way through: brewed twice, with milk.
+    const TEA_PATH = ['want', 'boil', 'bag', 'pour', 'brew', 'strong', 'brew', 'strong', 'remove', 'milk', 'add', 'enjoy'];
+    let teaStep = 0;
+
+    function showTea() {
+      const path = TEA_PATH.slice(0, teaStep + 1);
+      const edges = path.slice(1).map((id, i) => `${path[i]}->${id}`);
+      tea.visited = { nodes: path, edges };
+      tea.active = { nodes: [path.at(-1)], edges: edges.slice(-1) };
+      document.getElementById('tea-status').textContent = `Step ${teaStep + 1} of ${TEA_PATH.length}`;
+    }
+
+    document.getElementById('tea-next').addEventListener('click', () => { teaStep = Math.min(teaStep + 1, TEA_PATH.length - 1); showTea(); });
+    document.getElementById('tea-reset').addEventListener('click', () => { teaStep = 0; showTea(); });
+
+    // ---- Eating at a restaurant ----
+
+    const restaurant = document.getElementById('restaurant');
+    restaurant.data = {
+      lanes: [{ id: 'customer', label: 'Customer' }, { id: 'waiter', label: 'Waiter' }, { id: 'kitchen', label: 'Kitchen' }],
+      nodes: [
+        { id: 'arrive', label: 'Arrives', kind: 'start', lane: 'customer' },
+        { id: 'seat', label: 'Seats them', lane: 'waiter' },
+        { id: 'choose', label: 'Chooses', lane: 'customer' },
+        { id: 'order', label: 'Takes the order', lane: 'waiter' },
+        { id: 'ticket', label: 'Order ticket', kind: 'data', lane: 'kitchen' },
+        { id: 'cook', label: 'Cooks', lane: 'kitchen' },
+        { id: 'serve', label: 'Serves', lane: 'waiter' },
+        { id: 'eat', label: 'Eats', lane: 'customer' },
+        { id: 'dessert', label: 'Dessert?', kind: 'decision', lane: 'customer' },
+        { id: 'bill', label: 'Brings the bill', lane: 'waiter' },
+        { id: 'pay', label: 'Pays and leaves', kind: 'end', lane: 'customer' }
+      ],
+      edges: [
+        { from: 'arrive', to: 'seat' }, { from: 'seat', to: 'choose' }, { from: 'choose', to: 'order' },
+        { from: 'order', to: 'ticket' }, { from: 'ticket', to: 'cook' }, { from: 'cook', to: 'serve' }, { from: 'serve', to: 'eat' },
+        { from: 'eat', to: 'dessert' },
+        { from: 'dessert', to: 'order', label: 'yes' },
+        { from: 'dessert', to: 'bill', label: 'no' },
+        { from: 'bill', to: 'pay' }
+      ]
+    };
+
+    document.getElementById('restaurant-direction').addEventListener('change', (e) => { restaurant.direction = e.target.value; });
+
+    // ---- Start ----
+
+    showTea();
+  </script>
+</body>
+</html>
