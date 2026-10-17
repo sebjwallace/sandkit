@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-annotate demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-annotate.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+
+    .side-by-side { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
+    @media (max-width: 640px) { .side-by-side { grid-template-columns: 1fr; } }
+    .side { font-size: 13px; }
+    .side h3 { margin: 0 0 6px; font-size: 13px; color: var(--sb-muted); }
+    .side p { margin: 0 0 8px; }
+
+    /* Support call: a transcript, one turn per line */
+    .turn { margin: 0 0 8px; }
+    .speaker { display: inline-block; min-width: 72px; font-weight: 600; color: var(--sb-muted); }
+    .case { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; }
+    .case dt { color: var(--sb-muted); }
+    .case dd { margin: 0; font-weight: 600; }
+    .case dd[data-flag] { color: var(--sb-bad); }
+
+    /* Tenancy: a clause, set like a document */
+    #lease { font-family: Georgia, 'Times New Roman', serif; font-size: 15px; line-height: 1.7; }
+    #lease h4 { margin: 0 0 6px; font: 600 13px var(--sb-font); letter-spacing: 0.04em; text-transform: uppercase; color: var(--sb-muted); }
+    #lease p { margin: 0 0 10px; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-annotate">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Text with the parts that matter marked, and a note on each.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Some of what a sandbox needs to understand comes as text: a call transcript, an interview, a contract, a policy, a witness statement. Most of it is ordinary, and a few phrases carry the weight. This component marks those phrases, like a highlighter pen, and gives each a note: point at a mark and the note appears just above it. The text stays whole and readable, with the reasoning a hover away.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Reading the evidence closely.</strong> Mark the sentences a model was built from, with a note on what each tells it.</li>
+        <li><strong>Seeing patterns in text.</strong> Kinds colour the marks, and the legend counts them; point at a kind to see where it falls, such as every risk clustered at the end of a call.</li>
+        <li><strong>Connecting words to the model.</strong> A mark can light up the part of the model it concerns, and prose elsewhere can light up the mark.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>A note that everyone must read.</strong> Put it in the open, as a callout, not behind a hover.</li>
+        <li><strong>A stream of events.</strong> If the text is really a list of things that happened, a log shows it better.</li>
+        <li><strong>Code.</strong> A code view understands lines and steps; use it for programs, not this.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-annotate/sb-annotate.js"&gt;&lt;/script&gt;
+
+&lt;sb-annotate&gt;
+  &lt;p&gt;I've called &lt;mark data-kind="risk" data-ref="contacts"
+    data-note="Third contact in ten days."&gt;three times&lt;/mark&gt;.&lt;/p&gt;
+&lt;/sb-annotate&gt;
+
+&lt;script&gt;
+  document.querySelector('sb-annotate').kinds = { risk: { label: 'Risk', tone: 'bad' } };
+&lt;/script&gt;</pre>
+      <p>Write the text as ordinary HTML and wrap each phrase that matters in <code>&lt;mark&gt;</code>. <code>data-note</code> is its note, <code>data-kind</code> its kind, and <code>data-ref</code> a name to point at it by. <code>kinds</code> names and colours the kinds, and adds the legend. Clicking a mark pins its note open and fires <code>sb-select</code>, so the sandbox can show what the mark is about.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Say why, not what.</strong> A note that repeats the phrase adds nothing; one that says what it means for the model ("past the escalation threshold") teaches.</li>
+        <li><strong>Choose kinds that sort the evidence,</strong> such as risk, commitment and good practice, so the legend's counts and fading show its shape at a glance.</li>
+        <li><strong>Tie marks to the model.</strong> On <code>sb-select</code> or <code>sb-point</code>, show the part of the model the phrase drives, so reading and the model move together.</li>
+        <li><strong>Mark sparingly.</strong> If everything is marked, nothing is.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A support call, read for what went wrong</h2>
+      <p>A transcript marked by kind. Point at a kind in the legend to see where it falls, or at <span class="point" data-ref="contacts">the repeat contacts</span> and <span class="point" data-ref="promise">the promises made</span>. Click a mark to pin its note and see the case it updates.</p>
+      <div class="side-by-side">
+        <sb-annotate id="call">
+          <p class="turn"><span class="speaker">Agent</span> Thanks for calling, you're through to Sam. How can I help?</p>
+          <p class="turn"><span class="speaker">Customer</span> It's about my broadband again. This is <mark data-kind="risk" data-ref="contacts" data-note="Third contact in ten days: past the escalation threshold of two.">the third time I've rung</mark> and it still drops every evening.</p>
+          <p class="turn"><span class="speaker">Agent</span> I'm sorry about that. <mark data-kind="good" data-ref="history" data-note="Reads the history before asking the customer to repeat themselves.">I can see your last two calls here</mark>, and the line test from Tuesday.</p>
+          <p class="turn"><span class="speaker">Customer</span> <mark data-kind="risk" data-ref="promise" data-note="An earlier promise that was never kept: the trust the next one relies on is already spent.">Last time they said an engineer would call me back.</mark> Nobody did.</p>
+          <p class="turn"><span class="speaker">Agent</span> That shouldn't have happened. <mark data-kind="commitment" data-ref="promise" data-note="A promise with a time and an owner, unlike the last one.">I'll book the engineer myself now, for Thursday morning</mark>, and <mark data-kind="commitment" data-ref="callback" data-note="Agent takes ownership of the follow-up rather than passing it to a queue.">I'll ring you on Friday to check it's fixed.</mark></p>
+          <p class="turn"><span class="speaker">Customer</span> Fine. <mark data-kind="risk" data-ref="churn" data-note="An exit threat: the customer has a deadline of their own.">If it's not sorted by the weekend I'm switching provider.</mark></p>
+        </sb-annotate>
+        <div class="side">
+          <h3>The case</h3>
+          <dl class="case" id="case"></dl>
+          <p id="call-said" style="margin-top: 10px; color: var(--sb-muted)">Click a mark to see what it changes.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="example">
+      <h2>A tenancy clause, read for who must do what</h2>
+      <p>The same component on a contract, with obligations, rights and deadlines told apart. Point at <span class="point" data-ref="notice">every notice period</span> or <span class="point" data-ref="deposit">the deposit</span>.</p>
+      <sb-annotate id="lease">
+        <h4>Clause 7 · Ending the tenancy</h4>
+        <p>7.1 Either party may end this tenancy after the fixed term by giving <mark data-kind="deadline" data-ref="notice" data-note="The tenant's notice: one month, and it must end on a rent day.">not less than one month's written notice</mark>, expiring on the day before a rent day.</p>
+        <p>7.2 The landlord may not end the tenancy during the fixed term <mark data-kind="right" data-note="The tenant's security: no ending early without a legal ground such as rent arrears.">except on a ground set out in law</mark>, and must give <mark data-kind="deadline" data-ref="notice" data-note="Twice the tenant's notice: the landlord's ending costs more warning.">not less than two months' notice</mark>.</p>
+        <p>7.3 On leaving, <mark data-kind="obligation" data-note="'Fair wear and tear' is excused: the tenant needn't return it as new.">the tenant must return the property in the condition recorded at the start, fair wear and tear excepted</mark>.</p>
+        <p>7.4 <mark data-kind="obligation" data-ref="deposit" data-note="The landlord's obligation, with a clock on it.">The landlord must return the deposit</mark> <mark data-kind="deadline" data-ref="deposit" data-note="Ten days from agreeing deductions, not from leaving.">within ten days of the parties agreeing any deductions</mark>.</p>
+      </sb-annotate>
+    </section>
+  </main>
+
+  <script>
+    // ---- Support call: pinning a mark shows the part of the case it updates ----
+
+    const call = document.getElementById('call');
+    call.kinds = {
+      risk: { label: 'Risk', tone: 'bad' },
+      commitment: { label: 'Commitment', tone: 'accent' },
+      good: { label: 'Good practice', tone: 'good' }
+    };
+
+    const theCase = { contacts: 3, escalate: 'Yes: over the threshold', engineer: 'Thursday morning', callback: 'Friday, by Sam', churn: 'Switching at the weekend' };
+    const CASE_FIELDS = [
+      ['contacts', 'Contacts', 'contacts'],
+      ['escalate', 'Escalate', 'contacts'],
+      ['engineer', 'Engineer', 'promise'],
+      ['callback', 'Callback', 'callback'],
+      ['churn', 'Churn risk', 'churn']
+    ];
+
+    function showCase(ref = null) {
+      document.getElementById('case').innerHTML = CASE_FIELDS.map(([key, label, about]) =>
+        `<dt>${label}</dt><dd ${about === ref ? 'data-flag' : ''}>${theCase[key]}</dd>`).join('');
+    }
+
+    call.addEventListener('sb-select', (e) => {
+      showCase(e.detail.ref);
+      const said = e.detail.ref === 'history'
+        ? 'Nothing changes: this is how the agent avoided a fourth explanation.'
+        : 'The flagged lines on the case come from this phrase.';
+      document.getElementById('call-said').textContent = said;
+    });
+
+    // ---- Tenancy clause ----
+
+    document.getElementById('lease').kinds = {
+      obligation: { label: 'Obligation', tone: 'warn' },
+      right: { label: 'Right', tone: 'good' },
+      deadline: { label: 'Deadline', tone: 'accent' }
+    };
+
+    // ---- Pointing words: hovering one lights the marks it names ----
+
+    const annotationOf = (word) => word.closest('.example').querySelector('sb-annotate');
+    for (const word of document.querySelectorAll('.point[data-ref]')) {
+      word.addEventListener('pointerenter', () => { annotationOf(word).highlight = [word.dataset.ref]; });
+      word.addEventListener('pointerleave', () => { annotationOf(word).highlight = []; });
+    }
+
+    // ---- Start ----
+
+    showCase();
+  </script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-annotate tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-annotate.js"></script>
+</head>
+<body>
+  <script>
+    const TEXT = `
+      <p>Customer: I've called <mark data-note="Third contact in ten days." data-kind="risk" data-ref="contacts">three times</mark>
+      and <mark data-note="Nobody owned the case." data-kind="risk" data-ref="owner">nobody's got back to me</mark>.</p>
+      <p>Agent: <mark data-note="Ownership taken." data-kind="good" data-ref="owner">I'll take it on myself</mark>,
+      <mark data-ref="plain">today</mark>.</p>`;
+    const KINDS = { risk: { label: 'Risk', tone: 'bad' }, good: { label: 'Good practice', tone: 'good' }, quote: { label: 'Quote' } };
+
+    const annotate = () => mount(`<sb-annotate>${TEXT}</sb-annotate>`);
+    const mark = (el, ref) => el.querySelector(`mark[data-ref="${ref}"]`);
+    const card = (el) => el.querySelector('.sb-annotate__card');
+    const cardOpen = (el) => card(el).matches(':popover-open');
+    const refs = (el, state) => [...el.querySelectorAll(`mark.sb-annotate--${state}`)].map((m) => m.dataset.ref);
+    const keys = (el) => [...el.querySelectorAll('.sb-annotate__key')];
+    const point = (target) => target.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+    const leave = (el) => el.dispatchEvent(new PointerEvent('pointerleave'));
+
+    // ---- Marks ----
+
+    test('every mark inside is found in order, and can be reached from the keyboard', () => {
+      const el = annotate();
+      assert(el.classList.contains('sb-annotate'));
+      assertEqual(el.marks.map((m) => m.dataset.ref), ['contacts', 'owner', 'owner', 'plain']);
+      assertEqual(el.marks.map((m) => m.tabIndex), [0, 0, 0, 0]);
+    });
+
+    test('marks take their kind\'s tone, and the accent without one', () => {
+      const el = annotate();
+      el.kinds = KINDS;
+      assert(mark(el, 'contacts').classList.contains('sb-annotate--bad'));
+      assert(el.querySelectorAll('mark')[2].classList.contains('sb-annotate--good'));
+      assert(mark(el, 'plain').classList.contains('sb-annotate--accent'));
+    });
+
+    test('marks added later are picked up and counted', async () => {
+      const el = annotate();
+      el.kinds = KINDS;
+      el.querySelector('p').insertAdjacentHTML('beforeend', ' <mark data-kind="quote" data-note="Said twice.">again</mark>');
+      await waitFor(() => keys(el)[2].textContent.includes('1'));
+      assertEqual(el.marks.at(-1).tabIndex, 0);
+    });
+
+    // ---- Legend ----
+
+    test('without kinds there is no legend', () => {
+      assertEqual(annotate().querySelector('.sb-annotate__legend'), null);
+    });
+
+    test('the legend lists each kind in order, counting its marks', () => {
+      const el = annotate();
+      el.kinds = KINDS;
+      const legend = keys(el).map((k) => [k.dataset.kind, k.textContent.replace(/\s+/g, ' ').trim()]);
+      assertEqual(legend, [['risk', 'Risk 2'], ['good', 'Good practice 1'], ['quote', 'Quote 0']]);
+      assertEqual(el.firstElementChild, el.querySelector('.sb-annotate__legend'));
+    });
+
+    test('pointing at a kind fades every mark of another kind, until the pointer leaves', () => {
+      const el = annotate();
+      el.kinds = KINDS;
+      point(keys(el)[0]);
+      assertEqual(refs(el, 'faded'), ['owner', 'plain']);
+      assert(keys(el)[0].classList.contains('sb-annotate__key--highlighted'));
+      leave(el);
+      assertEqual(refs(el, 'faded'), []);
+    });
+
+    // ---- The card ----
+
+    test('pointing at a mark shows its kind and note in a card; leaving hides it', () => {
+      const el = annotate();
+      el.kinds = KINDS;
+      point(mark(el, 'contacts'));
+      assert(cardOpen(el), 'shown');
+      assertEqual(card(el).querySelector('.sb-annotate__kind').textContent, 'Risk');
+      assertEqual(card(el).querySelector('.sb-annotate__note').textContent, 'Third contact in ten days.');
+      assert(card(el).classList.contains('sb-annotate--bad'), 'in the kind\'s tone');
+      leave(el);
+      assert(!cardOpen(el), 'hidden');
+    });
+
+    test('the card sits just above the mark', () => {
+      const el = annotate();
+      el.style.cssText = 'display: block; margin-top: 200px';
+      point(mark(el, 'contacts'));
+      const box = card(el).getBoundingClientRect();
+      const line = mark(el, 'contacts').getClientRects()[0];
+      assert(box.bottom <= line.top && box.bottom > line.top - 20, `card ends at ${box.bottom}, mark starts at ${line.top}`);
+    });
+
+    test('a mark with no note shows no card', () => {
+      const el = annotate();
+      point(mark(el, 'plain'));
+      assert(!cardOpen(el));
+    });
+
+    test('focusing a mark shows its card, as pointing does', () => {
+      const el = annotate();
+      mark(el, 'owner').focus();
+      assert(cardOpen(el));
+      assertEqual(card(el).querySelector('.sb-annotate__kind').textContent, 'risk', 'the kind itself names it without a label');
+    });
+
+    // ---- Pinning ----
+
+    test('clicking a mark pins its card open and fires sb-select', () => {
+      const el = annotate();
+      const selections = recordEvents(el, 'sb-select');
+      mark(el, 'contacts').click();
+      leave(el);
+      assert(cardOpen(el), 'stays open after the pointer leaves');
+      assertEqual(refs(el, 'pinned'), ['contacts']);
+      assertEqual(selections[0].detail, { ref: 'contacts', kind: 'risk', note: 'Third contact in ten days.' });
+    });
+
+    test('pointing at another mark shows its note, then returns to the pinned one', () => {
+      const el = annotate();
+      mark(el, 'contacts').click();
+      point(mark(el, 'owner'));
+      assertEqual(card(el).textContent.includes('Nobody owned'), true);
+      point(el.querySelector('p'));
+      assertEqual(card(el).textContent.includes('Third contact'), true);
+    });
+
+    test('clicking the pinned mark again, clicking elsewhere or Escape unpins it', () => {
+      const el = annotate();
+      const selections = recordEvents(el, 'sb-select');
+      mark(el, 'contacts').click();
+      mark(el, 'contacts').click();
+      assertEqual(refs(el, 'pinned'), []);
+      mark(el, 'contacts').click();
+      document.body.click();
+      assertEqual(refs(el, 'pinned'), []);
+      mark(el, 'contacts').click();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      assertEqual(refs(el, 'pinned'), []);
+      leave(el);
+      assert(!cardOpen(el));
+      assertEqual(selections.length, 3, 'only pinning fires sb-select');
+    });
+
+    test('Enter on a focused mark pins it', () => {
+      const el = annotate();
+      const selections = recordEvents(el, 'sb-select');
+      mark(el, 'plain').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      assertEqual(selections[0].detail, { ref: 'plain', kind: null, note: null });
+    });
+
+    // ---- Pointing and highlighting ----
+
+    test('pointing fires sb-point with the mark\'s ref, and lights other marks sharing it', () => {
+      const el = annotate();
+      const points = recordEvents(el, 'sb-point');
+      point(mark(el, 'owner'));
+      assertEqual(refs(el, 'pointed'), ['owner']);
+      leave(el);
+      assertEqual(points.map((e) => e.detail.ref), ['owner', null]);
+    });
+
+    test('highlight lights every mark with the ref, and clears', () => {
+      const el = annotate();
+      el.highlight = ['owner'];
+      assertEqual(refs(el, 'highlighted'), ['owner', 'owner']);
+      el.highlight = [];
+      assertEqual(refs(el, 'highlighted'), []);
+    });
+
+    // ---- Safety and instances ----
+
+    test('notes and labels are shown as text, never markup', () => {
+      const el = mount('<sb-annotate><mark data-kind="k" data-note="<b>bold</b>">x</mark></sb-annotate>');
+      el.kinds = { k: { label: '<i>kind</i>' } };
+      point(el.querySelector('mark'));
+      assertEqual(card(el).textContent, '<i>kind</i><b>bold</b>');
+      assertEqual(el.querySelector('.sb-annotate__card b, .sb-annotate__card i, .sb-annotate__legend i'), null);
+    });
+
+    test('two instances side by side keep their own kinds, highlights and pins', () => {
+      const area = mount(`<div><sb-annotate>${TEXT}</sb-annotate><sb-annotate>${TEXT}</sb-annotate></div>`);
+      const [one, two] = area.querySelectorAll('sb-annotate');
+      one.kinds = KINDS;
+      two.highlight = ['contacts'];
+      mark(one, 'owner').click();
+      assertEqual([keys(one).length, keys(two).length], [3, 0]);
+      assertEqual([refs(one, 'highlighted'), refs(two, 'highlighted')], [[], ['contacts']]);
+      assertEqual([refs(one, 'pinned'), refs(two, 'pinned')], [['owner'], []]);
+      assert(card(one).id !== card(two).id, 'each has its own card');
+    });
+  </script>
+</body>
+</html>
