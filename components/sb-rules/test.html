@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-rules tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-rules.js"></script>
+</head>
+<body>
+  <script>
+    const COLUMNS = [{ key: 'read', label: 'Read' }, { key: 'write', label: 'Write' }, { key: 'move', label: 'Move' }];
+    const RULES = [
+      { id: 'INC-1', state: 'start', read: '0', write: '0', move: 'right' },
+      { id: 'INC-2', state: 'start', read: '1', write: '1', move: 'right' },
+      { id: 'INC-3', state: 'carry', read: '1', write: '0', move: 'left' },
+      { id: 'INC-4', state: 'carry', read: '0', write: '1', move: 'stay' }
+    ];
+
+    function table(attrs = '', inner = '') {
+      const el = mount(`<sb-rules ${attrs}>${inner}</sb-rules>`);
+      el.columns = COLUMNS;
+      el.rules = RULES;
+      return el;
+    }
+
+    const row = (el, id) => el.querySelector(`.sb-rules__rule[data-rule-id="${id}"]`);
+    const cells = (el, id) => [...row(el, id).children].map((td) => td.textContent.trim());
+
+    // ---- Showing rules ----
+
+    test('shows a row per rule: its code, the chosen columns, and a status', () => {
+      const el = table();
+      assertEqual(el.querySelectorAll('.sb-rules__rule').length, 4);
+      assertEqual(cells(el, 'INC-3'), ['INC-3', '1', '0', 'left', '']);
+      const headings = [...el.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+      assertEqual(headings, ['Rule', 'Read', 'Write', 'Move', 'Status']);
+    });
+
+    test('the code column can be renamed', () => {
+      assertEqual(table('code-label="Code"').querySelector('thead th').textContent, 'Code');
+    });
+
+    test('a column can format its values', () => {
+      const el = mount('<sb-rules></sb-rules>');
+      el.columns = [{ key: 'move', label: 'Move', format: (v) => ({ left: '←', right: '→', stay: '·' })[v] }];
+      el.rules = RULES;
+      assertEqual(cells(el, 'INC-3')[1], '←');
+    });
+
+    test('groups consecutive rules by a field when asked', () => {
+      const el = table('group="state"');
+      const groups = [...el.querySelectorAll('.sb-rules__group')].map((g) => g.textContent.trim());
+      assertEqual(groups, ['start', 'carry']);
+      assertEqual(el.querySelectorAll('tbody').length, 2);
+    });
+
+    test('shows the empty text when there are no rules', () => {
+      assertEqual(mount('<sb-rules empty-text="Write a rule to begin."></sb-rules>').textContent.trim(), 'Write a rule to begin.');
+    });
+
+    // ---- What applies ----
+
+    test('marks the rule about to apply, in words as well as colour', () => {
+      const el = table();
+      el.active = 'INC-2';
+      assert(row(el, 'INC-2').classList.contains('sb-rules__rule--active'), 'highlighted');
+      assert(row(el, 'INC-2').hasAttribute('aria-current'), 'announced');
+      assertEqual(row(el, 'INC-2').querySelector('.sb-rules__status').textContent, 'next');
+    });
+
+    test('marks the rule that just applied', () => {
+      const el = table();
+      el.fired = 'INC-1';
+      assert(row(el, 'INC-1').classList.contains('sb-rules__rule--fired'));
+      assertEqual(row(el, 'INC-1').querySelector('.sb-rules__status').textContent, 'just applied');
+    });
+
+    test('moving the highlight clears the old one', () => {
+      const el = table();
+      el.active = 'INC-1';
+      el.active = 'INC-3';
+      assert(!row(el, 'INC-1').classList.contains('sb-rules__rule--active'));
+      assertEqual(el.querySelectorAll('.sb-rules__rule--active').length, 1);
+    });
+
+    test('the highlight survives the rules being set again', () => {
+      const el = table();
+      el.active = 'INC-4';
+      el.rules = RULES.slice();
+      assert(row(el, 'INC-4').classList.contains('sb-rules__rule--active'));
+    });
+
+    test('an unknown active rule highlights nothing', () => {
+      const el = table();
+      el.active = 'NOPE-1';
+      assertEqual(el.querySelectorAll('.sb-rules__rule--active').length, 0);
+    });
+
+    test('keeps the active rule in view in a long table', () => {
+      const el = mount('<sb-rules style="max-height: 90px"></sb-rules>');
+      el.columns = COLUMNS;
+      el.rules = Array.from({ length: 30 }, (_, i) => ({ id: `R-${i}`, read: '0', write: '1', move: 'right' }));
+      el.active = 'R-25';
+      const rowRect = row(el, 'R-25').getBoundingClientRect(), boxRect = el.getBoundingClientRect();
+      assert(rowRect.top >= boxRect.top && rowRect.bottom <= boxRect.bottom + 1, 'row visible');
+    });
+
+    // ---- Slots and selection ----
+
+    test('a child with slot="<rule id>" replaces that rule\'s code cell, and survives re-rendering', () => {
+      const el = table('', '<b slot="INC-2" class="mine">INC-2!</b>');
+      const mine = el.querySelector('.mine');
+      assertEqual(mine.closest('.sb-rules__rule').dataset.ruleId, 'INC-2');
+      el.rules = RULES.slice();
+      assertEqual(el.querySelector('.mine'), mine);
+      assertEqual(cells(el, 'INC-1')[0], 'INC-1', 'other rules keep their plain code');
+    });
+
+    test('clicking a rule fires sb-select with the rule', () => {
+      const el = table();
+      const selections = recordEvents(el, 'sb-select');
+      row(el, 'INC-3').querySelector('td').click();
+      assertEqual(selections[0].detail.rule, RULES[2]);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two tables on one page keep their own highlights', () => {
+      mount('<div><sb-rules></sb-rules><sb-rules></sb-rules></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-rules');
+      a.rules = RULES;
+      b.rules = RULES;
+      a.active = 'INC-1';
+      assertEqual([a.querySelectorAll('.sb-rules__rule--active').length, b.querySelectorAll('.sb-rules__rule--active').length], [1, 0]);
+    });
+
+    test('displays values as text, never as markup', () => {
+      const el = mount('<sb-rules></sb-rules>');
+      el.columns = [{ key: 'x' }];
+      el.rules = [{ id: '<i>1</i>', x: '<b>bold</b>' }];
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+    });
+  </script>
+</body>
+</html>

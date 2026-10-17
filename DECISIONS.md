@@ -28,6 +28,13 @@ Settled decisions for Sandkit, newest last. One line each, with the reason.
 - **Practices are plain instructions** in `practices/`: how and why to do something well (e.g. identifiers). Not formal skills, just markdown read before using the components that support them. They live apart from components because a practice usually spans several. A manifest names the practice its component supports. Reading path for an agent: catalog → practice → manifest → build.
 - **Libraries:** bundle a small library only when needed, scoped privately (no globals), and list it in the manifest. Duplicate copies across components are fine.
 
+## Component designs
+
+- **`sb-controls` keeps the clock.** While playing it fires `sb-tick` with how many steps to take; fast speeds batch several steps per tick. Step fires the same event with one step, so a sandbox handles a single event and never writes its own timer. Halting is the model's business: the sandbox sets `running = false`. Setting properties never fires the viewer-action events.
+- **`sb-graph` replaces `sb-network`,** covering state machines as well as flow networks: circle or given layouts, loops pointing away from the middle, two-way edges bowed apart, multi-line labels whose lines can be highlighted individually, terminal rings, tones, meters and tokens, framed to fit and never scaled up. Automatic layout waits until a sandbox needs it.
+- **`sb-rules` shows which rule applies,** in words as well as colour ("next", "just applied"). Grouping and per-column formatting; a slot per rule lets a sandbox put a richer code in its cell.
+- **Interaction outranks tone.** A selected or active element shows as such even when it also carries a warning tone.
+
 ## Sandbox shell and theming
 
 - **The sandbox shell** is the environment around the components: header and settings (later navigation). It's `<sb-shell>` in `shell/`, following the same protocol as components.

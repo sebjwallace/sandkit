@@ -107,7 +107,7 @@
       await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
       await nextFrame();
       const page = frame.contentDocument;
-      assertEqual(page.querySelectorAll('.sb-network__node').length, 6, 'network nodes');
+      assertEqual(page.querySelectorAll('.sb-graph__node').length, 6, 'network nodes');
       assert(page.querySelector('#detail h3')?.textContent.includes('Distribution centre'), 'detail panel');
       assertEqual(page.querySelectorAll('.sb-parameters__parameter').length, 2, 'parameters');
       assertEqual(page.querySelectorAll('sb-id.sb-id--unresolved').length, 0, 'every code resolves');

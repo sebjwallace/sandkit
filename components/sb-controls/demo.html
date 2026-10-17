@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-controls demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-controls.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example .note { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .example canvas { display: block; width: 100%; max-width: 480px; aspect-ratio: 2 / 1; margin-top: 12px; border-radius: var(--sb-radius); background: var(--sb-surface-2); image-rendering: pixelated; }
+    .sequence { margin-top: 12px; font: 13px/1.6 ui-monospace, Menlo, Consolas, monospace; word-break: break-word; min-height: 3.2em; }
+    .sequence b { color: var(--sb-accent); }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-controls">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Play, pause, step and speed for anything that runs over time.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Some things are best understood by watching them unfold, and some by taking them one step at a time. <code>sb-controls</code> gives a sandbox both: play at a chosen speed, pause, step once, reset. It keeps the clock itself, telling the sandbox how many steps to take on each tick, so a sandbox never needs its own timer. At high speeds it takes many steps per tick, so a model can race ahead without the page struggling to keep up.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Watching a process unfold.</strong> Stock flowing through a supply chain, cells living and dying, a machine running its program.</li>
+        <li><strong>Slowing down to understand.</strong> Step once at a time through the moment that matters.</li>
+        <li><strong>Racing ahead to see the long run.</strong> Turbo speed shows where a system settles, or whether it ever does.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Models with no notion of time.</strong> A calculation that answers at once needs parameters, not playback.</li>
+        <li><strong>Jumping to any moment.</strong> These controls move forwards. A timeline that scrubs back and forth is a different component.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-controls/sb-controls.js"&gt;&lt;/script&gt;
+&lt;sb-controls&gt;&lt;/sb-controls&gt;
+
+&lt;script&gt;
+  const controls = document.querySelector('sb-controls');
+  controls.addEventListener('sb-tick', (e) =&gt; {
+    for (let i = 0; i &lt; e.detail.steps; i++) model.step();
+    render();
+  });
+  controls.addEventListener('sb-reset', () =&gt; { model.reset(); render(); });
+&lt;/script&gt;</pre>
+      <p>When a model can come to a stop, such as a machine that halts, set <code>controls.running = false</code> in the tick handler once it does.</p>
+
+      <h3>Making it reveal, not just run</h3>
+      <ul>
+        <li><strong>Choose speeds that suit the model.</strong> Name them in its own terms, such as "1 day per second", rather than abstract multipliers.</li>
+        <li><strong>Show the clock in the label,</strong> so people always know how far the model has come.</li>
+        <li><strong>Make Step meaningful.</strong> One step should be one thing people can follow: a move, a day, a generation.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Life that never ends</h2>
+      <p class="note">Conway's Game of Life: each step is a generation. It runs for as long as you let it. Try Turbo, then Step through a single generation.</p>
+      <sb-controls id="life-controls"></sb-controls>
+      <canvas id="life" width="80" height="40"></canvas>
+    </section>
+
+    <section class="example">
+      <h2>A sequence that stops</h2>
+      <p class="note">The Collatz sequence from 27: halve even numbers, triple and add one to odd ones. It always seems to reach 1, and when it does, the sandbox stops the clock.</p>
+      <sb-controls id="collatz-controls"></sb-controls>
+      <div class="sequence" id="sequence"></div>
+    </section>
+  </main>
+
+  <script>
+    // ---- Game of Life ----
+
+    const WIDTH = 80, HEIGHT = 40;
+    const canvas = document.getElementById('life');
+    const context = canvas.getContext('2d');
+    const lifeControls = document.getElementById('life-controls');
+    let cells, generation;
+
+    function seedLife() {
+      cells = Array.from({ length: WIDTH * HEIGHT }, () => Math.random() < 0.25);
+      generation = 0;
+    }
+
+    function stepLife() {
+      const alive = (x, y) => cells[((y + HEIGHT) % HEIGHT) * WIDTH + ((x + WIDTH) % WIDTH)];
+      cells = cells.map((on, i) => {
+        const x = i % WIDTH, y = Math.floor(i / WIDTH);
+        let neighbours = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && alive(x + dx, y + dy)) neighbours++;
+        return neighbours === 3 || (on && neighbours === 2);
+      });
+      generation++;
+    }
+
+    function drawLife() {
+      const style = getComputedStyle(document.documentElement);
+      context.fillStyle = style.getPropertyValue('--sb-surface-2');
+      context.fillRect(0, 0, WIDTH, HEIGHT);
+      context.fillStyle = style.getPropertyValue('--sb-accent');
+      cells.forEach((on, i) => { if (on) context.fillRect(i % WIDTH, Math.floor(i / WIDTH), 1, 1); });
+      lifeControls.label = `Generation ${generation}`;
+    }
+
+    lifeControls.addEventListener('sb-tick', (e) => {
+      for (let i = 0; i < e.detail.steps; i++) stepLife();
+      drawLife();
+    });
+    lifeControls.addEventListener('sb-reset', () => { seedLife(); drawLife(); });
+    document.addEventListener('sb-theme', drawLife);
+
+    // ---- Collatz ----
+
+    const collatzControls = document.getElementById('collatz-controls');
+    collatzControls.speeds = [{ label: 'Slow', value: 2 }, { label: 'Normal', value: 8 }, { label: 'Fast', value: 30 }];
+    collatzControls.speed = 8;
+    let sequence;
+
+    const resetCollatz = () => { sequence = [27]; };
+    const stepCollatz = () => {
+      const n = sequence.at(-1);
+      if (n !== 1) sequence.push(n % 2 ? 3 * n + 1 : n / 2);
+    };
+
+    function drawCollatz() {
+      const n = sequence.at(-1);
+      document.getElementById('sequence').innerHTML = sequence.slice(0, -1).join(' → ') + (sequence.length > 1 ? ' → ' : '') + `<b>${n}</b>`;
+      collatzControls.label = n === 1 ? `Reached 1 in ${sequence.length - 1} steps` : `Step ${sequence.length - 1}`;
+    }
+
+    collatzControls.addEventListener('sb-tick', (e) => {
+      for (let i = 0; i < e.detail.steps; i++) stepCollatz();
+      if (sequence.at(-1) === 1) collatzControls.running = false;
+      drawCollatz();
+    });
+    collatzControls.addEventListener('sb-reset', () => { resetCollatz(); drawCollatz(); });
+
+    // ---- Start ----
+
+    seedLife();
+    drawLife();
+    resetCollatz();
+    drawCollatz();
+  </script>
+</body>
+</html>

@@ -9,16 +9,17 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-id', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-network', 'sb-shell', 'sb-theme-settings'];
+    window.TAGS = ['sb-id', 'sb-rules', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
   <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="../../components/sb-rules/sb-rules.js"></script>
   <script src="../../components/sb-parameters/sb-parameters.js"></script>
   <script src="../../components/sb-log/sb-log.js"></script>
   <script src="../../components/sb-chart/sb-chart.js"></script>
   <script src="../../components/sb-controls/sb-controls.js"></script>
-  <script src="../../components/sb-network/sb-network.js"></script>
+  <script src="../../components/sb-graph/sb-graph.js"></script>
   <script src="../../shell/sb-theme-settings.js"></script>
   <script src="../../shell/sb-shell.js"></script>
 </head>

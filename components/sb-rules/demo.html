@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-rules demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-rules.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example .note { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; font-size: 13px; }
+    .actions button { font: inherit; padding: 5px 14px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); cursor: pointer; }
+    .actions button:hover { background: var(--sb-surface-2); }
+    .actions input[type=range] { width: 220px; accent-color: var(--sb-accent); }
+    .actions output { font-weight: 600; }
+    .tape { display: flex; gap: 4px; margin-bottom: 12px; font: 600 16px ui-monospace, Menlo, Consolas, monospace; }
+    .tape span { width: 32px; height: 36px; display: grid; place-items: center; border: 1px solid var(--sb-border); border-radius: 6px; background: var(--sb-surface-2); }
+    .tape .head { border-color: var(--sb-accent); box-shadow: 0 0 0 2px var(--sb-accent); }
+    .verdict { font-size: 14px; margin: 0; }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-rules">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>The rules a model follows, with the one that applies lit up.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Most models come down to rules: when this, do that. Written down, rules are easy to read and hard to follow, because you can't see which one matters at any moment. <code>sb-rules</code> shows a model's rules as a table and lights up the one about to apply, with the one that just applied marked beside it. As the model runs, the highlight moves, and the connection between rules and behaviour becomes something you can watch.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Machines that follow a program.</strong> Turing machines, cellular automata, protocols: step through and see each rule take its turn.</li>
+        <li><strong>Decisions.</strong> Policies, eligibility rules, a thermostat: change the situation and see which rule decides.</li>
+        <li><strong>Finding gaps.</strong> A situation where no rule lights up is a gap in the rules, made visible.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Rules that interact in a web.</strong> When the point is how rules lead into one another, a graph shows the structure better.</li>
+        <li><strong>Hundreds of rules.</strong> Show the part that matters to the chapter, or group them so the table stays readable.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-rules/sb-rules.js"&gt;&lt;/script&gt;
+&lt;sb-rules&gt;&lt;/sb-rules&gt;
+
+&lt;script&gt;
+  const rules = document.querySelector('sb-rules');
+  rules.columns = [{ key: 'when', label: 'When' }, { key: 'then', label: 'Then' }];
+  rules.rules = [{ id: 'RUL-001', when: 'Stock below 40', then: 'Order up to 100' }];
+  rules.active = 'RUL-001';
+&lt;/script&gt;</pre>
+
+      <h3>Making it reveal, not just list</h3>
+      <ul>
+        <li><strong>Keep <code>active</code> and <code>fired</code> in step with the model.</strong> The highlight is the point; a table that never changes is just a list.</li>
+        <li><strong>Give rules stable codes,</strong> so the table, the explanation and the log can all point at the same rule.</li>
+        <li><strong>Group by what changes least,</strong> such as a machine's state, so people find the rule that applies at a glance.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A machine that adds one</h2>
+      <p class="note">A Turing machine adding one to a binary number. It runs right to the end of the number, then carries back to the left. Step through and watch which rule applies.</p>
+      <div class="actions">
+        <button type="button" id="step">Step</button>
+        <button type="button" id="restart">Start again</button>
+        <output id="machine-status"></output>
+      </div>
+      <div class="tape" id="tape"></div>
+      <sb-rules id="machine" group="state"></sb-rules>
+    </section>
+
+    <section class="example">
+      <h2>A thermostat's decisions</h2>
+      <p class="note">Decision rules rather than a program. Move the temperature and see which rule decides what the heating does.</p>
+      <div class="actions">
+        <label>Temperature <input type="range" id="temperature" min="10" max="30" step="0.5" value="17"></label>
+        <output id="temperature-out"></output>
+      </div>
+      <sb-rules id="thermostat" code-label="Code"></sb-rules>
+      <p class="verdict" id="verdict"></p>
+    </section>
+  </main>
+
+  <script>
+    // ---- A machine that adds one ----
+
+    // For each state and the symbol under the head: what to write, which way to move, and the next state.
+    const PROGRAM = [
+      { id: 'INC-1', state: 'run right', read: '0', write: '0', move: 'right', next: 'run right' },
+      { id: 'INC-2', state: 'run right', read: '1', write: '1', move: 'right', next: 'run right' },
+      { id: 'INC-3', state: 'run right', read: '_', write: '_', move: 'left', next: 'carry' },
+      { id: 'INC-4', state: 'carry', read: '1', write: '0', move: 'left', next: 'carry' },
+      { id: 'INC-5', state: 'carry', read: '0', write: '1', move: 'stay', next: 'done' },
+      { id: 'INC-6', state: 'carry', read: '_', write: '1', move: 'stay', next: 'done' }
+    ];
+    const ARROWS = { left: '←', right: '→', stay: '·' };
+    const machineRules = document.getElementById('machine');
+    machineRules.columns = [
+      { key: 'read', label: 'Reads' },
+      { key: 'write', label: 'Writes' },
+      { key: 'move', label: 'Moves', format: (move) => `${ARROWS[move]} ${move}` },
+      { key: 'next', label: 'Then' }
+    ];
+    machineRules.rules = PROGRAM;
+    let machine;
+
+    function startMachine() {
+      machine = { tape: ['_', '1', '0', '1', '1', '_'], head: 1, state: 'run right', fired: null };
+    }
+
+    const ruleFor = ({ state, tape, head }) => PROGRAM.find((r) => r.state === state && r.read === tape[head]);
+
+    function stepMachine() {
+      const rule = ruleFor(machine);
+      if (!rule) return;
+      machine.tape[machine.head] = rule.write;
+      machine.head += rule.move === 'right' ? 1 : rule.move === 'left' ? -1 : 0;
+      machine.state = rule.next;
+      machine.fired = rule.id;
+    }
+
+    function drawMachine() {
+      document.getElementById('tape').innerHTML = machine.tape.map((symbol, i) => `<span class="${i === machine.head ? 'head' : ''}">${symbol}</span>`).join('');
+      const next = ruleFor(machine);
+      machineRules.active = next?.id;
+      machineRules.fired = machine.fired;
+      const number = machine.tape.join('').replace(/_/g, '');
+      document.getElementById('machine-status').textContent = machine.state === 'done' ? `Done: the tape now reads ${number}` : `State: ${machine.state}`;
+      document.getElementById('step').disabled = !next;
+    }
+
+    document.getElementById('step').addEventListener('click', () => { stepMachine(); drawMachine(); });
+    document.getElementById('restart').addEventListener('click', () => { startMachine(); drawMachine(); });
+
+    // ---- A thermostat's decisions ----
+
+    const DECISIONS = [
+      { id: 'TH-1', when: 'Below 16 °C', then: 'Heat at full power', test: (t) => t < 16 },
+      { id: 'TH-2', when: '16 °C to 19.5 °C', then: 'Heat gently', test: (t) => t >= 16 && t < 20 },
+      { id: 'TH-3', when: '20 °C to 23.5 °C', then: 'Do nothing', test: (t) => t >= 20 && t < 24 },
+      { id: 'TH-4', when: '24 °C and above', then: 'Open the vents', test: (t) => t >= 24 }
+    ];
+    const thermostat = document.getElementById('thermostat');
+    thermostat.columns = [{ key: 'when', label: 'When it is' }, { key: 'then', label: 'The thermostat will' }];
+    thermostat.rules = DECISIONS;
+    const temperature = document.getElementById('temperature');
+    let lastDecision = null;
+
+    function decide() {
+      const t = Number(temperature.value);
+      const rule = DECISIONS.find((r) => r.test(t));
+      if (rule.id !== thermostat.active) {
+        lastDecision = thermostat.active;
+        thermostat.fired = lastDecision;
+      }
+      thermostat.active = rule.id;
+      document.getElementById('temperature-out').textContent = `${t.toFixed(1)} °C`;
+      document.getElementById('verdict').textContent = `${rule.id} decides: ${rule.then.toLowerCase()}.`;
+    }
+
+    temperature.addEventListener('input', decide);
+
+    // ---- Start ----
+
+    startMachine();
+    drawMachine();
+    decide();
+  </script>
+</body>
+</html>

@@ -9,6 +9,8 @@
 <body>
   <script>
     const click = (controls, action) => controls.querySelector(`[data-action="${action}"]`).click();
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const totalSteps = (ticks) => ticks.reduce((sum, e) => sum + e.detail.steps, 0);
 
     test('Play and Pause alternate, firing sb-play then sb-pause', () => {
       const controls = mount('<sb-controls></sb-controls>');
@@ -28,20 +30,76 @@
       assert(controls.querySelector('[data-action="play"]').textContent.includes('Pause'));
     });
 
-    test('Step and Reset fire their events', () => {
+    test('Step fires one tick of one step', () => {
       const controls = mount('<sb-controls></sb-controls>');
-      const steps = recordEvents(controls, 'sb-step');
-      const resets = recordEvents(controls, 'sb-reset');
+      const ticks = recordEvents(controls, 'sb-tick');
       click(controls, 'step');
+      assertEqual(ticks.map((e) => e.detail.steps), [1]);
+    });
+
+    test('Reset fires sb-reset', () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      const resets = recordEvents(controls, 'sb-reset');
       click(controls, 'reset');
-      assertEqual([steps.length, resets.length], [1, 1]);
+      assertEqual(resets.length, 1);
     });
 
     test('events bubble, so a page can listen higher up', () => {
       const controls = mount('<sb-controls></sb-controls>');
-      const steps = recordEvents(document.body, 'sb-step');
+      const ticks = recordEvents(document.body, 'sb-tick');
       click(controls, 'step');
-      assertEqual(steps.length, 1);
+      assertEqual(ticks.length, 1);
+    });
+
+    // ---- The clock ----
+
+    test('while playing, ticks arrive at roughly the chosen speed', async () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      controls.speed = 20;
+      const ticks = recordEvents(controls, 'sb-tick');
+      click(controls, 'play');
+      await wait(500);
+      const steps = totalSteps(ticks);
+      assert(steps >= 5 && steps <= 15, `expected about 10 steps in half a second, got ${steps}`);
+    });
+
+    test('fast speeds take several steps per tick', async () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      controls.speed = 600;
+      const ticks = recordEvents(controls, 'sb-tick');
+      controls.running = true;
+      await wait(200);
+      assert(ticks.some((e) => e.detail.steps > 1), 'some tick carried several steps');
+    });
+
+    test('pausing stops the ticks', async () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      controls.speed = 60;
+      controls.running = true;
+      await wait(100);
+      controls.running = false;
+      const ticks = recordEvents(controls, 'sb-tick');
+      await wait(150);
+      assertEqual(ticks.length, 0);
+    });
+
+    test('setting running does not fire sb-play or sb-pause, which report the viewer\'s actions', () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      const plays = recordEvents(controls, 'sb-play');
+      const pauses = recordEvents(controls, 'sb-pause');
+      controls.running = true;
+      controls.running = false;
+      assertEqual([plays.length, pauses.length], [0, 0]);
+    });
+
+    test('a removed controls element stops its clock', async () => {
+      const controls = mount('<sb-controls></sb-controls>');
+      controls.speed = 60;
+      controls.running = true;
+      controls.remove();
+      const ticks = recordEvents(controls, 'sb-tick');
+      await wait(150);
+      assertEqual(ticks.length, 0);
     });
 
     test('offers the given speeds and reports a change as a number', () => {

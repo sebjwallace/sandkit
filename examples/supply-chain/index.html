@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
   <script src="../../shell/sb-theme-settings.js"></script>
   <script src="../../shell/sb-shell.js"></script>
-  <script src="../../components/sb-network/sb-network.js"></script>
+  <script src="../../components/sb-graph/sb-graph.js"></script>
   <script src="../../components/sb-chart/sb-chart.js"></script>
   <script src="../../components/sb-controls/sb-controls.js"></script>
   <script src="../../components/sb-log/sb-log.js"></script>
@@ -32,7 +32,7 @@
 
     <div class="layout">
       <div class="panel network-panel">
-        <sb-network id="network" width="700" height="400" selected="DC-1"></sb-network>
+        <sb-graph id="network" selected="DC-1"></sb-graph>
         <div class="stats" id="stats"></div>
       </div>
 
@@ -54,7 +54,6 @@
     const $ = (id) => document.getElementById(id);
     const network = $('network'), chart = $('chart'), controls = $('controls'), log = $('log'), parameters = $('parameters');
     let selected = 'DC-1';
-    let timer = null;
     let detailFor = null; // the location the detail panel was built for
 
     // ---- Controls ----
@@ -65,16 +64,16 @@
     ];
     controls.speed = 6;
 
-    const tick = () => { model.step(); render(); };
-    const start = () => { timer = setInterval(tick, 1000 / controls.speed); };
-    const stop = () => { clearInterval(timer); timer = null; };
-
-    controls.addEventListener('sb-play', start);
-    controls.addEventListener('sb-pause', stop);
-    controls.addEventListener('sb-step', tick);
+    controls.addEventListener('sb-tick', (e) => {
+      for (let i = 0; i < e.detail.steps; i++) model.step();
+      render();
+    });
     controls.addEventListener('sb-reset', () => { model.reset(); render(); });
-    controls.addEventListener('sb-speed', () => { if (timer) { stop(); start(); } });
-    network.addEventListener('sb-select', (e) => { selected = e.detail.id; render(); });
+    network.addEventListener('sb-select', (e) => {
+      if (e.detail.type !== 'node') return;
+      selected = e.detail.id;
+      render();
+    });
 
     // ---- Codes ----
     // Every sb-id on the page asks here what its code refers to.
@@ -127,14 +126,15 @@
       return {
         id: n.id, label: n.name, type: n.type, x: n.x, y: n.y,
         sublabel: n.type === 'supplier' ? `${n.leadHours}h to DC` : `Stock ${n.stock}`,
-        status: stockStatus(n), value: n.stock, max: n.capacity
+        tone: stockTone(n), value: n.stock, max: n.capacity
       };
     }
 
-    function stockStatus(n) {
-      if (n.type === 'supplier') return null;
-      if (n.stock === 0) return 'out';
-      return n.stock < n.reorderPoint ? 'low' : 'ok';
+    // Only trouble gets a tone, so it stands out: low stock warns, an empty shelf is bad.
+    function stockTone(n) {
+      if (n.type === 'supplier') return undefined;
+      if (n.stock === 0) return 'bad';
+      return n.stock < n.reorderPoint ? 'warn' : undefined;
     }
 
     function upstreamOf(n) {

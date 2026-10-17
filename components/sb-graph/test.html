@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-graph tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-graph.js"></script>
+</head>
+<body>
+  <script>
+    const MACHINE = {
+      nodes: [
+        { id: 'q0', label: 'q0', shape: 'circle' },
+        { id: 'q1', label: 'q1', shape: 'circle' },
+        { id: 'done', label: 'Done', shape: 'circle', terminal: true, tone: 'good' }
+      ],
+      edges: [
+        { from: 'q0', to: 'q0', label: [{ id: 'R1', text: '0 → 0, R' }, { id: 'R2', text: '1 → 1, R' }] },
+        { from: 'q0', to: 'q1', label: 'blank' },
+        { from: 'q1', to: 'q0', label: 'back' },
+        { id: 'finish', from: 'q1', to: 'done', label: 'stop\nnow' }
+      ]
+    };
+
+    const NETWORK = {
+      nodes: [
+        { id: 'A', label: 'Supplier', x: 0, y: 0 },
+        { id: 'B', label: 'Store', x: 300, y: 0, sublabel: 'Stock 30', value: 30, max: 120, tone: 'warn' }
+      ],
+      edges: [{ from: 'A', to: 'B' }],
+      tokens: [{ from: 'A', to: 'B', progress: 0.5, label: 12 }]
+    };
+
+    function graph(data, attrs = '') {
+      const el = mount(`<sb-graph ${attrs}></sb-graph>`);
+      el.data = data;
+      return el;
+    }
+
+    const node = (el, id) => el.querySelector(`[data-node-id="${id}"]`);
+    const edgePath = (el, id) => el.querySelector(`.sb-graph__edge-hit[data-edge-id="${id}"]`).previousElementSibling;
+    const centreOf = (el, id) => node(el, id).getAttribute('transform').match(/[-\d.]+/g).map(Number);
+
+    // ---- Nodes ----
+
+    test('draws each node with its label, in the shape asked for', () => {
+      const el = graph(MACHINE);
+      assertEqual(el.querySelectorAll('.sb-graph__node').length, 3);
+      assertEqual(node(el, 'q0').querySelector('.sb-graph__label').textContent, 'q0');
+      assert(node(el, 'q0').querySelector('circle.sb-graph__shape'), 'circle');
+      assert(node(graph(NETWORK), 'A').querySelector('rect.sb-graph__shape'), 'boxes by default');
+    });
+
+    test('marks terminal nodes with a second ring, and nodes with their tone', () => {
+      const el = graph(MACHINE);
+      assert(node(el, 'done').querySelector('.sb-graph__ring'), 'ring');
+      assert(node(el, 'done').classList.contains('sb-graph__node--good'), 'tone');
+    });
+
+    test('shows a sublabel and a meter filled in proportion to value over max', () => {
+      const store = node(graph(NETWORK), 'B');
+      assertEqual(store.querySelector('.sb-graph__sublabel').textContent, 'Stock 30');
+      const track = Number(store.querySelector('.sb-graph__meter-track').getAttribute('width'));
+      assertEqual(Number(store.querySelector('.sb-graph__meter').getAttribute('width')), track * 30 / 120);
+    });
+
+    test('keeps given positions', () => {
+      const el = graph(NETWORK);
+      assertEqual(centreOf(el, 'B')[0] - centreOf(el, 'A')[0], 300);
+    });
+
+    test('places nodes without positions evenly around a circle', () => {
+      const el = graph(MACHINE);
+      const [a, b, c] = ['q0', 'q1', 'done'].map((id) => centreOf(el, id));
+      const distance = (p, q) => Math.round(Math.hypot(p[0] - q[0], p[1] - q[1]));
+      assertEqual(distance(a, b), distance(b, c));
+      assertEqual(distance(b, c), distance(c, a));
+    });
+
+    // ---- Edges ----
+
+    test('draws an arrowed path for each edge, ending at the nodes\' outlines', () => {
+      const el = graph(NETWORK);
+      const path = edgePath(el, 'A->B');
+      assert(path.getAttribute('marker-end').includes('arrow'), 'arrowhead');
+      const [startX] = path.getAttribute('d').match(/[-\d.]+/g).map(Number);
+      assertEqual(startX, 50, 'starts at the right edge of the 100-wide box at x = 0');
+    });
+
+    test('draws a loop for a node connected to itself', () => {
+      assert(edgePath(graph(MACHINE), 'q0->q0').getAttribute('d').includes('C'), 'a curve back to itself');
+    });
+
+    test('loops point away from the middle of the graph, in every direction', () => {
+      const el = graph({
+        nodes: [{ id: 'L', x: 0, y: 0 }, { id: 'R', x: 300, y: 0 }],
+        edges: [{ from: 'L', to: 'L', label: 'left' }, { from: 'R', to: 'R', label: 'right' }]
+      });
+      const labelX = (id) => Number(el.querySelector(`text[data-edge-id="${id}"] tspan`).getAttribute('x'));
+      assert(labelX('L->L') < -50, 'the left node\'s loop reaches left');
+      assert(labelX('R->R') > 350, 'the right node\'s loop reaches right');
+    });
+
+    test('bows edges that run both ways apart, so they don\'t overlap', () => {
+      const el = graph(MACHINE);
+      const control = (id) => edgePath(el, id).getAttribute('d').match(/Q([-\d.]+),([-\d.]+)/).slice(1).map(Number);
+      const there = control('q0->q1'), back = control('q1->q0');
+      assert(Math.hypot(there[0] - back[0], there[1] - back[1]) > 10, 'the two curves bend to different sides');
+    });
+
+    test('shows labels, one line each, from a list or from text with line breaks', () => {
+      const el = graph(MACHINE);
+      const lines = (id) => [...el.querySelectorAll(`text[data-edge-id="${id}"] tspan`)].map((t) => t.textContent);
+      assertEqual(lines('q0->q0'), ['0 → 0, R', '1 → 1, R']);
+      assertEqual(lines('finish'), ['stop', 'now']);
+    });
+
+    test('ignores edges and tokens that refer to unknown nodes', () => {
+      const el = graph({ nodes: NETWORK.nodes, edges: [{ from: 'A', to: 'missing' }], tokens: [{ from: 'missing', to: 'B' }] });
+      assertEqual(el.querySelectorAll('.sb-graph__edge, .sb-graph__token').length, 0);
+    });
+
+    // ---- What is active ----
+
+    test('highlights active nodes, edges and individual label lines', () => {
+      const el = graph(MACHINE);
+      el.active = { nodes: ['q0'], edges: ['q0->q0'], lines: ['R2'] };
+      assert(node(el, 'q0').classList.contains('sb-graph__node--active'), 'node');
+      assert(edgePath(el, 'q0->q0').classList.contains('sb-graph__edge--active'), 'edge');
+      const active = [...el.querySelectorAll('.sb-graph__line--active')].map((t) => t.textContent);
+      assertEqual(active, ['1 → 1, R'], 'only the line that applies');
+    });
+
+    test('an edge with an id is known by it', () => {
+      const el = graph(MACHINE);
+      el.active = { edges: ['finish'] };
+      assert(edgePath(el, 'finish').classList.contains('sb-graph__edge--active'));
+    });
+
+    // ---- Tokens ----
+
+    test('places a token part-way along its edge', () => {
+      const token = graph(NETWORK).querySelector('.sb-graph__token');
+      assertEqual(Number(token.getAttribute('cx')), 150, 'halfway between the box outlines at 50 and 250');
+    });
+
+    // ---- Selection ----
+
+    test('pressing a node selects it, and fires sb-select', () => {
+      const el = graph(NETWORK);
+      const selections = recordEvents(el, 'sb-select');
+      node(el, 'B').querySelector('rect').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      assertEqual(el.selected, 'B');
+      assertEqual(selections[0].detail, { type: 'node', id: 'B' });
+      assert(node(el, 'B').classList.contains('sb-graph__node--selected'));
+    });
+
+    test('pressing an edge fires sb-select for the edge', () => {
+      const el = graph(MACHINE);
+      const selections = recordEvents(el, 'sb-select');
+      el.querySelector('.sb-graph__edge-hit[data-edge-id="finish"]').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      assertEqual(selections[0].detail, { type: 'edge', id: 'finish' });
+    });
+
+    // ---- Framing ----
+
+    test('frames the content without scaling it up', () => {
+      const svg = graph(NETWORK).querySelector('svg');
+      const [, , width] = svg.getAttribute('viewBox').split(' ').map(Number);
+      assertEqual(Number(svg.getAttribute('width')), width);
+    });
+
+    test('frames loop labels too, so they are never cut off', () => {
+      const el = graph(MACHINE);
+      const [, top] = el.querySelector('svg').getAttribute('viewBox').split(' ').map(Number);
+      const highestLine = Math.min(...[...el.querySelectorAll('tspan')].map((t) => Number(t.getAttribute('y'))));
+      assert(highestLine - 12 > top, 'the top line sits inside the frame');
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two graphs on one page have their own arrowheads and selections', () => {
+      mount('<div><sb-graph></sb-graph><sb-graph></sb-graph></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-graph');
+      a.data = NETWORK;
+      b.data = NETWORK;
+      assert(a.querySelector('marker').id !== b.querySelector('marker').id, 'unique marker ids');
+      node(a, 'B').querySelector('rect').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      assertEqual([a.selected, b.selected], ['B', null]);
+    });
+
+    test('displays labels as text, never as markup', () => {
+      const el = graph({ nodes: [{ id: 'X', label: '<b>bold</b>' }, { id: 'Y' }], edges: [{ from: 'X', to: 'Y', label: '<i>x</i>' }] });
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+    });
+  </script>
+</body>
+</html>

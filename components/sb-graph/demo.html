@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-graph demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-graph.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example .note { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; font-size: 13px; }
+    .actions button { font: inherit; padding: 5px 14px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); cursor: pointer; }
+    .actions button:hover { background: var(--sb-surface-2); }
+    .actions output { color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-graph">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Things joined by connections, with what's happening now lit up.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Many systems are best understood as things and the connections between them: the states a machine can be in and the moves between them, the stages of a workflow, the places goods or water or messages flow between. <code>sb-graph</code> draws them, and lights up what is happening now: the current state, the connection about to be taken, even the single rule on that connection that applies. Watching the highlight move is often the moment a system clicks.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>State machines.</strong> Turnstiles, traffic lights, Turing machines, protocols, an order's lifecycle.</li>
+        <li><strong>Flows and networks.</strong> Supply chains, water and power networks, services passing messages, with things moving along the connections.</li>
+        <li><strong>Workflows.</strong> Who passes what to whom, and where things wait.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Large graphs.</strong> Dozens of nodes become a tangle. Show the part that matters, or split it across chapters.</li>
+        <li><strong>Graphs that need automatic layout.</strong> This version places nodes in a circle or where you put them. Hand-placed positions read best for anything beyond a handful of nodes.</li>
+        <li><strong>Quantities over time.</strong> A chart says more about how a level changes than a meter does.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-graph/sb-graph.js"&gt;&lt;/script&gt;
+&lt;sb-graph&gt;&lt;/sb-graph&gt;
+
+&lt;script&gt;
+  const graph = document.querySelector('sb-graph');
+  graph.data = {
+    nodes: [{ id: 'locked', label: 'Locked', shape: 'circle' }, { id: 'open', label: 'Unlocked', shape: 'circle' }],
+    edges: [{ from: 'locked', to: 'open', label: 'coin' }, { from: 'open', to: 'locked', label: 'push' }]
+  };
+  graph.active = { nodes: ['locked'] };
+&lt;/script&gt;</pre>
+
+      <h3>Making it reveal, not just diagram</h3>
+      <ul>
+        <li><strong>Keep <code>active</code> in step with the model.</strong> Highlight the current state and the transition just taken on every step.</li>
+        <li><strong>Give rule lines ids.</strong> When several rules share a connection, highlighting the one that applied shows exactly why the model moved.</li>
+        <li><strong>Use tones for trouble only.</strong> A warning or a failure should stand out against calm nodes.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A turnstile</h2>
+      <p class="note">A state machine with two states. Insert a coin or push the arm, and watch which transition, and which rule, applies.</p>
+      <div class="actions">
+        <button type="button" data-input="coin">Insert coin</button>
+        <button type="button" data-input="push">Push</button>
+        <output id="turnstile-status"></output>
+      </div>
+      <sb-graph id="turnstile"></sb-graph>
+    </section>
+
+    <section class="example">
+      <h2>A water network</h2>
+      <p class="note">Water flows from a reservoir through treatment to a tower and on to two districts. Meters show each level; the warning shows a tower running low.</p>
+      <sb-graph id="water"></sb-graph>
+    </section>
+  </main>
+
+  <script>
+    // ---- Turnstile ----
+
+    const turnstile = document.getElementById('turnstile');
+    turnstile.data = {
+      nodes: [
+        { id: 'locked', label: 'Locked', shape: 'circle', x: 0, y: 0 },
+        { id: 'unlocked', label: 'Unlocked', shape: 'circle', x: 260, y: 0 }
+      ],
+      edges: [
+        { from: 'locked', to: 'unlocked', label: [{ id: 'T1', text: 'coin: unlock' }] },
+        { from: 'unlocked', to: 'locked', label: [{ id: 'T2', text: 'push: lock behind' }] },
+        { from: 'locked', to: 'locked', label: [{ id: 'T3', text: 'push: stay locked' }] },
+        { from: 'unlocked', to: 'unlocked', label: [{ id: 'T4', text: 'coin: keep coin' }] }
+      ]
+    };
+
+    // The rules: for each state and input, the next state and the rule that says so.
+    const RULES = {
+      locked: { coin: ['unlocked', 'T1'], push: ['locked', 'T3'] },
+      unlocked: { push: ['locked', 'T2'], coin: ['unlocked', 'T4'] }
+    };
+    let state = 'locked';
+    turnstile.active = { nodes: [state] };
+
+    document.querySelectorAll('[data-input]').forEach((button) => button.addEventListener('click', () => {
+      const input = button.dataset.input;
+      const [next, rule] = RULES[state][input];
+      turnstile.active = { nodes: [next], edges: [`${state}->${next}`], lines: [rule] };
+      document.getElementById('turnstile-status').textContent = `${input}: ${state} → ${next}`;
+      state = next;
+    }));
+
+    // ---- Water network ----
+
+    const water = document.getElementById('water');
+    const levels = { reservoir: 900, works: 300, tower: 420, east: 60, west: 75 };
+    const CAPACITY = { reservoir: 1000, works: 400, tower: 600, east: 100, west: 100 };
+    const PIPES = [['reservoir', 'works'], ['works', 'tower'], ['tower', 'east'], ['tower', 'west']];
+    let progress = 0;
+
+    function drawWater() {
+      const node = (id, label, x, y) => ({
+        id, label, x, y, sublabel: `${Math.round(levels[id])} m³`, value: levels[id], max: CAPACITY[id],
+        tone: levels[id] < CAPACITY[id] * 0.25 ? 'warn' : undefined
+      });
+      water.data = {
+        nodes: [node('reservoir', 'Reservoir', 0, 100), node('works', 'Treatment works', 220, 100), node('tower', 'Water tower', 440, 100),
+          node('east', 'East district', 660, 30), node('west', 'West district', 660, 170)],
+        edges: PIPES.map(([from, to]) => ({ from, to })),
+        tokens: PIPES.map(([from, to], i) => ({ from, to, progress: (progress + i * 0.25) % 1, label: '💧' }))
+      };
+    }
+
+    // Districts draw water steadily; the tower refills them, and the works refill the tower.
+    setInterval(() => {
+      progress = (progress + 0.02) % 1;
+      levels.east = Math.max(0, levels.east - 0.6) + (levels.tower > 0 ? 0.5 : 0);
+      levels.west = Math.max(0, levels.west - 0.4) + (levels.tower > 0 ? 0.5 : 0);
+      levels.tower = Math.max(0, levels.tower - 1.2 + 0.4);
+      drawWater();
+    }, 80);
+
+    drawWater();
+  </script>
+</body>
+</html>
