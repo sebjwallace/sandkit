@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-bars demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-bars.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-accent-text); background: var(--sb-accent); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button.quiet { color: var(--sb-text); background: var(--sb-surface-2); }
+    .actions label { display: flex; align-items: center; gap: 6px; }
+    .actions input[type="range"] { accent-color: var(--sb-accent); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-bars">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A set of things compared on one measure, with how each moved since the last update.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Often the question isn't how one thing changes over time, but how several things compare right now: which store is lowest on stock, which category is over budget, which town has the most rain. Bars put them side by side on one scale, so the longest and shortest stand out at once. When the model moves on, each bar shows how far it moved, with a faint mark where it was.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Finding the biggest and the smallest.</strong> Sort the bars and the answer is at the top.</li>
+        <li><strong>Seeing who's past a line.</strong> A reorder level, a budget, a safe limit, drawn across every bar.</li>
+        <li><strong>Watching a step's effect across many things.</strong> Each bar says which way it moved, and whether that's good.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Change over time.</strong> A line chart shows the history of one or two things.</li>
+        <li><strong>Several measures for each thing.</strong> A table compares many columns at once.</li>
+        <li><strong>One or two numbers.</strong> Headline figures say it more plainly.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-bars/sb-bars.js"&gt;&lt;/script&gt;
+&lt;sb-bars sort="descending" better="higher"&gt;&lt;/sb-bars&gt;
+
+&lt;script&gt;
+  const bars = document.querySelector('sb-bars');
+  bars.lines = [{ value: 40, label: 'Reorder', tone: 'warn' }];
+  // Whenever the model changes:
+  bars.bars = model.stores.map((s) => ({ id: s.id, label: s.name, value: s.stock }));
+&lt;/script&gt;</pre>
+      <p>Set the bars again whenever the model changes; each bar with an <code>id</code> shows how it moved. Say whether <code>higher</code> or <code>lower</code> is <code>better</code> so the changes read as good or bad news. Negative values grow to the left of zero.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Draw the line that matters,</strong> such as a limit or a target, so each bar answers "is this all right?"</li>
+        <li><strong>Sort when the ranking is the point;</strong> keep a fixed order when people need to find the same bar each time.</li>
+        <li><strong>Use tone for bars past a threshold,</strong> and only those.</li>
+        <li><strong>Point at bars from the prose</strong> with <code>highlight</code>, so a sentence about one store lights its bar.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Stock across a chain of shops</h2>
+      <p>Each day every shop sells some stock, and any shop below the <span class="point" data-ids="reorder">reorder level</span> gets a delivery the next morning. Watch which shops dip, and which recover. <span class="point" data-ids="harbour">The harbour shop</span> is the busiest.</p>
+      <div class="actions">
+        <button id="stock-next">Next day</button><button id="stock-reset" class="quiet">Start again</button>
+        <label><input type="checkbox" id="stock-sort"> Sort by stock</label>
+        <label><input type="checkbox" id="stock-columns"> As columns</label>
+        <span id="stock-day"></span>
+      </div>
+      <sb-bars id="stock" better="higher" max="120"></sb-bars>
+    </section>
+
+    <section class="example">
+      <h2>Over or under budget</h2>
+      <p>How much is left in each part of a month's budget, as columns; below zero is overspent. The names are too long to fit under the columns, so each has a number and a legend names them: point at either. Spend more on <span class="point" data-ids="eating">eating out</span> and watch it slide past zero, while <span class="point" data-ids="rent bills">the fixed costs</span> stay put.</p>
+      <div class="actions"><label>Eating out <input type="range" id="eating" min="0" max="250" step="10" value="90"></label><span id="eating-value"></span></div>
+      <sb-bars id="budget" orientation="vertical" better="higher"></sb-bars>
+    </section>
+  </main>
+
+  <script>
+    // ---- Stock across a chain of shops ----
+    // A small model: shops sell each day; below the reorder level, a delivery tops them up.
+
+    const stock = document.getElementById('stock');
+    const REORDER = 40, FULL = 100;
+    const SHOPS = [
+      { id: 'high', label: 'High Street', sells: 12 },
+      { id: 'harbour', label: 'Harbour', sells: 22 },
+      { id: 'station', label: 'Station', sells: 16 },
+      { id: 'park', label: 'Park Road', sells: 8 },
+      { id: 'mill', label: 'Old Mill', sells: 10 }
+    ];
+    let shelves, ordered, day;
+
+    function startStock() {
+      shelves = Object.fromEntries(SHOPS.map((s) => [s.id, 70]));
+      ordered = new Set();
+      day = 1;
+      showStock();
+    }
+
+    function nextDay() {
+      for (const shop of SHOPS) {
+        if (ordered.has(shop.id)) shelves[shop.id] = FULL;
+        const sold = Math.min(shelves[shop.id], Math.round(shop.sells * (0.6 + Math.random() * 0.8)));
+        shelves[shop.id] -= sold;
+      }
+      ordered = new Set(SHOPS.filter((s) => shelves[s.id] < REORDER).map((s) => s.id));
+      day += 1;
+      showStock();
+    }
+
+    function showStock() {
+      stock.lines = [{ id: 'reorder', value: REORDER, label: 'Reorder level', tone: 'warn' }];
+      stock.bars = SHOPS.map((s) => ({
+        id: s.id, label: s.label, value: shelves[s.id],
+        tone: shelves[s.id] === 0 ? 'bad' : shelves[s.id] < REORDER ? 'warn' : undefined
+      }));
+      document.getElementById('stock-day').textContent = `Day ${day}`;
+    }
+
+    document.getElementById('stock-next').addEventListener('click', nextDay);
+    document.getElementById('stock-reset').addEventListener('click', startStock);
+    document.getElementById('stock-columns').addEventListener('change', (e) => {
+      if (e.target.checked) stock.setAttribute('orientation', 'vertical');
+      else stock.removeAttribute('orientation');
+    });
+    document.getElementById('stock-sort').addEventListener('change', (e) => {
+      if (e.target.checked) stock.setAttribute('sort', 'descending');
+      else stock.removeAttribute('sort');
+    });
+
+    // ---- Over or under budget ----
+
+    const budget = document.getElementById('budget');
+    const eating = document.getElementById('eating');
+    const pounds = (v) => `${v < 0 ? '−' : ''}£${Math.abs(v)}`;
+    budget.format = pounds;
+    const PLAN = [
+      { id: 'rent', label: 'Rent', budget: 950, spent: 950 },
+      { id: 'bills', label: 'Energy and water bills', budget: 180, spent: 165 },
+      { id: 'phone', label: 'Phone and internet', budget: 55, spent: 55 },
+      { id: 'food', label: 'Food shopping', budget: 320, spent: 280 },
+      { id: 'eating', label: 'Eating out and takeaways', budget: 120 },
+      { id: 'travel', label: 'Travel and parking', budget: 140, spent: 175 },
+      { id: 'gifts', label: 'Gifts and celebrations', budget: 60, spent: 85 },
+      { id: 'fun', label: 'Hobbies and days out', budget: 100, spent: 60 }
+    ];
+
+    function showBudget() {
+      const eatingOut = Number(eating.value);
+      document.getElementById('eating-value').textContent = `£${eatingOut} spent`;
+      budget.bars = PLAN.map((p) => {
+        const left = p.budget - (p.id === 'eating' ? eatingOut : p.spent);
+        return { id: p.id, label: p.label, value: left, tone: left < 0 ? 'bad' : undefined };
+      });
+    }
+
+    eating.addEventListener('input', showBudget);
+
+    // ---- Pointing from the text ----
+
+    for (const point of document.querySelectorAll('.point')) {
+      const bars = point.closest('.example').querySelector('sb-bars');
+      point.addEventListener('pointerenter', () => { bars.highlight = point.dataset.ids.split(' '); });
+      point.addEventListener('pointerleave', () => { bars.highlight = []; });
+    }
+
+    // ---- Start ----
+
+    startStock();
+    showBudget();
+  </script>
+</body>
+</html>

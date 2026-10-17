@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-bars tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-bars.js"></script>
+</head>
+<body>
+  <script>
+    const BARS = [
+      { id: 'north', label: 'North', value: 50 },
+      { id: 'south', label: 'South', value: 100 },
+      { id: 'east', label: 'East', value: 25, tone: 'warn' }
+    ];
+
+    function chart(attrs = '', bars = BARS) {
+      const el = mount(`<sb-bars style="width: 500px" ${attrs}></sb-bars>`);
+      el.bars = bars;
+      return el;
+    }
+
+    const row = (el, id) => [...el.querySelectorAll('.sb-bars__row')].find((r) => r.dataset.name === id);
+    const order = (el) => [...el.querySelectorAll('.sb-bars__row')].map((r) => r.dataset.name);
+    const fill = (el, id) => row(el, id).querySelector('.sb-bars__fill').getBoundingClientRect();
+    const track = (el, id) => row(el, id).querySelector('.sb-bars__track').getBoundingClientRect();
+    const change = (el, id) => row(el, id).querySelector('.sb-bars__change');
+    const update = (el, values) => { el.bars = el.bars.map((b) => ({ ...b, value: values[b.id] ?? b.value })); };
+    const near = (a, b, message) => assert(Math.abs(a - b) < 1, `${message}: ${a} is not ${b}`);
+
+    // ---- Showing bars ----
+
+    test('shows a row per bar with its label, bar and value, in the order given', () => {
+      const el = chart();
+      assertEqual(order(el), ['north', 'south', 'east']);
+      assertEqual(row(el, 'north').querySelector('.sb-bars__label').textContent, 'North');
+      assertEqual(row(el, 'north').querySelector('.sb-bars__value').textContent, '50');
+    });
+
+    test('bars share one scale: twice the value, twice the length', () => {
+      const el = chart();
+      near(fill(el, 'south').width, 2 * fill(el, 'north').width, 'south twice north');
+      near(fill(el, 'south').width, track(el, 'south').width, 'the largest fills its track');
+      near(track(el, 'north').width, track(el, 'east').width, 'every track the same');
+    });
+
+    test('negative values grow left from zero', () => {
+      const el = chart('', [{ id: 'up', value: 30 }, { id: 'down', value: -10 }]);
+      const zero = row(el, 'up').querySelector('.sb-bars__zero').getBoundingClientRect().left;
+      near(fill(el, 'down').right, zero, 'ends at zero');
+      near(fill(el, 'up').left, zero, 'starts at zero');
+      near(fill(el, 'up').width, 3 * fill(el, 'down').width, 'to scale');
+      near(fill(el, 'down').left, track(el, 'down').left, 'the most negative reaches the start of the track');
+    });
+
+    test('min and max set the least range to show', () => {
+      const el = chart('max="200"');
+      near(fill(el, 'south').width, track(el, 'south').width / 2, 'half of 200');
+      el.setAttribute('max', '50');
+      near(fill(el, 'south').width, track(el, 'south').width, 'data beyond max widens it');
+      el.setAttribute('min', '-100');
+      near(fill(el, 'south').left, track(el, 'south').left + track(el, 'south').width / 2, 'min moves zero along');
+    });
+
+    test('sorts by value when asked, and keeps the given order otherwise', () => {
+      const el = chart('sort="descending"');
+      assertEqual(order(el), ['south', 'north', 'east']);
+      el.setAttribute('sort', 'ascending');
+      assertEqual(order(el), ['east', 'north', 'south']);
+      el.removeAttribute('sort');
+      assertEqual(order(el), ['north', 'south', 'east']);
+    });
+
+    test('formats values, and exposes tones', () => {
+      const el = chart();
+      el.format = (v) => `£${v}`;
+      assertEqual(row(el, 'south').querySelector('.sb-bars__value').textContent, '£100');
+      assertEqual(row(el, 'east').dataset.tone, 'warn');
+    });
+
+    test('draws reference lines across every bar, labelled once', () => {
+      const el = chart();
+      el.lines = [{ value: 50, label: 'Target', tone: 'good' }];
+      assertEqual(el.querySelectorAll('.sb-bars__line').length, 3);
+      assertEqual(el.querySelectorAll('.sb-bars__line-label').length, 1);
+      const line = row(el, 'south').querySelector('.sb-bars__line').getBoundingClientRect().left;
+      near(line, fill(el, 'north').right, 'at 50, where north ends');
+    });
+
+    test('shows the empty text when there are no bars', () => {
+      assertEqual(mount('<sb-bars empty-text="No shops."></sb-bars>').textContent.trim(), 'No shops.');
+    });
+
+    // ---- Changes ----
+
+    test('shows no change the first time', () => {
+      assertEqual(chart().querySelectorAll('.sb-bars__change, .sb-bars__was').length, 0);
+    });
+
+    test('setting the bars again shows how each moved, with a mark where it was', () => {
+      const el = chart('better="higher"');
+      update(el, { north: 30, south: 120 });
+      assertEqual([change(el, 'north').textContent, change(el, 'south').textContent], ['▼ 20', '▲ 20']);
+      assertEqual([change(el, 'north').dataset.verdict, change(el, 'south').dataset.verdict], ['bad', 'good']);
+      assertEqual(change(el, 'east'), null, 'unchanged');
+      const was = row(el, 'north').querySelector('.sb-bars__was').getBoundingClientRect().left;
+      near(was + 1, track(el, 'north').left + track(el, 'north').width * 50 / 120, 'where 50 was');
+    });
+
+    test('lower is better turns a fall into good news; no view keeps it neutral', () => {
+      const el = chart('better="lower"');
+      update(el, { north: 30 });
+      assertEqual(change(el, 'north').dataset.verdict, 'good');
+      el.removeAttribute('better');
+      assertEqual(change(el, 'north').dataset.verdict, 'neutral');
+    });
+
+    test('a change is against the last update, and survives sorting', () => {
+      const el = chart();
+      update(el, { north: 60 });
+      update(el, { north: 65 });
+      el.setAttribute('sort', 'descending');
+      assertEqual(change(el, 'north').textContent, '▲ 5');
+    });
+
+    // ---- Pointing and selection ----
+
+    test('highlights bars and reference lines by id, or label when they have none', () => {
+      const el = chart();
+      el.lines = [{ id: 'goal', value: 50, label: 'Target' }, { value: 80, label: 'Stretch' }];
+      el.highlight = ['east', 'goal', 'Stretch'];
+      assert(row(el, 'east').classList.contains('sb-bars__item--highlighted'), 'a bar');
+      assertEqual(row(el, 'north').querySelectorAll('.sb-bars__line--highlighted').length, 2, 'both lines');
+      assertEqual(el.querySelectorAll('.sb-bars__line-label--highlighted').length, 2, 'and their labels');
+      el.highlight = [];
+      assertEqual(el.querySelectorAll('[class*="--highlighted"]').length, 0, 'cleared');
+    });
+
+    test('clicking a bar fires sb-select with it, even when sorted', () => {
+      const el = chart('sort="descending"');
+      const events = recordEvents(el, 'sb-select');
+      row(el, 'east').querySelector('.sb-bars__fill').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      assertEqual(events[0].detail.bar, BARS[2]);
+    });
+
+    // ---- Columns ----
+
+    function columns(width = 500, bars = BARS) {
+      const el = mount(`<sb-bars orientation="vertical" style="width: ${width}px; --sb-bars-height: 200px"></sb-bars>`);
+      el.bars = bars;
+      return el;
+    }
+    const column = (el, id) => [...el.querySelectorAll('.sb-bars__column')].find((c) => c.dataset.name === id);
+    const columnFill = (el, id) => column(el, id).querySelector('.sb-bars__fill').getBoundingClientRect();
+    // Lines are drawn as a top border sitting on their position, so their bottom edge is the position.
+    const baseline = (el) => el.querySelector('.sb-bars__zero').getBoundingClientRect().bottom;
+
+    test('columns grow up from a shared baseline, to one scale', () => {
+      const el = columns();
+      near(columnFill(el, 'north').bottom, baseline(el), 'from the baseline');
+      near(columnFill(el, 'south').height, 2 * columnFill(el, 'north').height, 'twice the value, twice the height');
+      assert(columnFill(el, 'north').left < columnFill(el, 'south').left, 'side by side, in order');
+    });
+
+    test('negative columns grow down from the baseline', () => {
+      const el = columns(500, [{ id: 'up', value: 30 }, { id: 'down', value: -10 }]);
+      near(columnFill(el, 'down').top, baseline(el), 'from the baseline');
+      near(columnFill(el, 'up').height, 3 * columnFill(el, 'down').height, 'to scale');
+      const reading = column(el, 'down').querySelector('.sb-bars__reading').getBoundingClientRect();
+      assert(reading.bottom <= el.querySelector('.sb-bars__labels').getBoundingClientRect().top + 1, 'its value stays clear of the labels');
+    });
+
+    test('reference lines run across the columns, at their value', () => {
+      const el = columns();
+      el.lines = [{ value: 50, label: 'Target' }];
+      near(el.querySelector('.sb-bars__line').getBoundingClientRect().bottom, columnFill(el, 'north').top, 'level with the top of 50');
+    });
+
+    test('shows each column\'s value above it, and its change', () => {
+      const el = columns();
+      el.bars = BARS.map((b) => (b.id === 'north' ? { ...b, value: 60 } : b));
+      const reading = column(el, 'north').querySelector('.sb-bars__reading');
+      assertEqual(reading.querySelector('.sb-bars__value').textContent, '60');
+      assertEqual(reading.querySelector('.sb-bars__change').textContent, '▲ 10');
+      assert(reading.getBoundingClientRect().bottom <= columnFill(el, 'north').top + 1, 'above the column');
+    });
+
+    test('a column\'s value sits clear of the mark where it was', () => {
+      const el = columns();
+      el.bars = BARS.map((b) => (b.id === 'north' ? { ...b, value: 20 } : b));
+      const mark = column(el, 'north').querySelector('.sb-bars__was').getBoundingClientRect();
+      assert(column(el, 'north').querySelector('.sb-bars__reading').getBoundingClientRect().bottom <= mark.top + 1, 'above the old value');
+    });
+
+    test('labels sit under the columns while they fit', () => {
+      const el = columns();
+      assertEqual([...el.querySelectorAll('.sb-bars__labels .sb-bars__label')].map((l) => l.textContent), ['North', 'South', 'East']);
+      assertEqual(el.querySelector('.sb-bars__legend'), null);
+    });
+
+    test('when labels don\'t fit, columns are numbered in the order given, and a legend names them', () => {
+      const long = BARS.map((b) => ({ ...b, label: `${b.label} distribution centre and warehouse` }));
+      const el = columns(300, long);
+      el.setAttribute('sort', 'descending');
+      assertEqual([...el.querySelectorAll('.sb-bars__labels .sb-bars__key')].map((k) => k.textContent), ['2', '1', '3'], 'numbers follow the given order');
+      const legend = [...el.querySelectorAll('.sb-bars__legend .sb-bars__item')];
+      assertEqual(legend.map((i) => i.textContent), ['1North distribution centre and warehouse', '2South distribution centre and warehouse', '3East distribution centre and warehouse']);
+    });
+
+    test('pointing at a legend entry lights its column, number and entry; highlight does the same', () => {
+      const el = columns(300, BARS.map((b) => ({ ...b, label: `${b.label} distribution centre and warehouse` })));
+      el.querySelector('.sb-bars__legend [data-name="east"]').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assertEqual(el.querySelectorAll('.sb-bars__item--highlighted').length, 3, 'column, number and entry');
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(el.querySelectorAll('.sb-bars__item--highlighted').length, 0, 'cleared');
+      el.highlight = ['south'];
+      assert(column(el, 'south').classList.contains('sb-bars__item--highlighted'), 'by highlight');
+    });
+
+    test('clicking a column or a legend entry fires sb-select', () => {
+      const el = columns(300, BARS.map((b) => ({ ...b, label: `${b.label} distribution centre and warehouse` })));
+      const events = recordEvents(el, 'sb-select');
+      column(el, 'south').querySelector('.sb-bars__fill').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      el.querySelector('.sb-bars__legend [data-name="east"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      assertEqual(events.map((e) => e.detail.bar.id), ['south', 'east']);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two charts on one page keep their own history', () => {
+      mount('<div><sb-bars></sb-bars><sb-bars></sb-bars></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-bars');
+      a.bars = BARS;
+      b.bars = BARS;
+      update(a, { north: 10 });
+      assertEqual([a.querySelectorAll('.sb-bars__change').length, b.querySelectorAll('.sb-bars__change').length], [1, 0]);
+    });
+
+    test('displays labels and values as text, never as markup', () => {
+      const el = chart();
+      el.bars = [{ id: '<i>x</i>', label: '<b>L</b>', value: 3 }];
+      el.lines = [{ value: 1, label: '<b>line</b>' }];
+      el.format = () => '<i>v</i>';
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(el.querySelector('.sb-bars__label').textContent, '<b>L</b>');
+    });
+  </script>
+</body>
+</html>
