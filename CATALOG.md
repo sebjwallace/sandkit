@@ -46,3 +46,4 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-tabs`](components/sb-tabs/manifest.md) | Tabs over panels, for chapters or views: one part at a time, remembered per viewer, nestable. |
 | [`sb-timeline`](components/sb-timeline/manifest.md) | A bounded stretch of progress to scrub or play, with named moments: transformations, cycles, stages. |
 | [`sb-tree`](components/sb-tree/manifest.md) | Nested things, as in a file system or an outline: branches that open and close, joined by lines, driven by viewers and the sandbox alike. |
+| [`sb-wireframe`](components/sb-wireframe/manifest.md) | A wireframe prototype written in plain HTML: one screen or a clickable flow, its parts pointed at and highlighted, themed by a few colours. |

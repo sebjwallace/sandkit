@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-wireframe tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-wireframe.js"></script>
+</head>
+<body>
+  <script>
+    const FLOW = `
+      <section data-screen="basket" heading="Basket">
+        <p data-ref="count">2 items</p>
+        <button data-go="pay" data-ref="checkout">Checkout</button>
+      </section>
+      <section data-screen="pay" heading="Payment">
+        <form><input data-ref="card"><button data-ref="pay-now">Pay</button></form>
+        <a href="#nowhere" data-go="done">Skip</a>
+        <span data-ref="count">2 items</span>
+      </section>
+      <section data-screen="done">Thanks</section>`;
+
+    const flow = (attrs = '') => mount(`<sb-wireframe ${attrs}>${FLOW}</sb-wireframe>`);
+    const steps = (el) => [...el.querySelectorAll('.sb-wireframe__step')];
+    const showing = (el) => el.screens.filter((s) => !s.hidden).map((s) => s.dataset.screen);
+    const part = (el, ref) => el.querySelector(`[data-ref="${ref}"]`);
+    const lit = (el, kind = 'highlighted') => [...el.querySelectorAll(`.sb-wireframe--${kind}`)].map((p) => p.dataset.ref);
+    const point = (target) => target.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+
+    // ---- One screen ----
+
+    test('without screens, everything inside is one wireframe, with no bar', () => {
+      const el = mount('<sb-wireframe><h2>Sign in</h2><button>Go</button></sb-wireframe>');
+      assert(el.classList.contains('sb-wireframe'));
+      assertEqual(el.screen, null);
+      assertEqual(el.querySelector('.sb-wireframe__bar'), null);
+    });
+
+    // ---- Screens ----
+
+    test('shows the first screen, with a bar naming every screen by its heading or id', () => {
+      const el = flow();
+      assertEqual(showing(el), ['basket']);
+      assertEqual(steps(el).map((s) => s.textContent), ['Basket', 'Payment', 'done']);
+      assertEqual(steps(el).map((s) => s.getAttribute('aria-current')), ['true', 'false', 'false']);
+    });
+
+    test('starts on the screen named by the screen attribute', () => {
+      assertEqual(showing(flow('screen="pay"')), ['pay']);
+    });
+
+    test('setting screen shows it without firing sb-navigate', () => {
+      const el = flow();
+      const moves = recordEvents(el, 'sb-navigate');
+      el.screen = 'done';
+      assertEqual(showing(el), ['done']);
+      assertEqual(moves.length, 0);
+    });
+
+    test('screen is known before the wireframe has drawn, as when a script runs mid-page', () => {
+      const el = document.createElement('sb-wireframe');
+      el.innerHTML = FLOW;
+      assertEqual(el.screen, 'basket');
+      el.screen = 'pay';
+      assertEqual(el.screen, 'pay');
+    });
+
+    test('an unknown screen falls back to the first', () => {
+      const el = flow();
+      el.screen = 'nowhere';
+      assertEqual([el.screen, ...showing(el)], ['basket', 'basket']);
+    });
+
+    test('a hidden screen stays hidden, even when the sandbox styles it with a display of its own', () => {
+      const el = mount('<sb-wireframe><div data-screen="a" style="display: grid">a</div><div data-screen="b" style="display: grid">b</div></sb-wireframe>');
+      assertEqual(getComputedStyle(el.screens[1]).display, 'none');
+    });
+
+    test('screens added later get a step too', async () => {
+      const el = flow();
+      el.insertAdjacentHTML('beforeend', '<section data-screen="help" heading="Help"></section>');
+      await waitFor(() => steps(el).length === 4);
+      assertEqual(showing(el), ['basket']);
+    });
+
+    // ---- Moving between screens ----
+
+    test('clicking data-go moves to that screen and fires sb-navigate', () => {
+      const el = flow();
+      const moves = recordEvents(el, 'sb-navigate');
+      part(el, 'checkout').click();
+      assertEqual(showing(el), ['pay']);
+      assertEqual(moves[0].detail, { screen: 'pay', from: 'basket' });
+    });
+
+    test('a data-go link moves without following its href', () => {
+      const el = flow('screen="pay"');
+      const link = el.querySelector('a[data-go]');
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      link.dispatchEvent(click);
+      assertEqual(showing(el), ['done']);
+      assert(click.defaultPrevented, 'the href is not followed');
+    });
+
+    test('clicking a step in the bar moves to its screen', () => {
+      const el = flow();
+      const moves = recordEvents(el, 'sb-navigate');
+      steps(el)[2].click();
+      assertEqual(showing(el), ['done']);
+      assertEqual(moves[0].detail, { screen: 'done', from: 'basket' });
+    });
+
+    test('data-go naming no screen does nothing', () => {
+      const el = mount('<sb-wireframe><div data-screen="a"><button data-go="b">Go</button></div></sb-wireframe>');
+      const moves = recordEvents(el, 'sb-navigate');
+      el.querySelector('button').click();
+      assertEqual([el.screen, moves.length], ['a', 0]);
+    });
+
+    test('forms inside never submit the page', () => {
+      const el = flow('screen="pay"');
+      const form = el.querySelector('form');
+      const event = new SubmitEvent('submit', { bubbles: true, cancelable: true });
+      form.dispatchEvent(event);
+      assert(event.defaultPrevented);
+    });
+
+    // ---- Selecting ----
+
+    test('clicking a part fires sb-select with its ref and the screen it was on', () => {
+      const el = flow();
+      const selections = recordEvents(el, 'sb-select');
+      part(el, 'checkout').click();
+      assertEqual(selections[0].detail, { ref: 'checkout', screen: 'basket' });
+    });
+
+    test('clicking inside a part selects the part', () => {
+      const el = mount('<sb-wireframe><div data-ref="card"><b>Title</b></div></sb-wireframe>');
+      const selections = recordEvents(el, 'sb-select');
+      el.querySelector('b').click();
+      assertEqual(selections[0].detail.ref, 'card');
+    });
+
+    // ---- Highlighting ----
+
+    test('highlight lights every part with the ref, and clears', () => {
+      const el = flow();
+      el.highlight = ['count'];
+      assertEqual(lit(el), ['count', 'count']);
+      el.highlight = [];
+      assertEqual(lit(el), []);
+    });
+
+    test('a highlighted part on another screen marks that screen in the bar', () => {
+      const el = flow();
+      el.highlight = ['card'];
+      const marked = steps(el).map((s) => s.classList.contains('sb-wireframe__step--holds-highlight'));
+      assertEqual(marked, [false, true, false]);
+      el.screen = 'pay';
+      assert(!steps(el)[1].classList.contains('sb-wireframe__step--holds-highlight'), 'not once it is showing');
+    });
+
+    test('reveal goes to the screen holding a part and highlights it, without firing sb-navigate', () => {
+      const el = flow();
+      const moves = recordEvents(el, 'sb-navigate');
+      el.reveal('card');
+      assertEqual(showing(el), ['pay']);
+      assertEqual(el.highlight, ['card']);
+      assertEqual(moves.length, 0);
+    });
+
+    // ---- Pointing ----
+
+    test('pointing at a part lights its ref and fires sb-point; leaving clears it', () => {
+      const el = flow();
+      const points = recordEvents(el, 'sb-point');
+      point(part(el, 'count'));
+      assertEqual(lit(el, 'pointed'), ['count', 'count']);
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(lit(el, 'pointed'), []);
+      assertEqual(points.map((e) => e.detail.ref), ['count', null]);
+    });
+
+    test('moving within the same part fires sb-point only once', () => {
+      const el = mount('<sb-wireframe><div data-ref="card"><b>Title</b> text</div></sb-wireframe>');
+      const points = recordEvents(el, 'sb-point');
+      point(el.querySelector('[data-ref]'));
+      point(el.querySelector('b'));
+      assertEqual(points.length, 1);
+    });
+
+    // ---- Safety and instances ----
+
+    test('screen headings are shown as text, never markup', () => {
+      const el = mount('<sb-wireframe><div data-screen="a" heading="<b>bold</b>"></div></sb-wireframe>');
+      assertEqual(steps(el)[0].textContent, '<b>bold</b>');
+      assertEqual(el.querySelector('.sb-wireframe__bar b'), null);
+    });
+
+    test('two wireframes side by side keep their own screens and highlights', () => {
+      const area = mount(`<div><sb-wireframe id="one">${FLOW}</sb-wireframe><sb-wireframe id="two">${FLOW}</sb-wireframe></div>`);
+      const [one, two] = area.querySelectorAll('sb-wireframe');
+      part(one, 'checkout').click();
+      two.highlight = ['count'];
+      assertEqual([showing(one), showing(two)], [['pay'], ['basket']]);
+      assertEqual([lit(one), lit(two)], [[], ['count', 'count']]);
+    });
+  </script>
+</body>
+</html>

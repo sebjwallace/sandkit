@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-wireframe demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-wireframe.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+    .act { font: inherit; padding: 0; color: var(--sb-text); background: none; border: 0; border-bottom: 1px solid var(--sb-accent); cursor: pointer; }
+    .chosen { margin: 10px 0 0; font-size: 13px; color: var(--sb-muted); }
+
+    .side-by-side { display: grid; grid-template-columns: minmax(0, 360px) 1fr; gap: 18px; align-items: start; }
+    @media (max-width: 640px) { .side-by-side { grid-template-columns: 1fr; } }
+
+    /* Booking */
+    .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .slot[aria-pressed="true"] { border-color: var(--sb-wireframe-accent); background: var(--sb-wireframe-fill); font-weight: 700; }
+    .problem { color: var(--sb-bad); font-size: 13px; min-height: 1.2em; margin: 0; }
+
+    /* Thermostat: the same component, given a look of its own */
+    #thermostat {
+      --sb-wireframe-paper: #fff8ef;
+      --sb-wireframe-ink: #4a2c14;
+      --sb-wireframe-line: #c98b52;
+      --sb-wireframe-fill: #fbe6cf;
+      --sb-wireframe-accent: #e0662b;
+      --sb-wireframe-accent-text: #ffffff;
+      --sb-wireframe-font: 'Chalkboard SE', 'Comic Sans MS', 'Marker Felt', cursive;
+    }
+    .dial { display: grid; place-items: center; width: 150px; height: 150px; margin: 4px auto 12px; border: 6px solid var(--sb-wireframe-line); border-radius: 50%; }
+    .dial strong { font-size: 40px; line-height: 1; }
+    .dial small { display: block; text-align: center; }
+    .round { width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 22px; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-wireframe">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Screens sketched in plain HTML, to point at and click through.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Many subjects have a screen at the front of them: a booking system, a checkout, a control panel, a form someone fills in. A wireframe shows what people see and do there, without the distraction of a finished design. Here it's written in plain HTML, so anything a web page can lay out, a wireframe can too, and it can be one screen or a whole flow to click through.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Seeing a system from the user's side.</strong> Put the screen beside the model, so a click on the screen moves the model and the model's state shows on the screen.</li>
+        <li><strong>Walking through a journey.</strong> Click from screen to screen, and watch what each step sets off behind the scenes.</li>
+        <li><strong>Talking about a design.</strong> Prose can point at a button, and the button lights up.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>What happens behind the screen.</strong> A sequence diagram or flowchart shows the steps; pair it with the wireframe.</li>
+        <li><strong>The knobs of a model.</strong> Plain sliders and controls are clearer than a mock screen when the subject isn't the interface itself.</li>
+        <li><strong>A finished-looking app.</strong> This draws sketches on purpose, so people discuss what's there rather than how it looks.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-wireframe/sb-wireframe.js"&gt;&lt;/script&gt;
+
+&lt;sb-wireframe&gt;
+  &lt;section data-screen="basket" heading="Basket"&gt;
+    &lt;h2&gt;Your basket&lt;/h2&gt;
+    &lt;div class="sb-wireframe__text"&gt;&lt;/div&gt;
+    &lt;button class="sb-wireframe__primary" data-go="pay" data-ref="checkout"&gt;Checkout&lt;/button&gt;
+  &lt;/section&gt;
+  &lt;section data-screen="pay" heading="Payment"&gt;
+    &lt;input placeholder="Card number" data-ref="card"&gt;
+  &lt;/section&gt;
+&lt;/sb-wireframe&gt;</pre>
+      <p>Each child marked <code>data-screen</code> is a screen, shown one at a time, with a bar naming them all; leave it out for a single screen. <code>data-go</code> moves to another screen when clicked. Mark the parts worth talking about with <code>data-ref</code>, to point at them, highlight them, or hear when they're clicked. Helper classes draw rows, stacks, boxes, image and text placeholders, and the main button.</p>
+      <p>Give it a look of its own by setting a few colours and a font on the element: <code>--sb-wireframe-paper</code>, <code>-ink</code>, <code>-line</code>, <code>-fill</code>, <code>-accent</code> and <code>-font</code>.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Let the model decide.</strong> Where a step depends on the model (a full slot, a missing name), leave off <code>data-go</code>, listen for <code>sb-select</code>, and set <code>screen</code> only when the model agrees.</li>
+        <li><strong>Show the model's state on the screen.</strong> The markup is yours: write the latest values into it, so the screen and the model never disagree.</li>
+        <li><strong>Connect it to what happens behind.</strong> On <code>sb-navigate</code> and <code>sb-select</code>, move a diagram or log along, so every click shows its consequences.</li>
+        <li><strong>Use placeholders for what doesn't matter,</strong> so the parts that do stand out.</li>
+      </ul>
+
+      <p>The full contract, including every property, method, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Booking an appointment</h2>
+      <p>A three-screen flow, with the model in charge of moving on: it won't continue without a time and a name. Point at <span class="point" data-ref="slots">the free times</span> or <span class="point" data-ref="continue">the buttons that move on</span>. Click to go to <button class="act" data-reveal="name">the name field</button> or <button class="act" data-reveal="summary">the summary</button>.</p>
+      <div class="side-by-side">
+        <sb-wireframe id="booking">
+          <section data-screen="time" heading="1 · Time">
+            <h3>Choose a time</h3>
+            <p>Tuesday 14 May</p>
+            <div class="slots" data-ref="slots"></div>
+            <hr>
+            <button class="sb-wireframe__primary" data-ref="continue">Continue</button>
+          </section>
+          <section data-screen="details" heading="2 · Details">
+            <h3>Your details</h3>
+            <form class="sb-wireframe__stack">
+              <input placeholder="Full name" data-ref="name" id="booking-name">
+              <input placeholder="Phone (optional)">
+              <p class="problem" id="booking-problem"></p>
+              <div class="sb-wireframe__row">
+                <button type="button" data-go="time">Back</button>
+                <button class="sb-wireframe__primary" data-ref="continue">Book</button>
+              </div>
+            </form>
+          </section>
+          <section data-screen="done" heading="3 · Booked">
+            <h3>You're booked in</h3>
+            <div class="sb-wireframe__box" data-ref="summary" id="booking-summary"></div>
+            <p></p>
+            <button data-go="time" data-ref="start-again">Book another</button>
+          </section>
+        </sb-wireframe>
+        <div>
+          <p class="chosen" id="booking-said">Nothing has happened yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="example">
+      <h2>A thermostat, in its own colours</h2>
+      <p>One screen, given warm colours and a handwritten font through a few tokens. The buttons change the model, and the model writes the screen. Point at <span class="point" data-ref="target">the target</span> or <span class="point" data-ref="boost">boost</span>.</p>
+      <div class="side-by-side">
+        <sb-wireframe id="thermostat">
+          <div class="sb-wireframe__row" style="justify-content: space-between">
+            <strong>Living room</strong>
+            <span data-ref="now" id="now"></span>
+          </div>
+          <div class="dial" data-ref="target"><div><strong id="target"></strong><small>target</small></div></div>
+          <div class="sb-wireframe__row" style="justify-content: center">
+            <button class="round" data-ref="down" aria-label="Cooler">−</button>
+            <button class="round" data-ref="up" aria-label="Warmer">+</button>
+          </div>
+          <hr>
+          <div class="sb-wireframe__row" style="justify-content: space-between">
+            <div class="sb-wireframe__text" style="width: 55%; min-height: 1.8em"></div>
+            <button class="sb-wireframe__primary" data-ref="boost" id="boost">Boost 1 hour</button>
+          </div>
+        </sb-wireframe>
+        <div>
+          <p class="chosen" id="heating-said"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ---- Booking: the model decides when to move on ----
+
+    const booking = document.getElementById('booking');
+    const SLOTS = ['9:00', '9:30', '10:00', '11:30', '14:00', '16:30'];
+    const appointment = { slot: null, name: '' };
+    const NEXT = { time: 'details', details: 'done' };
+
+    const problemWith = (next) => {
+      if (next === 'details' && !appointment.slot) return 'Choose a time first.';
+      if (next === 'done' && !appointment.name.trim()) return 'We need a name to book.';
+      return null;
+    };
+
+    function showBooking() {
+      booking.querySelector('.slots').innerHTML = SLOTS.map((slot) =>
+        `<button type="button" class="slot" data-slot="${slot}" aria-pressed="${slot === appointment.slot}">${slot}</button>`).join('');
+      document.getElementById('booking-summary').textContent = `${appointment.name || '—'}, Tuesday 14 May at ${appointment.slot ?? '—'}`;
+    }
+
+    const say = (text) => { document.getElementById('booking-said').textContent = text; };
+
+    booking.addEventListener('click', (e) => {
+      const slot = e.target.closest('[data-slot]')?.dataset.slot;
+      if (slot) { appointment.slot = slot; showBooking(); say(`The model holds ${slot}.`); }
+    });
+    booking.addEventListener('input', (e) => {
+      if (e.target.id === 'booking-name') appointment.name = e.target.value;
+    });
+    booking.addEventListener('sb-select', (e) => {
+      if (e.detail.ref !== 'continue') return;
+      const next = NEXT[e.detail.screen];
+      const problem = problemWith(next);
+      document.getElementById('booking-problem').textContent = problem ?? '';
+      if (problem) return say(`The model says no: ${problem}`);
+      showBooking();
+      booking.screen = next;
+      say(`The model agrees, and moves on to ${next}.`);
+    });
+    booking.addEventListener('sb-navigate', (e) => {
+      if (e.detail.screen === 'time' && e.detail.from === 'done') {
+        Object.assign(appointment, { slot: null, name: '' });
+        document.getElementById('booking-name').value = '';
+        showBooking();
+      }
+      say(`Moved from ${e.detail.from} to ${e.detail.screen}.`);
+    });
+
+    // ---- Thermostat: the buttons change the model, and the model writes the screen ----
+
+    const thermostat = document.getElementById('thermostat');
+    const heating = { now: 18.5, target: 20, boosting: false };
+
+    function showHeating() {
+      document.getElementById('target').textContent = `${heating.target}°`;
+      document.getElementById('now').textContent = `Now ${heating.now.toFixed(1)}°`;
+      document.getElementById('boost').textContent = heating.boosting ? 'Boosting…' : 'Boost 1 hour';
+      document.getElementById('heating-said').textContent = heating.now < heating.target
+        ? `${(heating.target - heating.now).toFixed(1)}° below target: the boiler is on${heating.boosting ? ', at full power' : ''}.`
+        : 'At or above target: the boiler is off.';
+    }
+
+    const ACTIONS = {
+      up: () => { heating.target = Math.min(28, heating.target + 0.5); },
+      down: () => { heating.target = Math.max(10, heating.target - 0.5); },
+      boost: () => { heating.boosting = !heating.boosting; }
+    };
+    thermostat.addEventListener('sb-select', (e) => { ACTIONS[e.detail.ref]?.(); showHeating(); });
+
+    // ---- Pointing words: dashed ones show, solid ones go there ----
+
+    const wireframeOf = (word) => word.closest('.example').querySelector('sb-wireframe');
+    for (const word of document.querySelectorAll('.point[data-ref]')) {
+      word.addEventListener('pointerenter', () => { wireframeOf(word).highlight = [word.dataset.ref]; });
+      word.addEventListener('pointerleave', () => { wireframeOf(word).highlight = []; });
+    }
+
+    let revealed = null;
+    const settle = () => { booking.highlight = revealed ? [revealed] : []; };
+    booking.addEventListener('sb-navigate', () => { revealed = null; settle(); });
+    for (const button of document.querySelectorAll('[data-reveal]')) {
+      const ref = button.dataset.reveal;
+      for (const start of ['pointerenter', 'focus']) button.addEventListener(start, () => { booking.highlight = [ref]; });
+      for (const end of ['pointerleave', 'blur']) button.addEventListener(end, settle);
+      button.addEventListener('click', () => { revealed = ref; booking.reveal(ref); });
+    }
+
+    // ---- Start ----
+
+    showBooking();
+    showHeating();
+  </script>
+</body>
+</html>
