@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-json demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-json.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .example .prose { color: var(--sb-text); font-size: 14px; }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-text); background: var(--sb-surface-2); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button[aria-pressed="true"] { background: var(--sb-accent-soft); color: var(--sb-accent); font-weight: 600; }
+    .point { border-bottom: 1px dashed var(--sb-accent); cursor: default; }
+    .act { font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px solid var(--sb-accent); padding: 0; cursor: pointer; }
+    sb-json { --sb-json-height: 420px; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-json">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>JSON shown cleanly, with the parts that matter in the spotlight and everything else folded away.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Reading about data usually means jumping between a paragraph and a long block of JSON, hunting for the three lines the paragraph is talking about. This component keeps the whole document but puts those lines in the spotlight: everything else folds away into quiet gaps, and the lines that open and close around them stay, so you still see where they live. Unfold a gap, or show everything, whenever you want the full picture. Click any line to see its path, and the note the sandbox wrote for it.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Explaining a payload.</strong> An API response, a message on a queue, an event, a saved file: prose points at the fields it discusses, and the JSON narrows to them.</li>
+        <li><strong>Documenting data in place.</strong> Notes on paths turn the JSON into its own reference: click a field to read what it means.</li>
+        <li><strong>Showing what the model produces.</strong> When the model builds a record or a message, show it as it really is, spotlighting the part the current step changed.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Many records of the same shape.</strong> A table lines them up for comparing and sorting.</li>
+        <li><strong>A hierarchy to browse,</strong> such as files or an organisation. A tree shows the nesting without the punctuation.</li>
+        <li><strong>The structure of the data rather than an example.</strong> An entity diagram shows how kinds of record refer to each other.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-json/sb-json.js"&gt;&lt;/script&gt;
+&lt;sb-json&gt;&lt;/sb-json&gt;
+
+&lt;script&gt;
+  const json = document.querySelector('sb-json');
+  json.value = response;                         // any JSON value
+  json.spotlight = ['order.total'];              // fold the rest away
+  json.notes = { 'order.total': 'In pence.' };   // shown when it's clicked
+&lt;/script&gt;</pre>
+      <p>Paths are written as code would reach the part: <code>order.items[0].price</code>. You don't need to work them out: click a line and its path is in the bar above the code, ready to copy. Viewers unfold a gap by clicking it, and show everything with the toggle; the spotlit lines stay marked either way.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Spotlight what the sentence is about.</strong> Make words in the prose set <code>spotlight</code> when clicked, and <code>highlight</code> when pointed at, so reading and looking happen in one place.</li>
+        <li><strong>Write notes for the surprising fields,</strong> the ones in pence, the ones that can be null, the ones named misleadingly, rather than for every field.</li>
+        <li><strong>Spotlight what changed.</strong> When the model sends a new message, spotlight the fields this step set.</li>
+        <li><strong>Connect it.</strong> Listen for <code>sb-select</code> to explain the chosen field elsewhere in the sandbox.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>An online order</h2>
+      <p>Point at a dashed word to see where it lives; click a solid one to bring it into the spotlight. Click any line for its path and note.</p>
+      <p class="prose">
+        The shop charges the
+        <button class="act" data-path="payment.amount">amount</button>, which should equal the
+        <button class="act" data-path="totals.grand">grand total</button>. That total adds the
+        <span class="point" data-path="totals.items">items</span>,
+        <span class="point" data-path="totals.delivery">delivery</span> and
+        <span class="point" data-path="totals.discount">discount</span>. Each line's
+        <button class="act" data-path="items[1].price">price</button> is per unit, and the warehouse picks from the
+        <button class="act" data-path="fulfilment">fulfilment</button> details.
+        <button class="act" data-path="">Show everything</button>
+      </p>
+      <sb-json id="order"></sb-json>
+    </section>
+
+    <section class="example">
+      <h2>A weather station's reading</h2>
+      <p>One reading from a station on a hill, as its sensors send it. Each question spotlights the fields that answer it.</p>
+      <div class="actions" id="weather-questions">
+        <button data-paths="station.location,station.elevation_m">Where is it?</button>
+        <button data-paths="readings.temperature_c,readings.wind">What's the weather like?</button>
+        <button data-paths="health">Can we trust the reading?</button>
+      </div>
+      <sb-json id="weather"></sb-json>
+    </section>
+  </main>
+
+  <script>
+    // ---- An online order ----
+
+    const order = document.getElementById('order');
+    order.value = {
+      id: 'ORD-20417',
+      placed_at: '2026-10-15T09:42:11Z',
+      customer: { id: 'C-881', name: 'Ada Lovelace', email: 'ada@example.com', marketing_opt_in: false },
+      items: [
+        { sku: 'TEA-EB-250', name: 'English breakfast tea', qty: 2, price: 450 },
+        { sku: 'MUG-STN-01', name: 'Stoneware mug', qty: 1, price: 1200 },
+        { sku: 'BIS-GNG-12', name: 'Ginger biscuits', qty: 3, price: 275 }
+      ],
+      totals: { items: 2925, delivery: 395, discount: -300, grand: 3020, currency: 'GBP' },
+      payment: { method: 'card', last4: '4242', amount: 3020, captured: true },
+      fulfilment: { warehouse: 'LDS-2', service: 'next-day', ship_by: '2026-10-15T16:00:00Z', tracking: null },
+      metadata: { channel: 'web', ab_test: 'checkout-v3', user_agent: 'Mozilla/5.0' }
+    };
+    order.notes = {
+      'items[1].price': 'Per unit, in pence: £12.00.',
+      'totals.grand': 'Items plus delivery plus discount: 2925 + 395 − 300.',
+      'totals.discount': 'Negative, so it can be added like everything else.',
+      'payment.amount': 'In pence. Equal to the grand total when the payment is complete.',
+      'fulfilment.tracking': 'Null until the parcel is handed to the courier.'
+    };
+    order.spotlight = ['totals.grand', 'payment.amount'];
+
+    for (const word of document.querySelectorAll('.prose [data-path]')) {
+      const path = word.dataset.path;
+      word.addEventListener('pointerenter', () => { order.highlight = path ? [path] : []; });
+      word.addEventListener('pointerleave', () => { order.highlight = []; });
+      word.addEventListener('focus', () => { order.highlight = path ? [path] : []; });
+      word.addEventListener('blur', () => { order.highlight = []; });
+      word.addEventListener('click', () => {
+        order.spotlight = path ? [path] : [];
+        order.selected = path || null;
+      });
+    }
+
+    // ---- A weather station's reading ----
+
+    const weather = document.getElementById('weather');
+    weather.value = {
+      station: { id: 'WS-ELY-07', name: 'Ely Hill', location: { lat: 52.3986, lon: 0.2626 }, elevation_m: 38 },
+      observed_at: '2026-10-17T06:00:00Z',
+      readings: {
+        temperature_c: 7.4,
+        humidity_pct: 91,
+        pressure_hpa: 1012.6,
+        wind: { speed_ms: 6.2, gust_ms: 11.8, direction_deg: 245 },
+        rain_mm_last_hour: 0.4
+      },
+      health: { battery_v: 3.41, last_calibrated: '2026-03-02', flags: ['humidity_drift'] },
+      firmware: { version: '2.8.1', channel: 'stable' }
+    };
+    weather.notes = {
+      'readings.wind.direction_deg': 'Where the wind comes from, in degrees from north: 245 is from the south-west.',
+      'readings.wind.gust_ms': 'The strongest three-second gust in the last ten minutes.',
+      'health.flags': 'The humidity sensor has drifted since calibration, so treat 91% with care.',
+      'station.elevation_m': 'Metres above sea level, which matters when comparing temperatures.'
+    };
+
+    const questions = [...document.querySelectorAll('#weather-questions button')];
+    for (const button of questions) {
+      button.addEventListener('click', () => {
+        weather.spotlight = button.dataset.paths.split(',');
+        weather.expanded = false;
+        for (const other of questions) other.setAttribute('aria-pressed', String(other === button));
+      });
+    }
+    questions[1].click();
+  </script>
+</body>
+</html>

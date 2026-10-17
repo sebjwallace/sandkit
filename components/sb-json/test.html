@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-json tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-json.js"></script>
+</head>
+<body>
+  <script>
+    const ORDER = {
+      id: 'A1',
+      customer: { name: 'Ada', email: 'ada@example.com' },
+      items: [
+        { sku: 'tea', qty: 2, price: 450 },
+        { sku: 'mug', qty: 1, price: 1200 }
+      ],
+      total: 2100,
+      paid: true,
+      notes: null,
+      tags: [],
+      'gift wrap': false
+    };
+
+    function json(attrs = '') {
+      const el = mount(`<sb-json ${attrs}></sb-json>`);
+      el.value = ORDER;
+      return el;
+    }
+
+    const lines = (el) => [...el.querySelectorAll('.sb-json__line')];
+    const texts = (el) => lines(el).map((l) => l.querySelector('.sb-json__text').textContent.trim());
+    const paths = (el) => lines(el).map((l) => l.dataset.path);
+    const line = (el, path) => lines(el).find((l) => l.dataset.path === path);
+    const gaps = (el) => [...el.querySelectorAll('.sb-json__gap')].map((g) => g.textContent.trim());
+    const linesWith = (el, state) => lines(el).filter((l) => l.classList.contains(`sb-json__line--${state}`)).map((l) => l.querySelector('.sb-json__gutter').textContent);
+    const bar = (el) => el.querySelector('.sb-json__path').textContent;
+    const note = (el) => el.querySelector('.sb-json__note');
+    const toggle = (el) => el.querySelector('.sb-json__toggle');
+    const click = (node) => node.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const hover = (node) => node.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+    const press = (key) => document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+
+    // ---- Showing the document ----
+
+    test('prints the whole document as indented JSON, numbered from 1', () => {
+      const el = mount('<sb-json></sb-json>');
+      el.value = { a: 1, b: [true, 'x'] };
+      assertEqual(texts(el), ['{', '"a": 1,', '"b": [', 'true,', '"x"', ']', '}']);
+      assertEqual(lines(el).map((l) => l.querySelector('.sb-json__gutter').textContent), ['1', '2', '3', '4', '5', '6', '7']);
+      assertEqual(line(el, 'b[0]').querySelector('.sb-json__text').textContent, '    true,');
+    });
+
+    test('gives every line the path it belongs to, as code would write it', () => {
+      const el = json();
+      assertEqual(paths(el).slice(0, 7), ['', 'id', 'customer', 'customer.name', 'customer.email', 'customer', 'items']);
+      assert(line(el, 'items[1].price'), 'array members');
+      assert(line(el, '["gift wrap"]'), 'keys that are not names');
+    });
+
+    test('empty objects and arrays sit on one line', () => {
+      const el = json();
+      assertEqual(line(el, 'tags').querySelector('.sb-json__text').textContent.trim(), '"tags": [],');
+    });
+
+    test('colours strings, numbers and literals', () => {
+      const el = json();
+      assertEqual(line(el, 'id').querySelector('.sb-json__string').textContent, '"A1"');
+      assertEqual(line(el, 'total').querySelector('.sb-json__number').textContent, '2100');
+      assertEqual([...el.querySelectorAll('.sb-json__literal')].map((s) => s.textContent), ['true', 'null', 'false']);
+    });
+
+    test('keeps a copy of the value, as JSON', () => {
+      const el = mount('<sb-json></sb-json>');
+      const data = { a: 1, skip: undefined };
+      el.value = data;
+      data.a = 2;
+      assertEqual(el.value, { a: 1 });
+    });
+
+    test('shows the empty text with no value', () => {
+      const el = mount('<sb-json empty-text="Nothing sent."></sb-json>');
+      assertEqual(el.textContent.trim(), 'Nothing sent.');
+    });
+
+    // ---- The spotlight ----
+
+    test('with no spotlight, everything shows and there is no toggle', () => {
+      const el = json();
+      assertEqual(gaps(el), []);
+      assert(toggle(el).hidden);
+    });
+
+    test('a spotlight folds away everything but its parts and the lines around them', () => {
+      const el = json();
+      el.spotlight = ['items[1].price'];
+      assertEqual(texts(el), ['{', '"items": [', '{', '"price": 1200', '}', '],', '}']);
+      assertEqual(gaps(el), ['⋯ 5 lines', '⋯ 5 lines', '⋯ 2 lines', '⋯ 5 lines']);
+    });
+
+    test('a single hidden line shows rather than folding into a gap', () => {
+      const el = json();
+      el.spotlight = ['customer.email', 'items'];
+      assertEqual(texts(el).slice(0, 6), ['{', '"id": "A1",', '"customer": {', '"name": "Ada",', '"email": "ada@example.com"', '},']);
+      assertEqual(gaps(el), ['⋯ 5 lines']);
+    });
+
+    test('a spotlit container shows all of itself', () => {
+      const el = json();
+      el.spotlight = ['items[0]'];
+      assertEqual(texts(el), ['{', '"items": [', '{', '"sku": "tea",', '"qty": 2,', '"price": 450', '},', '],', '}']);
+    });
+
+    test('spotlit lines are marked, folded or expanded, and keep their numbers', () => {
+      const el = json();
+      el.spotlight = ['customer.name'];
+      assertEqual(linesWith(el, 'spotlit'), ['4']);
+      el.expanded = true;
+      assertEqual(linesWith(el, 'spotlit'), ['4']);
+    });
+
+    test('expanded shows everything, and the toggle switches between the two', () => {
+      const el = json();
+      el.spotlight = ['total'];
+      const all = 24;
+      assertEqual(toggle(el).textContent, `Show all ${all} lines`);
+      el.expanded = true;
+      assertEqual([lines(el).length, gaps(el), el.hasAttribute('expanded')], [all, [], true]);
+      assertEqual(toggle(el).textContent, 'Fold the rest');
+    });
+
+    test('the toggle fires sb-toggle; setting expanded does not', () => {
+      const el = json();
+      el.spotlight = ['total'];
+      const events = recordEvents(el, 'sb-toggle');
+      el.expanded = true;
+      el.expanded = false;
+      assertEqual(events.length, 0);
+      click(toggle(el));
+      assertEqual([el.expanded, events.length, events[0].detail], [true, 1, { expanded: true }]);
+    });
+
+    test('clicking a gap unfolds just those lines, until the spotlight changes', () => {
+      const el = json();
+      el.spotlight = ['total'];
+      click(el.querySelector('.sb-json__gap'));
+      assertEqual(texts(el).slice(0, 3), ['{', '"id": "A1",', '"customer": {']);
+      assert(gaps(el).length === 1, 'the gap after stays folded');
+      el.spotlight = ['total'];
+      assertEqual(gaps(el).length, 2);
+    });
+
+    // ---- Selecting and the bar ----
+
+    test('clicking a line selects its path, shows it in the bar and fires sb-select', () => {
+      const el = json();
+      el.notes = { 'items[0].price': 'In pence.' };
+      const events = recordEvents(el, 'sb-select');
+      click(line(el, 'items[0].price'));
+      assertEqual([el.selected, bar(el), events[0].detail], ['items[0].price', 'items[0].price', { path: 'items[0].price', value: 450, note: 'In pence.' }]);
+    });
+
+    test('selecting a container marks all of it, from either end', () => {
+      const el = json();
+      click(lines(el).filter((l) => l.dataset.path === 'customer')[1]);
+      assertEqual([el.selected, linesWith(el, 'selected')], ['customer', ['3', '4', '5', '6']]);
+    });
+
+    test('setting selected fires no event', () => {
+      const el = json();
+      const events = recordEvents(el, 'sb-select');
+      el.selected = 'id';
+      assertEqual([bar(el), events.length], ['id', 0]);
+    });
+
+    test('the bar invites a click until something is selected, and names the root plainly', () => {
+      const el = json();
+      assertEqual(bar(el), 'Click a line to see its path.');
+      el.selected = '';
+      assertEqual(bar(el), '(the whole document)');
+    });
+
+    test('pointing at a line previews its path and block, and leaving restores the selection', () => {
+      const el = json();
+      el.selected = 'id';
+      hover(line(el, 'customer.email'));
+      assertEqual([bar(el), linesWith(el, 'hovered')], ['customer.email', ['5']]);
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual([bar(el), linesWith(el, 'hovered')], ['id', []]);
+    });
+
+    // ---- Notes ----
+
+    test('a noted path is marked where it starts, and its note shows when selected', () => {
+      const el = json();
+      el.notes = { customer: 'Who placed the order.' };
+      assertEqual(linesWith(el, 'noted'), ['3']);
+      assert(note(el).hidden, 'hidden until selected');
+      el.selected = 'customer';
+      assertEqual([note(el).hidden, note(el).textContent], [false, 'Who placed the order.']);
+      el.selected = 'id';
+      assert(note(el).hidden, 'hidden for a path without one');
+    });
+
+    // ---- Highlighting ----
+
+    test('highlight marks a path and everything inside it', () => {
+      const el = json();
+      el.highlight = ['items[0]'];
+      assertEqual(linesWith(el, 'highlighted'), ['8', '9', '10', '11', '12']);
+      el.highlight = [];
+      assertEqual(linesWith(el, 'highlighted'), []);
+    });
+
+    test('a highlighted path folded away marks the gap that hides it', () => {
+      const el = json();
+      el.spotlight = ['total'];
+      el.highlight = ['customer.name'];
+      const marked = [...el.querySelectorAll('.sb-json__gap--holds-highlight')];
+      assertEqual(marked.map((g) => g.textContent.trim()), ['⋯ 17 lines']);
+    });
+
+    // ---- Keyboard ----
+
+    test('one row takes Tab; arrows move, Enter selects a line or unfolds a gap', () => {
+      const el = json();
+      el.spotlight = ['total'];
+      const rows = () => [...el.querySelectorAll('.sb-json__line, .sb-json__gap')];
+      assertEqual(rows().filter((r) => r.tabIndex === 0).length, 1);
+      rows()[0].focus();
+      press('ArrowDown');
+      assert(document.activeElement.classList.contains('sb-json__gap'), 'moved to the gap');
+      press('Enter');
+      assertEqual(document.activeElement.dataset.path, 'id');
+      press('Enter');
+      assertEqual(el.selected, 'id');
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two viewers on one page keep their own state', () => {
+      mount('<div><sb-json></sb-json><sb-json></sb-json></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-json');
+      a.value = ORDER;
+      b.value = ORDER;
+      a.spotlight = ['total'];
+      a.selected = 'total';
+      a.highlight = ['id'];
+      assertEqual([b.spotlight, b.selected, b.highlight, gaps(b)], [[], null, [], []]);
+    });
+
+    test('displays keys, values, paths and notes as text, never as markup', () => {
+      const el = mount('<sb-json></sb-json>');
+      el.value = { '<b>k</b>': '<i>v</i>' };
+      el.notes = { '["<b>k</b>"]': '<img src=x>' };
+      el.selected = '["<b>k</b>"]';
+      assertEqual(el.querySelectorAll('b, i, img').length, 0);
+      assertEqual(bar(el), '["<b>k</b>"]');
+      assertEqual(note(el).textContent, '<img src=x>');
+    });
+  </script>
+</body>
+</html>
