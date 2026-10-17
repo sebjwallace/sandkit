@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-stat demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-stat.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-accent-text); background: var(--sb-accent); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button.quiet { color: var(--sb-text); background: var(--sb-surface-2); }
+    .actions label { display: flex; align-items: center; gap: 8px; }
+    .actions input[type="range"] { accent-color: var(--sb-accent); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-stat">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>The few numbers that matter, with how they just changed and whether that's good.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Most models have a handful of numbers that say how things are going: money left, people ill, stock on the shelves. Headline figures put those up front, large and plain, so they can be read at a glance. Each time the model moves on, each figure shows how it changed and whether that's good news, so the numbers tell a story rather than just sitting there.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Keeping score.</strong> The few outcomes people care about, above everything else in the sandbox.</li>
+        <li><strong>Seeing the effect of a change.</strong> Move a slider or take a step, and each figure says which way it went.</li>
+        <li><strong>Progress towards a goal.</strong> Give a figure a maximum and a target, and a bar shows how close it is.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>How a number got here.</strong> A chart shows the history; a figure shows only now and the last step.</li>
+        <li><strong>Many things on the same measure.</strong> Twenty stores' stock is a table, or bars.</li>
+        <li><strong>Numbers that need explaining.</strong> Put them in a sentence, with the reason.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-stat/sb-stat.js"&gt;&lt;/script&gt;
+&lt;sb-stat&gt;&lt;/sb-stat&gt;
+
+&lt;script&gt;
+  const stats = document.querySelector('sb-stat');
+  function show(model) {
+    stats.stats = [
+      { id: 'stock', label: 'Stock', value: model.stock, max: 100, target: 40, better: 'higher' },
+      { id: 'cost', label: 'Cost so far', value: model.cost, format: (v) => `£${v}`, better: 'lower' }
+    ];
+  }
+&lt;/script&gt;</pre>
+      <p>Call it every time the model changes. Each figure with an <code>id</code> compares itself with last time and shows the change. Say whether <code>higher</code> or <code>lower</code> is <code>better</code>, and the change is coloured as good or bad news.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Choose three to five figures.</strong> The ones that answer the sandbox's question, not every number the model has.</li>
+        <li><strong>Always say which way is better,</strong> so a rise in cases reads as bad and a rise in savings as good.</li>
+        <li><strong>Give targets where there are targets,</strong> so "37" becomes "37, short of 40".</li>
+        <li><strong>Use tone for thresholds crossed,</strong> such as hospital beds running out.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>An outbreak, day by day</h2>
+      <p>Each day some people catch it and some recover. More cases is bad news, more recoveries good; when hospital beds pass their safe level, the figure turns amber, then red when they run out.</p>
+      <div class="actions"><button id="outbreak-next">Next day</button><button id="outbreak-reset" class="quiet">Start again</button></div>
+      <sb-stat id="outbreak"></sb-stat>
+    </section>
+
+    <section class="example">
+      <h2>Saving for a holiday</h2>
+      <p>£1,800 to save, with £300 already put by. Change how much goes in each month and see what it does to the date.</p>
+      <div class="actions"><label>Each month <input type="range" id="monthly" min="50" max="400" step="25" value="150"> <span id="monthly-value"></span></label></div>
+      <sb-stat id="savings"></sb-stat>
+    </section>
+  </main>
+
+  <script>
+    // ---- An outbreak ----
+    // A tiny model: each day, every case infects a few more people, some cases recover, and some
+    // need a hospital bed.
+
+    const outbreak = document.getElementById('outbreak');
+    const BEDS = 120, SAFE_BEDS = 100;
+    let day, cases, recovered, inHospital;
+
+    function startOutbreak() {
+      [day, cases, recovered, inHospital] = [1, 40, 0, 10];
+      showOutbreak();
+    }
+
+    function nextDay() {
+      const caught = Math.round(cases * 0.45);
+      const better = Math.round(cases * 0.15);
+      day += 1;
+      cases += caught - better;
+      recovered += better;
+      inHospital = Math.min(BEDS, Math.round(cases * 0.25));
+      showOutbreak();
+    }
+
+    function showOutbreak() {
+      outbreak.stats = [
+        { id: 'day', label: 'Day', value: day },
+        { id: 'cases', label: 'People ill', value: cases, better: 'lower' },
+        { id: 'recovered', label: 'Recovered', value: recovered, better: 'higher' },
+        {
+          id: 'beds', label: 'Hospital beds in use', value: inHospital, max: BEDS, target: SAFE_BEDS, better: 'lower',
+          note: `${SAFE_BEDS} is the safe level`,
+          tone: inHospital >= BEDS ? 'bad' : inHospital > SAFE_BEDS ? 'warn' : undefined
+        }
+      ];
+    }
+
+    document.getElementById('outbreak-next').addEventListener('click', nextDay);
+    document.getElementById('outbreak-reset').addEventListener('click', startOutbreak);
+
+    // ---- Saving for a holiday ----
+
+    const savings = document.getElementById('savings');
+    const monthly = document.getElementById('monthly');
+    const GOAL = 1800, SAVED = 300, RATE = 0.004; // interest each month
+    const pounds = (v) => `£${Math.round(v).toLocaleString('en')}`;
+
+    // Month by month until the goal is reached.
+    function plan(perMonth) {
+      let balance = SAVED, months = 0, interest = 0;
+      while (balance < GOAL) {
+        const earned = balance * RATE;
+        interest += earned;
+        balance += earned + perMonth;
+        months += 1;
+      }
+      return { months, interest, inSixMonths: Math.min(GOAL, SAVED + perMonth * 6) };
+    }
+
+    function showSavings() {
+      const perMonth = Number(monthly.value);
+      const { months, interest, inSixMonths } = plan(perMonth);
+      document.getElementById('monthly-value').textContent = pounds(perMonth);
+      savings.stats = [
+        { id: 'months', label: 'Months to go', value: months, better: 'lower' },
+        { id: 'six', label: 'Saved in six months', value: inSixMonths, format: pounds, max: GOAL, target: GOAL / 2, better: 'higher', note: 'Halfway marked' },
+        { id: 'interest', label: 'Interest earned', value: Math.round(interest), format: pounds, better: 'higher' }
+      ];
+    }
+
+    monthly.addEventListener('input', showSavings);
+
+    // ---- Start ----
+
+    startOutbreak();
+    showSavings();
+  </script>
+</body>
+</html>

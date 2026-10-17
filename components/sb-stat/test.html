@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-stat tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-stat.js"></script>
+</head>
+<body>
+  <script>
+    const STATS = [
+      { id: 'stock', label: 'Stock', value: 37, max: 100, target: 40, better: 'higher' },
+      { id: 'cost', label: 'Cost', value: 1200, format: (v) => `£${v}`, better: 'lower' },
+      { id: 'day', label: 'Day', value: 3, unit: 'of 30' }
+    ];
+
+    function figures(stats = STATS) {
+      const el = mount('<sb-stat></sb-stat>');
+      el.stats = stats;
+      return el;
+    }
+
+    const tile = (el, id) => [...el.querySelectorAll('.sb-stat__tile')].find((t) => t.dataset.id === id);
+    const text = (el, id, part) => tile(el, id).querySelector(`.sb-stat__${part}`)?.textContent.trim();
+    const change = (el, id) => tile(el, id).querySelector('.sb-stat__change');
+    const update = (el, values) => { el.stats = el.stats.map((s) => ({ ...s, value: values[s.id] ?? s.value })); };
+
+    // ---- Showing figures ----
+
+    test('shows a tile per stat with its label and value', () => {
+      const el = figures();
+      assertEqual(el.querySelectorAll('.sb-stat__tile').length, 3);
+      assertEqual(text(el, 'stock', 'label'), 'Stock');
+      assertEqual(text(el, 'stock', 'value'), '37');
+    });
+
+    test('formats values: its own format, a unit, or numbers with separators', () => {
+      const el = figures([...STATS, { id: 'people', value: 12500 }]);
+      assertEqual(text(el, 'cost', 'value'), '£1200');
+      assertEqual(text(el, 'day', 'unit'), 'of 30');
+      assertEqual(text(el, 'people', 'value'), '12,500');
+      assertEqual(text(el, 'people', 'label'), 'people', 'the label defaults to the id');
+    });
+
+    test('with a max, a meter shows the value out of it, with the target marked', () => {
+      const el = figures();
+      const meter = tile(el, 'stock').querySelector('.sb-stat__meter');
+      assertEqual(meter.querySelector('.sb-stat__fill').style.width, '37%');
+      assertEqual(meter.querySelector('.sb-stat__target').style.left, '40%');
+      assertEqual(meter.getAttribute('aria-valuenow'), '37');
+      assertEqual(tile(el, 'cost').querySelector('.sb-stat__meter'), null, 'no max, no meter');
+    });
+
+    test('a meter never overflows', () => {
+      const el = figures([{ id: 'a', value: 150, max: 100 }, { id: 'b', value: -5, max: 100 }]);
+      assertEqual([tile(el, 'a'), tile(el, 'b')].map((t) => t.querySelector('.sb-stat__fill').style.width), ['100%', '0%']);
+    });
+
+    test('without a max, a target is given in words', () => {
+      const el = figures([{ id: 'cost', value: 900, target: 1000, format: (v) => `£${v}` }]);
+      assertEqual(text(el, 'cost', 'note'), 'Target £1000');
+    });
+
+    test('shows a note, and a tone', () => {
+      const el = figures([{ id: 'beds', value: 110, tone: 'warn', note: '100 is the safe level' }]);
+      assertEqual(text(el, 'beds', 'note'), '100 is the safe level');
+      assertEqual(tile(el, 'beds').dataset.tone, 'warn');
+    });
+
+    test('shows the empty text when there are no stats', () => {
+      assertEqual(mount('<sb-stat empty-text="No figures."></sb-stat>').textContent.trim(), 'No figures.');
+    });
+
+    // ---- Changes ----
+
+    test('shows no change the first time', () => {
+      assertEqual(figures().querySelectorAll('.sb-stat__change').length, 0);
+    });
+
+    test('setting the stats again shows how each changed, in its own format', () => {
+      const el = figures();
+      update(el, { stock: 31, cost: 1450 });
+      assertEqual(change(el, 'stock').textContent, '▼ 6');
+      assertEqual(change(el, 'cost').textContent, '▲ £250');
+      assertEqual(change(el, 'day'), null, 'unchanged shows nothing');
+    });
+
+    test('a change is good or bad news by which way is better', () => {
+      const el = figures();
+      update(el, { stock: 31, cost: 1100, day: 4 });
+      assertEqual(change(el, 'stock').dataset.verdict, 'bad', 'stock fell, and higher is better');
+      assertEqual(change(el, 'cost').dataset.verdict, 'good', 'cost fell, and lower is better');
+      assertEqual(change(el, 'day').dataset.verdict, 'neutral', 'no view on which is better');
+    });
+
+    test('a change is against the last update, not the first', () => {
+      const el = figures();
+      update(el, { stock: 31 });
+      update(el, { stock: 33 });
+      assertEqual(change(el, 'stock').textContent, '▲ 2');
+      update(el, {});
+      assertEqual(change(el, 'stock'), null, 'nothing new');
+    });
+
+    test('changes are matched by id, whatever the order', () => {
+      const el = figures();
+      el.stats = [{ ...STATS[2], value: 5 }, { ...STATS[0], value: 40 }];
+      assertEqual([change(el, 'day').textContent, change(el, 'stock').textContent], ['▲ 2', '▲ 3']);
+    });
+
+    // ---- Pointing and selection ----
+
+    test('highlights stats by id, and keeps them when the stats are set again', () => {
+      const el = figures();
+      el.highlight = ['cost'];
+      update(el, { cost: 1300 });
+      assert(tile(el, 'cost').classList.contains('sb-stat__tile--highlighted') && !tile(el, 'stock').classList.contains('sb-stat__tile--highlighted'));
+      el.highlight = [];
+      assertEqual(el.querySelectorAll('.sb-stat__tile--highlighted').length, 0);
+    });
+
+    test('clicking a tile fires sb-select with its stat', () => {
+      const el = figures();
+      const events = recordEvents(el, 'sb-select');
+      tile(el, 'cost').querySelector('.sb-stat__value').click();
+      assertEqual(events[0].detail.stat, STATS[1]);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two sets on one page keep their own history', () => {
+      mount('<div><sb-stat></sb-stat><sb-stat></sb-stat></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-stat');
+      a.stats = STATS;
+      b.stats = STATS;
+      update(a, { stock: 50 });
+      assertEqual([a.querySelectorAll('.sb-stat__change').length, b.querySelectorAll('.sb-stat__change').length], [1, 0]);
+    });
+
+    test('displays labels, units, notes and values as text, never as markup', () => {
+      const el = figures([{ id: '<i>x</i>', label: '<b>L</b>', value: '<b>v</b>', unit: '<i>u</i>', note: '<b>n</b>' }]);
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(el.querySelector('.sb-stat__label').textContent, '<b>L</b>');
+    });
+  </script>
+</body>
+</html>
