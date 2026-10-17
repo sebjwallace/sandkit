@@ -54,7 +54,16 @@
   }
 
   // Resolves after the browser has had a chance to lay out and fire observers.
-  const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
+  // Headless browsers occasionally skip a frame, so it also resolves after a short wait.
+  const FRAME_FALLBACK_MS = 100;
+  const nextFrame = () => new Promise((resolve) => {
+    requestAnimationFrame(() => setTimeout(resolve));
+    setTimeout(resolve, FRAME_FALLBACK_MS);
+  });
+
+  // A test that never finishes fails on its own, rather than silencing every test after it.
+  const TEST_TIMEOUT_MS = 3000;
+  const timeout = () => new Promise((_, reject) => setTimeout(() => reject(new Error(`timed out after ${TEST_TIMEOUT_MS} ms`)), TEST_TIMEOUT_MS));
 
   // Collects the events of one type that bubble up to `target`.
   function recordEvents(target, type) {
@@ -67,7 +76,7 @@
     const results = [];
     for (const { name, fn } of tests) {
       try {
-        await fn();
+        await Promise.race([fn(), timeout()]);
         results.push({ name, passed: true });
       } catch (err) {
         results.push({ name, passed: false, error: err.message });

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Runs every test.html in the repository in headless Chrome and reports the results.
-// No dependencies: just Node and Chrome. Exits with status 1 if anything fails.
+// Runs every test in the repository and reports the results: each test.html in headless Chrome,
+// and each test.mjs in Node. No dependencies: just Node and Chrome. Exits with status 1 if anything fails.
 //
 //   node test/run.mjs
 //   CHROME=/path/to/chrome node test/run.mjs     to use a specific browser
@@ -31,12 +31,29 @@ function findChrome() {
   return chrome;
 }
 
-function findTestPages(dir) {
+const TEST_FILES = ['test.html', 'test.mjs'];
+
+function findTests(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
-    if (entry.isDirectory()) return isSkipped(entry.name) ? [] : findTestPages(path);
-    return entry.name === 'test.html' ? [path] : [];
+    if (entry.isDirectory()) return isSkipped(entry.name) ? [] : findTests(path);
+    return TEST_FILES.includes(entry.name) ? [path] : [];
   });
+}
+
+// Node tests print one line per test, "✓ name" or "✗ name: error", and fail with a non-zero exit.
+function runNodeTest(file) {
+  let output;
+  try {
+    output = execFileSync('node', [file], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 });
+  } catch (err) {
+    output = err.stdout || err.stderr;
+  }
+  const results = output.split('\n').filter((line) => /^[✓✗] /.test(line)).map((line) => {
+    const [name, error] = line.slice(2).split(/: (.*)/s);
+    return { name, passed: line.startsWith('✓'), error };
+  });
+  return results.length ? results : [{ name: 'Test file', passed: false, error: output.trim() || NO_RESULTS }];
 }
 
 // Each page gets a fresh browser profile, so saved settings never leak between test files.
@@ -68,9 +85,10 @@ function runPageWithRetry(chrome, page) {
 const chrome = findChrome();
 let passed = 0, failed = 0;
 
-for (const page of findTestPages(ROOT)) {
-  console.log(`\n${relative(ROOT, page)}`);
-  for (const result of runPageWithRetry(chrome, page)) {
+for (const file of findTests(ROOT)) {
+  console.log(`\n${relative(ROOT, file)}`);
+  const results = file.endsWith('.mjs') ? runNodeTest(file) : runPageWithRetry(chrome, file);
+  for (const result of results) {
     if (result.passed) passed++; else failed++;
     console.log(`  ${result.passed ? '✓' : '✗'} ${result.name}${result.error ? `\n      ${result.error}` : ''}`);
   }

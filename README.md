@@ -107,6 +107,7 @@ sandkit/
   components/       reusable building blocks, each in its own folder with a demo
   shell/            the environment around a sandbox: header, settings, theming
   templates/        the starting point for a new sandbox
+  tools/            optional helpers, such as setting up a sandbox in one command
   examples/         complete sandboxes, built with the parts above
   test/             the test runner, and tests that span the whole library
   DECISIONS.md      the decisions behind Sandkit, and why

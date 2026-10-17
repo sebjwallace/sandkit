@@ -33,7 +33,15 @@ Then sketch the chapters: one line each, starting with the most fundamental idea
 
 ## 2. Set up the folder
 
-The sandbox lives in its own folder. Fetch Sandkit (for example `git clone --depth 1 https://github.com/sebjwallace/sandkit` into a temporary location) and:
+The sandbox lives in its own folder. Fetch Sandkit (for example `git clone --depth 1 https://github.com/sebjwallace/sandkit` into a temporary location).
+
+**If Node is available,** one command does all of the setup below, and running it again adds components or updates the copies:
+
+```sh
+node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
+```
+
+**Otherwise, copy by hand:**
 
 1. **Copy the template.** Copy the contents of `templates/sandbox/` into the sandbox folder.
 2. **Copy what the sandbox uses into `lib/sandkit/`, keeping Sandkit's own paths.** Links between manifests and practices then still work.
@@ -157,4 +165,4 @@ That loop, explore, question, correct, extend, is the point of a sandbox.
 
 ## Updating Sandkit in a sandbox
 
-Re-copy the files listed in `lib/sandkit/SOURCE.md` from the latest Sandkit, keeping their paths, update `SOURCE.md`, and open the sandbox to see it still works. Each sandbox carries its own copy, so nothing changes under it until someone chooses to update.
+Re-copy the files listed in `lib/sandkit/SOURCE.md` from the latest Sandkit, keeping their paths, and update `SOURCE.md`. With Node, `node <sandkit>/tools/setup.mjs <sandbox-folder>` does both. Then open the sandbox to see it still works. Each sandbox carries its own copy, so nothing changes under it until someone chooses to update.

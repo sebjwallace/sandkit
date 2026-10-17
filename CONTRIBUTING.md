@@ -35,7 +35,7 @@ components/sb-example/
 
 ## Running the tests
 
-Open any `test.html` in a browser to see its results. To run every test at once in headless Chrome:
+Open any `test.html` in a browser to see its results; run any `test.mjs` with Node. To run every test at once (the pages in headless Chrome, the rest in Node):
 
 ```sh
 node test/run.mjs

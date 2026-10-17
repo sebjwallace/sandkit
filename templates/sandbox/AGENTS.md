@@ -44,4 +44,4 @@ How this sandbox is meant to grow. Update it at the end of every iteration, when
 
 ## Updating Sandkit
 
-Re-copy the files listed in `lib/sandkit/SOURCE.md` from the Sandkit repository, keeping their paths, update `SOURCE.md`, and open the sandbox to see it still works.
+Re-copy the files listed in `lib/sandkit/SOURCE.md` from the Sandkit repository, keeping their paths, and update `SOURCE.md`. If Node is available, Sandkit's `node tools/setup.mjs <this-folder>` does both, and `node tools/setup.mjs <this-folder> sb-name` adds a component. Then open the sandbox to see it still works.
