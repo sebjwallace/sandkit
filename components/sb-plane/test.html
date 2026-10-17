@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-plane tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-plane.js"></script>
+</head>
+<body>
+  <script>
+    // 400 × 400 with a range of 5: 40 pixels per unit, origin at (200, 200).
+    function plane(attrs = '') {
+      return mount(`<sb-plane style="width: 400px" height="400" range="5" ${attrs}></sb-plane>`);
+    }
+
+    const object = (el, id) => el.querySelector(`[data-object-id="${id}"]`);
+    const tipOf = (el, id) => object(el, id).querySelector('.sb-plane__head').getAttribute('points').split(' ')[0].split(',').map(Number);
+    const tailOf = (el, id) => { const line = object(el, id).querySelector('.sb-plane__shaft'); return [Number(line.getAttribute('x1')), Number(line.getAttribute('y1'))]; };
+
+    function drag(el, id, dx, dy) {
+      const handle = el.querySelector(`[data-drag-id="${id}"]`);
+      const x = Number(handle.getAttribute('cx')), y = Number(handle.getAttribute('cy'));
+      handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x, clientY: y }));
+      window.dispatchEvent(new PointerEvent('pointermove', { clientX: x + dx, clientY: y + dy }));
+      window.dispatchEvent(new PointerEvent('pointerup', { clientX: x + dx, clientY: y + dy }));
+    }
+
+    // ---- The plane ----
+
+    test('draws a grid, axes and numbered ticks, centred on the origin', () => {
+      const el = plane();
+      assert(el.querySelectorAll('.sb-plane__grid').length > 10, 'grid lines');
+      assertEqual(el.querySelectorAll('.sb-plane__axis').length, 2);
+      const ticks = [...el.querySelectorAll('.sb-plane__tick')].map((t) => t.textContent);
+      assert(ticks.includes('1') && ticks.includes('-4'), `ticks: ${ticks}`);
+    });
+
+    test('leaves out ticks that would be cut off at the edge', () => {
+      const ticks = [...plane().querySelectorAll('.sb-plane__tick')].map((t) => t.textContent);
+      assert(!ticks.includes('5') && !ticks.includes('-5'), `ticks: ${ticks}`);
+    });
+
+    test('draws at its real width, with square grid cells', () => {
+      const el = mount('<sb-plane style="width: 600px" height="300" range="5"></sb-plane>');
+      assertEqual(el.querySelector('svg').getAttribute('width'), '600');
+      el.objects = [{ type: 'vector', id: 'v', x: 1, y: 1 }];
+      const [x, y] = tipOf(el, 'v');
+      assertEqual([x - 300, 150 - y], [30, 30], 'one unit is the same distance across as up');
+    });
+
+    // ---- Objects ----
+
+    test('draws a vector from the origin to its coordinates, with its label', () => {
+      const el = plane();
+      el.objects = [{ type: 'vector', id: 'v', x: 2, y: 1, label: 'v' }];
+      assertEqual(tailOf(el, 'v'), [200, 200]);
+      assertEqual(tipOf(el, 'v'), [280, 160]);
+      assertEqual(object(el, 'v').querySelector('.sb-plane__label').textContent, 'v');
+    });
+
+    test('draws a vector from another point when given one', () => {
+      const el = plane();
+      el.objects = [{ type: 'vector', id: 'w', from: [2, 1], x: 1, y: 3 }];
+      assertEqual(tailOf(el, 'w'), [280, 160]);
+      assertEqual(tipOf(el, 'w'), [240, 80]);
+    });
+
+    test('draws points and polygons', () => {
+      const el = plane();
+      el.objects = [
+        { type: 'point', id: 'p', x: -1, y: -1 },
+        { type: 'polygon', id: 'square', points: [[0, 0], [1, 0], [1, 1], [0, 1]] }
+      ];
+      const dot = object(el, 'p').querySelector('circle');
+      assertEqual([Number(dot.getAttribute('cx')), Number(dot.getAttribute('cy'))], [160, 240]);
+      assertEqual(object(el, 'square').getAttribute('points'), '200,200 240,200 240,160 200,160');
+    });
+
+    test('colours objects by their tone', () => {
+      const el = plane();
+      el.objects = [{ type: 'vector', id: 'v', x: 1, y: 1, tone: 'good' }];
+      assert(object(el, 'v').querySelector('.sb-plane__shaft').classList.contains('sb-plane--good'));
+    });
+
+    // ---- Transformation ----
+
+    test('a matrix moves objects: the columns are where î and ĵ land', () => {
+      const el = plane();
+      el.objects = [{ type: 'vector', id: 'v', x: 1, y: 1 }];
+      el.matrix = [[2, 0], [0, 3]];
+      assertEqual(tipOf(el, 'v'), [280, 80], '(1, 1) becomes (2, 3)');
+    });
+
+    test('progress moves smoothly from no change to the full transformation', () => {
+      const el = plane();
+      el.objects = [{ type: 'vector', id: 'v', x: 1, y: 0 }];
+      el.matrix = [[3, 0], [0, 1]];
+      el.progress = 0;
+      assertEqual(tipOf(el, 'v'), [240, 200], 'unchanged at 0');
+      el.progress = 0.5;
+      assertEqual(tipOf(el, 'v'), [280, 200], 'halfway: (2, 0)');
+    });
+
+    test('a fixed object stays put while space moves around it', () => {
+      const el = plane();
+      el.objects = [{ type: 'vector', id: 'v', x: 1, y: 0, fixed: true }];
+      el.matrix = [[3, 0], [0, 1]];
+      assertEqual(tipOf(el, 'v'), [240, 200]);
+    });
+
+    test('draws the moved grid only while space is transformed', () => {
+      const el = plane();
+      assertEqual(el.querySelectorAll('.sb-plane__moved-grid').length, 0);
+      el.matrix = [[1, 1], [0, 1]];
+      assert(el.querySelectorAll('.sb-plane__moved-grid').length > 0, 'moved grid shown');
+    });
+
+    test('shows î and ĵ, moving with the transformation, when asked', () => {
+      const el = plane('basis');
+      el.matrix = [[0, -1], [1, 0]];
+      const labels = [...el.querySelectorAll('.sb-plane__label')].map((l) => l.textContent);
+      assertEqual(labels, ['î', 'ĵ']);
+      const heads = [...el.querySelectorAll('.sb-plane__head')].map((h) => h.getAttribute('points').split(' ')[0]);
+      assertEqual(heads, ['200,160', '160,200'], 'a quarter turn sends î up and ĵ left');
+    });
+
+    // ---- Dragging ----
+
+    test('dragging a vector moves it and fires sb-change, without jumping to the pointer', () => {
+      const el = plane();
+      el.objects = [{ type: 'vector', id: 'v', x: 2, y: 1, draggable: true }];
+      const changes = recordEvents(el, 'sb-change');
+      drag(el, 'v', 40, -40);
+      assertEqual(changes.at(-1).detail, { id: 'v', x: 3, y: 2 });
+      assertEqual(tipOf(el, 'v'), [320, 120]);
+    });
+
+    test('snaps to the grid when asked', () => {
+      const el = plane('snap="1"');
+      el.objects = [{ type: 'vector', id: 'v', x: 2, y: 1, draggable: true }];
+      const changes = recordEvents(el, 'sb-change');
+      drag(el, 'v', 47, -9);
+      assertEqual(changes.at(-1).detail, { id: 'v', x: 3, y: 1 });
+    });
+
+    test('dragging in transformed space moves the object in its own space', () => {
+      const el = plane();
+      el.objects = [{ type: 'vector', id: 'v', x: 1, y: 0, draggable: true }];
+      el.matrix = [[2, 0], [0, 2]];
+      const changes = recordEvents(el, 'sb-change');
+      drag(el, 'v', 80, 0);
+      assertEqual(changes.at(-1).detail, { id: 'v', x: 2, y: 0 }, 'two units on screen is one unit before doubling');
+    });
+
+    test('only draggable objects can be dragged', () => {
+      const el = plane();
+      el.objects = [{ type: 'vector', id: 'v', x: 2, y: 1 }];
+      assertEqual(el.querySelector('[data-drag-id]'), null);
+    });
+
+    test('changing the objects given does not change the plane', () => {
+      const el = plane();
+      const list = [{ type: 'vector', id: 'v', x: 2, y: 1 }];
+      el.objects = list;
+      list[0].x = 4;
+      assertEqual(el.objects[0].x, 2);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two planes on one page transform independently', () => {
+      mount('<div><sb-plane style="width: 300px"></sb-plane><sb-plane style="width: 300px"></sb-plane></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-plane');
+      a.matrix = [[1, 1], [0, 1]];
+      assertEqual([a.querySelectorAll('.sb-plane__moved-grid').length > 0, b.querySelectorAll('.sb-plane__moved-grid').length > 0], [true, false]);
+    });
+
+    test('shows labels as text, never as markup', () => {
+      const el = plane();
+      el.objects = [{ type: 'vector', id: 'v', x: 1, y: 1, label: '<b>v</b>' }];
+      assertEqual(el.querySelector('svg b'), null);
+    });
+  </script>
+</body>
+</html>

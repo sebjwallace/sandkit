@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-plane demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-plane.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 1000px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example .note { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .stage { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
+    .readout { font-size: 14px; }
+    .readout p { margin: 0 0 8px; }
+    .readout .math { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 600; }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .presets button { font: inherit; font-size: 13px; padding: 4px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); cursor: pointer; }
+    .presets button[aria-pressed="true"] { border-color: var(--sb-accent); background: var(--sb-accent-soft); }
+    .progress { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; }
+    .progress input { flex: 1; accent-color: var(--sb-accent); }
+    .progress button { font: inherit; font-size: 13px; padding: 4px 12px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); cursor: pointer; }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-plane">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Vectors, shapes and transformations you can watch and drag.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Much of mathematics is geometry in disguise. A vector is an arrow; adding vectors is walking one arrow then another; a matrix is a way of moving the whole of space. <code>sb-plane</code> makes that geometry something to handle: drag vectors and see their sums follow, then apply a matrix and watch the grid itself bend, stretch and turn, smoothly, from where it started to where the matrix sends it.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Vectors and their combinations.</strong> Sums, scaling, linear combinations and span, with arrows people can drag.</li>
+        <li><strong>Transformations.</strong> Rotations, shears, stretches and reflections, seen as space moving rather than numbers in a grid.</li>
+        <li><strong>Determinants and inverses.</strong> Watch the unit square's area change, or collapse to a line when there's no way back.</li>
+        <li><strong>Anything plotted in two dimensions,</strong> such as forces, velocities or positions in a physics sandbox.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Values over time.</strong> A chart shows a history better than points on a plane.</li>
+        <li><strong>Three dimensions.</strong> This plane is flat. A 3D space will be its own component.</li>
+        <li><strong>Curves and functions.</strong> This version draws vectors, points and polygons, not plotted functions.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-plane/sb-plane.js"&gt;&lt;/script&gt;
+&lt;sb-plane basis snap="1"&gt;&lt;/sb-plane&gt;
+
+&lt;script&gt;
+  const plane = document.querySelector('sb-plane');
+  plane.objects = [{ type: 'vector', id: 'v', x: 2, y: 1, label: 'v', draggable: true }];
+  plane.matrix = [[0, -1], [1, 0]];   // a quarter turn
+  plane.progress = 1;
+&lt;/script&gt;</pre>
+
+      <h3>Making it reveal, not just plot</h3>
+      <ul>
+        <li><strong>Animate transformations.</strong> Jumping straight to the result hides the idea; watching space move shows it.</li>
+        <li><strong>Show î and ĵ.</strong> Where the basis vectors land is the whole matrix, column by column.</li>
+        <li><strong>Let people drag.</strong> A vector they can move is one they can ask questions of.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Adding vectors</h2>
+      <p class="note">Drag the tips of v and w. Their sum walks v, then w, tip to tail.</p>
+      <div class="stage">
+        <sb-plane id="adding" range="5" snap="0.5" height="380"></sb-plane>
+        <div class="readout" id="sum"></div>
+      </div>
+    </section>
+
+    <section class="example">
+      <h2>Watching a transformation</h2>
+      <p class="note">Choose a matrix, then slide or play it. The grid, î, ĵ and the unit square all move with it; the square's area is the determinant.</p>
+      <div class="presets" id="presets"></div>
+      <div class="progress">
+        <button type="button" id="play">Play</button>
+        <input type="range" id="progress" min="0" max="1" step="0.01" value="0" aria-label="Progress">
+      </div>
+      <div class="stage">
+        <sb-plane id="transforming" range="3" basis height="380"></sb-plane>
+        <div class="readout" id="matrix"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ---- Adding vectors ----
+
+    const adding = document.getElementById('adding');
+    const vectors = { v: [2, 1], w: [-1, 2] };
+
+    function drawSum() {
+      const [vx, vy] = vectors.v, [wx, wy] = vectors.w;
+      adding.objects = [
+        { type: 'vector', id: 'v', x: vx, y: vy, label: 'v', draggable: true },
+        { type: 'vector', id: 'w', x: wx, y: wy, label: 'w', tone: 'good', draggable: true },
+        { type: 'vector', id: 'w-moved', from: [vx, vy], x: vx + wx, y: vy + wy, tone: 'muted' },
+        { type: 'vector', id: 'sum', x: vx + wx, y: vy + wy, label: 'v + w', tone: 'warn' }
+      ];
+      document.getElementById('sum').innerHTML = `
+        <p><span class="math">v = (${vx}, ${vy})</span></p>
+        <p><span class="math">w = (${wx}, ${wy})</span></p>
+        <p><span class="math">v + w = (${vx + wx}, ${vy + wy})</span></p>
+        <p>Add the x parts, add the y parts. In the picture, that's walking along v, then along w.</p>`;
+    }
+
+    adding.addEventListener('sb-change', (e) => {
+      vectors[e.detail.id] = [e.detail.x, e.detail.y];
+      drawSum();
+    });
+
+    // ---- Watching a transformation ----
+
+    const transforming = document.getElementById('transforming');
+    const progress = document.getElementById('progress');
+    const PRESETS = {
+      'Quarter turn': [[0, -1], [1, 0]],
+      'Shear': [[1, 1], [0, 1]],
+      'Stretch': [[2, 0], [0, 0.5]],
+      'Flip': [[-1, 0], [0, 1]],
+      'Squash flat': [[1, 2], [0.5, 1]]
+    };
+    let chosen = 'Shear';
+
+    transforming.objects = [{ type: 'polygon', id: 'square', points: [[0, 0], [1, 0], [1, 1], [0, 1]], tone: 'warn', label: 'unit square' }];
+
+    document.getElementById('presets').innerHTML = Object.keys(PRESETS)
+      .map((name) => `<button type="button" data-preset="${name}">${name}</button>`).join('');
+    document.getElementById('presets').addEventListener('click', (e) => {
+      const name = e.target.dataset.preset;
+      if (!name) return;
+      chosen = name;
+      progress.value = 0;
+      drawTransformation();
+    });
+
+    function drawTransformation() {
+      const [[a, b], [c, d]] = PRESETS[chosen];
+      transforming.matrix = PRESETS[chosen];
+      transforming.progress = Number(progress.value);
+      document.querySelectorAll('[data-preset]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.preset === chosen)));
+      const det = a * d - b * c;
+      document.getElementById('matrix').innerHTML = `
+        <p><span class="math">[ ${a}  ${b} ]<br>[ ${c}  ${d} ]</span></p>
+        <p>î lands on <span class="math">(${a}, ${c})</span>, ĵ on <span class="math">(${b}, ${d})</span>: the matrix's columns.</p>
+        <p>Determinant <span class="math">${det}</span>: the unit square's area ${det === 0 ? 'collapses to nothing, so space is squashed onto a line.' : det < 0 ? `becomes ${Math.abs(det)}, and space is flipped over.` : `becomes ${det}.`}</p>`;
+    }
+
+    progress.addEventListener('input', drawTransformation);
+
+    let playing = null;
+    document.getElementById('play').addEventListener('click', () => {
+      if (playing) return;
+      if (Number(progress.value) >= 1) progress.value = 0;
+      playing = setInterval(() => {
+        progress.value = Math.min(1, Number(progress.value) + 0.02);
+        drawTransformation();
+        if (Number(progress.value) >= 1) { clearInterval(playing); playing = null; }
+      }, 30);
+    });
+
+    // ---- Start ----
+
+    drawSum();
+    drawTransformation();
+  </script>
+</body>
+</html>
