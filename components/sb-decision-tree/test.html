@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-decision-tree tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-decision-tree.js"></script>
+</head>
+<body>
+  <script>
+    // What to wear: two of the outcomes are the same, so one branch never changes them.
+    const WEAR = { id: 'rain', question: 'Raining?', children: [
+      { id: 'coat', answer: 'yes', outcome: 'Coat', tone: 'warn' },
+      { id: 'cold', answer: 'no', question: 'Cold?', children: [
+        { id: 'jumper', answer: 'yes', outcome: 'Jumper' },
+        { id: 'windy', answer: 'no', question: 'Windy?', children: [
+          { id: 'jumper-too', answer: 'yes', outcome: 'Jumper' },
+          { id: 'tshirt', answer: 'no', outcome: 'T-shirt' }
+        ] }
+      ] }
+    ] };
+
+    // Dry, cold: a jumper.
+    const DRY_AND_COLD = [{ id: 'rain', value: 'no' }, { id: 'cold', value: '4°' }, { id: 'jumper' }];
+
+    function tree(root = WEAR, attrs = '') {
+      const el = mount(`<sb-decision-tree ${attrs}></sb-decision-tree>`);
+      el.root = root;
+      return el;
+    }
+
+    const byData = (el, selector, key, value) => [...el.querySelectorAll(selector)].find((n) => n.dataset[key] === value);
+    const node = (el, id) => byData(el, '.sb-decision-tree__node', 'nodeId', id);
+    const branch = (el, id) => byData(el, '.sb-decision-tree__branch', 'branchId', id);
+    const answer = (el, id) => byData(el, '.sb-decision-tree__answer', 'branchId', id);
+    const otherwise = (el, id) => byData(el, '.sb-decision-tree__otherwise', 'branchId', id);
+    const value = (el, id) => byData(el, '.sb-decision-tree__value', 'valueId', id).textContent;
+    const has = (element, modifier) => element.classList.contains(`${element.classList[0]}--${modifier}`);
+
+    // Positions on screen, so the tests check what people see rather than the sizes used.
+    const box = (el, id) => node(el, id).querySelector('.sb-decision-tree__shape').getBoundingClientRect();
+    const middle = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+    const near = (a, b, message) => assert(Math.abs(a - b) < 1, `${message}: ${a} is not ${b}`);
+    const apart = (a, b) => a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top;
+
+    // ---- Drawing ----
+
+    test('draws questions as boxes and outcomes as pills, each with its text', () => {
+      const el = tree();
+      assert(node(el, 'rain').classList.contains('sb-decision-tree__node--question'), 'a node with children is a question');
+      assert(node(el, 'coat').classList.contains('sb-decision-tree__node--outcome'), 'one without is an outcome');
+      assertEqual(node(el, 'rain').textContent.trim(), 'Raining?');
+      assertEqual(node(el, 'coat').textContent.trim(), 'Coat');
+      assert(node(el, 'coat').classList.contains('sb-decision-tree__node--warn'), 'tone exposed as a class');
+    });
+
+    test('a node\'s text can run over several lines', () => {
+      const el = tree({ id: 'q', question: 'Needles\nor broad?', children: [{ id: 'a', outcome: 'A' }] });
+      assertEqual([...node(el, 'q').querySelectorAll('tspan')].map((t) => t.textContent), ['Needles', 'or broad?']);
+    });
+
+    test('draws a branch into every answer, labelled with it', () => {
+      const el = tree();
+      assertEqual(el.querySelectorAll('.sb-decision-tree__branch').length, 6);
+      assertEqual(answer(el, 'cold').textContent, 'no');
+    });
+
+    test('is drawn at its real size, never scaled', () => {
+      const svg = tree().querySelector('svg');
+      assertEqual(Number(svg.getAttribute('width')), svg.viewBox.baseVal.width);
+    });
+
+    test('shows nothing without a root', () => {
+      assertEqual(mount('<sb-decision-tree></sb-decision-tree>').innerHTML, '');
+      const el = tree();
+      el.root = null;
+      assertEqual(el.innerHTML, '');
+    });
+
+    // ---- Layout ----
+
+    test('answers sit below their question, side by side in order, with the question over them', () => {
+      const el = tree();
+      const [rain, coat, cold] = ['rain', 'coat', 'cold'].map((id) => box(el, id));
+      assert(rain.bottom < coat.top && rain.bottom < cold.top, 'below');
+      assert(coat.right < cold.left, 'in order');
+      near(middle(rain).x, (middle(coat).x + middle(cold).x) / 2, 'centred over them');
+    });
+
+    test('direction="right" grows the tree to the right, and back down', () => {
+      const el = tree(WEAR, 'direction="right"');
+      assert(box(el, 'rain').right < box(el, 'coat').left && box(el, 'coat').bottom < box(el, 'cold').top);
+      el.direction = 'down';
+      assert(box(el, 'rain').bottom < box(el, 'coat').top);
+    });
+
+    test('nothing overlaps, even under a question wider than its answers', () => {
+      for (const direction of ['down', 'right']) {
+        const el = tree({ id: 'r', question: 'R', children: [
+          { id: 'a', outcome: 'A' },
+          { id: 'wide', question: 'A question much wider than both its answers?', children: [{ id: 'b', outcome: 'B' }, { id: 'c', outcome: 'C' }] },
+          { id: 'd', outcome: 'D' }
+        ] }, `direction="${direction}"`);
+        const ids = ['r', 'a', 'wide', 'b', 'c', 'd'];
+        for (const p of ids) for (const q of ids) if (p < q) assert(apart(box(el, p), box(el, q)), `${direction}: ${p} and ${q}`);
+        near(middle(box(el, 'wide'))[direction === 'down' ? 'x' : 'y'], (middle(box(el, 'b'))[direction === 'down' ? 'x' : 'y'] + middle(box(el, 'c'))[direction === 'down' ? 'x' : 'y']) / 2, `${direction}: centred`);
+      }
+    });
+
+    // ---- A case traced through ----
+
+    test('marks the way the case went, where it is, and fades the rest, without redrawing', () => {
+      const el = tree();
+      const svg = el.querySelector('svg');
+      el.trace = DRY_AND_COLD;
+      assert(['rain', 'cold', 'jumper'].every((id) => has(node(el, id), 'on-path')), 'on the way');
+      assert(has(node(el, 'jumper'), 'current') && !has(node(el, 'cold'), 'current'), 'where it ended');
+      assert(has(branch(el, 'cold'), 'taken') && has(branch(el, 'jumper'), 'taken'), 'branches taken');
+      assert(has(node(el, 'coat'), 'off') && has(branch(el, 'windy'), 'off') && !has(node(el, 'cold'), 'off'), 'the rest faded');
+      assertEqual(el.querySelector('svg'), svg, 'same drawing');
+    });
+
+    test('shows the case\'s value at each question it passed', () => {
+      const el = tree();
+      el.trace = DRY_AND_COLD;
+      assertEqual([value(el, 'rain'), value(el, 'cold'), value(el, 'windy')], ['no', '4°', '']);
+      el.trace = [{ id: 'rain' }, { id: 'coat' }];
+      assertEqual(value(el, 'rain'), '', 'none given');
+    });
+
+    test('marks the answers not taken that would have changed the outcome, with where they lead', () => {
+      const el = tree();
+      el.trace = DRY_AND_COLD;
+      assert(has(branch(el, 'coat'), 'alternative') && has(otherwise(el, 'coat'), 'alternative'), 'raining would have meant a coat');
+      assertEqual(otherwise(el, 'coat').textContent, '→ Coat');
+      assert(has(branch(el, 'windy'), 'alternative'), 'warm could have meant a T-shirt');
+      assertEqual(otherwise(el, 'windy').textContent, '→ Jumper or T-shirt');
+      assert(!has(branch(el, 'tshirt'), 'alternative'), 'not under a question the case never reached');
+    });
+
+    test('an answer not taken that leads to the same outcome is not marked', () => {
+      const el = tree();
+      el.trace = [{ id: 'rain' }, { id: 'cold' }, { id: 'windy' }, { id: 'jumper-too' }];
+      assert(!has(branch(el, 'jumper'), 'alternative'), 'cold would have been a jumper too');
+      assert(has(branch(el, 'tshirt'), 'alternative'), 'still windy would not');
+    });
+
+    test('a case still on its way marks every answer not taken', () => {
+      const el = tree();
+      el.trace = [{ id: 'rain', value: 'no' }, { id: 'cold' }];
+      assert(has(branch(el, 'coat'), 'alternative'));
+      assertEqual(el.querySelectorAll('.sb-decision-tree__branch--alternative').length, 1, 'only at questions it has passed');
+    });
+
+    test('clearing the trace clears every mark', () => {
+      const el = tree();
+      el.trace = DRY_AND_COLD;
+      el.trace = [];
+      assertEqual(el.querySelectorAll('[class*="--on-path"], [class*="--off"], [class*="--taken"], [class*="--alternative"]').length, 0);
+      assertEqual(value(el, 'cold'), '');
+    });
+
+    test('the trace survives the tree being set again', () => {
+      const el = tree();
+      el.trace = DRY_AND_COLD;
+      el.root = { ...WEAR };
+      assert(has(node(el, 'jumper'), 'current'));
+      assertEqual(value(el, 'cold'), '4°');
+    });
+
+    // ---- Counts ----
+
+    test('counts join the answers, and make busier branches thicker', () => {
+      const el = tree();
+      el.counts = { rain: 100, coat: 30, cold: 70, jumper: 50, windy: 20 };
+      assertEqual(answer(el, 'cold').textContent, 'no · 70');
+      const width = (id) => parseFloat(getComputedStyle(branch(el, id)).strokeWidth);
+      assert(width('cold') > width('coat'), `${width('cold')} > ${width('coat')}`);
+      assertEqual(answer(el, 'tshirt').textContent, 'no', 'none given');
+    });
+
+    // ---- Pointing and selecting ----
+
+    test('highlights the nodes named', () => {
+      const el = tree();
+      el.highlight = ['cold'];
+      assert(has(node(el, 'cold'), 'highlighted') && !has(node(el, 'rain'), 'highlighted'));
+      el.highlight = [];
+      assert(!has(node(el, 'cold'), 'highlighted'));
+    });
+
+    test('a highlighted node off the case\'s way is not faded', () => {
+      const el = tree();
+      el.trace = DRY_AND_COLD;
+      el.highlight = ['coat'];
+      assertEqual(getComputedStyle(node(el, 'coat')).opacity, '1');
+      assert(getComputedStyle(node(el, 'tshirt')).opacity < 1, 'others still are');
+    });
+
+    test('clicking a node fires sb-select with it', () => {
+      const el = tree();
+      const selections = recordEvents(el, 'sb-select');
+      node(el, 'coat').querySelector('text').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      assertEqual(selections.map((e) => e.detail.node.id), ['coat']);
+      assertEqual(selections[0].detail.node, WEAR.children[0], 'the node as given');
+    });
+
+    test('pointing at a node fires sb-point once, and null on leaving', () => {
+      const el = tree();
+      const points = recordEvents(el, 'sb-point');
+      const shape = node(el, 'cold').querySelector('rect');
+      shape.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      node(el, 'cold').querySelector('text').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(points.map((e) => e.detail?.node.id ?? null), ['cold', null]);
+    });
+
+    test('setting properties fires no events', () => {
+      const el = tree();
+      const all = [recordEvents(el, 'sb-select'), recordEvents(el, 'sb-point')];
+      el.trace = DRY_AND_COLD;
+      el.highlight = ['rain'];
+      el.counts = { rain: 1 };
+      assertEqual(all.flat().length, 0);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two trees on one page keep their own traces and direction', () => {
+      mount('<div><sb-decision-tree></sb-decision-tree><sb-decision-tree direction="right"></sb-decision-tree></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-decision-tree');
+      a.root = WEAR;
+      b.root = WEAR;
+      a.trace = DRY_AND_COLD;
+      assertEqual([a.querySelectorAll('.sb-decision-tree__node--on-path').length, b.querySelectorAll('.sb-decision-tree__node--on-path').length], [3, 0]);
+      assertEqual([a.direction, b.direction], ['down', 'right']);
+    });
+
+    test('displays text as text, never as markup', () => {
+      const el = tree({ id: 'q', question: '<b>q</b>', children: [{ id: 'a', answer: '<i>yes</i>', outcome: '<b>A</b>' }] });
+      el.trace = [{ id: 'q', value: '<i>v</i>' }, { id: 'a' }];
+      el.counts = { a: '<b>1</b>' };
+      assertEqual(el.querySelectorAll('b, i').length, 0, 'anywhere, since the parser moves such tags out of an svg');
+      assertEqual(node(el, 'q').textContent.trim(), '<b>q</b>');
+      assertEqual(value(el, 'q'), '<i>v</i>');
+    });
+  </script>
+</body>
+</html>

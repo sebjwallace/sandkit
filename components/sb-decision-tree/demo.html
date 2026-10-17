@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-decision-tree demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-decision-tree.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0 0 10px; font-size: 13px; }
+    .actions label { display: flex; align-items: center; gap: 6px; }
+    .actions input[type="range"] { accent-color: var(--sb-accent); }
+    .actions output { min-width: 3.5em; font-variant-numeric: tabular-nums; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-text); background: var(--sb-surface-2); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button[aria-pressed="true"] { color: var(--sb-accent-text); background: var(--sb-accent); border-color: var(--sb-accent); }
+    .example .readout { margin: 10px 0 0; min-height: 1.5em; color: var(--sb-text); }
+    .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+    .point[data-case], .point[data-leaf] { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-decision-tree">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A decision tree that shows the way a case went, and which answers would have changed where it ended up.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>A decision tree asks one question at a time, and each answer leads to the next question or to an outcome. Rules for lending, triage, eligibility and diagnosis are often trees, and so are many machine-learning classifiers. Seen whole, a tree shows every way a case can go. With one case traced through it, it shows why that case ended where it did: the value it had at each question, and the answers that would have taken it somewhere else.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Explaining one decision.</strong> Trace a case and read its way down, with its value at each question.</li>
+        <li><strong>Seeing what would change it.</strong> The branches not taken that lead to a different outcome are marked with where they lead, so the questions that decided the case stand out from those that didn't matter.</li>
+        <li><strong>Seeing where cases go.</strong> Give counts, and each branch is as thick as the share of cases that took it.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>A process that loops or comes back together.</strong> A tree only branches. When steps lead back or join, use a flowchart.</li>
+        <li><strong>Rules applied in order, rather than a branching set of questions.</strong> A list of rules with the one that fired marked reads better.</li>
+        <li><strong>Choices under uncertainty,</strong> with probabilities and payoffs. This tree's branches are answers, not chances; it doesn't work out expected values.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-decision-tree/sb-decision-tree.js"&gt;&lt;/script&gt;
+&lt;sb-decision-tree&gt;&lt;/sb-decision-tree&gt;
+
+&lt;script&gt;
+  const tree = document.querySelector('sb-decision-tree');
+  tree.root = { id: 'rain', question: 'Raining?', children: [
+    { id: 'coat', answer: 'yes', outcome: 'Take a coat' },
+    { id: 'cold', answer: 'no', question: 'Below 10°?', children: [
+      { id: 'jumper', answer: 'yes', outcome: 'Wear a jumper' },
+      { id: 'tshirt', answer: 'no', outcome: 'T-shirt' }
+    ] }
+  ] };
+  tree.trace = [{ id: 'rain', value: 'no' }, { id: 'cold', value: '14°' }, { id: 'tshirt' }];
+&lt;/script&gt;</pre>
+      <p>A node with <code>children</code> is a question; one without is an outcome. Each child's <code>answer</code> labels the branch into it. You never place anything: the tree lays itself out, down the page or, with <code>direction="right"</code>, across it.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Let the model decide, and trace it.</strong> The model applies its own rules and sets <code>trace</code> to the way the case went. The component never evaluates anything, so the tree can't disagree with the model.</li>
+        <li><strong>Give the value, not just the answer.</strong> "42k" on the income question says more than the branch "30–60k" alone.</li>
+        <li><strong>Set <code>counts</code></strong> when the tree sorts many cases, so the busy branches and the rare outcomes stand out.</li>
+        <li><strong>Connect it.</strong> Point the prose at a question with <code>highlight</code>, and listen for <code>sb-select</code> to explain the rule behind a node.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A loan application</h2>
+      <p>The lender's rules as a tree. <span class="point" data-nodes="income">Income</span> is asked first, and decides which <span class="point" data-nodes="debt-mid,debt-high">debt question</span> comes next: <span class="point" data-nodes="approve-high,refer-high">higher earners</span> are allowed more debt. Only <span class="point" data-nodes="years">the middle band</span> is asked how long they've been in work. Move the applicant's figures, or try <span class="point" data-nodes="refer" data-case="45,0.3,1">a 45k earner a year into a job</span>: referred, though the dashed branch shows two years would have meant approval. <span class="point" data-nodes="stretched" data-case="45,0.5,1">With more debt</span>, the years never come into it.</p>
+      <div class="actions">
+        <label>Income <input id="loan-income" type="range" min="10" max="100" step="1" value="42"><output id="loan-income-value"></output></label>
+        <label>Debt ratio <input id="loan-debt" type="range" min="0" max="0.8" step="0.01" value="0.3"><output id="loan-debt-value"></output></label>
+        <label>Years in work <input id="loan-years" type="range" min="0" max="10" step="1" value="1"><output id="loan-years-value"></output></label>
+      </div>
+      <sb-decision-tree id="loan" direction="right"></sb-decision-tree>
+      <p class="readout" id="loan-readout"></p>
+    </section>
+
+    <section class="example">
+      <h2>Naming a tree from its leaf</h2>
+      <p>A key for trees in a park, with how many of the 120 surveyed came out at each. <span class="point" data-nodes="type">The first question</span> does the most work: <span class="point" data-nodes="divided">broad leaves</span> are three in four. <span class="point" data-nodes="oak">Oak</span> is the most common tree, and <span class="point" data-nodes="larch,chestnut">larch and horse chestnut</span> the rarest. Pick a leaf someone brought back, such as <span class="point" data-nodes="birch" data-leaf="Small and saw-edged">a small, saw-edged one</span>, and follow it through the key.</p>
+      <div class="actions" id="leaves"></div>
+      <sb-decision-tree id="key"></sb-decision-tree>
+    </section>
+  </main>
+
+  <script>
+    // ---- A loan application ----
+
+    const loan = document.getElementById('loan');
+    loan.root = { id: 'income', question: 'Income?', children: [
+      { id: 'low', answer: 'under 30k', outcome: 'Decline', tone: 'bad' },
+      { id: 'debt-mid', answer: '30–60k', question: 'Debt ratio?', children: [
+        { id: 'years', answer: 'up to 0.35', question: 'Years in work?', children: [
+          { id: 'refer', answer: 'under 2', outcome: 'Refer', tone: 'warn' },
+          { id: 'approve-mid', answer: '2 or more', outcome: 'Approve', tone: 'good' }
+        ] },
+        { id: 'stretched', answer: 'over 0.35', outcome: 'Decline', tone: 'bad' }
+      ] },
+      { id: 'debt-high', answer: 'over 60k', question: 'Debt ratio?', children: [
+        { id: 'approve-high', answer: 'up to 0.5', outcome: 'Approve', tone: 'good' },
+        { id: 'refer-high', answer: 'over 0.5', outcome: 'Refer', tone: 'warn' }
+      ] }
+    ] };
+
+    // The lender's model: applies its rules and records the way it went.
+    function decide({ income, debt, years }) {
+      const trace = [{ id: 'income', value: `${income}k` }];
+      if (income < 30) return [...trace, { id: 'low' }];
+      if (income <= 60) {
+        trace.push({ id: 'debt-mid', value: debt.toFixed(2) });
+        if (debt > 0.35) return [...trace, { id: 'stretched' }];
+        trace.push({ id: 'years', value: years });
+        return [...trace, { id: years < 2 ? 'refer' : 'approve-mid' }];
+      }
+      trace.push({ id: 'debt-high', value: debt.toFixed(2) });
+      return [...trace, { id: debt <= 0.5 ? 'approve-high' : 'refer-high' }];
+    }
+
+    const OUTCOMES = { low: 'Decline', stretched: 'Decline', refer: 'Refer', 'refer-high': 'Refer', 'approve-mid': 'Approve', 'approve-high': 'Approve' };
+    const inputs = ['income', 'debt', 'years'].map((name) => document.getElementById(`loan-${name}`));
+
+    function showLoan() {
+      const [income, debt, years] = inputs.map((input) => Number(input.value));
+      document.getElementById('loan-income-value').textContent = `${income}k`;
+      document.getElementById('loan-debt-value').textContent = debt.toFixed(2);
+      document.getElementById('loan-years-value').textContent = years;
+      loan.trace = decide({ income, debt, years });
+      document.getElementById('loan-readout').textContent = `Outcome: ${OUTCOMES[loan.trace.at(-1).id]}.`;
+    }
+
+    for (const input of inputs) input.addEventListener('input', showLoan);
+
+    // ---- Naming a tree from its leaf ----
+
+    const key = document.getElementById('key');
+    key.root = { id: 'type', question: 'Needles\nor broad?', children: [
+      { id: 'bunched', answer: 'needles', question: 'In bunches?', children: [
+        { id: 'larch', answer: 'yes', outcome: 'Larch' },
+        { id: 'flat', answer: 'no', question: 'Soft and flat?', children: [
+          { id: 'yew', answer: 'yes', outcome: 'Yew' },
+          { id: 'pine', answer: 'no', outcome: 'Pine' }
+        ] }
+      ] },
+      { id: 'divided', answer: 'broad', question: 'Divided into\nleaflets?', children: [
+        { id: 'fan', answer: 'yes', question: 'Leaflets from\none point?', children: [
+          { id: 'chestnut', answer: 'yes', outcome: 'Horse chestnut' },
+          { id: 'ash', answer: 'no', outcome: 'Ash' }
+        ] },
+        { id: 'lobed', answer: 'no', question: 'Edge lobed?', children: [
+          { id: 'oak', answer: 'yes', outcome: 'Oak' },
+          { id: 'toothed', answer: 'no', question: 'Edge toothed?', children: [
+            { id: 'birch', answer: 'yes', outcome: 'Birch' },
+            { id: 'beech', answer: 'no', outcome: 'Beech' }
+          ] }
+        ] }
+      ] }
+    ] };
+    key.counts = {
+      type: 120, bunched: 30, larch: 6, flat: 24, yew: 9, pine: 15,
+      divided: 90, fan: 22, chestnut: 8, ash: 14, lobed: 68, oak: 31, toothed: 37, birch: 25, beech: 12
+    };
+
+    // What was seen at each question, for a few leaves brought back from the park.
+    const LEAVES = {
+      'Long needles in pairs': [['type', 'needles'], ['bunched', 'pairs'], ['flat', 'stiff'], ['pine']],
+      'Seven leaflets like a hand': [['type', 'broad'], ['divided', '7 leaflets'], ['fan', 'one point'], ['chestnut']],
+      'Rounded lobes': [['type', 'broad'], ['divided', 'whole'], ['lobed', 'rounded lobes'], ['oak']],
+      'Small and saw-edged': [['type', 'broad'], ['divided', 'whole'], ['lobed', 'smooth'], ['toothed', 'double teeth'], ['birch']]
+    };
+
+    const leaves = document.getElementById('leaves');
+    for (const name of Object.keys(LEAVES)) {
+      const button = Object.assign(document.createElement('button'), { textContent: name });
+      button.addEventListener('click', () => showLeaf(name));
+      leaves.append(button);
+    }
+
+    function showLeaf(name) {
+      for (const button of leaves.children) button.setAttribute('aria-pressed', button.textContent === name);
+      key.trace = LEAVES[name].map(([id, value]) => ({ id, value }));
+    }
+
+    // ---- Pointing from the prose ----
+
+    // Pointing at a phrase highlights the nodes it names; clicking one that describes a case traces it.
+    const ids = (list) => (list ? list.split(',') : []);
+    for (const point of document.querySelectorAll('.point')) {
+      const tree = point.closest('.example').querySelector('sb-decision-tree');
+      point.addEventListener('pointerenter', () => { tree.highlight = ids(point.dataset.nodes); });
+      point.addEventListener('pointerleave', () => { tree.highlight = []; });
+      point.addEventListener('click', () => {
+        if (point.dataset.case) {
+          point.dataset.case.split(',').forEach((v, i) => { inputs[i].value = v; });
+          showLoan();
+        }
+        if (point.dataset.leaf) showLeaf(point.dataset.leaf);
+      });
+    }
+
+    // ---- Start ----
+
+    showLoan();
+    showLeaf('Rounded lobes');
+  </script>
+</body>
+</html>
