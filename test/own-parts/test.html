@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Own parts tests</title>
+  <script src="../harness.js"></script>
+  <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="../../components/sb-math/sb-math.js"></script>
+  <script src="../../components/sb-c4/sb-c4.js"></script>
+</head>
+<body>
+  <script>
+    // The sandbox's side of "Your own parts" in practices/highlighting.md: hand-built parts that point
+    // and light up like components, and are found and gone to. Copied from the practice.
+    const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+
+    function pointable(root) {
+      // The sandbox's own part an element is in, or null if it's in none, or inside a component.
+      const partAt = (el) => {
+        const part = el?.closest('[data-ref]');
+        if (!part || !root.contains(part)) return null;
+        for (let at = part; at !== root; at = at.parentElement) if (at.localName.startsWith('sb-')) return null;
+        return part;
+      };
+      // Arriving at a part announces it; leaving ends the highlight, unless it went straight to another part.
+      const arrive = (e) => {
+        const part = partAt(e.target);
+        if (part && part !== partAt(e.relatedTarget)) announce(part.dataset.ref);
+      };
+      const leave = (e) => { if (partAt(e.target) && !partAt(e.relatedTarget)) announce(null); };
+      root.addEventListener('pointerover', arrive);
+      root.addEventListener('focusin', arrive);
+      root.addEventListener('pointerout', leave);
+      root.addEventListener('focusout', leave);
+
+      document.addEventListener('sb-highlight', (e) => {
+        for (const part of root.querySelectorAll('[data-ref]')) {
+          if (partAt(part) === part) part.classList.toggle('is-lit', part.dataset.ref === e.detail.ref);
+        }
+      });
+    }
+
+    const placesOf = (ref) => [...document.querySelectorAll(`[data-ref="${CSS.escape(ref)}"]`)];
+
+    function goTo(ref, index = 0) {
+      let place = placesOf(ref)[index];
+      if (!place) return false;
+      revealAround(place, ref);
+      if (!place.isConnected) place = placesOf(ref)[index];
+      if (!place) return false;
+      place.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      announce(ref);
+      setTimeout(() => announce(null), 1500);
+      return place;
+    }
+
+    function revealAround(place, ref) {
+      const hosts = [];
+      for (let el = place.parentElement; el; el = el.parentElement) if (typeof el.reveal === 'function') hosts.unshift(el);
+      hosts.forEach((host) => host.reveal(ref, place));
+    }
+
+    // A dock and a route, in the prose, a pill, an equation, a hand-drawn map and a diagram, with an
+    // assumption folded away. Everything sits in one pointable container.
+    function sandbox() {
+      const main = mount(`
+        <main>
+          <p>Orders leave from <span data-ref="DOC-2">dock 2</span> (<sb-id code="DOC-2"></sb-id>).</p>
+          <sb-math><math><mi data-ref="DOC-2">d</mi></math></sb-math>
+          <svg width="200" height="60">
+            <g data-ref="RTE-1" tabindex="0" aria-label="Route 1">
+              <path class="hit" d="M10,30 L190,30"/><path class="line" d="M10,30 L190,30"/><text x="80" y="20">Route 1</text>
+            </g>
+            <g data-ref="DOC-2"><rect class="shape" x="0" y="25" width="10" height="10"/></g>
+          </svg>
+          <sb-c4></sb-c4>
+          <details><summary>Assumptions</summary><p><span data-ref="ASM-3">Trucks leave full.</span></p></details>
+        </main>`);
+      pointable(main);
+      const diagram = main.querySelector('sb-c4');
+      diagram.model = { elements: [{ id: 'DOC-2', name: 'Dock 2' }] };
+      diagram.addEventListener('pointerover', (e) => announce(e.target.closest('[data-ref]')?.dataset.ref ?? null));
+      diagram.addEventListener('pointerleave', () => announce(null));
+      const details = main.querySelector('details');
+      details.reveal = (ref) => {
+        if (!details.querySelector(`[data-ref="${CSS.escape(ref)}"]`)) return false;
+        details.open = true;
+        return true;
+      };
+      const part = (selector) => main.querySelector(selector);
+      return {
+        main, details,
+        phrase: part('span[data-ref="DOC-2"]'),
+        pill: part('sb-id .sb-id__pill'),
+        term: part('mi[data-ref="DOC-2"]'),
+        route: part('g[data-ref="RTE-1"]'),
+        dock: part('g[data-ref="DOC-2"]'),
+        box: part('sb-c4 [data-ref="DOC-2"]'),
+        announced: recordEvents(document, 'sb-highlight')
+      };
+    }
+
+    // What the browser fires as the pointer moves from one element to another (either may be null).
+    function move(from, to) {
+      from?.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: to }));
+      to?.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, relatedTarget: from }));
+    }
+
+    const refs = (announced) => announced.map((e) => e.detail.ref);
+
+    test('pointing at a phrase announces its ref, and leaving it announces null', () => {
+      const { main, phrase, announced } = sandbox();
+      move(main, phrase);
+      move(phrase, main);
+      assertEqual(refs(announced), ['DOC-2', null]);
+    });
+
+    test('moving straight from one part to another announces the second, with no null between', () => {
+      const { main, phrase, route, announced } = sandbox();
+      move(main, phrase);
+      move(phrase, route.querySelector('.line'));
+      assertEqual(refs(announced), ['DOC-2', 'RTE-1']);
+    });
+
+    test('moving within a part, from its line to its label, announces nothing more', () => {
+      const { route, announced } = sandbox();
+      move(null, route.querySelector('.hit'));
+      move(route.querySelector('.hit'), route.querySelector('text'));
+      assertEqual(refs(announced), ['RTE-1']);
+    });
+
+    test('focusing a part announces it, and moving focus away announces null', () => {
+      const { route, announced } = sandbox();
+      route.focus();
+      route.blur();
+      assertEqual(refs(announced), ['RTE-1', null]);
+    });
+
+    test('announcing a ref lights every own part with it, and clears them on null', () => {
+      const { phrase, dock, route } = sandbox();
+      announce('DOC-2');
+      assertEqual([phrase, dock, route].map((el) => el.classList.contains('is-lit')), [true, true, false]);
+      announce(null);
+      assertEqual([phrase, dock].map((el) => el.classList.contains('is-lit')), [false, false]);
+    });
+
+    test('lighting leaves what components draw alone', () => {
+      const { main } = sandbox();
+      announce('DOC-2');
+      assertEqual(main.querySelectorAll('sb-id.is-lit, sb-math .is-lit, sb-c4 .is-lit').length, 0);
+    });
+
+    test('a pill inside the container announces once, by itself', () => {
+      const { phrase, pill, announced } = sandbox();
+      move(phrase, pill);
+      pill.dispatchEvent(new MouseEvent('mouseenter'));
+      assertEqual(refs(announced), [null, 'DOC-2']);
+    });
+
+    test('an equation\'s term inside the container keeps its highlight', () => {
+      const { term, announced } = sandbox();
+      move(null, term);
+      assertEqual(refs(announced).at(-1), 'DOC-2');
+    });
+
+    test('pointing at a box in a diagram announces its ref, lighting the own parts', () => {
+      const { box, phrase } = sandbox();
+      move(null, box.querySelector('.sb-c4__shape'));
+      assert(phrase.classList.contains('is-lit'));
+    });
+
+    test('placesOf finds own parts and components\' parts alike', () => {
+      const { phrase, dock, box } = sandbox();
+      const places = placesOf('DOC-2');
+      for (const el of [phrase, dock, box]) assert(places.includes(el), `finds ${el.localName}`);
+    });
+
+    // Last, since goTo announces null a moment after.
+    test('goTo opens a closed details to reach the part inside', () => {
+      const { details } = sandbox();
+      assert(!details.open, 'closed to begin with');
+      assert(goTo('ASM-3'));
+      assert(details.open, 'opened');
+    });
+  </script>
+</body>
+</html>

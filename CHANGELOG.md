@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.30 · 2026-10-18
+- Highlighting practice: "Your own parts", so hand-built parts point, light up and are found like components: `data-ref` on each, one `pointable` helper per container, lit with the sandbox's own `is-lit` class in theme colours, SVG notes, and `reveal` on parts that hide things. "Wiring the rest" announces for components that don't, such as `sb-c4`, from their `data-ref`. The template's `style.css` has the `is-lit` rules; the locating and building practices point to the section. `test/own-parts` checks the snippets.
+
 ## 0.2.29 · 2026-10-18
 - Forty-three components: added `sb-rule`, one rule as a card, a mandate or a conditional, with the branch in force and whether it holds shown as the model changes. The locating practice lists it.
 

@@ -19,6 +19,12 @@ main { max-width: var(--sb-page-width, none); margin: 0 auto; padding: 16px 24px
 .chapter p { margin: 0 0 6px; max-width: 900px; font-size: 14px; }
 .try { color: var(--sb-muted); }
 
+/* The sandbox's own parts, lit when what they stand for is pointed at anywhere (practices/highlighting.md). */
+.is-lit { background: var(--sb-accent-soft); color: var(--sb-accent); border-radius: 3px; }
+svg .is-lit .shape { fill: var(--sb-accent-soft); stroke: var(--sb-accent); stroke-width: 3; }
+svg .is-lit .line { stroke: var(--sb-accent); stroke-width: 3; }
+.hit { fill: none; stroke: transparent; stroke-width: 12; }
+
 .panel { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: calc(var(--sb-radius) * 1.25); padding: 14px; }
 
 @media (max-width: 800px) {

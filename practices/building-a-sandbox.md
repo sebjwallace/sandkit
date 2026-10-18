@@ -129,7 +129,7 @@ Each chapter introduces one idea, much as a well-designed game introduces one me
 
 - **Reveal, don't merely display.** Show why things happen: highlight the rule that fired, the stock that ran out, the cause behind the effect.
 - **Choose components from the catalog,** and combine them in the page. Each manifest's "Works well with" section suggests pairings and how to wire them. Components never go inside one another unless a component offers a slot for exactly that.
-- **Write what the sandbox needs itself** in the page or in `model.js`. Not everything needs a component.
+- **Write what the sandbox needs itself** in the page or in `model.js`. Not everything needs a component. Make hand-built parts point, light up and be found like components: see "Your own parts" in the [highlighting practice](highlighting.md#your-own-parts).
 - **Move reused parts out of the page.** When a piece of the surface is used by more than one chapter, make it the sandbox's own component in `components/`, with a short manifest like Sandkit's.
 - **Make it two-way.** Let people change things (parameters, scenarios, controls) and see the model respond.
 
