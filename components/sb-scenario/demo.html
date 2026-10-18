@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-scenario demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-scenario.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+    .prose { margin: 12px 0 0; font-size: 14px; }
+    .point { border-bottom: 1px dashed var(--sb-accent); cursor: default; }
+    .state { display: flex; gap: 18px; margin: 12px 0 0; padding: 8px 12px; border-radius: var(--sb-radius); background: var(--sb-surface-2); font-size: 13px; }
+    .state b { font-variant-numeric: tabular-nums; }
+    .state [data-tone="bad"] { color: var(--sb-bad); }
+    .state [data-tone="good"] { color: var(--sb-good); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-scenario">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A behaviour scenario as a card: Given, When, Then, each step pointable.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <section class="guide">
+      <p>A scenario says how something should behave in one situation: given where things stand, when something happens, then this is what follows. Written as Given, When and Then, it's a statement people can agree on before anyone argues about how it works. This card lays one out to read at a glance: keywords in capitals and lined up so every step's text starts in the same place, And and But tucked under the keyword they carry on, and quoted text and numbers marked as the values a step is about.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Pinning down what a model should do.</strong> A few scenarios beside the model make its expected behaviour concrete and testable by eye.</li>
+        <li><strong>Comparing situations.</strong> Two cards side by side, differing in one step, show exactly what changes the outcome.</li>
+        <li><strong>Walking through cause and effect.</strong> Step a scenario through the model and watch each line come true.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li>A list of rules a model follows, with the one that just applied: a rules table.</li>
+        <li>A process with branches and loops: a flowchart. A scenario is one path, start to finish.</li>
+        <li>Who sends what to whom: a sequence diagram.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <p>Give each card a scenario. Every step can carry a ref, so prose and other views can point at it; the code lights the whole card. See the <a href="manifest.md">manifest</a> for the full contract.</p>
+      <pre>card.scenario = {
+  code: 'GRID-1',
+  title: 'A generator trips',
+  steps: [
+    { keyword: 'Given', text: 'the grid is running at 50.0 Hz', ref: 'GRID-1.given' },
+    { keyword: 'When',  text: 'generator "G2" trips, losing 400 MW', ref: 'GRID-1.when' },
+    { keyword: 'Then',  text: 'frequency falls below 49.5 Hz', ref: 'GRID-1.then' }
+  ]
+};
+card.highlight = ['GRID-1.when'];   // a step's ref lights its line; the code lights the card
+card.current = 1;                   // the step happening now; later ones fade</pre>
+      <p>Clicking a step fires <code>sb-select</code> with the step and its index, and changes nothing by itself. The sandbox decides what it means, usually moving the model to that moment and setting <code>current</code>.</p>
+
+      <h3>Making it reveal, not just state</h3>
+      <ul>
+        <li><strong>Tie each step to the model.</strong> Clicking a step should show the model at that moment, so the words and the behaviour can be checked against each other.</li>
+        <li><strong>Point from the prose.</strong> One phrase can light the same step across several cards, such as the shared starting point, so readers see what scenarios have in common and where they part.</li>
+        <li><strong>Write steps with values.</strong> "Frequency falls below 49.2 Hz" says more than "frequency falls", and the value stands out for viewers to find in the model.</li>
+        <li><strong>Keep each card short.</strong> A handful of steps, one situation. Split a long one into two.</li>
+      </ul>
+    </section>
+
+    <h2 class="part">Examples</h2>
+
+    <section class="example">
+      <h2>A power grid losing a generator</h2>
+      <p>Click a step to move the model to that moment. Point at the underlined words to see which steps they mean.</p>
+      <div class="cards">
+        <sb-scenario id="grid-trip"></sb-scenario>
+        <sb-scenario id="grid-hold"></sb-scenario>
+      </div>
+      <div class="state" id="grid-state"></div>
+      <p class="prose">
+        Both scenarios start from the <span class="point" data-point="grid-start">same healthy grid</span>.
+        What differs is <span class="point" data-point="grid-loss">how much is lost</span>:
+        a small loss is <span class="point" data-point="GRID-2">covered by reserve</span>,
+        a large one <span class="point" data-point="grid-shed">sheds load</span>, while
+        <span class="point" data-point="GRID-1.but">hospitals stay connected</span>.
+      </p>
+    </section>
+
+    <section class="example">
+      <h2>A railway signal at danger</h2>
+      <p>The same component for a different subject. Click a step; point at the words below.</p>
+      <div class="cards">
+        <sb-scenario id="rail-spad"></sb-scenario>
+        <sb-scenario id="rail-clear"></sb-scenario>
+      </div>
+      <p class="prose">
+        The difference lies in <span class="point" data-point="rail-block">whether the block ahead is clear</span>,
+        and the safety system <span class="point" data-point="RAIL-1.then">only acts</span> when a train
+        <span class="point" data-point="RAIL-1.when">passes a red signal</span>.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // ---- Power grid ----
+
+    const gridTrip = document.getElementById('grid-trip');
+    const gridHold = document.getElementById('grid-hold');
+
+    gridTrip.scenario = {
+      code: 'GRID-1',
+      title: 'A large generator trips',
+      steps: [
+        { keyword: 'Given', text: 'the grid is running at 50.0 Hz', ref: 'GRID-1.given' },
+        { keyword: 'And', text: 'spinning reserve is 150 MW', ref: 'GRID-1.reserve' },
+        { keyword: 'When', text: 'generator "G2" trips, losing 400 MW', ref: 'GRID-1.when' },
+        { keyword: 'Then', text: 'frequency falls below 49.2 Hz', ref: 'GRID-1.then' },
+        { keyword: 'And', text: 'stage 1 load shedding disconnects 10% of demand', ref: 'GRID-1.shed' },
+        { keyword: 'But', text: 'feeders marked "critical" stay connected', ref: 'GRID-1.but' }
+      ]
+    };
+
+    gridHold.scenario = {
+      code: 'GRID-2',
+      title: 'A small generator trips',
+      steps: [
+        { keyword: 'Given', text: 'the grid is running at 50.0 Hz', ref: 'GRID-2.given' },
+        { keyword: 'And', text: 'spinning reserve is 150 MW', ref: 'GRID-2.reserve' },
+        { keyword: 'When', text: 'generator "G5" trips, losing 90 MW', ref: 'GRID-2.when' },
+        { keyword: 'Then', text: 'frequency dips to 49.8 Hz', ref: 'GRID-2.then' },
+        { keyword: 'And', text: 'reserve restores 50.0 Hz within 30 seconds', ref: 'GRID-2.restore' }
+      ]
+    };
+
+    // What the grid looks like after each step of each scenario: a tiny stand-in for a model.
+    const GRID_STATES = {
+      'GRID-1': [
+        { hz: 50.0, reserve: 150, supplied: 100 },
+        { hz: 50.0, reserve: 150, supplied: 100 },
+        { hz: 49.6, reserve: 0, supplied: 100 },
+        { hz: 49.1, reserve: 0, supplied: 100 },
+        { hz: 49.7, reserve: 0, supplied: 90 },
+        { hz: 49.7, reserve: 0, supplied: 90, critical: true }
+      ],
+      'GRID-2': [
+        { hz: 50.0, reserve: 150, supplied: 100 },
+        { hz: 50.0, reserve: 150, supplied: 100 },
+        { hz: 49.9, reserve: 60, supplied: 100 },
+        { hz: 49.8, reserve: 60, supplied: 100 },
+        { hz: 50.0, reserve: 60, supplied: 100 }
+      ]
+    };
+
+    function showGrid(code, index) {
+      const s = GRID_STATES[code][index];
+      const hzTone = s.hz < 49.5 ? 'bad' : s.hz < 50 ? '' : 'good';
+      document.getElementById('grid-state').innerHTML = `
+        <span>Frequency <b data-tone="${hzTone}">${s.hz.toFixed(1)} Hz</b></span>
+        <span>Reserve <b>${s.reserve} MW</b></span>
+        <span>Demand supplied <b data-tone="${s.supplied < 100 ? 'bad' : ''}">${s.supplied}%</b></span>
+        ${s.critical ? '<span>Critical feeders <b data-tone="good">on</b></span>' : ''}`;
+    }
+
+    // ---- Railway ----
+
+    const railSpad = document.getElementById('rail-spad');
+    const railClear = document.getElementById('rail-clear');
+
+    railSpad.scenario = {
+      code: 'RAIL-1',
+      title: 'A train passes a signal at danger',
+      steps: [
+        { keyword: 'Given', text: 'train "1A23" approaches signal "S14" at 60 km/h', ref: 'RAIL-1.given' },
+        { keyword: 'And', text: 'the block beyond "S14" is occupied', ref: 'RAIL-1.block' },
+        { keyword: 'When', text: 'the train passes "S14" showing red', ref: 'RAIL-1.when' },
+        { keyword: 'Then', text: 'the train protection applies the emergency brake', ref: 'RAIL-1.then' },
+        { keyword: 'And', text: 'the train stops within 200 m', ref: 'RAIL-1.stop' }
+      ]
+    };
+
+    railClear.scenario = {
+      code: 'RAIL-2',
+      title: 'A train is given a clear signal',
+      steps: [
+        { keyword: 'Given', text: 'train "1A23" approaches signal "S14" at 60 km/h', ref: 'RAIL-2.given' },
+        { keyword: 'And', text: 'the block beyond "S14" is clear', ref: 'RAIL-2.block' },
+        { keyword: 'When', text: 'the signaller sets the route', ref: 'RAIL-2.when' },
+        { keyword: 'Then', text: '"S14" shows green', ref: 'RAIL-2.then' },
+        { keyword: 'But', text: 'the train protection stays silent', ref: 'RAIL-2.silent' }
+      ]
+    };
+
+    // ---- Pointing: prose refs that name several steps ----
+
+    const GROUPS = {
+      'grid-start': ['GRID-1.given', 'GRID-1.reserve', 'GRID-2.given', 'GRID-2.reserve'],
+      'grid-loss': ['GRID-1.when', 'GRID-2.when'],
+      'grid-shed': ['GRID-1.then', 'GRID-1.shed'],
+      'rail-block': ['RAIL-1.block', 'RAIL-2.block']
+    };
+
+    const cards = [...document.querySelectorAll('sb-scenario')];
+
+    function point(ref) {
+      const refs = ref ? GROUPS[ref] ?? [ref] : [];
+      cards.forEach((card) => { card.highlight = refs; });
+    }
+
+    // ---- Start ----
+
+    document.querySelectorAll('.point').forEach((word) => {
+      word.addEventListener('pointerenter', () => point(word.dataset.point));
+      word.addEventListener('pointerleave', () => point(null));
+    });
+
+    // Clicking a step moves that card to it, and clears the other card in the same example.
+    document.querySelectorAll('.cards').forEach((group) => {
+      group.addEventListener('sb-select', (e) => {
+        group.querySelectorAll('sb-scenario').forEach((card) => { card.current = card === e.target ? e.detail.index : null; });
+        if (GRID_STATES[e.detail.scenario.code]) showGrid(e.detail.scenario.code, e.detail.index);
+      });
+    });
+
+    gridTrip.current = 0;
+    showGrid('GRID-1', 0);
+  </script>
+</body>
+</html>

@@ -64,6 +64,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-plane`](components/sb-plane/manifest.md) | A 2D coordinate plane: draggable vectors, points and shapes, and matrices that visibly move space. |
 | [`sb-profile`](components/sb-profile/manifest.md) | A data set's shape: every field across all samples with its types, presence and values, constants, keys, gaps, mixed types and rare values marked, and what changed when the samples did. Also runs from Node: `tools/analyse.mjs profile`. |
 | [`sb-rules`](components/sb-rules/manifest.md) | The rules a model follows, with the one about to apply and the one just applied marked. |
+| [`sb-scenario`](components/sb-scenario/manifest.md) | A behaviour scenario as a card: its code, title and Given / When / Then steps laid out to read at a glance, values marked, each step lit up by its ref, and the step happening now marked as the model plays it. |
 | [`sb-scrubber`](components/sb-scrubber/manifest.md) | A bounded stretch of progress to scrub or play, with named moments: transformations, cycles, stages. |
 | [`sb-sequence`](components/sb-sequence/manifest.md) | Who says what to whom, in order: lifelines, calls, replies and notes, played a message at a time. |
 | [`sb-stat`](components/sb-stat/manifest.md) | Headline figures: each change since the last update, coloured as good or bad news, with targets and bars. |

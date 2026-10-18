@@ -35,6 +35,7 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | [`sb-sequence`](../components/sb-sequence/manifest.md) | each participant, and each message and note given an `id` | — |
 | [`sb-erd`](../components/sb-erd/manifest.md) | each entity, and each field as `entity.field` | — |
 | [`sb-log`](../components/sb-log/manifest.md) | each entry given an `id` | — |
+| [`sb-scenario`](../components/sb-scenario/manifest.md) | the card, with its code, and each step given a `ref` | — |
 | [`sb-flowchart`](../components/sb-flowchart/manifest.md) | each step and lane, and each edge given an `id` | — |
 | [`sb-statechart`](../components/sb-statechart/manifest.md) | each state | — |
 | [`sb-decision-tree`](../components/sb-decision-tree/manifest.md) | each question and outcome | — |

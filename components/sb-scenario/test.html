@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-scenario tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-scenario.js"></script>
+  <script src="sb-scenario.js"></script>
+</head>
+<body>
+  <script>
+    const TRIP = {
+      code: 'GRID-1',
+      title: 'A generator trips',
+      steps: [
+        { keyword: 'Given', text: 'the grid is at 50.0 Hz', ref: 'GRID-1.given' },
+        { keyword: 'And', text: 'reserve is 150 MW' },
+        { keyword: 'When', text: 'generator "G2" trips', ref: 'GRID-1.when' },
+        { keyword: 'Then', text: 'demand falls by 10%', ref: 'GRID-1.then' },
+        { keyword: 'But', text: 'critical feeders stay on', ref: 'GRID-1.but' }
+      ]
+    };
+
+    const card = (scenario = TRIP) => {
+      const element = mount('<sb-scenario></sb-scenario>');
+      element.scenario = scenario;
+      return element;
+    };
+    const steps = (element) => [...element.querySelectorAll('.sb-scenario__step')];
+    const marked = (element, modifier) => steps(element).map((step) => step.classList.contains(`sb-scenario__step--${modifier}`));
+
+    // ---- Showing a scenario ----
+
+    test('says so when there is no scenario yet', () => {
+      assertEqual(mount('<sb-scenario></sb-scenario>').textContent.trim(), 'No scenario yet.');
+    });
+
+    test('shows the code, the title and every step in order', () => {
+      const element = card();
+      assertEqual(element.querySelector('.sb-scenario__code').textContent, 'GRID-1');
+      assertEqual(element.querySelector('.sb-scenario__title').textContent, 'A generator trips');
+      assertEqual(steps(element).map((step) => step.querySelector('.sb-scenario__keyword').textContent), ['Given', 'And', 'When', 'Then', 'But']);
+    });
+
+    test('shows no code label without a code', () => {
+      const element = card({ title: 'Untitled', steps: [] });
+      assertEqual(element.querySelector('.sb-scenario__code'), null);
+    });
+
+    test('capitalises keywords by style, keeping the words as written', () => {
+      const keyword = card().querySelector('.sb-scenario__keyword');
+      assertEqual(getComputedStyle(keyword).textTransform, 'uppercase');
+      assertEqual(keyword.textContent, 'Given');
+    });
+
+    test('And and But carry on the keyword before them; the others open a block', () => {
+      assertEqual(marked(card(), 'continues'), [false, true, false, false, true]);
+      assertEqual(marked(card(), 'opens'), [true, false, true, true, false]);
+    });
+
+    test('lines up the text of every step, whatever its keyword', () => {
+      const lefts = [...card().querySelectorAll('.sb-scenario__text')].map((text) => text.getBoundingClientRect().left);
+      assertEqual(new Set(lefts).size, 1);
+    });
+
+    test('marks quoted text and standalone numbers as values', () => {
+      const element = card({ title: 't', steps: [{ keyword: 'When', text: 'train "1A23" passes at 60 km/h, 12.5% over, as 1A23 does' }] });
+      assertEqual([...element.querySelectorAll('.sb-scenario__value')].map((v) => v.textContent), ['"1A23"', '60', '12.5%']);
+      assertEqual(element.querySelector('.sb-scenario__text').textContent, 'train "1A23" passes at 60 km/h, 12.5% over, as 1A23 does');
+    });
+
+    test('displays text as text, never as markup', () => {
+      const element = card({ code: '<i>x</i>', title: '<b>bold</b>', steps: [{ keyword: '<u>Given</u>', text: '<s>a</s> "<em>b</em>" 3' }] });
+      assertEqual(element.querySelectorAll('i, b, u, s, em').length, 0);
+      assertEqual(element.querySelector('.sb-scenario__text').textContent, '<s>a</s> "<em>b</em>" 3');
+    });
+
+    // ---- Highlighting ----
+
+    test('a step\'s ref lights its line', () => {
+      const element = card();
+      element.highlight = ['GRID-1.when', 'GRID-1.but'];
+      assertEqual(marked(element, 'highlighted'), [false, false, true, false, true]);
+      assert(!element.classList.contains('sb-scenario--highlighted'), 'card not lit');
+    });
+
+    test('the scenario\'s code lights the whole card', () => {
+      const element = card();
+      element.highlight = ['GRID-1'];
+      assert(element.classList.contains('sb-scenario--highlighted'), 'card lit');
+      assertEqual(marked(element, 'highlighted'), [false, false, false, false, false]);
+    });
+
+    test('clearing the highlight lights nothing, and a card without a code never lights', () => {
+      const element = card();
+      element.highlight = ['GRID-1'];
+      element.highlight = null;
+      assert(!element.classList.contains('sb-scenario--highlighted'), 'cleared');
+      element.scenario = { title: 'No code', steps: [] };
+      element.highlight = [undefined];
+      assert(!element.classList.contains('sb-scenario--highlighted'), 'no code, no light');
+    });
+
+    // ---- Where the model is ----
+
+    test('current marks its step and fades the ones still to come', () => {
+      const element = card();
+      element.current = 2;
+      assertEqual(marked(element, 'current'), [false, false, true, false, false]);
+      assertEqual(marked(element, 'upcoming'), [false, false, false, true, true]);
+      assertEqual(steps(element)[2].getAttribute('aria-current'), 'step');
+    });
+
+    test('a current of null shows every step plainly', () => {
+      const element = card();
+      element.current = 2;
+      element.current = null;
+      assertEqual(marked(element, 'current').concat(marked(element, 'upcoming')).some(Boolean), false);
+    });
+
+    test('a current of 0 marks the first step', () => {
+      const element = card();
+      element.current = 0;
+      assertEqual(marked(element, 'current')[0], true);
+      assertEqual(marked(element, 'upcoming')[1], true);
+    });
+
+    // ---- Choosing a step ----
+
+    test('clicking a step fires sb-select with the scenario, the step and its index, and changes nothing', () => {
+      const element = card();
+      const selections = recordEvents(element, 'sb-select');
+      steps(element)[3].querySelector('.sb-scenario__value').click();
+      assertEqual(selections.length, 1);
+      assertEqual(selections[0].detail.scenario, TRIP);
+      assertEqual(selections[0].detail.step, TRIP.steps[3]);
+      assertEqual(selections[0].detail.index, 3);
+      assertEqual(element.current, null);
+    });
+
+    test('a step can be chosen from the keyboard', () => {
+      const element = card();
+      const selections = recordEvents(element, 'sb-select');
+      assertEqual(steps(element)[0].tabIndex, 0);
+      steps(element)[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      assertEqual(selections[0].detail.index, 1);
+    });
+
+    test('clicking the heading selects nothing', () => {
+      const element = card();
+      const selections = recordEvents(element, 'sb-select');
+      element.querySelector('.sb-scenario__title').click();
+      assertEqual(selections.length, 0);
+    });
+
+    // ---- Locating ----
+
+    test('the card carries its code and steps with a ref carry theirs as data-ref', () => {
+      const element = card();
+      assertEqual(element.dataset.ref, 'GRID-1');
+      assertEqual(steps(element).map((step) => step.dataset.ref ?? null), ['GRID-1.given', null, 'GRID-1.when', 'GRID-1.then', 'GRID-1.but']);
+    });
+
+    test('a scenario without a code leaves no data-ref on the card', () => {
+      const element = card();
+      element.scenario = { title: 'No code', steps: [] };
+      assertEqual(element.dataset.ref, undefined);
+    });
+
+    // ---- Instances ----
+
+    test('two cards on one page keep their own scenario, highlight and current step', () => {
+      mount('<div><sb-scenario></sb-scenario><sb-scenario></sb-scenario></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-scenario');
+      a.scenario = TRIP;
+      b.scenario = { code: 'RAIL-1', title: 'A signal at danger', steps: [{ keyword: 'Given', text: 'a red signal', ref: 'RAIL-1.given' }] };
+      a.current = 1;
+      b.highlight = ['RAIL-1.given'];
+      assertEqual([marked(a, 'current')[1], marked(b, 'current')[0]], [true, false]);
+      assertEqual([marked(a, 'highlighted')[0], marked(b, 'highlighted')[0]], [false, true]);
+      assertEqual(b.querySelector('.sb-scenario__title').textContent, 'A signal at danger');
+    });
+
+    test('loading the same script twice is harmless and quiet', () => {
+      assertEqual(consoleErrors, []);
+    });
+  </script>
+</body>
+</html>
