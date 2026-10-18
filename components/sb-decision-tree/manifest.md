@@ -73,7 +73,7 @@ Setting properties never fires the events below; they are for what viewers do.
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-good`, `--sb-warn`, `--sb-bad`.
 
-Classes: `sb-decision-tree__svg`, `sb-decision-tree__node` (`--question` or `--outcome`, the tone, `--on-path`, `--current`, `--off`, `--highlighted`; carries `data-node-id`), `sb-decision-tree__shape`, `sb-decision-tree__label`, `sb-decision-tree__branch`, `sb-decision-tree__answer` and `sb-decision-tree__otherwise` (all three `--taken`, `--off`, `--alternative`; carry `data-branch-id`, the id of the node they lead to), `sb-decision-tree__value` (carries `data-value-id`).
+Classes: `sb-decision-tree__svg`, `sb-decision-tree__node` (`--question` or `--outcome`, the tone, `--on-path`, `--current`, `--off`, `--highlighted`; carries `data-node-id`, and `data-ref` with the same id so a sandbox can find it: see the [locating practice](../../practices/locating.md)), `sb-decision-tree__shape`, `sb-decision-tree__label`, `sb-decision-tree__branch`, `sb-decision-tree__answer` and `sb-decision-tree__otherwise` (all three `--taken`, `--off`, `--alternative`; carry `data-branch-id`, the id of the node they lead to), `sb-decision-tree__value` (carries `data-value-id`).
 
 ## Works well with
 

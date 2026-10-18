@@ -100,7 +100,7 @@ Setting properties and calling methods never fires the events below; they are fo
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-surface`, `--sb-border`, `--sb-accent`, `--sb-accent-soft`, `--sb-accent-text`, `--sb-good`, `--sb-warn`, `--sb-bad`.
 
 Classes:
-- **States:** `sb-statechart__state` (carries `data-state-id`), with the kind (`--atomic`, `--compound`, `--parallel`, `--region`, `--final`, `--history`), `--folded`, the tone, `--active` and `--highlighted`. Inside it: `sb-statechart__shape`, `sb-statechart__label`, `sb-statechart__detail`, `sb-statechart__divider`, `sb-statechart__fold`, `sb-statechart__region-line`, `sb-statechart__history`, `sb-statechart__remembered`.
+- **States:** `sb-statechart__state` (carries `data-state-id`, and `data-ref` with the same id so a sandbox can find it: see the [locating practice](../../practices/locating.md)), with the kind (`--atomic`, `--compound`, `--parallel`, `--region`, `--final`, `--history`), `--folded`, the tone, `--active` and `--highlighted`. Inside it: `sb-statechart__shape`, `sb-statechart__label`, `sb-statechart__detail`, `sb-statechart__divider`, `sb-statechart__fold`, `sb-statechart__region-line`, `sb-statechart__history`, `sb-statechart__remembered`.
 - **Transitions:** `sb-statechart__transition` and `sb-statechart__transition-label`, both carrying `data-transition-id`, with `--enabled`, `--blocked`, `--taken` and `--highlighted`. Inside them: `sb-statechart__line`, `sb-statechart__arrow`.
 - **Starts:** `sb-statechart__start`, with `sb-statechart__initial` for the dot.
 - **The last step:** `sb-statechart__badge` (`--exit`, `--transition`, `--enter`; carries `data-badge-for`) and `sb-statechart__step`.

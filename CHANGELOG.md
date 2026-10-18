@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.16 · 2026-10-18
+- More components mark their parts for the locating practice: `sb-log`, `sb-flowchart`, `sb-statechart` and `sb-decision-tree` 0.1.1 carry `data-ref`.
+
 ## 0.2.15 · 2026-10-18
 - The checkout architecture example gains chapter 5, when payment fails, completing its first plan.
 

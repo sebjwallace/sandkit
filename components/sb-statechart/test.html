@@ -428,6 +428,14 @@
       assertEqual(el.querySelectorAll('b, i').length, 0);
       assertEqual(state(el, 'a').querySelector('.sb-statechart__label').textContent, '<b>A</b>');
     });
+
+    // ---- Locating ----
+
+    test('states carry data-ref with their id, so the page can find them', () => {
+      const el = chart();
+      assert(el.querySelector('[data-ref="playing"]').matches('.sb-statechart__state'));
+      assertEqual(el.querySelectorAll('.sb-statechart__state:not([data-ref])').length, 0, 'every state');
+    });
   </script>
 </body>
 </html>

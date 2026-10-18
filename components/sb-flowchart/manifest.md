@@ -85,6 +85,8 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 
 Classes: `sb-flowchart__svg`, `sb-flowchart__lane`, `sb-flowchart__lane-head`, `sb-flowchart__lane-label`, `sb-flowchart__node` (with the kind, such as `--decision`, the tone, `--active` and `--visited`), `sb-flowchart__shape`, `sb-flowchart__label`, `sb-flowchart__edge` (`--active`, `--visited`), `sb-flowchart__line`, `sb-flowchart__arrow`, `sb-flowchart__edge-label`.
 
+Steps and lanes carry `data-ref` with their id (each lane on its `sb-flowchart__lane-group`), and edges given an `id` carry it too, so a sandbox can find them (see the [locating practice](../../practices/locating.md)).
+
 ## Works well with
 
 Suggestions only: nothing here is wired in. The sandbox composes these itself.

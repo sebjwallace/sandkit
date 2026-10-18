@@ -1,4 +1,4 @@
-// Sandkit sb-flowchart 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-flowchart 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A flowchart, optionally in swim lanes, laid out from its structure: steps follow each other in
 // the order their arrows give, and each sits in its lane. Marks where a process is and how it got there.
 //
@@ -350,7 +350,7 @@
 
     _lane({ id, label, box, head }) {
       return `
-        <g data-lane-id="${esc(id)}">
+        <g class="sb-flowchart__lane-group" data-ref="${esc(id)}">
           <rect class="sb-flowchart__lane" x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}"/>
           <rect class="sb-flowchart__lane-head" x="${head.x}" y="${head.y}" width="${head.width}" height="${head.height}"/>
           <text class="sb-flowchart__lane-label" x="${head.x + head.width / 2}" y="${head.y + head.height / 2 + 4}" text-anchor="middle">${esc(label ?? id)}</text>
@@ -363,7 +363,7 @@
       const text = lines(n.label ?? n.id);
       const top = -((text.length - 1) * NODE.lineHeight) / 2 + 4;
       return `
-        <g class="sb-flowchart__node sb-flowchart__node--${kind}${tone}" data-node-id="${esc(n.id)}" transform="translate(${n.x}, ${n.y})">
+        <g class="sb-flowchart__node sb-flowchart__node--${kind}${tone}" data-ref="${esc(n.id)}" transform="translate(${n.x}, ${n.y})">
           ${shape({ ...n, kind })}
           <text class="sb-flowchart__label" text-anchor="middle">${text.map((t, i) => `<tspan x="0" y="${top + i * NODE.lineHeight}">${esc(t)}</tspan>`).join('')}</text>
         </g>`;
@@ -372,7 +372,7 @@
     _edge({ edge, points }) {
       const d = pathOf(points);
       return `
-        <g class="sb-flowchart__edge" data-edge-id="${esc(edgeKey(edge))}">
+        <g class="sb-flowchart__edge" data-edge-id="${esc(edgeKey(edge))}"${edge.id != null ? ` data-ref="${esc(edge.id)}"` : ''}>
           <title>${esc(edge.label ?? edgeKey(edge))}</title>
           <path class="sb-flowchart__hit" d="${d}"/>
           <path class="sb-flowchart__line" d="${d}"/>
@@ -396,16 +396,16 @@
           el.classList.toggle(`${selector.slice(1)}--visited`, this._visited[kind].includes(id));
         }
       };
-      mark('.sb-flowchart__node', 'nodeId', 'nodes');
+      mark('.sb-flowchart__node', 'ref', 'nodes');
       mark('.sb-flowchart__edge', 'edgeId', 'edges');
     }
 
     // ---- Interaction ----
 
     _select(e) {
-      const node = e.target.closest('[data-node-id]');
+      const node = e.target.closest('.sb-flowchart__node');
       const edge = e.target.closest('[data-edge-id]');
-      if (node) this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'node', id: node.dataset.nodeId } }));
+      if (node) this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'node', id: node.dataset.ref } }));
       else if (edge) this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'edge', id: edge.dataset.edgeId } }));
     }
   }

@@ -244,6 +244,14 @@
       assertEqual(node(el, 'q').textContent.trim(), '<b>q</b>');
       assertEqual(value(el, 'q'), '<i>v</i>');
     });
+
+    // ---- Locating ----
+
+    test('nodes carry data-ref with their id, so the page can find them', () => {
+      const el = tree();
+      assert(el.querySelector('[data-ref="windy"]').matches('.sb-decision-tree__node'));
+      assertEqual(el.querySelectorAll('[data-ref]').length, 7, 'every question and outcome');
+    });
   </script>
 </body>
 </html>

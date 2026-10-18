@@ -1,4 +1,4 @@
-// Sandkit sb-log 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-log 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A stream of things that happened, in the order they happened. Domain-agnostic: the sandbox
 // decides what an entry says; the log shows the stream and lets people look into it.
 //
@@ -148,6 +148,7 @@
       const attributes = [
         `class="sb-log__entry${entry === this._selected ? ' sb-log__entry--selected' : ''}"`,
         `data-index="${index}"`,
+        entry.id != null ? `data-ref="${esc(entry.id)}"` : '',
         entry.tone ? `data-tone="${esc(entry.tone)}"` : '',
         entry.kind ? `data-kind="${esc(entry.kind)}"` : '',
         hasDetail ? `data-has-detail tabindex="0" aria-expanded="${expanded}"` : ''

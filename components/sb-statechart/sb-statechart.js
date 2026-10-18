@@ -1,4 +1,4 @@
-// Sandkit sb-statechart 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-statechart 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A statechart: states inside states, parallel regions, history, guards and actions. Shows every
 // state that's active, what can happen now, and what the last step exited and entered, in order.
 //
@@ -724,7 +724,7 @@
       const folded = this._folded.includes(s.id) && s.children.length;
       const kind = isRegion(s) && s.kind === 'compound' && !folded ? 'region' : s.kind;
       const classes = ['sb-statechart__state', `sb-statechart__state--${kind}`, folded && 'sb-statechart__state--folded', s.def.tone && `sb-statechart__state--${esc(s.def.tone)}`].filter(Boolean).join(' ');
-      const tag = `<g class="${classes}" data-state-id="${esc(s.id)}">`;
+      const tag = `<g class="${classes}" data-state-id="${esc(s.id)}" data-ref="${esc(s.id)}">`;
       if (s.kind === 'final') {
         const cx = s.x + s.width / 2, cy = s.y + FINAL.r;
         return `${tag}<circle class="sb-statechart__shape" cx="${cx}" cy="${cy}" r="${FINAL.r}"/><circle class="sb-statechart__final-dot" cx="${cx}" cy="${cy}" r="${FINAL.dot}"/>
@@ -747,7 +747,7 @@
     }
 
     _drawHistory(h) {
-      return `<g class="sb-statechart__state sb-statechart__state--history" data-state-id="${esc(h.id)}">
+      return `<g class="sb-statechart__state sb-statechart__state--history" data-state-id="${esc(h.id)}" data-ref="${esc(h.id)}">
         <circle class="sb-statechart__history" cx="${h.x}" cy="${h.y}" r="${HISTORY.r}"/>
         <text class="sb-statechart__history-label" x="${h.x}" y="${h.y + 3.5}" text-anchor="middle">${h.def.history === 'deep' ? 'H*' : 'H'}</text>
         <text class="sb-statechart__remembered" data-remembered-id="${esc(h.id)}" x="${h.x}" y="${h.y - HISTORY.r - 4}" text-anchor="middle"></text></g>`;

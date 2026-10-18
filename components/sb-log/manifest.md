@@ -60,7 +60,7 @@ Use this component through the interface below. You don't need to read its sourc
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-radius`.
 
-Classes: `sb-log__list`, `sb-log__head`, `sb-log__entry` (`--selected`), `sb-log__time`, `sb-log__field`, `sb-log__text`, `sb-log__detail`, `sb-log__empty`. Entries carry `data-tone`, `data-kind`, and `data-has-detail` where they apply.
+Classes: `sb-log__list`, `sb-log__head`, `sb-log__entry` (`--selected`), `sb-log__time`, `sb-log__field`, `sb-log__text`, `sb-log__detail`, `sb-log__empty`. Entries carry `data-tone`, `data-kind`, and `data-has-detail` where they apply, and entries given an `id` carry `data-ref` with it, so a sandbox can find them (see the [locating practice](../../practices/locating.md)).
 
 Give the element a height (for example `max-height: 240px`) so it scrolls.
 

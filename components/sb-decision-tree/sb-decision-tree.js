@@ -1,4 +1,4 @@
-// Sandkit sb-decision-tree 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-decision-tree 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A decision tree: questions that branch on their answers down to outcomes. Shows the way one case
 // went, with its value at each question, and which other answers would have changed the outcome.
 //
@@ -291,7 +291,7 @@
       const { width: w, height: h } = item;
       const top = -((item.lines.length - 1) * NODE.lineHeight) / 2 + 4;
       return `
-        <g class="sb-decision-tree__node sb-decision-tree__node--${kind}${tone}" data-node-id="${esc(item.id)}" transform="translate(${item.x}, ${item.y})">
+        <g class="sb-decision-tree__node sb-decision-tree__node--${kind}${tone}" data-node-id="${esc(item.id)}" data-ref="${esc(item.id)}" transform="translate(${item.x}, ${item.y})">
           <rect class="sb-decision-tree__shape" x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="${item.leaf ? h / 2 : 4}"/>
           <text class="sb-decision-tree__label" text-anchor="middle">${item.lines.map((t, i) => `<tspan x="0" y="${top + i * NODE.lineHeight}">${esc(t)}</tspan>`).join('')}</text>
         </g>`;

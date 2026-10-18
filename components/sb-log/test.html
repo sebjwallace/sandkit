@@ -193,6 +193,14 @@
     test('loading the same script twice is harmless and quiet', () => {
       assertEqual(consoleErrors, []);
     });
+
+    // ---- Locating ----
+
+    test('entries given an id carry data-ref, so the page can find them; others don\'t', () => {
+      const log = mount('<sb-log></sb-log>');
+      log.entries = [{ id: 'RUL-1', text: 'a' }, { text: 'b' }];
+      assertEqual([...log.querySelectorAll('.sb-log__entry')].map((row) => row.dataset.ref ?? null).sort(), ['RUL-1', null].sort());
+    });
   </script>
 </body>
 </html>

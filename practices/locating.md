@@ -34,6 +34,10 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | [`sb-graph`](../components/sb-graph/manifest.md) | each node, and each edge and label line given an `id` | — |
 | [`sb-sequence`](../components/sb-sequence/manifest.md) | each participant, and each message and note given an `id` | — |
 | [`sb-erd`](../components/sb-erd/manifest.md) | each entity, and each field as `entity.field` | — |
+| [`sb-log`](../components/sb-log/manifest.md) | each entry given an `id` | — |
+| [`sb-flowchart`](../components/sb-flowchart/manifest.md) | each step and lane, and each edge given an `id` | — |
+| [`sb-statechart`](../components/sb-statechart/manifest.md) | each state | — |
+| [`sb-decision-tree`](../components/sb-decision-tree/manifest.md) | each question and outcome | — |
 | [`sb-c4`](../components/sb-c4/manifest.md) | each box in the current view, and each line carrying one relationship with an `id` | goes to the view where an element can be seen |
 | [`sb-math`](../components/sb-math/manifest.md), [`sb-annotate`](../components/sb-annotate/manifest.md), [`sb-walkthrough`](../components/sb-walkthrough/manifest.md), [`sb-wireframe`](../components/sb-wireframe/manifest.md) | the parts the sandbox marks in their content | — |
 | The sandbox's own elements | whatever it marks | — |

@@ -42,7 +42,7 @@
     }
 
     const byData = (el, selector, key, value) => [...el.querySelectorAll(selector)].find((n) => n.dataset[key] === value);
-    const node = (el, id) => byData(el, '.sb-flowchart__node', 'nodeId', id);
+    const node = (el, id) => byData(el, '.sb-flowchart__node', 'ref', id);
     const edge = (el, id) => byData(el, '.sb-flowchart__edge', 'edgeId', id);
 
     // Positions on screen, so the tests check what people see rather than the sizes used.
@@ -131,7 +131,7 @@
     test('lanes are columns going down, and rows going right, each holding its own steps', () => {
       for (const direction of ['down', 'right']) {
         const el = chart(LANES, `direction="${direction}"`);
-        const lane = (id) => byData(el, '[data-lane-id]', 'laneId', id).querySelector('.sb-flowchart__lane').getBoundingClientRect();
+        const lane = (id) => byData(el, '.sb-flowchart__lane-group', 'ref', id).querySelector('.sb-flowchart__lane').getBoundingClientRect();
         for (const n of LANES.nodes) {
           const c = centre(box(el, n.id)), r = lane(n.lane);
           assert(c.x > r.left && c.x < r.right && c.y > r.top && c.y < r.bottom, `${direction}: ${n.id} in ${n.lane}`);
@@ -247,6 +247,16 @@
       });
       assertEqual(el.querySelectorAll('b, i').length, 0, 'anywhere, since the parser moves such tags out of an svg');
       assertEqual(node(el, 'a').querySelector('text').textContent, '<i>a</i>');
+    });
+
+    // ---- Locating ----
+
+    test('steps, lanes and edges given an id carry data-ref; other edges don\'t', () => {
+      const el = chart({ ...LANES, edges: [{ id: 'serve', from: 'ask', to: 'pour' }, { from: 'pour', to: 'drink' }] });
+      assert(el.querySelector('[data-ref="pour"]').matches('.sb-flowchart__node'), 'a step');
+      assert(el.querySelector('[data-ref="host"]').matches('.sb-flowchart__lane-group'), 'a lane');
+      assert(el.querySelector('[data-ref="serve"]').matches('.sb-flowchart__edge'), 'a named edge');
+      assertEqual(el.querySelectorAll('.sb-flowchart__edge[data-ref]').length, 1, 'the unnamed edge has none');
     });
   </script>
 </body>
