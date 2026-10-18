@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-profile demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-profile.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-text); background: var(--sb-surface-2); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button[hidden] { display: none; }
+    .actions code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .example .prose { margin: 0 0 8px; font-size: 14px; color: var(--sb-text); }
+    .example .hint { margin: 0 0 10px; }
+    .point { border-bottom: 1px dashed var(--sb-accent); cursor: default; }
+    .act { font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px solid var(--sb-accent); padding: 0; cursor: pointer; }
+    .point.lit, .act.lit { background: var(--sb-accent-soft); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-profile">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>What's really in a pile of data: every field, what it holds, and what's surprising about it.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Data rarely matches its description. A field everyone says is always there turns out to be missing one time in twenty; a number arrives as text twice in a thousand; a status has a value nobody meant to allow. A profile reads every sample and tells you the shape the data really has: each field, its types, how often it's there and the values it takes, with the surprises marked on the fields they concern.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Meeting new data.</strong> Before modelling orders, sightings or events, see which fields matter, which never change and which are unreliable.</li>
+        <li><strong>Checking an assumption.</strong> "Every order has a customer" is one glance: present 100%, or not.</li>
+        <li><strong>Seeing what a subset is like.</strong> Click a value to narrow the samples, and every field that changed is marked with what it was before.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Reading the samples themselves.</strong> A table shows rows; a profile shows what the rows have in common.</li>
+        <li><strong>One document.</strong> A single JSON value is easier to read as it is, with the parts that matter pointed out.</li>
+        <li><strong>How values change over time.</strong> That's a chart: a profile sees the samples all at once.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-profile/sb-profile.js"&gt;&lt;/script&gt;
+&lt;sb-profile&gt;&lt;/sb-profile&gt;
+
+&lt;script&gt;
+  const profile = document.querySelector('sb-profile');
+  profile.options = { id: 'orderId' };   // so findings name samples by their id
+  profile.samples = orders;               // raw samples: the profile works everything out
+  profile.addEventListener('sb-select', (e) =&gt; {
+    profile.samples = orders.filter((order) =&gt; order[e.detail.path] === e.detail.value);
+  });
+&lt;/script&gt;</pre>
+      <p>Hand it the samples as they are. Click a field's name to see its values, or its numbers as a histogram; clicking a value tells the sandbox, which can narrow the samples and set them again.</p>
+
+      <h3>An agent can run it too</h3>
+      <p>The same analysis runs from the command line, with no page, so an agent can profile source material before a sandbox exists, and read a short summary instead of thousands of samples:</p>
+      <pre>node tools/analyse.mjs profile data/ --md --id orderId</pre>
+      <p>What the agent reads and what you see here come from the same function, so they always agree.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Give it every sample,</strong> not a tidy few. Gaps and odd values hide in the long tail.</li>
+        <li><strong>Name the id field,</strong> so "1 is a string" says which order, and someone can go and look.</li>
+        <li><strong>Let clicks narrow the samples.</strong> The changes marked after narrowing are often the finding: cancelled orders never have a refund, or one surveyor records every odd count.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A shop's orders</h2>
+      <p>Sixty orders as an online shop exports them.</p>
+      <p class="prose" id="orders-prose">
+        Each order should have an <span class="point" data-fields="orderId">id</span> of its own and a <span class="point" data-fields="currency">currency</span>, and it does. But the profile finds <span class="point" data-kinds="sometimes-missing">gaps</span>: not every customer gave an <span class="point" data-fields="customer.email">email</span>, and only some orders have a <span class="point" data-fields="refund">refund</span>. A couple of <span class="point" data-kinds="mixed-types">amounts arrived as text</span>, and one <span class="point" data-value='["status","dispatchd"]'>status is misspelt</span>.
+        Which orders are refunded? Narrow to <button class="act" data-filter='["status","delivered"]'>delivered orders</button>, then <button class="act" data-filter='["status","returned"]'>returned ones</button>, and watch <span class="point" data-fields="refund">refund</span>. Open <button class="act" data-open="items">items</button> to see how many each order has.
+      </p>
+      <p class="hint">Point at a dashed word to see it in the profile; click a solid one to narrow the orders or open a field. Point at the profile, and the words about it light up.</p>
+      <div class="actions"><span id="orders-showing"></span><button id="orders-all" hidden>Show all</button></div>
+      <sb-profile id="orders"></sb-profile>
+    </section>
+
+    <section class="example">
+      <h2>Wildlife sightings</h2>
+      <p>Eighty records from volunteers counting animals at four sites.</p>
+      <p class="prose" id="sightings-prose">
+        Every record follows the same <span class="point" data-fields="protocol">survey protocol</span> and has its own <span class="point" data-fields="id">id</span>, and so does every <span class="point" data-fields="photos[]">photo</span>. Volunteers don't always note the <span class="point" data-fields="weather">weather</span>, one <span class="point" data-value='["species","hedgehgo"]'>hedgehog is misspelt</span>, and some <span class="point" data-fields="count">counts are words, not numbers</span>.
+        Whose? Narrow to <button class="act" data-filter='["surveyor","Ana"]'>Ana's records</button>, then <button class="act" data-filter='["surveyor","Dev"]'>Dev's</button>, and watch <span class="point" data-fields="count">count</span>. Open <button class="act" data-open="count">count</button> to see the odd values among the numbers.
+      </p>
+      <p class="hint">Point at a dashed word to see it in the profile; click a solid one to narrow the records or open a field.</p>
+      <div class="actions"><span id="sightings-showing"></span><button id="sightings-all" hidden>Show all</button></div>
+      <sb-profile id="sightings"></sb-profile>
+    </section>
+  </main>
+
+  <script>
+    // ---- Made-up data, the same every time ----
+
+    // A small repeatable random sequence, so the demo always shows the same data.
+    function sequence(seed) {
+      return () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    }
+
+    function makeOrders() {
+      const random = sequence(7);
+      const pick = (list) => list[Math.floor(random() * list.length)];
+      return Array.from({ length: 60 }, (_, i) => {
+        const status = i === 41 ? 'dispatchd' : pick(['delivered', 'delivered', 'delivered', 'cancelled', 'returned']);
+        const items = Array.from({ length: 1 + Math.floor(random() * 4) }, () => ({ sku: pick(['MUG-01', 'MUG-02', 'TEE-S', 'TEE-M', 'TEE-L', 'CAP']), qty: 1 + Math.floor(random() * 3) }));
+        const amount = Math.round(items.reduce((sum, item) => sum + item.qty * 12.5, 0) * 100) / 100;
+        return {
+          orderId: `ORD-${1001 + i}`,
+          currency: 'GBP',
+          status,
+          amount: i === 17 || i === 52 ? amount.toFixed(2) : amount,
+          customer: { city: pick(['Leeds', 'York', 'Hull', 'Bristol']), ...(random() < 0.8 ? { email: `c${i}@example.com` } : {}) },
+          items,
+          ...(status === 'returned' ? { refund: amount } : {}),
+        };
+      });
+    }
+
+    function makeSightings() {
+      const random = sequence(11);
+      const pick = (list) => list[Math.floor(random() * list.length)];
+      return Array.from({ length: 80 }, (_, i) => {
+        const surveyor = pick(['Ana', 'Ben', 'Chloe', 'Dev']);
+        return {
+          id: `SGT-${String(i + 1).padStart(3, '0')}`,
+          protocol: 'hedgerow-v2',
+          site: pick(['Mill Lane', 'Oak Wood', 'River Path', 'Top Field']),
+          surveyor,
+          species: i === 63 ? 'hedgehgo' : pick(['robin', 'robin', 'blackbird', 'wren', 'hedgehog', 'fox', 'badger']),
+          // Dev writes "unsure" when a count is in doubt, so a few counts are text.
+          count: surveyor === 'Dev' && random() < 0.3 ? 'unsure' : 1 + Math.floor(random() * 6),
+          ...(random() < 0.85 ? { weather: pick(['dry', 'dry', 'rain', 'mist']) } : {}),
+          photos: Array.from({ length: Math.floor(random() * 3) }, (_, n) => `IMG_${4000 + i * 3 + n}.jpg`),
+        };
+      });
+    }
+
+    // ---- Narrowing to a clicked value ----
+
+    // Whether a sample holds the value anywhere at the path, looking inside arrays at "[]".
+    function holds(value, parts, wanted) {
+      if (!parts.length) return value === wanted;
+      const [part, ...rest] = parts;
+      if (part === '[]') return Array.isArray(value) && value.some((element) => holds(element, rest, wanted));
+      return value !== null && typeof value === 'object' && part in value && holds(value[part], rest, wanted);
+    }
+
+    const partsOf = (path) => path.match(/\[\]|[^.[\]]+/g);
+
+    function explore(name, samples, id) {
+      const profile = document.getElementById(name);
+      const showing = document.getElementById(`${name}-showing`);
+      const all = document.getElementById(`${name}-all`);
+      const words = [...document.querySelectorAll(`#${name}-prose [class]`)];
+
+      function show(chosen, filter) {
+        profile.samples = chosen;
+        showing.textContent = filter ? `Showing ${filter.path} = ${JSON.stringify(filter.value)}: ${chosen.length} of ${samples.length}.` : `All ${samples.length} samples.`;
+        all.hidden = !filter;
+      }
+
+      profile.options = { id };
+      profile.addEventListener('sb-select', (e) => {
+        const { path, value } = e.detail;
+        show(samples.filter((sample) => holds(sample, partsOf(path), value)), e.detail);
+      });
+      all.addEventListener('click', () => show(samples));
+
+      // What a word in the prose points at: fields, a value (a filter's too), or kinds of finding.
+      function pointsAt(word) {
+        const value = JSON.parse(word.dataset.value || word.dataset.filter || 'null');
+        return {
+          fields: [...(word.dataset.fields?.split(',') || []), ...(word.dataset.open ? [word.dataset.open] : [])],
+          values: value ? [value] : [],
+          kinds: word.dataset.kinds?.split(',') || [],
+        };
+      }
+
+      for (const word of words) {
+        word.addEventListener('pointerenter', () => { profile.highlight = pointsAt(word); });
+        word.addEventListener('pointerleave', () => { profile.highlight = null; });
+      }
+      for (const button of words.filter((word) => word.dataset.filter)) {
+        const [path, value] = JSON.parse(button.dataset.filter);
+        button.addEventListener('click', () => show(samples.filter((sample) => holds(sample, partsOf(path), value)), { path, value }));
+      }
+      for (const button of words.filter((word) => word.dataset.open)) {
+        button.addEventListener('click', () => { profile.expanded = [button.dataset.open]; });
+      }
+
+      // The other way: pointing at the profile lights the words about what's pointed at.
+      profile.addEventListener('sb-point', (e) => {
+        for (const word of words) {
+          const about = pointsAt(word);
+          const { path, kind } = e.detail || {};
+          word.classList.toggle('lit', about.fields.includes(path) || about.values.some(([at]) => at === path) || about.kinds.includes(kind));
+        }
+      });
+
+      show(samples);
+    }
+
+    // ---- Start ----
+
+    explore('orders', makeOrders(), 'orderId');
+    explore('sightings', makeSightings(), 'id');
+  </script>
+</body>
+</html>

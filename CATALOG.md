@@ -2,6 +2,15 @@
 
 Everything Sandkit offers, one line each. Read a practice before the components that support it, and a component's `manifest.md` for its full contract. Use components through their manifests; you don't need to read their source.
 
+## Tools
+
+Run from a Sandkit clone with Node. Not copied into sandboxes.
+
+| Tool | What it does |
+|---|---|
+| `tools/setup.mjs` | Sets up a sandbox with Sandkit's files, or updates them. |
+| `tools/analyse.mjs` | Runs a component's analysis on data files, without a page: `profile` for now. `list` shows them all. |
+
 ## Practices
 
 How to do something well in a sandbox. Plain instructions, for people and agents alike.
@@ -49,6 +58,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-panel`](components/sb-panel/manifest.md) | A frame viewers can pop out into a floating window, drag, resize, collapse, make full screen and dock back. |
 | [`sb-parameters`](components/sb-parameters/manifest.md) | The knobs people turn: labelled sliders with live values, changes from defaults marked, reset. |
 | [`sb-plane`](components/sb-plane/manifest.md) | A 2D coordinate plane: draggable vectors, points and shapes, and matrices that visibly move space. |
+| [`sb-profile`](components/sb-profile/manifest.md) | A data set's shape: every field across all samples with its types, presence and values, constants, keys, gaps, mixed types and rare values marked, and what changed when the samples did. Also runs from Node: `tools/analyse.mjs profile`. |
 | [`sb-rules`](components/sb-rules/manifest.md) | The rules a model follows, with the one about to apply and the one just applied marked. |
 | [`sb-scrubber`](components/sb-scrubber/manifest.md) | A bounded stretch of progress to scrub or play, with named moments: transformations, cycles, stages. |
 | [`sb-sequence`](components/sb-sequence/manifest.md) | Who says what to whom, in order: lifelines, calls, replies and notes, played a message at a time. |

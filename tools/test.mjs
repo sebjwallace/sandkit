@@ -160,3 +160,69 @@ test('nothing is reported when versions are unchanged', (sandbox) => {
   setup(sandbox, 'sb-log');
   assert(!setup(sandbox).output.includes('→'), 'no version changes');
 });
+
+// ---- analyse.mjs ----
+
+const ANALYSE = resolve(fileURLToPath(import.meta.url), '../analyse.mjs');
+
+function analyse(...args) {
+  try {
+    return { ok: true, output: execFileSync('node', [ANALYSE, ...args], { encoding: 'utf8', stdio: 'pipe' }) };
+  } catch (err) {
+    return { ok: false, output: err.stderr };
+  }
+}
+
+const sample = (i) => ({ id: `S${i}`, kind: 'a', size: i });
+const write = (folder, file, text) => writeFileSync(join(folder, file), text);
+
+test('analyse profiles a file of samples as JSON, findings first', (folder) => {
+  write(folder, 'data.json', JSON.stringify([1, 2, 3, 4, 5].map(sample)));
+  const { ok, output } = analyse('profile', join(folder, 'data.json'));
+  const result = JSON.parse(output);
+  assert(ok && result.count === 5, 'five samples');
+  assert(Object.keys(result).indexOf('findings') < Object.keys(result).indexOf('fields'), 'findings before fields');
+  assert(result.findings.some((f) => f.kind === 'constant' && f.path === 'kind'), 'kind is constant');
+});
+
+test('analyse joins a folder\'s files in name order, single samples and arrays alike', (folder) => {
+  write(folder, 'b.json', JSON.stringify([sample(2), sample(3)]));
+  write(folder, 'a.json', JSON.stringify(sample(1)));
+  write(folder, 'notes.txt', 'not data');
+  const result = JSON.parse(analyse('profile', folder).output);
+  assert(result.count === 3, `three samples, got ${result.count}`);
+  assert(JSON.stringify(result.fields[0].values.map((v) => v.value)) === '["S1","S2","S3"]', 'in name order');
+});
+
+test('analyse reads JSON Lines, skipping blank lines', (folder) => {
+  write(folder, 'data.jsonl', `${JSON.stringify(sample(1))}\n\n${JSON.stringify(sample(2))}\n`);
+  assert(JSON.parse(analyse('profile', join(folder, 'data.jsonl')).output).count === 2, 'two samples');
+});
+
+test('analyse passes options to the analysis, numbers as numbers', (folder) => {
+  write(folder, 'data.json', JSON.stringify([1, 2, 3].map(sample)));
+  const result = JSON.parse(analyse('profile', join(folder, 'data.json'), '--limit', '1').output);
+  const size = result.fields.find((f) => f.path === 'size');
+  assert(size.values.length === 1 && size.more === 2, 'limited to one value');
+});
+
+test('analyse --md writes a summary, findings first', (folder) => {
+  write(folder, 'data.json', JSON.stringify([1, 2, 3, 4, 5].map(sample)));
+  const { output } = analyse('profile', join(folder, 'data.json'), '--md');
+  assert(output.includes('`kind`: always a'), `finding in words:\n${output}`);
+  assert(output.indexOf('## Findings') < output.indexOf('## Fields'), 'findings first');
+});
+
+test('analyse list names each analysis and its component', () => {
+  const { ok, output } = analyse('list');
+  assert(ok && /^profile +sb-profile +The shape/m.test(output), `listed:\n${output}`);
+});
+
+test('analyse explains an unknown analysis, bad JSON and missing inputs', (folder) => {
+  const unknown = analyse('nope', folder);
+  assert(!unknown.ok && unknown.output.includes('Available: profile'), 'unknown analysis');
+  write(folder, 'bad.jsonl', '{"a":1}\n{oops}\n');
+  const bad = analyse('profile', join(folder, 'bad.jsonl'));
+  assert(!bad.ok && bad.output.includes('bad.jsonl, line 2 isn\'t valid JSON'), `bad JSON: ${bad.output}`);
+  assert(!analyse('profile').ok, 'no inputs');
+});

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-profile tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-profile.js"></script>
+</head>
+<body>
+  <script>
+    // The core's own behaviour is tested in Node (test.mjs); these test the element that draws it.
+
+    const ORDERS = Array.from({ length: 20 }, (_, i) => ({
+      orderId: `ORD-${i + 1}`,
+      currency: 'GBP',
+      status: i === 19 ? 'disputed' : i % 2 ? 'delivered' : 'cancelled',
+      amount: i === 4 ? '20.00' : 10 * (i + 1),
+      ...(i < 3 ? { refund: 5 } : {}),
+      customer: { name: `C${i % 4}` },
+      items: [{ sku: `S${i % 3}` }],
+    }));
+
+    function profiled(samples = ORDERS, options) {
+      const el = mount('<sb-profile></sb-profile>');
+      if (options) el.options = options;
+      el.samples = samples;
+      return el;
+    }
+
+    const row = (el, path) => [...el.querySelectorAll('.sb-profile__field')].find((r) => r.dataset.ref === path);
+    const words = (el, path) => [...row(el, path).querySelectorAll('.sb-profile__finding')].map((f) => f.textContent);
+    const expand = (el, path) => row(el, path).querySelector('.sb-profile__name').click();
+    const values = (el, path) => [...row(el, path).querySelectorAll('.sb-profile__value')];
+
+    // ---- The core, from the page ----
+
+    test('the class hands out the core, so samples can be profiled without drawing', () => {
+      const result = customElements.get('sb-profile').profile(ORDERS, { id: 'orderId' });
+      assertEqual(result.count, 20);
+      assertEqual(typeof customElements.get('sb-profile').profile.markdown, 'function', 'and its summary');
+    });
+
+    test('profile is the core\'s result for the samples and options given', () => {
+      const el = profiled(ORDERS, { id: 'orderId' });
+      assertEqual(el.profile, customElements.get('sb-profile').profile(ORDERS, { id: 'orderId' }));
+    });
+
+    test('setting options profiles again', () => {
+      const el = profiled();
+      el.options = { path: 'items' };
+      assertEqual(el.profile.count, 20);
+      assertEqual(el.profile.fields.map((f) => f.path), ['sku']);
+    });
+
+    // ---- Drawing ----
+
+    test('draws a row per field, indented by depth, carrying its path as data-ref', () => {
+      const el = profiled();
+      assertEqual([...el.querySelectorAll('.sb-profile__field')].map((r) => r.dataset.ref), el.profile.fields.map((f) => f.path));
+      const name = (path) => row(el, path).querySelector('.sb-profile__name');
+      assertEqual(name('customer.name').textContent, 'name', 'the last part of the path');
+      assertEqual(name('items[].sku').textContent, 'sku');
+      assert(parseInt(name('items[].sku').style.paddingLeft) > parseInt(name('items').style.paddingLeft), 'indented');
+    });
+
+    test('each row shows its types, how often it\'s present, and its distinct count', () => {
+      const el = profiled();
+      const text = (path, part) => row(el, path).querySelector(`.sb-profile__${part}`).textContent.trim();
+      assertEqual(text('amount', 'types'), 'number 19, string 1');
+      assertEqual(text('refund', 'present'), '15%');
+      assertEqual(text('status', 'distinct'), '3');
+    });
+
+    test('marks each finding on its row, in words', () => {
+      const el = profiled(ORDERS, { id: 'orderId' });
+      assertEqual(words(el, 'currency'), ['always GBP']);
+      assertEqual(words(el, 'orderId'), ['every value different']);
+      assertEqual(words(el, 'refund'), ['missing in 85%']);
+      assertEqual(words(el, 'amount'), ['every value different', '1 is a string']);
+      assertEqual(words(el, 'status'), ['seen once: disputed']);
+      assertEqual(row(el, 'refund').querySelector('[data-kind="sometimes-missing"]').textContent, 'missing in 85%', 'kinds are marked');
+    });
+
+    test('a summary counts the findings', () => {
+      assertEqual(profiled().querySelector('.sb-profile__tally').textContent, 'Found 1 constant, 2 keys, 1 gap, 1 mixed type, 1 rare value.');
+      assertEqual(profiled([{ a: 1 }]).querySelector('.sb-profile__tally').textContent, 'Nothing stands out.');
+    });
+
+    test('shows the empty text with no samples', () => {
+      assertEqual(profiled([]).textContent.trim(), 'No samples yet.');
+      const el = mount('<sb-profile empty-text="Pick a file."></sb-profile>');
+      assertEqual(el.textContent.trim(), 'Pick a file.');
+    });
+
+    // ---- Opening a field ----
+
+    test('clicking a name shows its values with counts, rare ones marked', () => {
+      const el = profiled();
+      assertEqual(values(el, 'status').length, 0, 'closed at first');
+      expand(el, 'status');
+      assertEqual(values(el, 'status').map((v) => v.textContent), ['cancelled', 'delivered', 'disputed']);
+      assertEqual([...row(el, 'status').querySelectorAll('.sb-profile__count')].map((c) => c.textContent), ['10', '9', '1']);
+      assertEqual(values(el, 'status').map((v) => v.classList.contains('sb-profile__value--rare')), [false, false, true]);
+      assertEqual(el.expanded, ['status']);
+      expand(el, 'status');
+      assertEqual(values(el, 'status').length, 0, 'closed again');
+    });
+
+    test('says how many more values there are', () => {
+      const el = profiled(ORDERS, { limit: 5 });
+      el.expanded = ['orderId'];
+      assertEqual(values(el, 'orderId').length, 5);
+      assertEqual(row(el, 'orderId').querySelector('.sb-profile__more').textContent, 'and 15 more');
+    });
+
+    test('numbers show a histogram, and arrays their lengths', () => {
+      const el = profiled();
+      el.expanded = ['amount', 'items'];
+      assert(row(el, 'amount').querySelectorAll('.sb-profile__bin').length > 1, 'bins');
+      assertEqual(row(el, 'items').querySelector('.sb-profile__caption').textContent, 'Lengths: 1 to 1, mean 1');
+    });
+
+    test('mixed types name the odd samples, and odd values are marked', () => {
+      const el = profiled(ORDERS, { id: 'orderId' });
+      el.expanded = ['amount'];
+      assert(row(el, 'amount').textContent.includes('1 is a string, in ORD-5'), 'odd samples');
+      const odd = profiled([{ v: 1 }, { v: 2 }, { v: 'x' }]);
+      odd.expanded = ['v'];
+      assertEqual(values(odd, 'v').map((v) => v.classList.contains('sb-profile__value--odd')), [false, false, true]);
+    });
+
+    test('the expanded fields survive new samples', () => {
+      const el = profiled();
+      el.expanded = ['status'];
+      el.samples = ORDERS.slice(0, 10);
+      assertEqual(values(el, 'status').length, 2);
+    });
+
+    // ---- Choosing a value ----
+
+    test('clicking a value fires sb-select with its path and value, as it was', () => {
+      const el = profiled([{ v: 1 }, { v: '1' }, { v: null }]);
+      const selections = recordEvents(el, 'sb-select');
+      el.expanded = ['v'];
+      values(el, 'v')[0].click();
+      values(el, 'v')[2].click();
+      assertEqual(selections.map((e) => e.detail), [{ path: 'v', value: null }, { path: 'v', value: '1' }]);
+      assert(selections[0].bubbles, 'bubbles');
+    });
+
+    test('pointing at a value fires nothing', () => {
+      const el = profiled();
+      const selections = recordEvents(el, 'sb-select');
+      el.expanded = ['status'];
+      values(el, 'status')[0].dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      assertEqual(selections.length, 0);
+    });
+
+    // ---- Pointing ----
+
+    const lit = (el) => [...el.querySelectorAll('.sb-profile__field--highlighted')].map((r) => r.dataset.ref);
+    const pointAt = (target) => target.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+
+    test('highlight lights fields, and every field with a finding of a kind', () => {
+      const el = profiled();
+      el.highlight = { fields: ['status'] };
+      assertEqual(lit(el), ['status']);
+      el.highlight = { kinds: ['unique'] };
+      assertEqual(lit(el), ['orderId', 'amount']);
+      assertEqual([...el.querySelectorAll('.sb-profile__finding--highlighted')].map((f) => f.textContent), ['every value different', 'every value different'], 'the findings too');
+      assert(el.querySelector('.sb-profile__kind[data-kind="unique"]').classList.contains('sb-profile__kind--highlighted'), 'and their count');
+      el.highlight = null;
+      assertEqual(lit(el), [], 'cleared');
+    });
+
+    test('a highlighted value lights up where shown, and marks its row where not', () => {
+      const el = profiled();
+      el.highlight = { values: [['status', 'disputed']] };
+      assert(row(el, 'status').classList.contains('sb-profile__field--holds-highlight'), 'closed row marked');
+      el.expanded = ['status'];
+      assertEqual(values(el, 'status').map((v) => v.classList.contains('sb-profile__value--highlighted')), [false, false, true]);
+      assert(!row(el, 'status').classList.contains('sb-profile__field--holds-highlight'), 'shown, so no longer marked');
+    });
+
+    test('highlight survives new samples', () => {
+      const el = profiled();
+      el.highlight = { fields: ['refund'] };
+      el.samples = ORDERS.slice(0, 10);
+      assertEqual(lit(el), ['refund']);
+    });
+
+    test('pointing fires sb-point with what is pointed at, once per change, and null on leaving', () => {
+      const el = profiled();
+      el.expanded = ['status'];
+      const points = recordEvents(el, 'sb-point');
+      pointAt(row(el, 'status').querySelector('.sb-profile__types'));
+      pointAt(row(el, 'status').querySelector('.sb-profile__distinct'));
+      pointAt(values(el, 'status')[2]);
+      pointAt(row(el, 'status').querySelector('.sb-profile__finding'));
+      pointAt(el.querySelector('.sb-profile__kind[data-kind="sometimes-missing"]'));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(points.map((e) => e.detail), [
+        { path: 'status' },
+        { path: 'status', value: 'disputed' },
+        { path: 'status', kind: 'rare-values' },
+        { kind: 'sometimes-missing' },
+        null,
+      ]);
+      assert(points[0].bubbles, 'bubbles');
+    });
+
+    test('pointing at a count in the summary lights its fields until the pointer leaves', () => {
+      const el = profiled();
+      pointAt(el.querySelector('.sb-profile__kind[data-kind="unique"]'));
+      assertEqual(lit(el), ['orderId', 'amount']);
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(lit(el), []);
+    });
+
+    test('focus points too, for the keyboard', () => {
+      const el = profiled();
+      const points = recordEvents(el, 'sb-point');
+      row(el, 'currency').querySelector('.sb-profile__name').focus();
+      assertEqual(points.map((e) => e.detail), [{ path: 'currency' }]);
+    });
+
+    test('clicking a finding opens its field, to see the evidence', () => {
+      const el = profiled();
+      row(el, 'status').querySelector('.sb-profile__finding').click();
+      assertEqual(el.expanded, ['status']);
+    });
+
+    // ---- Changes ----
+
+    test('setting samples again marks presence and distinct counts that changed, with what they were', () => {
+      const el = profiled();
+      assertEqual(el.querySelectorAll('.sb-profile__changed').length, 0, 'nothing on the first samples');
+      el.samples = ORDERS.filter((o) => o.status === 'delivered');
+      const changed = (path, part) => row(el, path).querySelector(`.sb-profile__${part}`);
+      assert(changed('status', 'distinct').classList.contains('sb-profile__changed'), 'status narrowed');
+      assertEqual(changed('status', 'distinct').querySelector('.sb-profile__was').textContent, 'was 3');
+      assertEqual(changed('refund', 'present').querySelector('.sb-profile__was').textContent, 'was 15%');
+      assert(!changed('currency', 'present').classList.contains('sb-profile__changed'), 'still in every sample: a share, not a count');
+    });
+
+    test('a field none of the new samples have stays in its place, marked as gone', () => {
+      const el = profiled();
+      el.samples = ORDERS.slice(3);
+      const gone = row(el, 'refund');
+      assert(gone.classList.contains('sb-profile__field--gone'), 'marked as gone');
+      assertEqual(gone.querySelector('.sb-profile__present').textContent.trim().replace(/\s+/g, ' '), 'none was 15%');
+      assertEqual(gone.previousElementSibling.dataset.ref, 'amount', 'where it was');
+      gone.querySelector('.sb-profile__name').click();
+      assertEqual(el.expanded, [], 'nothing to open');
+      el.samples = ORDERS.slice(3);
+      assertEqual(row(el, 'refund'), undefined, 'gone for one update only');
+    });
+
+    test('only the last update is marked', () => {
+      const el = profiled();
+      el.samples = ORDERS.slice(0, 10);
+      el.samples = ORDERS.slice(0, 10);
+      assertEqual(el.querySelectorAll('.sb-profile__changed').length, 0);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two profiles on one page keep their own samples, expansions and changes', () => {
+      mount('<div><sb-profile></sb-profile><sb-profile></sb-profile></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-profile');
+      a.samples = ORDERS;
+      b.samples = ORDERS;
+      a.expanded = ['status'];
+      a.samples = ORDERS.slice(0, 10);
+      assertEqual([b.expanded, b.querySelectorAll('.sb-profile__changed').length, b.profile.count], [[], 0, 20]);
+      assertEqual(a.profile.count, 10);
+    });
+
+    test('displays names and values as text, never as markup', () => {
+      const el = profiled([{ '<b>k</b>': '<i>v</i>' }, { '<b>k</b>': '<i>v</i>' }, { '<b>k</b>': '<i>v</i>' }, { '<b>k</b>': '<i>v</i>' }, { '<b>k</b>': '<i>v</i>' }]);
+      el.expanded = ['<b>k</b>'];
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(values(el, '<b>k</b>')[0].textContent, '<i>v</i>');
+      assertEqual(words(el, '<b>k</b>'), ['always <i>v</i>']);
+    });
+  </script>
+</body>
+</html>

@@ -29,6 +29,8 @@ Before building anything, be clear on:
 - **The kind of sandbox.** For intuition (a believable feel for how something works), for decisions (grounded in sources people can check), or for exploring possibilities (pushing beyond what is known, clearly marked as such).
 - **The sources.** What material is the model to be built from? Documents, data, articles, or the person's own knowledge. A sandbox is only as good as what is behind it.
 
+  When the sources include data (JSON or JSON Lines), profile it first, where Node is available: `node <sandkit>/tools/analyse.mjs profile <files or folder> --md`. Read the findings (fields that never change, keys, gaps, mixed types, rare values) before designing the model, rather than reading the samples themselves. The same profile can go in the sandbox as [`sb-profile`](../components/sb-profile/manifest.md), so the person sees what you saw.
+
 Then sketch the chapters: one line each, starting with the most fundamental idea. You'll present this plan with iteration 1, so the person can reorder, cut or redirect it before anything more is built.
 
 ## 2. Set up the folder
