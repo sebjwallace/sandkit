@@ -2,6 +2,12 @@
 
 What changed in this sandbox, and why: one entry per change, newest first, only ever added to. Each entry is a version. See the [journal practice](../../practices/journal.md).
 
+## 0.4.0 · 2026-10-18 · Added
+
+**Changed:** Chapter 4, where it's kept: the Shop database's tables and starting rows in the model, with every write the order makes tied to its message (`MSG-4`, `MSG-6`, `MSG-11`) and replayed one at a time; shown as a walkthrough of the tables' diagram beside their rows.
+**Why:** What's written is all the shop remembers once the shopper has gone, and the pending order after `MSG-6` sets up what chapter 5 asks.
+**Open:** None new.
+
 ## 0.3.0 · 2026-10-18 · Added
 
 **Changed:** Chapter 3, what's sent: the payloads of the four messages that cross a network (`MSG-2`, `MSG-8`, `MSG-9`, `MSG-12`), in the model with the fields that matter and a note on each, shown as a walkthrough of the sequence beside the JSON.

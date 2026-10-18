@@ -68,6 +68,8 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-surface`, `--sb-surface-2`, `--sb
 
 Classes: `sb-erd__svg`, `sb-erd__entity` (`--highlighted`, and the tone), `sb-erd__fill`, `sb-erd__head`, `sb-erd__name`, `sb-erd__outline`, `sb-erd__field` (`--primary`, `--highlighted`), `sb-erd__row`, `sb-erd__key`, `sb-erd__field-name`, `sb-erd__type`, `sb-erd__link` (`--highlighted`), `sb-erd__line`, `sb-erd__end` (the starting dot and the arrow).
 
+Entities carry `data-ref` with their id, and fields with `entity.field`, so a sandbox can find them (see the [locating practice](../../practices/locating.md)).
+
 ## Works well with
 
 Suggestions only: nothing here is wired in. The sandbox composes these itself.

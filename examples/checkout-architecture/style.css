@@ -29,6 +29,12 @@ main { padding: 16px 24px 40px; }
 #outline { max-height: 300px; }
 #order-walk { height: 760px; }
 #payload-walk { height: 700px; }
+#store-walk { height: 600px; }
+#store-walk h3 { margin: 0 0 6px; font-size: 16px; }
+#store-walk h3 .where { font-size: 14px; font-weight: normal; }
+#store-walk p { margin: 4px 0; font-size: 14px; }
+.rows h4 { margin: 4px 0 6px; font: 600 13px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); }
+.rows h4:not(:first-child) { margin-top: 18px; }
 #payload-walk h3 { margin: 0 0 6px; font-size: 16px; }
 #payload-walk h3 .where { font-size: 14px; font-weight: normal; }
 #payload-walk p { margin: 4px 0; font-size: 14px; }

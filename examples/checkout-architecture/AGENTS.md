@@ -6,13 +6,13 @@ Use components through their manifests, never their source. Codes are issued in 
 
 ## Where it stands
 
-- **Version:** 0.3.0
+- **Version:** 0.4.0
 - **Chapters built:**
   1. The parts: the architecture as a C4 diagram to walk into, an outline of every part, and what crosses a selected part's edge. Names in the prose go to their part in the diagram.
   2. Placing an order: one checkout as thirteen messages, told as a walkthrough with the sequence and the architecture side by side; the architecture follows each message to the level where it can be seen, and pointing at a line's code lights every message along it.
   3. What's sent: the four messages that cross a network, as a walkthrough of the sequence beside each one's JSON, with the fields that matter spotlit and noted: money in pence, the order number born in Orders, the key that makes a retried charge safe.
+  4. Where it's kept: the shop database's tables as a diagram beside their rows, the three writes the order makes replayed one at a time, with the cells each one changes marked.
 - **Chapters planned:**
-  4. Where it's kept: the shop database's tables.
   5. When payment fails: the unhappy path, and the order's life as a statechart.
 - **Chosen direction:** none yet; waiting on the handover.
 - **Open questions:**

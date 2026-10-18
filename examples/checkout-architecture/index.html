@@ -14,6 +14,8 @@
   <script src="../../components/sb-sequence/sb-sequence.js"></script>
   <script src="../../components/sb-walkthrough/sb-walkthrough.js"></script>
   <script src="../../components/sb-json/sb-json.js"></script>
+  <script src="../../components/sb-erd/sb-erd.js"></script>
+  <script src="../../components/sb-table/sb-table.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
@@ -58,6 +60,21 @@
       <sb-walkthrough id="payload-walk" narration="bottom">
         <sb-sequence slot="conversation" id="payload-conversation" numbered></sb-sequence>
         <sb-json slot="payload" id="payload"></sb-json>
+      </sb-walkthrough>
+    </section>
+
+    <section class="chapter" heading="4 · Where it’s kept">
+      <h2>Chapter 4 · Where it’s kept</h2>
+      <p>Most messages leave nothing behind. A few write to the shop database, and what they write is all the shop remembers once the shopper has gone: how many mugs are left, what was ordered, and whether it was paid for. The diagram shows the tables and how they refer to each other; beside it are their rows, with the cells each write changes marked.</p>
+      <p class="try"><strong>Try:</strong> step through the three messages that write. After message 6, the order exists but isn’t paid for. What would the database say if the card were declined then? Chapter 5 finds out.</p>
+
+      <sb-walkthrough id="store-walk" narration="bottom">
+        <sb-erd slot="schema" id="schema"></sb-erd>
+        <div slot="rows" class="rows">
+          <h4>stock</h4><sb-table id="rows-stock"></sb-table>
+          <h4>order_items</h4><sb-table id="rows-order_items" empty-text="No rows yet."></sb-table>
+          <h4>orders</h4><sb-table id="rows-orders" empty-text="No rows yet."></sb-table>
+        </div>
       </sb-walkthrough>
     </section>
     </sb-tabs>
@@ -202,6 +219,49 @@
       bringIntoView(payloadConversation, m.id);
     }
 
+    // ---- Chapter 4: where it's kept ----
+    // A step before the order, then one per message that writes. Each step replays the writes so
+    // far onto the starting rows, and the tables mark what changed.
+
+    const storeWalk = $('store-walk'), schema = $('schema');
+    const rowTables = { stock: $('rows-stock'), order_items: $('rows-order_items'), orders: $('rows-orders') };
+    const writing = [null, ...new Set(DATABASE_WRITES.map((w) => w.message))]; // null: before the order
+    const ROW_IDS = { stock: (r) => r.sku, order_items: (r) => `${r.order_number} ${r.sku}`, orders: (r) => String(r.number) };
+    const field = (ref, text) => `<code data-ref="${esc(ref)}">${esc(text)}</code>`;
+
+    function writeHtml(w) {
+      if (w.insert) return `adds a row to ${field(w.table, w.table)}`;
+      return `sets ${Object.keys(w.set).map((f) => field(`${w.table}.${f}`, f)).join(' and ')} in ${field(w.table, w.table)}`;
+    }
+
+    function storeStepHtml(code) {
+      if (!code) return `
+        <section data-step data-message="">
+          <h3>Before the order</h3>
+          <p>The shop has 14 blue mugs in ${field('stock', 'stock')}, and no orders yet.</p>
+        </section>`;
+      const m = PLACE_ORDER.find((message) => message.id === code), r = checkout.relationship(m.along);
+      const writes = DATABASE_WRITES.filter((w) => w.message === code);
+      return `
+        <section data-step data-message="${esc(code)}">
+          <h3>${esc(m.label)} <sb-id code="${esc(code)}"></sb-id> <span class="where">from ${esc(nameOf(m.from))}</span></h3>
+          <p>${esc(m.says)}</p>
+          <p class="where">It ${writes.map(writeHtml).join(', and ')}, along <sb-id code="${esc(r.id)}"></sb-id>.</p>
+        </section>`;
+    }
+
+    // The tables a message writes, and the fields it sets.
+    function writtenBy(code) {
+      const writes = DATABASE_WRITES.filter((w) => w.message === code);
+      return { entities: writes.map((w) => w.table), fields: writes.flatMap((w) => Object.keys(w.set ?? {}).map((f) => `${w.table}.${f}`)) };
+    }
+
+    function showStore() {
+      const tables = replayWrites(SHOP_DATABASE.rows, DATABASE_WRITES, writing.slice(1, storeWalk.step + 1));
+      for (const [table, el] of Object.entries(rowTables)) el.rows = tables[table].map((row) => ({ id: ROW_IDS[table](row), ...row }));
+      schema.highlight = writtenBy(writing[storeWalk.step]);
+    }
+
     // ---- Viewers ----
 
     outline.addEventListener('sb-select', (e) => {
@@ -218,6 +278,12 @@
 
     payloadWalk.addEventListener('sb-step', showPayload);
     payloadWalk.addEventListener('sb-point', (e) => { payload.highlight = e.detail.ref ? [e.detail.ref] : []; });
+
+    storeWalk.addEventListener('sb-step', showStore);
+    storeWalk.addEventListener('sb-point', (e) => {
+      const ref = e.detail.ref;
+      schema.highlight = !ref ? writtenBy(writing[storeWalk.step]) : ref.includes('.') ? { fields: [ref] } : { entities: [ref] };
+    });
 
     // Clicking a message goes to its step.
     conversation.addEventListener('sb-select', (e) => {
@@ -243,6 +309,11 @@
     payloadConversation.messages = PLACE_ORDER;
     payloadWalk.insertAdjacentHTML('beforeend', carrying.map(payloadStepHtml).join(''));
     showPayload();
+
+    schema.entities = SHOP_DATABASE.tables;
+    for (const table of SHOP_DATABASE.tables) rowTables[table.id].columns = table.fields.map((f) => ({ key: f.name }));
+    storeWalk.insertAdjacentHTML('beforeend', writing.map(storeStepHtml).join(''));
+    showStore();
   </script>
 </body>
 </html>

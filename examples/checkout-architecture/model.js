@@ -105,6 +105,54 @@ const PAYLOADS = {
   }
 };
 
+// The Shop database (CON-3): its tables, laid out for a diagram, and their rows before the order.
+const SHOP_DATABASE = {
+  tables: [
+    { id: 'stock', name: 'stock', x: 0, y: 40, fields: [
+      { name: 'sku', type: 'text', key: 'primary' },
+      { name: 'name', type: 'text' },
+      { name: 'in_stock', type: 'int' }
+    ] },
+    { id: 'order_items', name: 'order_items', x: 260, y: 0, fields: [
+      { name: 'order_number', type: 'int', references: 'orders.number' },
+      { name: 'sku', type: 'text', references: 'stock.sku' },
+      { name: 'quantity', type: 'int' },
+      { name: 'unit_price', type: 'int' }
+    ] },
+    { id: 'orders', name: 'orders', x: 540, y: 40, fields: [
+      { name: 'number', type: 'int', key: 'primary' },
+      { name: 'status', type: 'text' },
+      { name: 'total', type: 'int' },
+      { name: 'charge_id', type: 'text' }
+    ] }
+  ],
+  rows: {
+    stock: [{ sku: 'MUG-BLUE', name: 'Blue mug', in_stock: 14 }],
+    order_items: [],
+    orders: []
+  }
+};
+
+// Every change the order makes to the database, in order, with the message that makes it. A
+// write either inserts a row or sets fields on the row whose key matches.
+const DATABASE_WRITES = [
+  { message: 'MSG-4', table: 'stock', where: { sku: 'MUG-BLUE' }, set: { in_stock: 12 } },
+  { message: 'MSG-6', table: 'orders', insert: { number: 1042, status: 'pending', total: 2450, charge_id: null } },
+  { message: 'MSG-6', table: 'order_items', insert: { order_number: 1042, sku: 'MUG-BLUE', quantity: 2, unit_price: 1225 } },
+  { message: 'MSG-11', table: 'orders', where: { number: 1042 }, set: { status: 'paid', charge_id: 'ch_51Hq8' } }
+];
+
+// The rows of every table after the writes made by the given messages, leaving the start untouched.
+function replayWrites(start, writes, messages) {
+  const tables = Object.fromEntries(Object.entries(start).map(([table, rows]) => [table, rows.map((row) => ({ ...row }))]));
+  const matches = (row, where) => Object.entries(where).every(([field, value]) => row[field] === value);
+  for (const write of writes.filter((w) => messages.includes(w.message))) {
+    if (write.insert) tables[write.table].push({ ...write.insert });
+    else tables[write.table].filter((row) => matches(row, write.where)).forEach((row) => Object.assign(row, write.set));
+  }
+  return tables;
+}
+
 const KIND_NAMES ={ person: 'Person', system: 'Software system', container: 'Container', component: 'Component', database: 'Database' };
 
 // Answers questions about an architecture, `{ elements, relationships, messages }`: what a code is,
@@ -163,4 +211,4 @@ function createArchitecture(spec) {
 const checkout = createArchitecture({ ...CHECKOUT, messages: PLACE_ORDER });
 
 // Lets Node load the model too, for model tests once the sandbox needs them.
-if (typeof module !== 'undefined') module.exports = { CHECKOUT, PLACE_ORDER, PAYLOADS, createArchitecture, checkout };
+if (typeof module !== 'undefined') module.exports = { CHECKOUT, PLACE_ORDER, PAYLOADS, SHOP_DATABASE, DATABASE_WRITES, replayWrites, createArchitecture, checkout };

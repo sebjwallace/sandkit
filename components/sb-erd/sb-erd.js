@@ -1,4 +1,4 @@
-// Sandkit sb-erd 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-erd 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // An entity relationship diagram whose lines start at the very field that holds the reference
 // and end at the very field it refers to, so every line says exactly which field points where.
 //
@@ -215,7 +215,7 @@
       const { width, height } = entity, r = 6;
       const tone = entity.tone ? ` sb-erd__entity--${esc(entity.tone)}` : '';
       return `
-        <g class="sb-erd__entity${tone}" data-entity="${esc(entity.id)}" transform="translate(${entity.x}, ${entity.y})">
+        <g class="sb-erd__entity${tone}" data-ref="${esc(entity.id)}" transform="translate(${entity.x}, ${entity.y})">
           <rect class="sb-erd__fill" width="${width}" height="${height}" rx="${r}"/>
           <path class="sb-erd__head" d="M0,${SIZE.header} V${r} Q0,0 ${r},0 H${width - r} Q${width},0 ${width},${r} V${SIZE.header} z"/>
           <text class="sb-erd__name" x="${SIZE.padding}" y="${SIZE.header / 2 + 4.5}">${esc(entity.name ?? entity.id)}</text>
@@ -230,7 +230,7 @@
       const primary = field.key === 'primary' ? ' sb-erd__field--primary' : '';
       const title = field.references != null ? `${field.name} → ${field.references}` : field.name;
       return `
-        <g class="sb-erd__field${primary}" data-field="${esc(`${entity.id}.${field.name}`)}">
+        <g class="sb-erd__field${primary}" data-field="${esc(`${entity.id}.${field.name}`)}" data-ref="${esc(`${entity.id}.${field.name}`)}">
           <title>${esc(title)}</title>
           <rect class="sb-erd__row" y="${top}" width="${entity.width}" height="${SIZE.row}"/>
           <text class="sb-erd__key" x="${SIZE.padding}" y="${middle - 1}">${key}</text>
@@ -265,7 +265,7 @@
       }
       for (const el of this.querySelectorAll('.sb-erd__field')) el.classList.toggle('sb-erd__field--highlighted', fields.has(el.dataset.field));
       for (const el of this.querySelectorAll('.sb-erd__link')) el.classList.toggle('sb-erd__link--highlighted', links.has(el.dataset.field));
-      for (const el of this.querySelectorAll('.sb-erd__entity')) el.classList.toggle('sb-erd__entity--highlighted', entities.has(el.dataset.entity));
+      for (const el of this.querySelectorAll('.sb-erd__entity')) el.classList.toggle('sb-erd__entity--highlighted', entities.has(el.dataset.ref));
     }
 
     // ---- Interaction ----
@@ -277,9 +277,9 @@
     }
 
     _select(e) {
-      const part = e.target.closest('[data-field], [data-entity]');
+      const part = e.target.closest('[data-field], .sb-erd__entity');
       if (!part) return;
-      const [entity, field] = part.dataset.field ? splitRef(part.dataset.field) : [part.dataset.entity, undefined];
+      const [entity, field] = part.dataset.field ? splitRef(part.dataset.field) : [part.dataset.ref, undefined];
       this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { entity, field: field ?? null } }));
     }
   }

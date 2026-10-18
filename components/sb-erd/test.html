@@ -27,7 +27,7 @@
     const byData = (el, selector, key, value) => [...el.querySelectorAll(selector)].find((node) => node.dataset[key] === value);
     const field = (el, ref) => byData(el, '.sb-erd__field', 'field', ref);
     const link = (el, ref) => byData(el, '.sb-erd__link', 'field', ref);
-    const entity = (el, id) => byData(el, '.sb-erd__entity', 'entity', id);
+    const entity = (el, id) => byData(el, '.sb-erd__entity', 'ref', id);
     const lit = (node) => [...node.classList].some((c) => c.endsWith('--highlighted'));
     const litFields = (el) => [...el.querySelectorAll('.sb-erd__field--highlighted')].map((f) => f.dataset.field);
 
@@ -181,6 +181,15 @@
       const el = diagram([{ id: 'e', name: '<b>E</b>', x: 0, y: 0, fields: [{ name: '<i>f</i>', type: '<b>t</b>', references: '<i>e</i>' }] }]);
       assertEqual(el.querySelectorAll('b, i').length, 0, 'anywhere, since the parser moves such tags out of an svg');
       assertEqual(el.querySelector('.sb-erd__name').textContent, '<b>E</b>');
+    });
+
+    // ---- Locating ----
+
+    test('entities and fields carry data-ref, so the page can find them', () => {
+      const el = diagram();
+      assert(el.querySelector('[data-ref="loans"]').matches('.sb-erd__entity'), 'an entity by its id');
+      assert(el.querySelector('[data-ref="loans.member_id"]').matches('.sb-erd__field'), 'a field as entity.field');
+      assertEqual(el.querySelectorAll('.sb-erd__link[data-ref]').length, 0, 'lines are found through their fields');
     });
   </script>
 </body>
