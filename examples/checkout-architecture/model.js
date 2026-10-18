@@ -2,7 +2,7 @@
 // them by. No UI here. The page reads the architecture and asks it questions.
 //
 // Codes: PER person, SYS software system, CON container (an app or a database), CMP component
-// (a part inside an app), REL relationship.
+// (a part inside an app), REL relationship, MSG message in a conversation.
 
 const CHECKOUT = {
   elements: [
@@ -30,9 +30,29 @@ const CHECKOUT = {
   ]
 };
 
-const KIND_NAMES = { person: 'Person', system: 'Software system', container: 'Container', component: 'Component', database: 'Database' };
+// One checkout, message by message: who calls whom, along which relationship, and why. Replies
+// travel back along the relationship of the call they answer. Calls to the database are shown
+// without their replies, to keep the conversation short.
+const PLACE_ORDER = [
+  { id: 'MSG-1', from: 'PER-1', to: 'CON-1', along: 'REL-1', label: 'Pay £24.50', says: 'The shopper presses Pay for two mugs.' },
+  { id: 'MSG-2', from: 'CON-1', to: 'CMP-1', along: 'REL-2', label: 'POST /orders', says: 'The Storefront sends the basket to Orders, to be made into an order.' },
+  { id: 'MSG-3', from: 'CMP-1', to: 'CMP-2', along: 'REL-3', label: 'Hold back 2 mugs', says: 'Before taking any money, Orders checks the mugs are there, and has them held back so nobody else can buy them.' },
+  { id: 'MSG-4', from: 'CMP-2', to: 'CON-3', along: 'REL-7', label: 'UPDATE stock', says: 'Stock takes two mugs off the count in the database.' },
+  { id: 'MSG-5', from: 'CMP-2', to: 'CMP-1', along: 'REL-3', kind: 'reply', label: 'Held', says: 'The mugs are held for this order.' },
+  { id: 'MSG-6', from: 'CMP-1', to: 'CON-3', along: 'REL-6', label: 'INSERT order (pending)', says: 'Orders saves the order as pending: it exists, but isn’t paid for yet.' },
+  { id: 'MSG-7', from: 'CMP-1', to: 'CMP-3', along: 'REL-4', label: 'Charge £24.50', says: 'Orders asks Payments to take the money.' },
+  { id: 'MSG-8', from: 'CMP-3', to: 'SYS-2', along: 'REL-5', label: 'POST /charges', says: 'Payments asks the provider to charge the shopper’s card. It’s the only call that leaves the shop.' },
+  { id: 'MSG-9', from: 'SYS-2', to: 'CMP-3', along: 'REL-5', kind: 'reply', label: 'Charged', says: 'The provider reports that the card was charged.' },
+  { id: 'MSG-10', from: 'CMP-3', to: 'CMP-1', along: 'REL-4', kind: 'reply', label: 'Paid', says: 'Payments tells Orders the money is in.' },
+  { id: 'MSG-11', from: 'CMP-1', to: 'CON-3', along: 'REL-6', label: 'UPDATE order (paid)', says: 'Orders marks the order as paid.' },
+  { id: 'MSG-12', from: 'CMP-1', to: 'CON-1', along: 'REL-2', kind: 'reply', label: '201 Created', says: 'Orders tells the Storefront the order is placed.' },
+  { id: 'MSG-13', from: 'CON-1', to: 'PER-1', along: 'REL-1', kind: 'reply', label: 'Thank you!', says: 'The shopper sees the thank-you page.' }
+];
 
-// Answers questions about an architecture: what a code is, what it's inside, and what it talks to.
+const KIND_NAMES ={ person: 'Person', system: 'Software system', container: 'Container', component: 'Component', database: 'Database' };
+
+// Answers questions about an architecture, `{ elements, relationships, messages }`: what a code is,
+// what it's inside, and what it talks to.
 function createArchitecture(spec) {
   const entries = new Map(); // code → { element, path: [codes of what it's inside, outermost first] }
   (function index(elements, path) {
@@ -43,6 +63,7 @@ function createArchitecture(spec) {
   })(spec.elements, []);
 
   const relationships = new Map(spec.relationships.map((r) => [r.id, r]));
+  const messages = new Map((spec.messages ?? []).map((m) => [m.id, m]));
 
   const element = (code) => entries.get(code)?.element ?? null;
   const path = (code) => entries.get(code)?.path ?? [];
@@ -65,13 +86,25 @@ function createArchitecture(spec) {
     if (found) return { kind: KIND_NAMES[found.kind ?? 'system'], title: found.name, description: found.description };
     const r = relationships.get(code);
     if (r) return { kind: 'Relationship', title: `${element(r.from).name} → ${element(r.to).name}`, description: r.label };
+    const m = messages.get(code);
+    if (m) return { kind: 'Message', title: `${element(m.from).name} → ${element(m.to).name}: ${m.label}`, description: m.says };
     return null;
   }
 
-  return { spec, element, path, connections, define, relationship: (code) => relationships.get(code) ?? null };
+  // The participants of a conversation, in the order they first take part.
+  const participants = (messages) => [...new Set(messages.flatMap((m) => [m.from, m.to]))];
+
+  // The view of the architecture where a message can be seen: inside whatever holds the deeper of
+  // its two ends, so that end is drawn as itself and the other as itself or the box holding it.
+  function viewOf(message) {
+    const [from, to] = [path(message.from), path(message.to)];
+    return from.length >= to.length ? from : to;
+  }
+
+  return { spec, element, path, connections, define, participants, viewOf, relationship: (code) => relationships.get(code) ?? null };
 }
 
-const checkout = createArchitecture(CHECKOUT);
+const checkout = createArchitecture({ ...CHECKOUT, messages: PLACE_ORDER });
 
 // Lets Node load the model too, for model tests once the sandbox needs them.
-if (typeof module !== 'undefined') module.exports = { CHECKOUT, createArchitecture, checkout };
+if (typeof module !== 'undefined') module.exports = { CHECKOUT, PLACE_ORDER, createArchitecture, checkout };

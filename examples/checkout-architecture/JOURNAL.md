@@ -2,6 +2,12 @@
 
 What changed in this sandbox, and why: one entry per change, newest first, only ever added to. Each entry is a version. See the [journal practice](../../practices/journal.md).
 
+## 0.2.0 · 2026-10-18 · Added
+
+**Changed:** Chapter 2, placing an order: one checkout as thirteen messages (`MSG-1` to `MSG-13`), each travelling along a relationship, told as a walkthrough with the sequence and the architecture side by side, the architecture following each message to the level where it can be seen. Chapters are now tabs.
+**Why:** The architecture says who can call whom; the conversation shows what actually happens when someone pays, and in what order.
+**Open:** Database calls are shown without their replies.
+
 ## 0.1.1 · 2026-10-18 · Fixed
 
 **Changed:** Names in the prose go to their part in the diagram, walking in when it isn't drawn, rather than to the first place the part appears (usually the outline).

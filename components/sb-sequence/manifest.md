@@ -75,6 +75,8 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-surface`, `--sb-surface-2`, `--sb
 
 Classes: `sb-sequence__svg`, `sb-sequence__participant` (`--highlighted`), `sb-sequence__head`, `sb-sequence__name`, `sb-sequence__lifeline`, `sb-sequence__message` (with its kind, such as `--reply` or `--note`, the tone, `--current`, `--upcoming` and `--highlighted`), `sb-sequence__line`, `sb-sequence__head-filled`, `sb-sequence__head-open`, `sb-sequence__label`, `sb-sequence__number`, `sb-sequence__note-box`, `sb-sequence__note-text`.
 
+Participants, and messages and notes given an `id`, carry `data-ref` with it, so a sandbox can find them (see the [locating practice](../../practices/locating.md)). A message known only by its position has none.
+
 ## Works well with
 
 Suggestions only: nothing here is wired in. The sandbox composes these itself.

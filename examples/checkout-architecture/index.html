@@ -10,6 +10,9 @@
   <script src="../../components/sb-c4/sb-c4.js"></script>
   <script src="../../components/sb-tree/sb-tree.js"></script>
   <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="../../components/sb-tabs/sb-tabs.js"></script>
+  <script src="../../components/sb-sequence/sb-sequence.js"></script>
+  <script src="../../components/sb-walkthrough/sb-walkthrough.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
@@ -19,7 +22,8 @@
   </sb-shell>
 
   <main>
-    <section class="chapter">
+    <sb-tabs id="chapters">
+    <section class="chapter" heading="1 · The parts">
       <h2>Chapter 1 · The parts</h2>
       <p>To a shopper, checking out is one button. Behind it, several parts each do one job. The diagram draws them as architects do, in the C4 style: at the top, people and whole systems; inside the shop, the apps and the database it’s made of; inside the <button type="button" class="go" data-go="CON-2">Shop API</button>, the components that do the work. Each line is one part calling another, and a call made deep inside rolls up to the box you can see.</p>
       <p>The shopper only ever talks to the <button type="button" class="go" data-go="CON-1">Storefront</button>. The card is charged by the <button type="button" class="go" data-go="SYS-2">Payment provider</button>, outside the shop altogether, and only one part of the shop ever talks to it: <button type="button" class="go" data-go="CMP-3">Payments</button>.</p>
@@ -33,6 +37,18 @@
         </aside>
       </div>
     </section>
+
+    <section class="chapter" heading="2 · Placing an order">
+      <h2>Chapter 2 · Placing an order</h2>
+      <p>The architecture says who can call whom. It doesn’t say what happens when someone actually pays. A sequence diagram does: the parts that take part stand side by side, and each arrow is one message, in the order they happen. Every message travels along one of the architecture’s lines, so as the order goes through, the architecture beside it follows from level to level.</p>
+      <p class="try"><strong>Try:</strong> step through the checkout. When is the money taken, and what has already happened by then? Point at a name or a code to see it in both diagrams: a line’s code lights every message that travels along it, there and back.</p>
+
+      <sb-walkthrough id="order-walk" narration="bottom">
+        <sb-sequence slot="conversation" id="conversation" numbered></sb-sequence>
+        <sb-c4 slot="architecture" id="flow-diagram" root-label="Overview"></sb-c4>
+      </sb-walkthrough>
+    </section>
+    </sb-tabs>
   </main>
 
   <script>
@@ -75,11 +91,18 @@
 
     const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
 
+    // A part lights itself; a line lights itself and the messages travelling along it; a message
+    // lights itself and its line. In chapter 2's diagram, pointing stands in for the step until it stops.
     document.addEventListener('sb-highlight', (e) => {
       const ref = e.detail.ref;
-      const part = checkout.element(ref) ? [ref] : [], line = checkout.relationship(ref) ? [ref] : [];
+      const message = PLACE_ORDER.find((m) => m.id === ref);
+      const part = checkout.element(ref) ? [ref] : [];
+      const line = checkout.relationship(ref) ? [ref] : message ? [message.along] : [];
       outline.highlight = part;
       diagram.highlight = { elements: part, relationships: line };
+      conversation.highlight = { participants: part, messages: PLACE_ORDER.filter((m) => m.id === ref || m.along === ref).map((m) => m.id) };
+      if (ref) flowDiagram.highlight = { elements: part, relationships: line };
+      else highlightStep();
     });
 
     document.addEventListener('sb-resolve', (e) => { e.detail.definition = checkout.define(e.detail.code); });
@@ -102,6 +125,44 @@
       word.addEventListener('blur', () => announce(null));
     }
 
+    // ---- Chapter 2: placing an order ----
+    // One step of the walkthrough per message, written from the model, so the story can't drift
+    // from the conversation it tells.
+
+    const walk = $('order-walk'), conversation = $('conversation'), flowDiagram = $('flow-diagram');
+    const messageOf = (step) => PLACE_ORDER.find((m) => m.id === step.element.dataset.message);
+    const point = (code) => `<span data-ref="${esc(code)}">${esc(nameOf(code))}</span>`;
+
+    function stepHtml(m) {
+      const r = checkout.relationship(m.along);
+      return `
+        <section data-step data-message="${esc(m.id)}">
+          <h3>${esc(m.label)} <sb-id code="${esc(m.id)}"></sb-id> <span class="where">from ${point(m.from)} to ${point(m.to)}</span></h3>
+          <p>${esc(m.says)}</p>
+          <p class="where">${m.kind === 'reply' ? 'A reply, back along' : 'Along'} <sb-id code="${esc(r.id)}"></sb-id>: ${esc(nameOf(r.from))} ${esc(r.label.toLowerCase())} ${esc(nameOf(r.to))}.</p>
+        </section>`;
+    }
+
+    // The message's line lit in the architecture, at the level where both its ends can be seen.
+    function highlightStep() {
+      const m = messageOf(walk.current);
+      flowDiagram.highlight = { elements: [m.from, m.to], relationships: [m.along] };
+    }
+
+    // Each diagram scrolls within its half when it's bigger, so bring the step's parts into view,
+    // found by their data-ref (practices/locating.md).
+    const bringIntoView = (view, ref) => view.querySelector(`[data-ref="${CSS.escape(ref)}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+
+    function showStep() {
+      const m = messageOf(walk.current);
+      conversation.current = m.id;
+      flowDiagram.path = checkout.viewOf(m);
+      highlightStep();
+      bringIntoView(conversation, m.id);
+      bringIntoView(flowDiagram, m.from);
+      bringIntoView(flowDiagram, m.to);
+    }
+
     // ---- Viewers ----
 
     outline.addEventListener('sb-select', (e) => {
@@ -113,11 +174,28 @@
       if (e.detail.type === 'element') select(e.detail.id);
     });
 
+    walk.addEventListener('sb-step', showStep);
+    walk.addEventListener('sb-point', (e) => announce(e.detail.ref));
+
+    // Clicking a message goes to its step.
+    conversation.addEventListener('sb-select', (e) => {
+      const index = PLACE_ORDER.findIndex((m) => m.id === e.detail.id);
+      if (index === -1) return;
+      walk.step = index;
+      showStep();
+    });
+
     // ---- Start ----
 
     diagram.model = CHECKOUT;
     outline.nodes = CHECKOUT.elements.map(toNode);
     select('SYS-1');
+
+    flowDiagram.model = CHECKOUT;
+    conversation.participants = checkout.participants(PLACE_ORDER).map((code) => ({ id: code, label: nameOf(code) }));
+    conversation.messages = PLACE_ORDER;
+    walk.insertAdjacentHTML('beforeend', PLACE_ORDER.map(stepHtml).join(''));
+    showStep();
   </script>
 </body>
 </html>

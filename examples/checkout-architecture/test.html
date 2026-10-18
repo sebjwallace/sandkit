@@ -37,6 +37,24 @@
       assertEqual(checkout.define('XYZ-1'), null);
     });
 
+    test('every message travels along a relationship joining its two ends, replies the other way', () => {
+      for (const m of PLACE_ORDER) {
+        const r = checkout.relationship(m.along);
+        const ends = m.kind === 'reply' ? [m.to, m.from] : [m.from, m.to];
+        assertEqual([r.from, r.to], ends, m.id);
+      }
+    });
+
+    test('the conversation\'s participants are listed in the order they first take part', () => {
+      assertEqual(checkout.participants(PLACE_ORDER), ['PER-1', 'CON-1', 'CMP-1', 'CMP-2', 'CON-3', 'CMP-3', 'SYS-2']);
+    });
+
+    test('a message is seen inside whatever holds the deeper of its two ends', () => {
+      const byId = (id) => PLACE_ORDER.find((m) => m.id === id);
+      assertEqual(checkout.viewOf(byId('MSG-1')), ['SYS-1'], 'shopper to Storefront: inside the shop');
+      assertEqual(checkout.viewOf(byId('MSG-8')), ['SYS-1', 'CON-2'], 'Payments to the provider: inside the API');
+    });
+
     test('the sandbox page starts, and a name in the prose goes to its part in the diagram', async () => {
       const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
       await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
@@ -51,6 +69,26 @@
       page.querySelector('.go[data-go="CMP-3"]').click();
       assertEqual(diagram.path, ['SYS-1', 'CON-2'], 'walked into the API');
       assert(diagram.querySelector('[data-ref="CMP-3"]').classList.contains('sb-c4__element--highlighted'), 'and lit up');
+    });
+
+    test('chapter 2 steps through the order, the diagram following each message', async () => {
+      const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
+      await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      const page = frame.contentDocument;
+      const conversation = page.getElementById('conversation'), flow = page.getElementById('flow-diagram');
+      assertEqual(conversation.querySelectorAll('.sb-sequence__message').length, 13, 'every message');
+      assertEqual(flow.path, ['SYS-1'], 'the first message, inside the shop');
+
+      conversation.querySelector('[data-ref="MSG-8"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      assertEqual(conversation.current, 'MSG-8');
+      assertEqual(flow.path, ['SYS-1', 'CON-2'], 'walked into the API');
+      assert(flow.querySelector('[data-ref="CMP-3"]').classList.contains('sb-c4__element--highlighted'), 'Payments lit');
+      const walk = page.getElementById('order-walk');
+      assertEqual(walk.step, 7, 'the walkthrough at its step');
+      assert(walk.current.element.textContent.includes('only call that leaves the shop'), 'said in words');
+
+      walk.next();
+      assertEqual([conversation.current, flow.path], ['MSG-9', ['SYS-1', 'CON-2']], 'Next moves the story on');
     });
   </script>
 </body>

@@ -1,4 +1,4 @@
-// Sandkit sb-sequence 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-sequence 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A sequence diagram: participants side by side, each with a lifeline, and the messages between
 // them in the order they happen. Marks the message happening now, so a conversation can be played.
 //
@@ -90,17 +90,18 @@
   });
 
   // The participants each item involves, as column numbers. Items naming someone unknown are left out.
+  // `given` says the sandbox named the item, rather than it being known by its position.
   function resolve(items, column) {
     return items.map((item, index) => {
-      const id = String(item.id ?? index);
+      const id = String(item.id ?? index), given = item.id != null;
       const kind = KINDS.includes(item.kind) ? item.kind : 'call';
       if (kind === 'note') {
         const names = [item.over].flat().map(String);
         const over = names.map((p) => column.get(p));
-        return over.length && over.every((c) => c != null) ? { ...item, id, kind, columns: [Math.min(...over), Math.max(...over)], involves: names } : null;
+        return over.length && over.every((c) => c != null) ? { ...item, id, given, kind, columns: [Math.min(...over), Math.max(...over)], involves: names } : null;
       }
       const from = column.get(String(item.from)), to = column.get(String(item.to));
-      return from != null && to != null ? { ...item, id, kind, from, to, involves: [String(item.from), String(item.to)] } : null;
+      return from != null && to != null ? { ...item, id, given, kind, from, to, involves: [String(item.from), String(item.to)] } : null;
     }).filter(Boolean);
   }
 
@@ -163,7 +164,7 @@
       this._highlight = {};
       this._pointedAt = null; // { type, id } of what is under the pointer
       this.addEventListener('click', (e) => this._select(e));
-      this.addEventListener('pointerover', (e) => this._pointAt(e.target.closest('[data-message-id], [data-participant-id]')));
+      this.addEventListener('pointerover', (e) => this._pointAt(e.target.closest('.sb-sequence__message, .sb-sequence__participant')));
       this.addEventListener('pointerleave', () => this._pointAt(null));
     }
 
@@ -242,7 +243,7 @@
     _participant(p, x, bottom) {
       const width = headWidth(p);
       return `
-        <g class="sb-sequence__participant" data-participant-id="${esc(p.id)}">
+        <g class="sb-sequence__participant" data-ref="${esc(p.id)}">
           <line class="sb-sequence__lifeline" x1="${x}" y1="${HEAD.height}" x2="${x}" y2="${bottom}"/>
           <rect class="sb-sequence__head" x="${x - width / 2}" y="0" width="${width}" height="${HEAD.height}" rx="6"/>
           <text class="sb-sequence__name" x="${x}" y="${HEAD.height / 2 + 4.5}" text-anchor="middle">${esc(p.label ?? p.id)}</text>
@@ -270,7 +271,7 @@
       }
       const spans = text.map((t, i) => `<tspan x="${labelAt.x}" y="${labelAt.y + i * LINE.height}">${i === 0 && numbered ? `<tspan class="sb-sequence__number">${number}. </tspan>` : ''}${esc(t)}</tspan>`).join('');
       return `
-        <g class="sb-sequence__message sb-sequence__message--${row.kind}${tone}" data-message-id="${esc(row.id)}">
+        <g class="sb-sequence__message sb-sequence__message--${row.kind}${tone}" data-message-id="${esc(row.id)}"${row.given ? ` data-ref="${esc(row.id)}"` : ''}>
           <path class="sb-sequence__hit" d="${path}"/>
           <path class="sb-sequence__line" d="${path}"/>
           ${arrowhead(tip, direction, row.kind === 'call')}
@@ -290,7 +291,7 @@
       const box = this._noteBox(row, x);
       const spans = lines(row.label).map((t, i) => `<tspan x="${box.x + NOTE.padding}" y="${box.y + NOTE.padding + 9 + i * NOTE.lineHeight}">${esc(t)}</tspan>`).join('');
       return `
-        <g class="sb-sequence__message sb-sequence__message--note" data-message-id="${esc(row.id)}">
+        <g class="sb-sequence__message sb-sequence__message--note" data-message-id="${esc(row.id)}"${row.given ? ` data-ref="${esc(row.id)}"` : ''}>
           <rect class="sb-sequence__note-box" x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" rx="3"/>
           <text class="sb-sequence__note-text">${spans}</text>
         </g>`;
@@ -314,14 +315,14 @@
         el.classList.toggle('sb-sequence__message--highlighted', litMessages.has(el.dataset.messageId));
       }
       for (const el of this.querySelectorAll('.sb-sequence__participant')) {
-        el.classList.toggle('sb-sequence__participant--highlighted', litParticipants.has(el.dataset.participantId));
+        el.classList.toggle('sb-sequence__participant--highlighted', litParticipants.has(el.dataset.ref));
       }
     }
 
     // ---- Interaction ----
 
     _pointAt(el) {
-      const pointed = !el ? null : el.dataset.messageId != null ? { type: 'message', id: el.dataset.messageId } : { type: 'participant', id: el.dataset.participantId };
+      const pointed = !el ? null : el.dataset.messageId != null ? { type: 'message', id: el.dataset.messageId } : { type: 'participant', id: el.dataset.ref };
       if (pointed?.type === this._pointedAt?.type && pointed?.id === this._pointedAt?.id) return;
       this._pointedAt = pointed;
       this._showState();
@@ -329,9 +330,9 @@
 
     _select(e) {
       const message = e.target.closest('[data-message-id]');
-      const participant = e.target.closest('[data-participant-id]');
+      const participant = e.target.closest('.sb-sequence__participant');
       if (message) this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'message', id: message.dataset.messageId } }));
-      else if (participant) this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'participant', id: participant.dataset.participantId } }));
+      else if (participant) this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'participant', id: participant.dataset.ref } }));
     }
   }
 
