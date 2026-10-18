@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-tour tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-tour.js"></script>
+</head>
+<body>
+  <script>
+    const STEPS = `
+      <div data-step>Welcome.</div>
+      <div data-step data-at="play">Press Play.</div>
+      <div data-step data-at="rule" data-wait>Wait for the rule to fire.</div>
+      <div data-step>That's all.</div>`;
+
+    function tour(attrs = '', steps = STEPS) {
+      const area = mount(`<div><button class="play">Play</button><p class="rule">RUL-1</p><sb-tour heading="Basics" ${attrs}>${steps}</sb-tour></div>`);
+      return area.querySelector('sb-tour');
+    }
+
+    const tip = (el) => el.querySelector('.sb-tour__tip');
+    const button = (el, move) => el.querySelector(`[data-move="${move}"]`);
+    const shown = (el) => el.steps.filter((s) => !s.hidden).map((s) => s.textContent.trim());
+    const press = (el, key) => tip(el).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+    const missing = (el) => el.querySelector('.sb-tour__missing');
+
+    // ---- Starting and moving ----
+
+    test('closed to begin with, showing nothing', () => {
+      const el = tour();
+      assertEqual([el.open, el.current], [false, null]);
+      assert(!tip(el).matches(':popover-open'));
+    });
+
+    test('start opens it at the first step and fires sb-step with its ref and element', () => {
+      const el = tour();
+      const steps = recordEvents(el, 'sb-step');
+      el.start();
+      assert(el.open && tip(el).matches(':popover-open'));
+      assertEqual(shown(el), ['Welcome.']);
+      assertEqual(steps.map((e) => [e.detail.index, e.detail.ref, e.detail.element === el.steps[0]]), [[0, null, true]]);
+    });
+
+    test('Next and Back move a step and fire sb-step with the right index and ref', () => {
+      const el = tour();
+      el.start();
+      const steps = recordEvents(el, 'sb-step');
+      button(el, 'next').click();
+      button(el, 'back').click();
+      assertEqual(steps.map((e) => [e.detail.index, e.detail.ref]), [[1, 'play'], [0, null]]);
+    });
+
+    test('Back on the first step does nothing', () => {
+      const el = tour();
+      el.start();
+      const steps = recordEvents(el, 'sb-step');
+      el.back();
+      assertEqual([el.current.index, steps.length], [0, 0]);
+      assert(button(el, 'back').disabled);
+    });
+
+    test('a waiting step holds Next until the sandbox says it\'s ready', () => {
+      const el = tour();
+      el.start(2);
+      assert(button(el, 'next').disabled, 'held');
+      el.next();
+      assertEqual(el.current.index, 2, 'still waiting');
+      el.ready = true;
+      assert(!button(el, 'next').disabled);
+      el.next();
+      assertEqual(el.current.index, 3);
+    });
+
+    test('ready resets on every step', () => {
+      const el = tour();
+      el.start(2);
+      el.ready = true;
+      el.back();
+      el.next();
+      assertEqual(el.ready, false);
+      assert(button(el, 'next').disabled);
+    });
+
+    test('shows how far along it is, and Done on the last step', () => {
+      const el = tour();
+      el.start(1);
+      assertEqual(el.querySelector('.sb-tour__count').textContent, '2 of 4');
+      el.start(3);
+      assertEqual(button(el, 'next').textContent, 'Done');
+    });
+
+    // ---- Closing ----
+
+    test('Next on the last step closes it, finished', () => {
+      const el = tour();
+      const closes = recordEvents(el, 'sb-close');
+      el.start(3);
+      el.next();
+      assertEqual([el.open, closes.map((e) => e.detail)], [false, [{ index: 3, reason: 'done' }]]);
+      assert(!tip(el).matches(':popover-open'));
+    });
+
+    test('Escape closes it, and Close says so too', () => {
+      const el = tour();
+      const closes = recordEvents(el, 'sb-close');
+      el.start(1);
+      press(el, 'Escape');
+      el.start();
+      button(el, 'close').click();
+      assertEqual(closes.map((e) => e.detail), [{ index: 1, reason: 'escape' }, { index: 0, reason: 'close' }]);
+    });
+
+    test('arrow keys move, and focus returns where it was when it closes', () => {
+      const el = tour();
+      const play = el.parentElement.querySelector('.play');
+      play.focus();
+      el.start();
+      assertEqual(document.activeElement, tip(el), 'the tooltip takes focus');
+      press(el, 'ArrowRight');
+      assertEqual(el.current.index, 1);
+      press(el, 'ArrowLeft');
+      assertEqual(el.current.index, 0);
+      el.close();
+      assertEqual(document.activeElement, play);
+    });
+
+    // ---- Pointing ----
+
+    test('a step pointing at something the sandbox couldn\'t find says so', () => {
+      const el = tour();
+      el.start(1);
+      assert(!missing(el).hidden);
+      assertEqual(missing(el).textContent, 'Can’t find play on this page.');
+      el.anchor = el.parentElement.querySelector('.play');
+      assert(missing(el).hidden, 'found');
+    });
+
+    test('a step pointing at nothing shows in the middle, with no note', () => {
+      const el = tour();
+      el.start();
+      assert(missing(el).hidden);
+      assert(!el.querySelector('.sb-tour__spotlight').classList.contains('sb-tour__spotlight--anchored'));
+    });
+
+    test('the spotlight surrounds the anchor, and the tooltip sits beside it', () => {
+      const el = tour();
+      el.start(1);
+      const play = el.parentElement.querySelector('.play');
+      el.anchor = play;
+      // Where the tour puts the spotlight, rather than where its glide has reached.
+      const part = play.getBoundingClientRect(), { left, top, width, height } = el.querySelector('.sb-tour__spotlight').style;
+      const light = { left: parseFloat(left), top: parseFloat(top), right: parseFloat(left) + parseFloat(width), bottom: parseFloat(top) + parseFloat(height) };
+      assert(light.left < part.left && light.right > part.right && light.top < part.top && light.bottom > part.bottom, 'around it');
+      assert(tip(el).getBoundingClientRect().top >= part.bottom, 'below it');
+    });
+
+    test('the dimming lets clicks through, so the anchor and the page stay usable', () => {
+      const el = tour();
+      el.start(1);
+      assertEqual(getComputedStyle(el.querySelector('.sb-tour__spotlight')).pointerEvents, 'none');
+    });
+
+    // ---- Remembering ----
+
+    test('with an id, finishing is remembered, and another tour with the same id knows', () => {
+      localStorage.removeItem('sb-tour:basics-test');
+      const el = tour('id="basics-test"');
+      assertEqual(el.seen, false);
+      el.start(3);
+      el.next();
+      assertEqual(el.seen, true);
+      const again = tour('id="basics-test"');
+      assertEqual(again.seen, true);
+    });
+
+    test('closing early isn\'t finishing', () => {
+      localStorage.removeItem('sb-tour:early-test');
+      const el = tour('id="early-test"');
+      el.start();
+      el.close();
+      assertEqual(el.seen, false);
+    });
+
+    // ---- The contract ----
+
+    test('setting anchor and ready fires no events', () => {
+      const el = tour();
+      el.start(2);
+      const fired = [recordEvents(el, 'sb-step'), recordEvents(el, 'sb-close')];
+      el.anchor = el.parentElement.querySelector('.rule');
+      el.ready = true;
+      assertEqual(fired.map((list) => list.length), [0, 0]);
+    });
+
+    test('steps added after it was built join the tour when it starts', () => {
+      const el = tour('', '<div data-step>One</div>');
+      el.insertAdjacentHTML('beforeend', '<div data-step>Two</div>');
+      el.start(1);
+      assertEqual(shown(el), ['Two']);
+    });
+
+    test('shows the heading and its own note as text, never as markup', () => {
+      const el = tour('', '<div data-step data-at="<b>x</b>">Step</div>');
+      el.setAttribute('heading', '<i>Hi</i>');
+      el.start();
+      assertEqual(el.querySelectorAll('.sb-tour__heading i, .sb-tour__missing b').length, 0);
+      assertEqual(el.querySelector('.sb-tour__heading').textContent, '<i>Hi</i>');
+      assert(missing(el).textContent.includes('<b>x</b>'));
+    });
+
+    test('two tours on one page keep their own steps, with their own ids', () => {
+      const area = mount('<div><sb-tour heading="A"><div data-step>a1</div><div data-step>a2</div></sb-tour><sb-tour heading="B"><div data-step>b1</div></sb-tour></div>');
+      const [a, b] = area.querySelectorAll('sb-tour');
+      a.start(1);
+      b.start();
+      assertEqual([a.current.index, b.current.index], [1, 0]);
+      assert(tip(a).getAttribute('aria-labelledby') !== tip(b).getAttribute('aria-labelledby'));
+      a.close();
+      b.close();
+    });
+  </script>
+</body>
+</html>

@@ -55,6 +55,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-table`](components/sb-table/manifest.md) | Rows and columns to sort, search and filter, with the cells that just changed marked. |
 | [`sb-tabs`](components/sb-tabs/manifest.md) | Tabs over panels, for chapters or views: one part at a time, remembered per viewer, nestable. |
 | [`sb-timeline`](components/sb-timeline/manifest.md) | Events laid out in time: moments and spans in lanes, a line for now fading what's still to come, zoomed and panned by viewers or glided to a stretch by the sandbox. |
+| [`sb-tour`](components/sb-tour/manifest.md) | A guided tour of the page as it stands: a tooltip beside one part at a time, the rest dimmed, opening what hides each part; steps can wait for the viewer to act. |
 | [`sb-tree`](components/sb-tree/manifest.md) | Nested things, as in a file system or an outline: branches that open and close, joined by lines, driven by viewers and the sandbox alike. |
 | [`sb-venn`](components/sb-venn/manifest.md) | Two or three sets as overlapping circles: every region named, counted and marked when empty, read out in words when pointed at, with what changed region since the last update marked. |
 | [`sb-walkthrough`](components/sb-walkthrough/manifest.md) | A story told across several views, a step at a time: each step outlines the views to look at and names what to highlight in them. |

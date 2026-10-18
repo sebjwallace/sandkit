@@ -91,6 +91,7 @@ Classes: `sb-walkthrough__narration`, `sb-walkthrough__steps`, `sb-walkthrough__
 
 Suggestions only: nothing here is wired in. The sandbox composes these itself.
 
+- **[`sb-tour`](../sb-tour/manifest.md),** where something else fits: a tour points at the page as it already is, one part at a time and anywhere on it, while a walkthrough lays out its own views and tells a story across them.
 - **[`sb-panel`](../sb-panel/manifest.md)** as each view, so readers can pop one out, enlarge it, and keep following the story.
 - **Any component with a `highlight`,** such as [`sb-wireframe`](../sb-wireframe/manifest.md), [`sb-c4`](../sb-c4/manifest.md), [`sb-sequence`](../sb-sequence/manifest.md) or [`sb-flowchart`](../sb-flowchart/manifest.md): pass each step's `highlight` to them, translating refs where a component wants another shape.
 - **Components that step,** such as [`sb-code`](../sb-code/manifest.md) or [`sb-sequence`](../sb-sequence/manifest.md)'s `current`: carry the position on the step as a `data-` attribute and set it on `sb-step`.

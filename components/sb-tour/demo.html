@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-tour demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-tour.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+
+    .start { padding: 6px 14px; border: 1px solid var(--sb-accent); border-radius: var(--sb-radius); background: var(--sb-accent); color: var(--sb-accent-text); font: inherit; font-size: 13px; cursor: pointer; }
+    .thermostat { display: grid; grid-template-columns: auto auto 1fr; gap: 14px 18px; align-items: center; margin: 12px 0; font-size: 14px; }
+    .reading { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .heat { padding: 6px 14px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); color: var(--sb-text); font: inherit; cursor: pointer; }
+    .heat[aria-pressed="true"] { border-color: var(--sb-bad); color: var(--sb-bad); }
+    details { padding: 6px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); font-size: 14px; }
+    summary { cursor: pointer; font-weight: 600; }
+    .guide-page { display: grid; grid-template-columns: 160px 1fr; gap: 16px; margin-top: 12px; font-size: 14px; }
+    .picture { display: grid; place-items: center; height: 120px; border-radius: var(--sb-radius); background: var(--sb-surface-2); font-size: 40px; }
+    .guide-page h3 { margin: 0 0 4px; font-size: 16px; }
+    .guide-page p { margin: 0 0 6px; }
+    .facts { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; }
+    .facts span { padding: 2px 8px; border-radius: 999px; background: var(--sb-surface-2); }
+    @media (max-width: 640px) { .guide-page { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-tour">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A guided tour of the page as it stands, one part at a time.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Someone opening a sandbox for the first time doesn't know where to look. A tour shows them: a tooltip beside one part, saying what it is and why it matters, with the rest of the page dimmed, and Next moving on to the following part, scrolling to it and opening whatever hides it. Because each step only names what it points at, a tour is a few lines to write, and it keeps working as the page changes.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>How to use the sandbox.</strong> "These run the model", "this table marks the rule that just fired".</li>
+        <li><strong>A chapter's key parts,</strong> pointed at in turn.</li>
+        <li><strong>A demonstration.</strong> A step can wait until the viewer does something, such as pressing Play, before moving on to what happened.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>A story told across several views,</strong> laid out side by side: use a walkthrough, which owns its layout. A tour owns nothing on the page; it points at the page as it already is.</li>
+        <li><strong>Explaining one thing.</strong> A note beside it, or a code's card, says it without taking over the screen.</li>
+        <li><strong>Finding where a thing appears.</strong> A cross-reference lists every place; a tour goes to the places its author chose.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-tour/sb-tour.js"&gt;&lt;/script&gt;
+
+&lt;sb-tour id="basics" heading="How this works"&gt;
+  &lt;div data-step&gt;Here's how to explore it.&lt;/div&gt;
+  &lt;div data-step data-at="controls"&gt;These run the model.&lt;/div&gt;
+  &lt;div data-step data-at="RUL-014" data-wait&gt;Press Play, and watch this rule fire.&lt;/div&gt;
+&lt;/sb-tour&gt;
+
+&lt;script&gt;
+  tour.addEventListener('sb-step', (e) =&gt; {
+    tour.anchor = e.detail.ref ? goTo(e.detail.ref) || null : null;
+  });
+  startButton.addEventListener('click', () =&gt; tour.start());
+&lt;/script&gt;</pre>
+      <p>The tour never searches the page. On each step, the sandbox goes to the step's ref with <code>goTo</code> from the <a href="../../practices/locating.md">locating practice</a>, which opens closed tabs and folded branches on the way, and hands the tour the element it found. A step waiting on the viewer moves on once the sandbox sets <code>ready</code>.</p>
+
+      <h3>Making it reveal, not just point</h3>
+      <ul>
+        <li><strong>Say why, not only what.</strong> "This marks the rule that just fired, so you can see why a store ordered" teaches more than "This is the rules table".</li>
+        <li><strong>Let people act.</strong> A waiting step that asks them to press something, then shows what changed, is worth several that only describe.</li>
+        <li><strong>Keep it short.</strong> Five or so steps; a long tour is a manual.</li>
+        <li><strong>Fix what it can't find.</strong> A step whose part has gone says so, like an unresolved code: a reference to put right.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>How a thermostat holds a room's temperature</h2>
+      <p>A first-run tour of a tiny model. One step waits until you press Heat; the last opens the closed explanation below.</p>
+      <button type="button" class="start" data-start="thermostat-tour">Take the tour</button>
+      <div class="thermostat">
+        <label data-ref="target">Target <input type="range" min="16" max="24" value="20" id="target"> <output id="target-out">20°</output></label>
+        <button type="button" class="heat" id="heat" data-ref="heat" aria-pressed="false">Heat</button>
+        <span>Room: <span class="reading" id="reading" data-ref="reading">16.0°</span></span>
+      </div>
+      <details>
+        <summary>Why it overshoots</summary>
+        <p data-ref="overshoot">The heater is still warm when the thermostat turns it off, so the room keeps warming for a while. That's why it passes the target before settling.</p>
+      </details>
+
+      <sb-tour id="thermostat-tour" heading="Holding a temperature">
+        <div data-step>A thermostat does one thing: keeps a room near the temperature you ask for. Here's how this one works.</div>
+        <div data-step data-at="target">Choose the temperature you want here.</div>
+        <div data-step data-at="heat" data-wait>Press <b>Heat</b> to switch the thermostat on. Next comes on once you have.</div>
+        <div data-step data-at="reading">Watch the room warm. It passes the target before it settles.</div>
+        <div data-step data-at="overshoot">This is why: the heater stays warm after it turns off.</div>
+      </sb-tour>
+    </section>
+
+    <section class="example">
+      <h2>A page of a field guide</h2>
+      <p>A tour of how to read an entry. One step points at a map this page doesn't have, so it says it can't find it.</p>
+      <button type="button" class="start" data-start="field-tour">Take the tour</button>
+      <div class="guide-page">
+        <div class="picture" data-ref="picture" aria-label="A drawing of a robin">🐦</div>
+        <div>
+          <h3 data-ref="name">Robin <i>Erithacus rubecula</i></h3>
+          <p data-ref="look">Look for the orange face and breast, edged with grey. Males and females look alike.</p>
+          <div class="facts" data-ref="facts"><span>14 cm</span><span>All year</span><span>Gardens, woods</span></div>
+        </div>
+      </div>
+
+      <sb-tour id="field-tour" heading="Reading an entry">
+        <div data-step data-at="name">Each entry opens with the common name, then the scientific one.</div>
+        <div data-step data-at="look">What to look for first, in the order you'd notice it.</div>
+        <div data-step data-at="facts">Size, when you'll see it, and where.</div>
+        <div data-step data-at="map">Where it lives, on a map.</div>
+        <div data-step>Now try the next entry on your own.</div>
+      </sb-tour>
+    </section>
+  </main>
+
+  <script>
+    // Declare everything first; the demo starts at the bottom.
+
+    const $ = (id) => document.getElementById(id);
+
+    // Going, on this plain page: open the details around a part and bring it into view. In a
+    // sandbox, goTo from the locating practice does this, calling each component's reveal.
+    function goTo(ref) {
+      const place = document.querySelector(`main [data-ref="${CSS.escape(ref)}"]`);
+      if (!place) return null;
+      const closed = place.closest('details');
+      if (closed) closed.open = true;
+      place.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      return place;
+    }
+
+    const tours = [...document.querySelectorAll('sb-tour')];
+
+    // ---- The thermostat ----
+
+    let heating = null;
+    let reading = 16;
+
+    // The room warms while the heater is on, and a little more after, past the target.
+    function heat() {
+      const target = Number($('target').value);
+      $('heat').setAttribute('aria-pressed', 'true');
+      clearInterval(heating);
+      heating = setInterval(() => {
+        reading = Math.min(reading + 0.5, target + 1);
+        $('reading').textContent = `${reading.toFixed(1)}°`;
+        if (reading >= target + 1) clearInterval(heating);
+      }, 250);
+    }
+
+    // ---- Wiring ----
+
+    for (const tour of tours) {
+      tour.addEventListener('sb-step', (e) => { tour.anchor = e.detail.ref ? goTo(e.detail.ref) : null; });
+    }
+
+    // One tour open at a time.
+    for (const button of document.querySelectorAll('[data-start]')) {
+      button.addEventListener('click', () => {
+        tours.forEach((tour) => tour.close());
+        $(button.dataset.start).start();
+      });
+    }
+
+    $('target').addEventListener('input', () => { $('target-out').textContent = `${$('target').value}°`; });
+    $('heat').addEventListener('click', () => {
+      heat();
+      $('thermostat-tour').ready = true;
+    });
+  </script>
+</body>
+</html>

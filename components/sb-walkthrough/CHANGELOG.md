@@ -1,5 +1,8 @@
 # sb-walkthrough changelog
 
+## 0.1.2 · 2026-10-18
+- The manifest points to `sb-tour` for tours of the page as it stands.
+
 ## 0.1.1 · 2026-10-18
 - Each view is framed, like the narration, so it's clear at a glance where one ends and the next begins.
 

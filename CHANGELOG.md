@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.21 · 2026-10-18
+- Thirty-seven components: added `sb-tour`, a guided tour of the page as it stands. The locating practice's `goTo` returns the place it went to (still truthy, so nothing that checked it changes), finding it again if revealing redrew what holds it, and the practice gains "Touring the page". `sb-panel` 0.1.3 respects `hidden`.
+
 ## 0.2.20 · 2026-10-18
 - Thirty-six components: added `sb-xref`, where a thing appears and what it's linked to.
 

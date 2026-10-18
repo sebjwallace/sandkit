@@ -47,6 +47,7 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | [`sb-math`](../components/sb-math/manifest.md), [`sb-annotate`](../components/sb-annotate/manifest.md), [`sb-walkthrough`](../components/sb-walkthrough/manifest.md) | the parts the sandbox marks in their content | — |
 | The sandbox's own elements | whatever it marks | — |
 | [`sb-xref`](../components/sb-xref/manifest.md) | nothing: it lists places, below | — |
+| [`sb-tour`](../components/sb-tour/manifest.md) | nothing: its steps name what they point at with `data-at` | — |
 
 More components join as sandboxes need them. A component's manifest says what it marks and whether it has `reveal`.
 
@@ -61,14 +62,18 @@ const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight',
 const placesOf = (ref) => [...document.querySelectorAll(`[data-ref="${CSS.escape(ref)}"]`)];
 
 // Go to where a ref appears: open whatever hides it, scroll to it, and light it up briefly.
+// Returns the place it went to, or false if the ref isn't on the page.
 function goTo(ref, index = 0) {
-  const place = placesOf(ref)[index];
+  let place = placesOf(ref)[index];
   if (!place) return false;
   revealAround(place, ref);
+  // Revealing can redraw what holds the place, so find it again if it was replaced.
+  if (!place.isConnected) place = placesOf(ref)[index];
+  if (!place) return false;
   place.scrollIntoView({ block: 'center', behavior: 'smooth' });
   announce(ref);
   setTimeout(() => announce(null), 1500);
-  return true;
+  return place;
 }
 
 // Outermost first: a tab must open before the tree inside it can expand. The place says which tab, when a ref is in several.
@@ -131,6 +136,18 @@ document.addEventListener('sb-select', (e) => { if (e.detail.code) showXref(e.de
 - **Name views as readers know them.** Give chapters and panels a `heading`, and the names follow. A place's context is the words around it; take a row or paragraph rather than a lone code when the code alone says little.
 - **Put it in a panel** beside the model, so going somewhere never hides the list.
 - **Give links in the model's words** ("rests on", "affects"), so a chain of evidence can be walked, and Back walks it home.
+
+## Touring the page
+
+[`sb-tour`](../components/sb-tour/manifest.md) points at one thing at a time, with a tooltip beside it. Its steps name what they point at with `data-at`, not `data-ref`, since a step is a way to a place, not a place. On each step the sandbox goes there and hands the tour what it found:
+
+```js
+tour.addEventListener('sb-step', (e) => {
+  tour.anchor = e.detail.ref ? goTo(e.detail.ref) || null : null;
+});
+```
+
+When a step means a particular view, carry it on the step (`data-view="diagram"`) and call that view's `reveal` instead, as for words in the prose.
 
 ## What isn't found, on purpose
 

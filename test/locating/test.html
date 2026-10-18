@@ -16,13 +16,16 @@
     const placesOf = (ref) => [...document.querySelectorAll(`[data-ref="${CSS.escape(ref)}"]`)];
 
     function goTo(ref, index = 0) {
-      const place = placesOf(ref)[index];
+      let place = placesOf(ref)[index];
       if (!place) return false;
       revealAround(place, ref);
+      // Revealing can redraw what holds the place, so find it again if it was replaced.
+      if (!place.isConnected) place = placesOf(ref)[index];
+      if (!place) return false;
       place.scrollIntoView({ block: 'center', behavior: 'smooth' });
       announce(ref);
       setTimeout(() => announce(null), 1500);
-      return true;
+      return place;
     }
 
     function revealAround(place, ref) {
@@ -59,7 +62,7 @@
     test('goTo opens the tab, expands the branch and lights up the node', () => {
       const { tabs, tree, node, stop } = sandbox();
       assert(!isShowing(node), 'hidden to begin with');
-      assertEqual(goTo('RUL-014', 1), true);
+      assertEqual(goTo('RUL-014', 1), node, 'returns the place it went to');
       assertEqual(tabs.selected, 1, 'tab');
       assertEqual(tree.expanded, ['rules', 'stock'], 'branches');
       assert(isShowing(node), 'showing');
@@ -80,6 +83,15 @@
       const { tabs, tree, stop } = sandbox();
       assertEqual(goTo('RUL-999'), false);
       assertEqual([tabs.selected, tree.expanded], [0, []]);
+      stop();
+    });
+
+    test('goTo returns the place on the page, even when revealing redraws what holds it', () => {
+      const { stop } = sandbox();
+      const host = mount('<div><div class="redraws"><b data-ref="X">x</b></div></div>').firstElementChild;
+      host.reveal = () => { host.innerHTML = '<b data-ref="X">x</b>'; return true; }; // a component that redraws
+      const place = goTo('X');
+      assert(place && place.isConnected, 'the new element, not the one replaced');
       stop();
     });
   </script>
