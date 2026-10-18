@@ -49,6 +49,20 @@ const PLACE_ORDER = [
   { id: 'MSG-13', from: 'CON-1', to: 'PER-1', along: 'REL-1', kind: 'reply', label: 'Thank you!', says: 'The shopper sees the thank-you page.' }
 ];
 
+// The same order with the card declined. It's the same conversation up to the charge, then the
+// shop undoes what it did: the mugs go back, and the order is marked failed.
+const PAYMENT_DECLINED = [
+  ...PLACE_ORDER.slice(0, 8),
+  { id: 'MSG-14', from: 'SYS-2', to: 'CMP-3', along: 'REL-5', kind: 'reply', label: 'Declined', says: 'The shopper’s bank said no, so the provider reports the card was declined. No money was taken.' },
+  { id: 'MSG-15', from: 'CMP-3', to: 'CMP-1', along: 'REL-4', kind: 'reply', label: 'Not paid', says: 'Payments tells Orders the money didn’t come in.' },
+  { id: 'MSG-16', from: 'CMP-1', to: 'CMP-2', along: 'REL-3', label: 'Release 2 mugs', says: 'The mugs were held for an order that won’t be paid for, so Orders asks Stock to let them go.' },
+  { id: 'MSG-17', from: 'CMP-2', to: 'CON-3', along: 'REL-7', label: 'UPDATE stock', says: 'Stock puts the two mugs back on the count, so another shopper can buy them.' },
+  { id: 'MSG-18', from: 'CMP-2', to: 'CMP-1', along: 'REL-3', kind: 'reply', label: 'Released', says: 'The mugs are free again.' },
+  { id: 'MSG-19', from: 'CMP-1', to: 'CON-3', along: 'REL-6', label: 'UPDATE order (failed)', says: 'Orders marks the order as failed. It isn’t deleted: the record of what happened stays.' },
+  { id: 'MSG-20', from: 'CMP-1', to: 'CON-1', along: 'REL-2', kind: 'reply', label: '402 Payment declined', says: 'Orders tells the Storefront the order didn’t go through, and why.' },
+  { id: 'MSG-21', from: 'CON-1', to: 'PER-1', along: 'REL-1', kind: 'reply', label: 'Card declined', says: 'The shopper is asked to try another card. Their basket is still there.' }
+];
+
 // What the messages that cross a network carry: the body, the fields that matter (as paths into
 // it), a note on each, and what to notice. Money is in pence throughout.
 const PAYLOADS = {
@@ -133,13 +147,15 @@ const SHOP_DATABASE = {
   }
 };
 
-// Every change the order makes to the database, in order, with the message that makes it. A
+// Every change either conversation makes to the database, with the message that makes it. A
 // write either inserts a row or sets fields on the row whose key matches.
 const DATABASE_WRITES = [
   { message: 'MSG-4', table: 'stock', where: { sku: 'MUG-BLUE' }, set: { in_stock: 12 } },
   { message: 'MSG-6', table: 'orders', insert: { number: 1042, status: 'pending', total: 2450, charge_id: null } },
   { message: 'MSG-6', table: 'order_items', insert: { order_number: 1042, sku: 'MUG-BLUE', quantity: 2, unit_price: 1225 } },
-  { message: 'MSG-11', table: 'orders', where: { number: 1042 }, set: { status: 'paid', charge_id: 'ch_51Hq8' } }
+  { message: 'MSG-11', table: 'orders', where: { number: 1042 }, set: { status: 'paid', charge_id: 'ch_51Hq8' } },
+  { message: 'MSG-17', table: 'stock', where: { sku: 'MUG-BLUE' }, set: { in_stock: 14 } },
+  { message: 'MSG-19', table: 'orders', where: { number: 1042 }, set: { status: 'failed' } }
 ];
 
 // The rows of every table after the writes made by the given messages, leaving the start untouched.
@@ -208,7 +224,7 @@ function createArchitecture(spec) {
   return { spec, element, path, connections, define, participants, viewOf, relationship: (code) => relationships.get(code) ?? null };
 }
 
-const checkout = createArchitecture({ ...CHECKOUT, messages: PLACE_ORDER });
+const checkout = createArchitecture({ ...CHECKOUT, messages: [...new Set([...PLACE_ORDER, ...PAYMENT_DECLINED])] });
 
 // Lets Node load the model too, for model tests once the sandbox needs them.
-if (typeof module !== 'undefined') module.exports = { CHECKOUT, PLACE_ORDER, PAYLOADS, SHOP_DATABASE, DATABASE_WRITES, replayWrites, createArchitecture, checkout };
+if (typeof module !== 'undefined') module.exports = { CHECKOUT, PLACE_ORDER, PAYMENT_DECLINED, PAYLOADS, SHOP_DATABASE, DATABASE_WRITES, replayWrites, createArchitecture, checkout };

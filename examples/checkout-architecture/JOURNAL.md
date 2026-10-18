@@ -2,6 +2,12 @@
 
 What changed in this sandbox, and why: one entry per change, newest first, only ever added to. Each entry is a version. See the [journal practice](../../practices/journal.md).
 
+## 0.5.0 · 2026-10-18 · Added
+
+**Changed:** Chapter 5, when payment fails: a second conversation in the model, the same as placing an order up to the charge, then declined (`MSG-14` to `MSG-21`), with its two writes putting the stock back and marking the order failed. Shown as a walkthrough of the sequence beside the rows it undoes, ending with a lost reply and the idempotency key from chapter 3.
+**Why:** What a system undoes when something fails shows its design as much as the happy path does, and it ties up the pending order and the retry key left open earlier.
+**Open:** Chapter 5's sequence numbers messages by position, not by code.
+
 ## 0.4.1 · 2026-10-18 · Fixed
 
 **Changed:** In chapter 4, pointing at a table or field in a step lights it in the rows as well as the diagram.

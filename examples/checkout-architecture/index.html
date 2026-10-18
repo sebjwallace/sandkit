@@ -77,6 +77,20 @@
         </div>
       </sb-walkthrough>
     </section>
+
+    <section class="chapter" heading="5 · When payment fails">
+      <h2>Chapter 5 · When payment fails</h2>
+      <p>So far every card has gone through. When one doesn’t, the shop has already done things it now has to undo: two mugs are held back for an order nobody will pay for, and the order sits in the database as pending. The conversation is the same as chapter 2’s up to the charge; from there it goes another way.</p>
+      <p class="try"><strong>Try:</strong> step through from the charge. What gets undone, and what’s kept? Why isn’t the order simply deleted? Then read the last step, about a reply that never arrives.</p>
+
+      <sb-walkthrough id="fail-walk" narration="bottom">
+        <sb-sequence slot="conversation" id="fail-conversation" numbered></sb-sequence>
+        <div slot="rows" class="rows">
+          <h4>stock</h4><sb-table id="fail-stock"></sb-table>
+          <h4>orders</h4><sb-table id="fail-orders" empty-text="No rows yet."></sb-table>
+        </div>
+      </sb-walkthrough>
+    </section>
     </sb-tabs>
   </main>
 
@@ -124,12 +138,13 @@
     // lights itself and its line. In chapter 2's diagram, pointing stands in for the step until it stops.
     document.addEventListener('sb-highlight', (e) => {
       const ref = e.detail.ref;
-      const message = PLACE_ORDER.find((m) => m.id === ref);
+      const message = [...PLACE_ORDER, ...PAYMENT_DECLINED].find((m) => m.id === ref);
       const part = checkout.element(ref) ? [ref] : [];
       const line = checkout.relationship(ref) ? [ref] : message ? [message.along] : [];
       outline.highlight = part;
       diagram.highlight = { elements: part, relationships: line };
       conversation.highlight = { participants: part, messages: PLACE_ORDER.filter((m) => m.id === ref || m.along === ref).map((m) => m.id) };
+      failConversation.highlight = { participants: part, messages: PAYMENT_DECLINED.filter((m) => m.id === ref || m.along === ref).map((m) => m.id) };
       if (ref) flowDiagram.highlight = { elements: part, relationships: line };
       else highlightStep();
     });
@@ -225,7 +240,8 @@
 
     const storeWalk = $('store-walk'), schema = $('schema');
     const rowTables = { stock: $('rows-stock'), order_items: $('rows-order_items'), orders: $('rows-orders') };
-    const writing = [null, ...new Set(DATABASE_WRITES.map((w) => w.message))]; // null: before the order
+    const writes = (m) => DATABASE_WRITES.some((w) => w.message === m.id);
+    const writing = [null, ...PLACE_ORDER.filter(writes).map((m) => m.id)]; // null: before the order
     const ROW_IDS = { stock: (r) => r.sku, order_items: (r) => `${r.order_number} ${r.sku}`, orders: (r) => String(r.number) };
     const field = (ref, text) => `<code data-ref="${esc(ref)}">${esc(text)}</code>`;
 
@@ -262,6 +278,34 @@
       schema.highlight = writtenBy(writing[storeWalk.step]);
     }
 
+    // ---- Chapter 5: when payment fails ----
+    // The declined conversation from the charge on, each message a step as in chapter 2, beside the
+    // rows it changes. A step before sums up messages 1 to 7; a step after asks about a lost reply.
+
+    const failWalk = $('fail-walk'), failConversation = $('fail-conversation');
+    const failTables = { stock: $('fail-stock'), orders: $('fail-orders') };
+
+    const SO_FAR = `
+      <section data-step data-message="MSG-7">
+        <h3>So far</h3>
+        <p>Messages 1 to 7 are as in chapter 2. Stock has held back two mugs, Orders has saved order 1042 as pending, and now asks Payments to take the money.</p>
+      </section>`;
+
+    const LOST_REPLY = `
+      <section data-step data-message="MSG-8">
+        <h3>What if a reply is lost?</h3>
+        <p>Suppose the provider charged the card, but its reply never arrived. Payments can’t tell whether the money was taken, so it sends <sb-id code="MSG-8"></sb-id> again with the same <code>idempotency_key</code> (chapter 3). The provider knows the key, and answers with the first charge rather than making a second: the shopper pays once, however often the shop asks.</p>
+      </section>`;
+
+    function showFail() {
+      const m = PAYMENT_DECLINED.find((message) => message.id === failWalk.current.element.dataset.message);
+      const sent = PAYMENT_DECLINED.slice(0, PAYMENT_DECLINED.indexOf(m) + 1).map((message) => message.id);
+      const tables = replayWrites(SHOP_DATABASE.rows, DATABASE_WRITES, sent);
+      for (const [table, el] of Object.entries(failTables)) el.rows = tables[table].map((row) => ({ id: ROW_IDS[table](row), ...row }));
+      failConversation.current = m.id;
+      bringIntoView(failConversation, m.id);
+    }
+
     // ---- Viewers ----
 
     outline.addEventListener('sb-select', (e) => {
@@ -288,6 +332,17 @@
       for (const [id, el] of Object.entries(rowTables)) {
         el.highlight = id !== table ? {} : column ? { columns: [column] } : { rows: el.rows.map((row) => row.id) };
       }
+    });
+
+    failWalk.addEventListener('sb-step', showFail);
+    failWalk.addEventListener('sb-point', (e) => announce(e.detail.ref));
+
+    // Clicking a message from the charge on goes to its step.
+    failConversation.addEventListener('sb-select', (e) => {
+      const index = failWalk.steps.findIndex((step) => step.dataset.message === e.detail.id);
+      if (index === -1) return;
+      failWalk.step = index;
+      showFail();
     });
 
     // Clicking a message goes to its step.
@@ -319,6 +374,12 @@
     for (const table of SHOP_DATABASE.tables) rowTables[table.id].columns = table.fields.map((f) => ({ key: f.name }));
     storeWalk.insertAdjacentHTML('beforeend', writing.map(storeStepHtml).join(''));
     showStore();
+
+    failConversation.participants = conversation.participants;
+    failConversation.messages = PAYMENT_DECLINED;
+    for (const [table, el] of Object.entries(failTables)) el.columns = rowTables[table].columns;
+    failWalk.insertAdjacentHTML('beforeend', SO_FAR + PAYMENT_DECLINED.slice(7).map(stepHtml).join('') + LOST_REPLY);
+    showFail();
   </script>
 </body>
 </html>

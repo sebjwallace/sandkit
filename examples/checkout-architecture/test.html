@@ -38,7 +38,7 @@
     });
 
     test('every message travels along a relationship joining its two ends, replies the other way', () => {
-      for (const m of PLACE_ORDER) {
+      for (const m of [...PLACE_ORDER, ...PAYMENT_DECLINED]) {
         const r = checkout.relationship(m.along);
         const ends = m.kind === 'reply' ? [m.to, m.from] : [m.from, m.to];
         assertEqual([r.from, r.to], ends, m.id);
@@ -83,7 +83,8 @@
     });
 
     test('only messages sent to the database write to it', () => {
-      for (const w of DATABASE_WRITES) assertEqual(PLACE_ORDER.find((m) => m.id === w.message).to, 'CON-3', w.message);
+      const messages = [...PLACE_ORDER, ...PAYMENT_DECLINED];
+      for (const w of DATABASE_WRITES) assertEqual(messages.find((m) => m.id === w.message).to, 'CON-3', w.message);
     });
 
     test('replaying the writes leaves the order paid, and two mugs fewer in stock', () => {
@@ -92,6 +93,19 @@
       assertEqual(all.orders, [{ number: 1042, status: 'paid', total: 2450, charge_id: PAYLOADS['MSG-9'].body.id }]);
       assertEqual(replayWrites(SHOP_DATABASE.rows, DATABASE_WRITES, ['MSG-4', 'MSG-6']).orders[0].status, 'pending', 'before payment');
       assertEqual(SHOP_DATABASE.rows.stock[0].in_stock, 14, 'the starting rows are left as they were');
+    });
+
+    test('a declined payment is the same conversation up to the charge, then goes another way', () => {
+      assertEqual(PAYMENT_DECLINED.slice(0, 8), PLACE_ORDER.slice(0, 8));
+      assertEqual(PAYMENT_DECLINED[8].from, 'SYS-2', 'the provider answers');
+      const ids = [...PLACE_ORDER, ...PAYMENT_DECLINED].map((m) => m.id);
+      assertEqual(new Set(ids).size, new Set([...PLACE_ORDER, ...PAYMENT_DECLINED]).size, 'each code names one message');
+    });
+
+    test('when payment fails, the mugs go back and the order is kept, marked failed', () => {
+      const after = replayWrites(SHOP_DATABASE.rows, DATABASE_WRITES, PAYMENT_DECLINED.map((m) => m.id));
+      assertEqual(after.stock[0].in_stock, SHOP_DATABASE.rows.stock[0].in_stock, 'stock as it was');
+      assertEqual(after.orders, [{ number: 1042, status: 'failed', total: 2450, charge_id: null }], 'no charge to record');
     });
 
     test('the sandbox page starts, and a name in the prose goes to its part in the diagram', async () => {
@@ -159,6 +173,21 @@
       assertEqual(JSON.stringify(orders.highlight), '{"columns":["status"]}', 'pointing at a field lights its column');
       walk.current.element.querySelector('[data-ref="orders"]').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
       assertEqual(JSON.stringify(orders.highlight), '{"rows":["1042"]}', 'pointing at a table lights its rows');
+    });
+
+    test('chapter 5 follows the declined payment from the charge, undoing what was done', async () => {
+      const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
+      await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      const page = frame.contentDocument;
+      const walk = page.getElementById('fail-walk'), sequence = page.getElementById('fail-conversation');
+      const stock = page.getElementById('fail-stock'), orders = page.getElementById('fail-orders');
+      assertEqual(walk.steps.length, 11, 'so far, the charge and eight messages after it, then a lost reply');
+      assertEqual([sequence.current, stock.rows[0].in_stock, orders.rows[0].status], ['MSG-7', 12, 'pending'], 'so far');
+
+      sequence.querySelector('[data-ref="MSG-19"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      assertEqual(walk.current.element.dataset.message, 'MSG-19', 'clicking a message goes to its step');
+      assertEqual([stock.rows[0].in_stock, orders.rows[0].status], [14, 'failed'], 'the mugs back, the order kept as failed');
+      assertEqual(page.getElementById('store-walk').steps.length, 4, 'chapter 4 keeps to the order that went through');
     });
   </script>
 </body>
