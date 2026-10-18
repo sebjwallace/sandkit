@@ -2,6 +2,12 @@
 
 What changed in this sandbox, and why: one entry per change, newest first, only ever added to. Each entry is a version. See the [journal practice](../../practices/journal.md).
 
+## 0.6.0 · 2026-10-18 · Added
+
+**Changed:** Clicking any code opens a cross-reference beside the page: everywhere the thing appears, in any chapter, grouped by chapter and view, with places in closed chapters marked and those in a walkthrough's other steps listed but not gone to; and what the model links it to (`linksOf`), walkable with a trail and Back.
+**Why:** One part shows up in up to five views here, which is what cross-references are for. It also answers the open question of a way back after going somewhere.
+**Open:** Parts inside a box the diagram hasn't entered aren't drawn, so aren't listed there.
+
 ## 0.5.0 · 2026-10-18 · Added
 
 **Changed:** Chapter 5, when payment fails: a second conversation in the model, the same as placing an order up to the charge, then declined (`MSG-14` to `MSG-21`), with its two writes putting the stock back and marking the order failed. Shown as a walkthrough of the sequence beside the rows it undoes, ending with a lost reply and the idempotency key from chapter 3.

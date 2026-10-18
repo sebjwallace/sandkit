@@ -108,6 +108,15 @@
       assertEqual(after.orders, [{ number: 1042, status: 'failed', total: 2450, charge_id: null }], 'no charge to record');
     });
 
+    test('says what a code is linked to: a part\'s place and lines, a line\'s ends and messages', () => {
+      const pairs = (code) => checkout.linksOf(code).map((l) => `${l.relation} ${l.ref}`);
+      assertEqual(pairs('CMP-3'), ['inside CON-2', 'calls out along REL-5', 'called along REL-4']);
+      assertEqual(pairs('REL-5'), ['from CMP-3', 'to SYS-2', 'carries MSG-8', 'carries MSG-9', 'carries MSG-14']);
+      assertEqual(pairs('MSG-8'), ['along REL-5', 'from CMP-3', 'to SYS-2']);
+      assertEqual(checkout.linksOf('CMP-3')[0].title, 'Shop API', 'each with its title');
+      assertEqual(checkout.linksOf('orders'), [], 'nothing for what the model doesn\'t know');
+    });
+
     test('the sandbox page starts, and a name in the prose goes to its part in the diagram', async () => {
       const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
       await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
@@ -188,6 +197,29 @@
       assertEqual(walk.current.element.dataset.message, 'MSG-19', 'clicking a message goes to its step');
       assertEqual([stock.rows[0].in_stock, orders.rows[0].status], [14, 'failed'], 'the mugs back, the order kept as failed');
       assertEqual(page.getElementById('store-walk').steps.length, 4, 'chapter 4 keeps to the order that went through');
+    });
+
+    test('clicking a code lists where it appears; clicking a hidden place opens its chapter', async () => {
+      const frame = mount('<iframe src="index.html" style="width: 1300px; height: 800px"></iframe>');
+      await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      const page = frame.contentDocument;
+      const xref = page.getElementById('xref'), chapters = page.getElementById('chapters');
+      page.querySelector('#details sb-id[code="REL-5"] button').click();
+      assertEqual(xref.subject.ref, 'REL-5');
+      assert(!page.getElementById('xref-panel').hidden, 'the panel opens');
+      assertEqual(new Set(xref.places.map((p) => p.view.split(' ›')[0])).size, 3, 'in chapters 1, 2 and 5');
+      assert(xref.places.some((p) => p.unavailable), 'steps not showing are listed, but can\'t be gone to');
+
+      const placesOfRel5 = xref.places.length;
+      const hidden = xref.places.findIndex((p) => p.hidden && !p.unavailable);
+      xref.querySelector(`.sb-xref__place[data-index="${hidden}"]`).click();
+      assertEqual(chapters.selected, 1, 'going there opened chapter 2');
+      assert(page.querySelectorAll('[data-ref="REL-5"]')[hidden].checkVisibility(), 'and the place can be seen');
+
+      xref.querySelector('.sb-xref__link').click();
+      assertEqual(xref.subject.ref, 'CMP-3', 'following a link moves on');
+      xref.querySelector('.sb-xref__back').click();
+      assertEqual([xref.subject.ref, xref.places.length], ['REL-5', placesOfRel5], 'and Back returns, with its places');
     });
   </script>
 </body>

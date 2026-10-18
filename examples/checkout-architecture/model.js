@@ -221,7 +221,27 @@ function createArchitecture(spec) {
     return from.length >= to.length ? from : to;
   }
 
-  return { spec, element, path, connections, define, participants, viewOf, relationship: (code) => relationships.get(code) ?? null };
+  // What a code is linked to, in words a cross-reference can group by: a part's place in the
+  // architecture and the lines crossing its edge; a line's ends and the messages it carries; a
+  // message's line and ends.
+  function linksOf(code) {
+    const part = element(code), r = relationships.get(code), m = messages.get(code);
+    const link = (relation, ref) => ({ relation, ref, title: define(ref)?.title ?? ref });
+    if (part) {
+      const { outgoing, incoming } = connections(code);
+      return [
+        ...path(code).slice(-1).map((outer) => link('inside', outer)),
+        ...(part.children ?? []).map((child) => link('contains', child.id)),
+        ...outgoing.map((c) => link('calls out along', c.relationship.id)),
+        ...incoming.map((c) => link('called along', c.relationship.id))
+      ];
+    }
+    if (r) return [link('from', r.from), link('to', r.to), ...[...messages.values()].filter((message) => message.along === code).map((message) => link('carries', message.id))];
+    if (m) return [link('along', m.along), link('from', m.from), link('to', m.to)];
+    return [];
+  }
+
+  return { spec, element, path, connections, define, linksOf, participants, viewOf, relationship: (code) => relationships.get(code) ?? null };
 }
 
 const checkout = createArchitecture({ ...CHECKOUT, messages: [...new Set([...PLACE_ORDER, ...PAYMENT_DECLINED])] });

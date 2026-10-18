@@ -31,6 +31,7 @@ main { padding: 16px 24px 40px; }
 #payload-walk { height: 700px; }
 #store-walk { height: 600px; }
 #fail-walk { height: 760px; }
+#xref { display: block; padding: 4px 2px; }
 #fail-walk h3 { margin: 0 0 6px; font-size: 16px; }
 #fail-walk h3 .where { font-size: 14px; font-weight: normal; }
 #fail-walk p { margin: 4px 0; font-size: 14px; }
