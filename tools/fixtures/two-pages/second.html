@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The best price · Lemonade stand</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../../shell/sb-theme-settings.js"></script>
+  <script src="../../../shell/sb-shell.js"></script>
+  <script src="../../../shell/sb-export.js"></script>
+  <script src="../../../components/sb-bars/sb-bars.js"></script>
+  <script src="sandbox.js"></script>
+  <script src="data/costs.js"></script>
+  <script src="model.js"></script>
+</head>
+<body>
+  <sb-shell>
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <sb-export slot="actions"></sb-export>
+  </sb-shell>
+
+  <main>
+    <section class="panel">
+      <img class="lemon" src="images/lemon.svg" alt="A lemon">
+      <h2>The best price</h2>
+      <p>Profit at every price, side by side. Too cheap and each cup barely pays; too dear and nobody buys. The best price sits between.</p>
+      <sb-bars id="profits" orientation="vertical"></sb-bars>
+    </section>
+  </main>
+
+  <script>
+    const model = createModel(window.lemonadeCosts);
+    const prices = [20, 30, 40, 50, 60, 70, 80];
+    const days = prices.map(model.day);
+    const best = Math.max(...days.map((d) => d.profit));
+
+    // ---- Start ----
+
+    document.getElementById('profits').bars = days.map((d) => ({
+      id: String(d.price), label: `${d.price}p`, value: d.profit, tone: d.profit === best ? 'good' : d.profit < 0 ? 'bad' : 'accent'
+    }));
+  </script>
+</body>
+</html>

@@ -6,6 +6,7 @@
   <script src="../test/harness.js"></script>
   <script src="sb-theme-settings.js"></script>
   <script src="sb-shell.js"></script>
+  <script src="sb-export.js"></script>
 </head>
 <body>
   <script>
@@ -95,6 +96,157 @@
       const short = shell('<p>Short</p>');
       await nextFrame();
       assert(short.querySelector('.sb-shell__more').hidden, 'More is hidden for short content');
+    });
+
+    test('the heading can be set as a property', () => {
+      const el = shell();
+      el.heading = 'Renamed';
+      assertEqual(el.querySelector('.sb-shell__heading').textContent, 'Renamed');
+    });
+
+    // ---- Goal and pages ----
+
+    // This page is test.html, so that's the current page unless `page` says otherwise.
+    const PAGES = [{ href: 'index.html', title: 'Start' }, { href: 'test.html', title: 'Tests' }, { href: 'stock.html?x=1#top', title: 'Stock' }];
+    const pageParts = (el) => [...el.querySelectorAll('.sb-shell__page')];
+
+    test('shows the goal as header content', () => {
+      const el = shell();
+      el.goal = 'Understand stock.';
+      assertEqual(el.querySelector('.sb-shell__content').textContent, 'Goal: Understand stock.');
+    });
+
+    test('the page\'s own header content wins over the goal', () => {
+      const el = shell('<p>Just this page</p>');
+      el.goal = 'Understand stock.';
+      assertEqual(el.querySelector('.sb-shell__content').textContent, 'Just this page');
+    });
+
+    test('shows the pages as links, with the current one marked and not a link', () => {
+      const el = shell();
+      el.pages = PAGES;
+      assertEqual(pageParts(el).map((p) => p.textContent), ['Start', 'Tests', 'Stock']);
+      const current = el.querySelector('[aria-current="page"]');
+      assertEqual(current.textContent, 'Tests');
+      assertEqual(current.tagName, 'SPAN');
+      assertEqual(el.querySelector('a.sb-shell__page').getAttribute('href'), 'index.html');
+    });
+
+    test('the page attribute names the current page', () => {
+      const el = shell('', 'page="stock.html"');
+      el.pages = PAGES;
+      assertEqual(el.querySelector('[aria-current="page"]').textContent, 'Stock');
+    });
+
+    test('goal and pages set before the shell is built are shown once it is', () => {
+      const el = document.createElement('sb-shell');
+      el.goal = 'Early goal';
+      el.pages = PAGES;
+      mount(el);
+      assertEqual(el.querySelector('.sb-shell__content').textContent, 'Goal: Early goal');
+      assertEqual(pageParts(el).length, 3);
+    });
+
+    test('a single page shows no navigation', () => {
+      const el = shell();
+      el.pages = PAGES.slice(0, 1);
+      assert(el.querySelector('.sb-shell__pages').hidden, 'hidden');
+    });
+
+    test('page titles and the goal are shown as text, never markup', () => {
+      const el = shell();
+      el.goal = '<b>bold</b>';
+      el.pages = [{ href: 'a.html', title: '<i>A</i>' }, { href: 'b.html', title: 'B' }];
+      assert(!el.querySelector('.sb-shell__content b, .sb-shell__pages i'), 'no markup');
+      assertEqual(pageParts(el)[0].textContent, '<i>A</i>');
+    });
+
+    // ---- Exported pages ----
+
+    test('an exported page says when, and which versions of the sandbox and Sandkit', () => {
+      const el = shell('', 'exported="2026-10-18" version="0.4.0" sandkit="0.2.27"');
+      const note = el.querySelector('.sb-shell__exported');
+      assert(!note.hidden, 'shown');
+      assertEqual(note.textContent, 'Exported 18 Oct 2026 · version 0.4.0 · Sandkit 0.2.27');
+    });
+
+    test('the export note leaves out versions it wasn\'t given', () => {
+      assertEqual(shell('', 'exported="2026-10-18"').querySelector('.sb-shell__exported').textContent, 'Exported 18 Oct 2026');
+    });
+
+    test('a page that isn\'t exported has no note', () => {
+      assert(shell().querySelector('.sb-shell__exported').hidden, 'hidden');
+    });
+
+    test('an exported page shows the other pages as not included, never as links', () => {
+      const el = shell('', 'exported="2026-10-18" page="test.html"');
+      el.pages = PAGES;
+      assertEqual(el.querySelectorAll('a.sb-shell__page').length, 0);
+      const excluded = [...el.querySelectorAll('.sb-shell__page--excluded')];
+      assertEqual(excluded.map((p) => p.textContent), ['Start', 'Stock']);
+      assertEqual(excluded[0].title, 'Not included in this export');
+      assertEqual(el.querySelector('[aria-current="page"]').textContent, 'Tests');
+    });
+
+    // ---- Export ----
+
+    const exporter = (attrs = '') => shell('<sb-export slot="actions"></sb-export>', attrs).querySelector('sb-export');
+    const promptShown = (ex) => ex.querySelector('.sb-export__prompt').value;
+
+    test('sits beside the header controls, and opens its dialog', () => {
+      const ex = exporter();
+      assert(ex.closest('.sb-shell__actions'), 'in the actions');
+      ex.querySelector('.sb-export__button').click();
+      assert(ex.querySelector('dialog').open, 'open');
+      ex.querySelector('.sb-export__close').click();
+      assert(!ex.querySelector('dialog').open, 'closed');
+    });
+
+    test('the prompt asks the agent to export this page with the export tool', () => {
+      const ex = exporter();
+      assert(ex.prompt.startsWith('Export test.html from this sandbox as one standalone HTML file.'), ex.prompt);
+      assert(ex.prompt.includes('node lib/sandkit/tools/export.mjs test.html\n'), 'the command');
+      assertEqual(promptShown(ex), ex.prompt);
+      assert(ex.textContent.includes('export/test.html'), 'says where it saves');
+    });
+
+    test('leaving out images changes the prompt', () => {
+      const ex = exporter();
+      ex.querySelector('input[name="images"]').click();
+      assert(ex.prompt.includes('leaving out its images'), 'says so');
+      assert(ex.prompt.includes('export.mjs test.html --no-images'), 'passes the flag');
+      assertEqual(promptShown(ex), ex.prompt);
+    });
+
+    test('copies the prompt, or selects it to copy by hand when the clipboard is refused', async () => {
+      const original = Object.getOwnPropertyDescriptor(Navigator.prototype, 'clipboard');
+      let copied = null;
+      const useClipboard = (writeText) => Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+      try {
+        const ex = exporter();
+        useClipboard(async (text) => { copied = text; });
+        await ex._copy();
+        assertEqual(copied, ex.prompt);
+        assert(ex.querySelector('.sb-export__status').textContent.startsWith('Copied'), 'says copied');
+
+        useClipboard(() => Promise.reject(new Error('refused')));
+        await ex._copy();
+        assert(ex.querySelector('.sb-export__status').textContent.includes('Ctrl+C'), 'says how to copy');
+      } finally {
+        delete navigator.clipboard;
+        if (original) Object.defineProperty(Navigator.prototype, 'clipboard', original);
+      }
+    });
+
+    test('hides in an exported page, which has nothing left to export from', () => {
+      assert(exporter('exported="2026-10-18"').hidden, 'hidden');
+    });
+
+    test('two export buttons on one page keep their own options', () => {
+      mount('<div><sb-export></sb-export><sb-export></sb-export></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-export');
+      a.querySelector('input[name="images"]').click();
+      assert(a.prompt.includes('--no-images') && !b.prompt.includes('--no-images'), 'separate');
     });
 
     // ---- Settings sections ----

@@ -66,6 +66,29 @@ test('running again adds components, keeps existing ones, and never duplicates t
   assert(read(sandbox, 'lib/sandkit/SOURCE.md').includes('components/sb-log/sb-log.js'), 'sb-log still recorded');
 });
 
+test('a new sandbox gets sandbox.js, the page template and the export tool', (sandbox) => {
+  setup(sandbox);
+  for (const file of ['sandbox.js', 'lib/sandkit/templates/page.html', 'lib/sandkit/tools/export.mjs', 'lib/sandkit/shell/sb-export.js']) {
+    assert(existsSync(join(sandbox, file)), `missing ${file}`);
+  }
+  assert(read(sandbox, 'index.html').includes('<script src="sandbox.js"></script>'), 'index.html includes sandbox.js');
+});
+
+test('--page adds the named components\' tags to that page only', (sandbox) => {
+  setup(sandbox, 'sb-id');
+  writeFileSync(join(sandbox, 'stock.html'), read(sandbox, 'lib/sandkit/templates/page.html'));
+  const { ok, output } = setup(sandbox, 'sb-log', '--page', 'stock.html');
+  assert(ok && output.includes('Added script tags for sb-log to stock.html.'), output);
+  assert(scriptTags(read(sandbox, 'stock.html'), 'sb-log') === 1 && scriptTags(read(sandbox, 'stock.html'), 'sb-id') === 0, 'only sb-log on stock.html');
+  assert(scriptTags(read(sandbox, 'index.html'), 'sb-log') === 0, 'not on index.html');
+});
+
+test('--page refuses a page that doesn\'t exist, saying where to start one', (sandbox) => {
+  setup(sandbox);
+  const { ok, output } = setup(sandbox, 'sb-log', '--page', 'nope.html');
+  assert(!ok && output.includes('has no page called nope.html') && output.includes('templates/page.html'), output);
+});
+
 test('the sandbox\'s own files are never overwritten', (sandbox) => {
   setup(sandbox);
   writeFileSync(join(sandbox, 'model.js'), '// my model\n');
@@ -254,4 +277,98 @@ test('analyse explains an unknown analysis, bad JSON and missing inputs', (folde
   const bad = analyse('profile', join(folder, 'bad.jsonl'));
   assert(!bad.ok && bad.output.includes('bad.jsonl, line 2 isn\'t valid JSON'), `bad JSON: ${bad.output}`);
   assert(!analyse('profile').ok, 'no inputs');
+});
+
+// ---- export.mjs ----
+
+const EXPORT = resolve(fileURLToPath(import.meta.url), '../export.mjs');
+const TWO_PAGES = resolve(fileURLToPath(import.meta.url), '../fixtures/two-pages');
+const SANDKIT_VERSION = readFileSync(resolve(fileURLToPath(import.meta.url), '../../CHANGELOG.md'), 'utf8').match(/^## (\S+)/m)[1];
+
+function exportTool(...args) {
+  try {
+    return { ok: true, output: execFileSync('node', [EXPORT, ...args], { encoding: 'utf8', stdio: 'pipe' }) };
+  } catch (err) {
+    return { ok: false, output: err.stdout + err.stderr };
+  }
+}
+
+// A page that points to every kind of thing an export meets.
+function edgeSandbox(folder) {
+  write(folder, 'page.html', [
+    '<link rel="stylesheet" href="style.css">',
+    '<script src="first.js"></script>',
+    '<script src="https://cdn.example.com/lib.js"></script>',
+    '<script src="second.js"></script>',
+    '<sb-shell></sb-shell>',
+    '<img srcset="a.png 1x, b.png 2x">',
+    '<div style="background: url(\'a.png\')"></div>'
+  ].join('\n'));
+  write(folder, 'style.css', 'body { background: url(b.png); } h1 { background: url("https://example.com/x.png"); }');
+  write(folder, 'first.js', 'const tag = "</script>"; fetch("data.json"); const picture = "pics/lemon.png";');
+  write(folder, 'second.js', 'window.second = true;');
+  write(folder, 'a.png', 'A');
+  write(folder, 'b.png', 'B');
+}
+
+test('export puts in only what the page points to, scripts in order, and marks the shell', (folder) => {
+  const out = join(folder, 'second.html');
+  const { ok, output } = exportTool(join(TWO_PAGES, 'second.html'), '--out', out);
+  const html = readFileSync(out, 'utf8');
+  assert(ok, output);
+  assert(!/<script[^>]*\bsrc=/.test(html) && !html.includes('<link'), 'nothing left to fetch');
+  const order = ['Sandkit sb-theme-settings', 'Sandkit sb-shell', 'Sandkit sb-bars', 'lemonadeCosts', 'function createModel'].map((s) => html.indexOf(s));
+  assert(order.every((at, i) => at > 0 && (i === 0 || at > order[i - 1])), `in page order: ${order}`);
+  assert(!output.includes('index.html') && !output.includes('sb-parameters'), 'nothing from the other page');
+  assert(html.includes('src="data:image/svg+xml;base64,'), 'the image is inside');
+  assert(html.includes(`<sb-shell exported="${new Date().toISOString().slice(0, 10)}" version="0.2.0" sandkit="${SANDKIT_VERSION}" page="second.html">`), 'shell marked');
+  assert(output.includes('10 files') && !output.includes('Warnings'), `report:\n${output}`);
+});
+
+test('export leaves images out when asked, and says so', (folder) => {
+  const out = join(folder, 'second.html');
+  const { output } = exportTool(join(TWO_PAGES, 'second.html'), '--no-images', '--out', out);
+  const html = readFileSync(out, 'utf8');
+  assert(!html.includes('data:image') && html.includes('<img class="lemon" alt="A lemon">'), 'image gone, its description kept');
+  assert(output.includes('Left out, as asked:') && output.includes('lemon.svg'), output);
+});
+
+test('export inlines stylesheets, their urls, srcsets and style urls, and escapes </script', (folder) => {
+  edgeSandbox(folder);
+  exportTool(join(folder, 'page.html'));
+  const html = readFileSync(join(folder, 'export', 'page.html'), 'utf8');
+  const [a, b] = ['A', 'B'].map((letter) => `data:image/png;base64,${Buffer.from(letter).toString('base64')}`);
+  assert(html.includes(`<style>\nbody { background: url("${b}"); }`), 'css url inlined');
+  assert(html.includes(`srcset="${a} 1x, ${b} 2x"`), 'srcset inlined');
+  assert(html.includes(`<div style="background: url('${a}')"></div>`), 'style url inlined, keeping the attribute whole');
+  assert(html.includes('const tag = "<\\/script>"'), '</script escaped');
+  assert(html.indexOf('window.second') > html.indexOf('const tag'), 'scripts kept in order');
+});
+
+test('export keeps remote urls and warns about them, fetching and files named in code', (folder) => {
+  edgeSandbox(folder);
+  const { ok, output } = exportTool(join(folder, 'page.html'));
+  const html = readFileSync(join(folder, 'export', 'page.html'), 'utf8');
+  assert(ok, output);
+  assert(html.includes('<script src="https://cdn.example.com/lib.js"></script>') && html.includes('url("https://example.com/x.png")'), 'remote kept');
+  for (const warning of ['needs the internet: https://cdn.example.com/lib.js', 'needs the internet: https://example.com/x.png',
+    'first.js fetches files', 'first.js names a file in its code, which isn\'t included: "pics/lemon.png"']) {
+    assert(output.includes(warning), `warns: ${warning}\n${output}`);
+  }
+});
+
+test('export fails on a missing script, naming it, and on a missing page', (folder) => {
+  write(folder, 'page.html', '<script src="lib/gone.js"></script>');
+  const missing = exportTool(join(folder, 'page.html'));
+  assert(!missing.ok && missing.output.includes('A script the page includes is missing: lib/gone.js'), missing.output);
+  assert(!existsSync(join(folder, 'export')), 'nothing written');
+  const noPage = exportTool(join(folder, 'nope.html'));
+  assert(!noPage.ok && noPage.output.includes('There\'s no page at'), noPage.output);
+});
+
+test('export --all exports every page to its own file', (folder) => {
+  write(folder, 'index.html', '<p>one</p>');
+  write(folder, 'two.html', '<p>two</p>');
+  assert(exportTool(folder, '--all').ok, 'exported');
+  assert(['index.html', 'two.html'].every((page) => existsSync(join(folder, 'export', page))), 'both written');
 });

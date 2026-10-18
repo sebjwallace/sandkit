@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{Page title}} · {{Sandbox name}}</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- A page of this sandbox, started from lib/sandkit/templates/page.html and listed in sandbox.js. It includes
+       only what it uses, so it can be exported on its own (see lib/sandkit/practices/pages.md). -->
+  <!-- Sandkit, copied into lib/ (see lib/sandkit/SOURCE.md). Theming loads first, so the page never flashes the wrong theme. -->
+  <script src="lib/sandkit/shell/sb-theme-settings.js"></script>
+  <script src="lib/sandkit/shell/sb-shell.js"></script>
+  <script src="lib/sandkit/shell/sb-export.js"></script>
+  <!-- Add a line for each component this page uses, for example: -->
+  <!-- <script src="lib/sandkit/components/sb-log/sb-log.js"></script> -->
+
+  <!-- The sandbox's name, goal and pages, then its model and any data the page needs, as scripts. -->
+  <script src="sandbox.js"></script>
+  <script src="model.js"></script>
+</head>
+<body>
+  <sb-shell>
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <sb-export slot="actions"></sb-export>
+  </sb-shell>
+
+  <main>
+    <section class="chapter">
+      <h2>{{Page title}}</h2>
+      <p>{{What this page is about, briefly. The sandbox below lets people work with it.}}</p>
+      <p class="try"><strong>Try:</strong> {{One thing to do, and what to look for.}}</p>
+    </section>
+
+    <section class="panel" id="stage">
+      {{The interactive surface: the model, made visible and handleable.}}
+    </section>
+  </main>
+
+  <script>
+    // Declare everything first; the sandbox starts at the bottom.
+
+    const model = createModel();
+    const $ = (id) => document.getElementById(id);
+
+    // ---- Rendering ----
+
+    function render() {
+      // Show the model's state. Re-run after anything changes.
+    }
+
+    // ---- Start ----
+
+    render();
+  </script>
+</body>
+</html>

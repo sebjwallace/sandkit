@@ -9,6 +9,7 @@ Run from a Sandkit clone with Node. Not copied into sandboxes.
 | Tool | What it does |
 |---|---|
 | `tools/setup.mjs` | Sets up a sandbox with Sandkit's files, or updates them. |
+| `tools/export.mjs` | Exports one page of a sandbox as a single HTML file that still runs, listing every file that went in. Copied into sandboxes, for the agent to run when someone presses Export. |
 | `tools/analyse.mjs` | Runs a component's analysis on data files, without a page: `profile` and `dependencies`. `list` shows them all. |
 
 ## Practices
@@ -22,13 +23,14 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [Locating](practices/locating.md) | Find everywhere a ref appears and go to it, through closed tabs and folded branches: `data-ref` on parts, `reveal(ref)`, and the sandbox's `goTo`. Supported by `sb-tabs`, `sb-tree`, `sb-id`, `sb-table`, `sb-rules` and `sb-graph`. |
 | [Journal](practices/journal.md) | What changed in a sandbox and why, one entry per version, and where it stands now: for audit and handover. Retired codes recorded in the model. |
 | [Identifiers](practices/identifiers.md) | Short, stable codes for the things in a sandbox, and citing them everywhere. Supported by `sb-id`. |
+| [Pages](practices/pages.md) | Splitting a sandbox into pages that share one model, `sandbox.js` listing them once, data as scripts, and exporting any page as one file that runs anywhere. Supported by the shell and `tools/export.mjs`. |
 | [Feedback](practices/feedback.md) | Collecting comments with `sb-comments`, and what the agent does on receiving them: saved as sources, `FB-` codes, answered in the journal. Supported by `sb-comments`. |
 
 ## Shell
 
 | Part | What it does |
 |---|---|
-| [Sandbox shell](shell/manifest.md) | The environment around a sandbox: header, goal, full screen, settings and theming. |
+| [Sandbox shell](shell/manifest.md) | The environment around a sandbox: header, goal, pages, full screen, settings and theming, and an Export button giving the prompt to export the page. |
 
 ## Components
 

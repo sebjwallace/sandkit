@@ -1,6 +1,6 @@
 # Sandbox shell
 
-The environment around a sandbox: a header with its title and goal, controls for full screen and hiding the header, and a settings dialog with theming. Two elements, packaged together: `sb-shell` and `sb-theme-settings`.
+The environment around a sandbox: a header with its title, goal and pages, controls for full screen and hiding the header, a settings dialog with theming, and an Export button. Three elements, packaged together: `sb-shell`, `sb-theme-settings` and `sb-export`.
 
 Use them through this interface. You don't need to read their source.
 
@@ -11,14 +11,27 @@ Use them through this interface. You don't need to read their source.
   <!-- Theming first, so the page never flashes the wrong theme. -->
   <script src="lib/sandkit/shell/sb-theme-settings.js"></script>
   <script src="lib/sandkit/shell/sb-shell.js"></script>
+  <script src="lib/sandkit/shell/sb-export.js"></script>
+  <script src="sandbox.js"></script>
 </head>
 <body>
-  <sb-shell heading="Supply Chain Sandbox">
+  <sb-shell>
     <sb-theme-settings slot="settings"></sb-theme-settings>
-    <p><strong>Goal:</strong> understand how goods get from suppliers to customers.</p>
+    <sb-export slot="actions"></sb-export>
   </sb-shell>
   …
 </body>
+```
+
+The sandbox's name, goal and pages are written once, in its own `sandbox.js`, which every page includes (see the [pages practice](../practices/pages.md)):
+
+```js
+document.addEventListener('DOMContentLoaded', () => {
+  const shell = document.querySelector('sb-shell');
+  shell.heading = 'Supply chain sandbox';
+  shell.goal = 'Understand how goods get from suppliers to customers.';
+  shell.pages = [{ href: 'index.html', title: 'Start' }, { href: 'stock.html', title: 'Stock' }];
+});
 ```
 
 Style the page with the theme tokens, for example `body { background: var(--sb-bg); color: var(--sb-text); font-family: var(--sb-font); }`.
@@ -28,14 +41,19 @@ Style the page with the theme tokens, for example `body { background: var(--sb-b
 | Attribute or slot | Meaning |
 |---|---|
 | `heading` | The sandbox's title. Defaults to the page title. |
+| `page` | The current page's file name, for marking it in the navigation. Defaults to the address's; set by exports, which may be renamed. |
+| `exported`, `version`, `sandkit` | Set by `tools/export.mjs` on an exported page: the date (`2026-10-18`), the sandbox's version and Sandkit's. The header notes them, and other pages show as not included. |
 | `controls` | Which header buttons to show, in order: any of `fullscreen settings collapse`. Default: all three. |
 | `collapsed` | Start with the header hidden. A viewer's own choice, once made, is remembered and wins. |
-| children | Header content, such as the goal. Long content shows one line, with More / Less. |
+| children | Header content for this page, shown instead of the goal. Long content shows one line, with More / Less. |
 | `slot="actions"` | Buttons or links shown beside the header controls. |
 | `slot="settings"` | A section in the settings dialog. Titled by its `heading` attribute or property. |
 
 | Property or method | Meaning |
 |---|---|
+| `heading` | Get or set the title. |
+| `goal` | The sandbox's goal, shown as header content when the page has none of its own. |
+| `pages` | `[{ href, title }]`: the sandbox's pages, shown as navigation (when there are two or more), the current page marked with `aria-current="page"` and matched by file name. |
 | `collapsed` | Get or set whether the header is hidden. |
 | `toggleFullscreen()` | Enter or leave full screen. |
 | `openSettings()`, `closeSettings()` | Show or hide the settings dialog. |
@@ -62,12 +80,21 @@ The Theme section: built-in themes (Match system, Light, Dark), viewer-saved pre
 |---|---|---|
 | `sb-theme` | `{ choice, theme }` | Fired on `document` whenever the theme changes. Canvas drawings should re-read the tokens. |
 
+## sb-export
+
+The Export button, placed with `slot="actions"`. A page opened from the computer can't read its own files, so exporting is an agent's job, done with `tools/export.mjs` (copied into `lib/sandkit/tools/`). The button opens a dialog that explains what an export is, offers to leave out images, and shows the prompt asking the agent to export this page, with a Copy button. It hides in an exported page.
+
+| Member | Meaning |
+|---|---|
+| `prompt` | The prompt, as worded for the options chosen. |
+| `open()` | Open the dialog. |
+
 ## Theme tokens
 
 `--sb-bg`, `--sb-surface`, `--sb-surface-2`, `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-accent`, `--sb-accent-text`, `--sb-accent-soft`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-font`, `--sb-radius`. `--sb-page-width` is set only by the viewer's page width choice; themes don't define it.
 
 ## Notes
 
-- **Dependencies:** none. The two elements are packaged together; nothing else depends on them, and every component works without them.
+- **Dependencies:** none. The three elements are packaged together; nothing else depends on them, and every component works without them.
 - **Export:** safe for single-file export.
 - **Storage:** the viewer's theme, presets and header state are kept in browser storage, and can be exported and imported as a file from Settings.

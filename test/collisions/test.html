@@ -9,7 +9,7 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-scrubber', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings'];
+    window.TAGS = ['sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-scrubber', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
@@ -56,6 +56,7 @@
   <script src="../../components/sb-graph/sb-graph.js"></script>
   <script src="../../shell/sb-theme-settings.js"></script>
   <script src="../../shell/sb-shell.js"></script>
+  <script src="../../shell/sb-export.js"></script>
 </head>
 <body>
   <script>

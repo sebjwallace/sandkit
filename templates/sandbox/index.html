@@ -9,15 +9,18 @@
   <!-- Sandkit, copied into lib/ (see lib/sandkit/SOURCE.md). Theming loads first, so the page never flashes the wrong theme. -->
   <script src="lib/sandkit/shell/sb-theme-settings.js"></script>
   <script src="lib/sandkit/shell/sb-shell.js"></script>
-  <!-- Add a line for each component this sandbox uses, for example: -->
+  <script src="lib/sandkit/shell/sb-export.js"></script>
+  <!-- Add a line for each component this page uses, for example: -->
   <!-- <script src="lib/sandkit/components/sb-log/sb-log.js"></script> -->
 
+  <!-- The sandbox's name, goal and pages, then its model and any data the page needs, as scripts. -->
+  <script src="sandbox.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
-  <sb-shell heading="{{Sandbox name}}">
+  <sb-shell>
     <sb-theme-settings slot="settings"></sb-theme-settings>
-    <p><strong>Goal:</strong> {{What this sandbox helps people understand or discover, in one or two sentences.}}</p>
+    <sb-export slot="actions"></sb-export>
   </sb-shell>
 
   <main>

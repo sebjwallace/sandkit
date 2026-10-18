@@ -4,6 +4,10 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.27 · 2026-10-18
+- Pages: added the pages practice, for sandboxes that grow or need sharing in parts, with one model shared by every page, `sandbox.js` listing the name, goal and pages once, and data loaded as scripts. Added `tools/export.mjs`, which exports one page as a single HTML file that still runs, listing every file it put in; the shell's new Export button (shell 0.1.3) gives people the prompt asking their agent to run it.
+- The template has `sandbox.js`, and its `index.html` includes it and the Export button rather than writing out the goal; `templates/page.html` starts new pages. `tools/setup.mjs` copies the page template and the export tool into sandboxes, and adds tags only for the components named, with `--page` for a page other than `index.html`. The building practice links the pages practice.
+
 ## 0.2.26 · 2026-10-18
 - Forty-one components: added `sb-ontology`, kinds of things and how they relate, shown a few at a time with what each kind inherits and the model's problems marked. Two new principles: readability over completeness, and components render while models compute, any exception approved by the author first. The building practice suggests an ontology as a model's data when the subject is kinds and relations; the locating practice lists `sb-ontology`.
 

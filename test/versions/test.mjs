@@ -40,9 +40,9 @@ for (const name of readdirSync(join(ROOT, 'components')).filter((name) => !name.
   });
 }
 
-test('shell: both scripts state its changelog\'s latest version', () => {
+test('shell: every script states its changelog\'s latest version', () => {
   const version = checkChangelog('shell/CHANGELOG.md');
-  for (const script of ['shell/sb-shell.js', 'shell/sb-theme-settings.js']) {
+  for (const script of ['shell/sb-shell.js', 'shell/sb-theme-settings.js', 'shell/sb-export.js']) {
     assert(headerVersion(script) === version, `${script} says ${headerVersion(script)}, changelog says ${version}`);
   }
 });

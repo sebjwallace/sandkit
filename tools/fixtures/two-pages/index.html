@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Setting a price · Lemonade stand</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../../shell/sb-theme-settings.js"></script>
+  <script src="../../../shell/sb-shell.js"></script>
+  <script src="../../../shell/sb-export.js"></script>
+  <script src="../../../components/sb-parameters/sb-parameters.js"></script>
+  <script src="../../../components/sb-bars/sb-bars.js"></script>
+  <script src="sandbox.js"></script>
+  <script src="data/costs.js"></script>
+  <script src="model.js"></script>
+</head>
+<body>
+  <sb-shell>
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <sb-export slot="actions"></sb-export>
+  </sb-shell>
+
+  <main>
+    <section class="panel">
+      <h2>Setting a price</h2>
+      <p>Raise the price and each cup earns more, but fewer people buy one. Try a few prices and watch the profit.</p>
+      <sb-parameters id="price"></sb-parameters>
+    </section>
+    <section class="panel">
+      <h2>One day's takings</h2>
+      <sb-bars id="day" better="higher"></sb-bars>
+    </section>
+  </main>
+
+  <script>
+    const model = createModel(window.lemonadeCosts);
+    const $ = (id) => document.getElementById(id);
+
+    function render(price) {
+      const day = model.day(price);
+      $('day').bars = [
+        { id: 'revenue', label: `Takings (${day.cups} cups)`, value: day.revenue },
+        { id: 'cost', label: 'Cost of making them', value: day.cost, tone: 'muted' },
+        { id: 'profit', label: 'Profit', value: day.profit, tone: day.profit < 0 ? 'bad' : 'good' }
+      ];
+    }
+
+    // ---- Start ----
+
+    $('price').definitions = [{ key: 'price', label: 'Price of a cup', min: 10, max: 90, value: 40, unit: 'p' }];
+    $('price').addEventListener('sb-change', (e) => render(e.detail.value));
+    render(40);
+  </script>
+</body>
+</html>

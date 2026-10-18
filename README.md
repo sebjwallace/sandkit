@@ -76,7 +76,7 @@ Each round improves two things: how much of the subject the sandbox **covers**, 
 
 ## Sharing a sandbox
 
-A sandbox is a folder of plain files that opens in any web browser, with nothing to install. It can be zipped and sent, or opened in a meeting. Packaging a whole sandbox into a single file, ready to send in a message or attach to an email, is coming to Sandkit.
+A sandbox is a folder of plain files that opens in any web browser, with nothing to install. It can be zipped and sent, or opened in a meeting. Any page of it can also be exported as a single HTML file that still runs, ready to send in a message, attach to an email or put on a website: press Export on the page, and ask the assistant with the prompt it gives you. Only that page goes in, so a large sandbox can be shared a part at a time.
 
 This is where sandboxes prove most valuable. Put several people in front of the same working model and let them experiment together. Disagreements that would have stayed vague in conversation become concrete and testable. The model is challenged and corrected, everyone sees the correction, and understanding moves forward together. Each person's picture of the subject shapes the model, and the model in turn reshapes their picture, until the people and the model are in agreement.
 

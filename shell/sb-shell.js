@@ -1,4 +1,4 @@
-// Sandkit sb-shell 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-shell 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The sandbox shell: the header and the settings dialog around a sandbox.
 //
 //   <sb-shell heading="My sandbox" controls="fullscreen settings collapse">
@@ -6,6 +6,12 @@
 //     <button slot="actions">Share</button>                     beside the header controls
 //     <sb-theme-settings slot="settings"></sb-theme-settings>   a section in settings
 //   </sb-shell>
+//
+//   shell.goal = 'What the sandbox is for.';                   shown when the page gives no content
+//   shell.pages = [{ href: 'index.html', title: 'Start' }];    navigation, the current page marked
+//
+// A sandbox sets its goal and pages once, in its own sandbox.js. An exported page's shell carries
+// `exported`, `version`, `sandkit` and `page`, and says so; its other pages show as not included.
 //
 // Settings sections: any element can be a section, and its `heading` titles it. A section that
 // also has `settingsKey`, `exportSettings()` and `importSettings(data)` is included when
@@ -39,6 +45,14 @@
     .sb-shell__content > * { margin: 0; }
     .sb-shell__content:not([data-expanded]) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
     .sb-shell__more { padding: 0; border: 0; background: none; font: inherit; font-size: 13px; color: var(--sb-accent, #2563eb); cursor: pointer; }
+    .sb-shell__pages { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: 14px; }
+    .sb-shell__pages[hidden] { display: none; }
+    .sb-shell__page { color: var(--sb-accent, #2563eb); text-decoration: none; }
+    .sb-shell__page:hover { text-decoration: underline; }
+    .sb-shell__page[aria-current="page"] { color: var(--sb-text, #1f2933); font-weight: 600; text-decoration: underline; text-decoration-color: var(--sb-accent, #2563eb); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+    .sb-shell__page--excluded { color: var(--sb-muted, #616e7c); text-decoration: line-through; cursor: help; }
+    .sb-shell__exported { margin: 6px 0 0; font-size: 12px; color: var(--sb-muted, #616e7c); }
+    .sb-shell__exported[hidden] { display: none; }
     .sb-shell__actions, .sb-shell__controls { flex: none; display: flex; align-items: center; gap: 6px; }
     .sb-shell__actions:empty { display: none; }
 
@@ -99,6 +113,11 @@
     URL.revokeObjectURL(url);
   }
 
+  // A page's file name, so links match however they're written: 'pages/stock.html?x' is 'stock.html'.
+  const fileName = (href) => decodeURIComponent(href.split(/[?#]/)[0].split('/').pop()) || 'index.html';
+
+  const formatDate = (isoDate) => new Date(`${isoDate}T00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
   const hasContent = (nodes) => nodes.some((node) => node.nodeType === Node.ELEMENT_NODE || node.textContent.trim());
 
   // ---- The element ----
@@ -132,6 +151,27 @@
     }
 
     // ---- Public API ----
+
+    get heading() { return this.getAttribute('heading') || document.title; }
+    set heading(text) {
+      this.setAttribute('heading', text);
+      const element = this.querySelector('.sb-shell__heading');
+      if (element) element.textContent = this.heading;
+    }
+
+    // The sandbox's goal, shown as header content when the page gives none of its own.
+    get goal() { return this._goal ?? ''; }
+    set goal(text) {
+      this._goal = text;
+      this._showGoal();
+    }
+
+    // The sandbox's pages, [{ href, title }], shown as navigation with the current page marked.
+    get pages() { return this._pages ?? []; }
+    set pages(list) {
+      this._pages = list || [];
+      this._showPages();
+    }
 
     // Collapsing hides the header behind a small button that brings it back. Remembered per viewer.
     get collapsed() { return this.hasAttribute('collapsed'); }
@@ -176,7 +216,9 @@
       this.innerHTML = `
         <header class="sb-shell__bar">
           <div class="sb-shell__titles">
-            <h1 class="sb-shell__heading">${esc(this.getAttribute('heading') || document.title)}</h1>
+            <h1 class="sb-shell__heading">${esc(this.heading)}</h1>
+            <nav class="sb-shell__pages" aria-label="Pages" hidden></nav>
+            <p class="sb-shell__exported" hidden></p>
           </div>
           <div class="sb-shell__actions"></div>
           <div class="sb-shell__controls">${this._controlButtons()}</div>
@@ -203,7 +245,11 @@
       this._sections = [];
       this._fileInput = this.querySelector('input[type=file]');
       this.querySelector('.sb-shell__actions').append(...actions);
-      if (content.length) this._addContent(content);
+      this._hasOwnContent = content.length > 0;
+      if (this._hasOwnContent) this._addContent(content);
+      this._showGoal();
+      this._showPages();
+      this._showExported();
       sections.forEach((section) => this._addSection(section));
 
       this.addEventListener('click', (e) => this._onClick(e));
@@ -244,9 +290,45 @@
       const more = Object.assign(document.createElement('button'), { type: 'button', className: 'sb-shell__more', hidden: true });
       more.dataset.action = 'toggle-content';
       content.append(...nodes);
-      this.querySelector('.sb-shell__titles').append(content, more);
+      this.querySelector('.sb-shell__heading').after(content, more);
       this._content = { element: content, more };
       new ResizeObserver(() => this._showContentState()).observe(content);
+    }
+
+    // The goal fills the header content only when the page has none of its own.
+    _showGoal() {
+      if (!this._built || this._hasOwnContent || !this.goal) return;
+      if (!this._content) this._addContent([document.createElement('p')]);
+      this._content.element.firstChild.innerHTML = `<strong>Goal:</strong> ${esc(this.goal)}`;
+    }
+
+    // ---- Pages ----
+
+    // The current page is named by the `page` attribute, or else by the address.
+    get _currentPage() { return this.getAttribute('page') || fileName(location.pathname); }
+
+    // A single page needs no navigation. In an exported file only the current page is included,
+    // so the others aren't links.
+    _showPages() {
+      const nav = this.querySelector('.sb-shell__pages');
+      if (!nav) return;
+      const exported = this.hasAttribute('exported');
+      nav.hidden = this.pages.length < 2;
+      nav.innerHTML = this.pages.map(({ href, title }) => {
+        if (fileName(href) === this._currentPage) return `<span class="sb-shell__page" aria-current="page">${esc(title)}</span>`;
+        if (exported) return `<span class="sb-shell__page sb-shell__page--excluded" title="Not included in this export">${esc(title)}</span>`;
+        return `<a class="sb-shell__page" href="${esc(href)}">${esc(title)}</a>`;
+      }).join('');
+    }
+
+    // "Exported 18 Oct 2026 · version 0.4.0 · Sandkit 0.2.27", from the attributes the export tool sets.
+    _showExported() {
+      const note = this.querySelector('.sb-shell__exported');
+      const exported = this.getAttribute('exported');
+      const version = this.getAttribute('version');
+      const sandkit = this.getAttribute('sandkit');
+      note.hidden = !exported;
+      if (exported) note.textContent = [`Exported ${formatDate(exported)}`, version && `version ${version}`, sandkit && `Sandkit ${sandkit}`].filter(Boolean).join(' · ');
     }
 
     _toggleContent() {

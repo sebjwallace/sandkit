@@ -1,0 +1,6 @@
+body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+main { max-width: var(--sb-page-width, 860px); margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+.panel { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+.panel h2 { margin: 0 0 6px; font-size: 16px; }
+.panel p { margin: 0 0 10px; }
+.lemon { float: right; width: 72px; height: 72px; margin-left: 12px; }

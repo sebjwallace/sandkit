@@ -2,11 +2,13 @@
 // Sets up a sandbox with Sandkit's files, or updates them. No dependencies: just Node.
 //
 //   node tools/setup.mjs path/to/sandbox sb-id sb-log
+//   node tools/setup.mjs path/to/sandbox sb-log --page stock.html    tags go on another page
 //
 // - A folder without an index.html starts from the template. Existing files are never overwritten.
-// - Copies the shell, the catalog, the practices, and each named component (plus any the sandbox
-//   already has) into lib/sandkit/, keeping Sandkit's paths, with their changelogs.
-// - Adds a script tag to index.html for each component that doesn't have one yet.
+// - Copies the shell, the catalog, the practices, the page template, the export tool, and each named
+//   component (plus any the sandbox already has) into lib/sandkit/, keeping Sandkit's paths, with
+//   their changelogs.
+// - Adds a script tag to index.html, or the page named, for each component named that doesn't have one yet.
 // - Writes lib/sandkit/SOURCE.md, recording every version.
 // - When updating, reports what changed since the installed versions, breaking changes first.
 //
@@ -19,15 +21,16 @@ import { fileURLToPath } from 'node:url';
 
 const SANDKIT = resolve(fileURLToPath(import.meta.url), '../..');
 const REPOSITORY = 'https://github.com/sebjwallace/sandkit';
-const ALWAYS_COPIED = ['CATALOG.md', 'CHANGELOG.md', 'shell/sb-theme-settings.js', 'shell/sb-shell.js', 'shell/manifest.md', 'shell/CHANGELOG.md'];
+const ALWAYS_COPIED = ['CATALOG.md', 'CHANGELOG.md', 'shell/sb-theme-settings.js', 'shell/sb-shell.js', 'shell/sb-export.js', 'shell/manifest.md', 'shell/CHANGELOG.md', 'templates/page.html', 'tools/export.mjs'];
 
-function setup(folder, requested) {
+function setup(folder, requested, page = 'index.html') {
   const sandbox = resolve(folder);
   const lib = join(sandbox, 'lib', 'sandkit');
   requested.forEach(checkAvailable);
 
   const isNew = !existsSync(join(sandbox, 'index.html'));
   if (isNew) cpSync(join(SANDKIT, 'templates', 'sandbox'), sandbox, { recursive: true, force: false });
+  if (!existsSync(join(sandbox, page))) fail(`${folder} has no page called ${page}. Start one from lib/sandkit/templates/page.html.`);
 
   const components = [...new Set([...componentsIn(lib), ...requested])];
   const packages = ['shell', ...components].map(packageOf);
@@ -38,14 +41,14 @@ function setup(folder, requested) {
     mkdirSync(dirname(join(lib, file)), { recursive: true });
     cpSync(join(SANDKIT, file), join(lib, file));
   }
-  const tagged = addScriptTags(join(sandbox, 'index.html'), components);
+  const tagged = addScriptTags(join(sandbox, page), requested);
   const versions = packages.map((p) => ({ ...p, from: installed[p.name], to: versionIn(join(SANDKIT, p.script)) }));
   writeFileSync(join(lib, 'SOURCE.md'), sourceRecord(files, versions));
 
   console.log(isNew ? `Created ${folder} from the template.` : `Updated ${folder}.`);
   console.log(`Copied ${files.length} files into lib/sandkit/${components.length ? `, with ${components.join(', ')}` : ''}.`);
-  if (tagged.added.length) console.log(`Added script tags for ${tagged.added.join(', ')} to index.html.`);
-  if (tagged.missing.length) console.log(`Add script tags for ${tagged.missing.join(', ')} to index.html yourself: no Sandkit script tag was found to place them after.`);
+  if (tagged.added.length) console.log(`Added script tags for ${tagged.added.join(', ')} to ${page}.`);
+  if (tagged.missing.length) console.log(`Add script tags for ${tagged.missing.join(', ')} to ${page} yourself: no Sandkit script tag was found to place them after.`);
   reportChanges(versions.filter((v) => v.from && v.from !== v.to));
 }
 
@@ -173,6 +176,9 @@ function fail(message) {
   process.exit(1);
 }
 
-const [folder, ...requested] = process.argv.slice(2);
-if (!folder) fail('Usage: node tools/setup.mjs <sandbox-folder> [component ...]');
-setup(folder, requested);
+const args = process.argv.slice(2);
+const pageAt = args.indexOf('--page');
+const page = pageAt >= 0 ? args.splice(pageAt, 2)[1] : 'index.html';
+const [folder, ...requested] = args;
+if (!folder || !page) fail('Usage: node tools/setup.mjs <sandbox-folder> [component ...] [--page <page.html>]');
+setup(folder, requested, page);

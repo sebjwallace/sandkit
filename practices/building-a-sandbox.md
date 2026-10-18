@@ -47,7 +47,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 
 1. **Copy the template.** Copy the contents of `templates/sandbox/` into the sandbox folder.
 2. **Copy what the sandbox uses into `lib/sandkit/`, keeping Sandkit's own paths.** Links between manifests and practices then still work.
-   - Always: `CATALOG.md`, `CHANGELOG.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/manifest.md`, `shell/CHANGELOG.md`.
+   - Always: `CATALOG.md`, `CHANGELOG.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`.
    - For each component used: `components/<name>/<name>.js`, `components/<name>/manifest.md` and `components/<name>/CHANGELOG.md`.
    - Every practice the sandbox follows, from `practices/`.
    - Not tests or demos. They stay in Sandkit.
@@ -63,17 +63,20 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 
    ## Files
    - CATALOG.md, CHANGELOG.md, practices/building-a-sandbox.md, practices/journal.md, practices/identifiers.md
-   - shell/sb-theme-settings.js, shell/sb-shell.js, shell/manifest.md, shell/CHANGELOG.md
+   - shell/sb-theme-settings.js, shell/sb-shell.js, shell/sb-export.js, shell/manifest.md, shell/CHANGELOG.md
+   - templates/page.html, tools/export.mjs
    - components/sb-log/sb-log.js, components/sb-log/manifest.md, components/sb-log/CHANGELOG.md
    ```
-4. **Add a script tag** to `index.html` for each component, after the shell's.
+4. **Add a script tag** for each component to the page that uses it, after the shell's.
 
 ```
 my-sandbox/
-  index.html  model.js  style.css  AGENTS.md  JOURNAL.md
+  index.html  sandbox.js  model.js  style.css  AGENTS.md  JOURNAL.md
   lib/sandkit/
     SOURCE.md  CATALOG.md  CHANGELOG.md
-    shell/        sb-theme-settings.js  sb-shell.js  manifest.md  CHANGELOG.md
+    shell/        sb-theme-settings.js  sb-shell.js  sb-export.js  manifest.md  CHANGELOG.md
+    templates/    page.html
+    tools/        export.mjs
     components/   sb-log/  sb-log.js  manifest.md  CHANGELOG.md
     practices/    building-a-sandbox.md  journal.md  identifiers.md
 ```
@@ -84,7 +87,7 @@ Components from other libraries work the same way: copy them into `lib/<library-
 
 ## 3. Write the goal
 
-Put the goal in the header of `index.html`, where everyone sees it, people and agents alike. One or two sentences: what this sandbox helps people understand or discover.
+Put the goal in `sandbox.js`, which shows it in the header of every page, where everyone sees it, people and agents alike. One or two sentences: what this sandbox helps people understand or discover.
 
 ## 4. Build the model
 
@@ -177,6 +180,10 @@ Then wait for the person to try it and choose.
 When the person responds, record the direction they chose, and the chapter plan as it now stands, in **Where it stands** in the sandbox's `AGENTS.md`, so the next session, person or agent, can pick it up. Then build that one iteration, to the bar above, record it in the journal, and hand over again.
 
 That loop, explore, question, correct, extend, is the point of a sandbox.
+
+## Pages and sharing
+
+A sandbox starts as one page, and many stay that way. When it grows heavy, or a part is worth sharing on its own, split it into pages that share one model, following the [pages practice](pages.md). Any page can be exported as one HTML file that runs anywhere: people ask through the page's Export button, which gives them a prompt for you, and you run `node lib/sandkit/tools/export.mjs <page>.html`.
 
 ## Updating Sandkit in a sandbox
 
