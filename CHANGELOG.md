@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.9 · 2026-10-18
+- The locating practice says when to skip `goTo`: when you know which view you mean, call its `reveal`. Words that go somewhere keep their target in an attribute of their own, not `data-ref`.
+
 ## 0.2.8 · 2026-10-18
 - Added a third example sandbox, checkout architecture: chapter 1, the parts, with names in the prose that go to their part. `sb-c4` 0.1.1 marks its boxes and lines with `data-ref`, and `reveal` says whether it holds the element.
 

@@ -6,7 +6,7 @@ Use components through their manifests, never their source. Codes are issued in 
 
 ## Where it stands
 
-- **Version:** 0.1.0
+- **Version:** 0.1.1
 - **Chapters built:** 1 · The parts: the architecture as a C4 diagram to walk into, an outline of every part, and what crosses a selected part's edge.
 - **Chapters planned:**
   2. Placing an order: one checkout stepped through as a sequence, each message lighting its line in the diagram.
@@ -15,5 +15,4 @@ Use components through their manifests, never their source. Codes are issued in 
   5. When payment fails: the unhappy path, and the order's life as a statechart.
 - **Chosen direction:** none yet; waiting on the handover.
 - **Open questions:**
-  - Going to a part the diagram hasn't drawn (inside a box not entered) lands on the outline; the diagram only marks the box holding it. Should `goTo` ask components with `reveal` when a ref isn't on the page?
-  - A name in the prose marked with `data-ref` would be the first place found, so `goTo` would go to the word just clicked. The prose uses `data-go` instead. Should the practice say so, or `goTo` skip the place it came from?
+  - Going away leaves no way back. Harmless on one page; worth answering once a jump switches chapters, or when cross-references arrive.

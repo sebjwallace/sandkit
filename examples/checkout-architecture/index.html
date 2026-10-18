@@ -23,7 +23,7 @@
       <h2>Chapter 1 · The parts</h2>
       <p>To a shopper, checking out is one button. Behind it, several parts each do one job. The diagram draws them as architects do, in the C4 style: at the top, people and whole systems; inside the shop, the apps and the database it’s made of; inside the <button type="button" class="go" data-go="CON-2">Shop API</button>, the components that do the work. Each line is one part calling another, and a call made deep inside rolls up to the box you can see.</p>
       <p>The shopper only ever talks to the <button type="button" class="go" data-go="CON-1">Storefront</button>. The card is charged by the <button type="button" class="go" data-go="SYS-2">Payment provider</button>, outside the shop altogether, and only one part of the shop ever talks to it: <button type="button" class="go" data-go="CMP-3">Payments</button>.</p>
-      <p class="try"><strong>Try:</strong> go into the shop, then into the API, and find who places orders and who charges the card. Select any part, in the diagram or the outline, to see everything that crosses its edge. Click a name above to go to it; point at a code to see where it is.</p>
+      <p class="try"><strong>Try:</strong> go into the shop, then into the API, and find who places orders and who charges the card. Select any part, in the diagram or the outline, to see everything that crosses its edge. Click a name above to see it in the diagram; point at a code to see where it is.</p>
 
       <div class="stage">
         <sb-c4 id="diagram" root-label="Overview" class="panel"></sb-c4>
@@ -84,31 +84,18 @@
 
     document.addEventListener('sb-resolve', (e) => { e.detail.definition = checkout.define(e.detail.code); });
 
-    // ---- Going to a part (practices/locating.md) ----
+    // ---- Names in the prose ----
+    // Pointing previews; clicking goes to the part in the diagram, walking in if it has to. The
+    // prose means the diagram, so it asks the diagram directly (practices/locating.md).
 
-    const placesOf = (ref) => [...document.querySelectorAll(`[data-ref="${CSS.escape(ref)}"]`)];
-
-    function goTo(ref, index = 0) {
-      const place = placesOf(ref)[index];
-      if (!place) return false;
-      revealAround(place, ref);
-      place.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      announce(ref);
-      setTimeout(() => announce(null), 1500);
-      return true;
+    function goToInDiagram(code) {
+      diagram.reveal(code);
+      diagram.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
 
-    // Outermost first: a tab must open before the tree inside it can expand.
-    function revealAround(place, ref) {
-      const hosts = [];
-      for (let el = place.parentElement; el; el = el.parentElement) if (typeof el.reveal === 'function') hosts.unshift(el);
-      hosts.forEach((host) => host.reveal(ref, place));
-    }
-
-    // Names in the prose: pointing previews, clicking goes.
     for (const word of document.querySelectorAll('.go')) {
       const code = word.dataset.go;
-      word.addEventListener('click', () => goTo(code));
+      word.addEventListener('click', () => goToInDiagram(code));
       word.addEventListener('pointerenter', () => announce(code));
       word.addEventListener('pointerleave', () => announce(null));
       word.addEventListener('focus', () => announce(code));

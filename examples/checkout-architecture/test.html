@@ -37,7 +37,7 @@
       assertEqual(checkout.define('XYZ-1'), null);
     });
 
-    test('the sandbox page starts, and a name in the prose goes to its part', async () => {
+    test('the sandbox page starts, and a name in the prose goes to its part in the diagram', async () => {
       const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
       await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
       const page = frame.contentDocument;
@@ -46,11 +46,11 @@
       assertEqual(outline.querySelectorAll('.sb-tree__item').length, 9, 'every part in the outline');
       assert(page.getElementById('details').textContent.includes('Payments charges the card through Payment provider'), 'the shop\'s details');
 
-      const payments = outline.querySelector('[data-ref="CMP-3"]');
-      assert(payments.parentElement.closest('[hidden]'), 'folded away to begin with');
+      const diagram = page.getElementById('diagram');
+      assertEqual(diagram.querySelector('[data-ref="CMP-3"]'), null, 'inside the API, not drawn to begin with');
       page.querySelector('.go[data-go="CMP-3"]').click();
-      assert(!payments.parentElement.closest('[hidden]'), 'opened up by going to it');
-      assert(payments.classList.contains('sb-tree__item--highlighted'), 'and lit up');
+      assertEqual(diagram.path, ['SYS-1', 'CON-2'], 'walked into the API');
+      assert(diagram.querySelector('[data-ref="CMP-3"]').classList.contains('sb-c4__element--highlighted'), 'and lit up');
     });
   </script>
 </body>
