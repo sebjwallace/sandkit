@@ -2,6 +2,12 @@
 
 What changed in this sandbox, and why: one entry per change, newest first, only ever added to. Each entry is a version. See the [journal practice](../../practices/journal.md).
 
+## 0.2.1 · 2026-10-18 · Fixed
+
+**Changed:** The page takes the whole window; paragraphs keep their readable width.
+**Why:** Capped at 1200px, the walkthrough squeezed both diagrams, hiding much of each.
+**Open:** Whether viewers should choose the page width themselves, in the shell's settings.
+
 ## 0.2.0 · 2026-10-18 · Added
 
 **Changed:** Chapter 2, placing an order: one checkout as thirteen messages (`MSG-1` to `MSG-13`), each travelling along a relationship, told as a walkthrough with the sequence and the architecture side by side, the architecture following each message to the level where it can be seen. Chapters are now tabs.
