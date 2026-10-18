@@ -49,6 +49,62 @@ const PLACE_ORDER = [
   { id: 'MSG-13', from: 'CON-1', to: 'PER-1', along: 'REL-1', kind: 'reply', label: 'Thank you!', says: 'The shopper sees the thank-you page.' }
 ];
 
+// What the messages that cross a network carry: the body, the fields that matter (as paths into
+// it), a note on each, and what to notice. Money is in pence throughout.
+const PAYLOADS = {
+  'MSG-2': {
+    body: {
+      basket: { items: [{ sku: 'MUG-BLUE', name: 'Blue mug', quantity: 2, unit_price: 1225 }], currency: 'GBP' },
+      delivery: { name: 'Sam Lee', postcode: 'BS1 4DJ' },
+      payment_method: 'pm_4242'
+    },
+    spotlight: ['basket.items[0].unit_price', 'payment_method'],
+    notes: {
+      'basket.items[0].unit_price': 'Money travels in pence: 1225 is £12.25. Whole numbers never round.',
+      payment_method: 'A reference to the shopper’s card, held by the payment provider. The card number itself never reaches the shop.'
+    },
+    about: 'The basket, where to send it, and which card to charge. There’s no order number yet: Orders hasn’t made the order.'
+  },
+  'MSG-8': {
+    body: {
+      amount: 2450,
+      currency: 'GBP',
+      payment_method: 'pm_4242',
+      description: 'Corner Shop order 1042',
+      metadata: { order_number: 1042 },
+      idempotency_key: 'order-1042-charge-1'
+    },
+    spotlight: ['amount', 'metadata.order_number', 'idempotency_key'],
+    notes: {
+      amount: '2 × 1225 = 2450. Orders worked out the total itself, rather than trusting one sent from the browser.',
+      'metadata.order_number': 'Made by Orders when it saved the order, and sent along so the provider’s records can be matched to the shop’s.',
+      idempotency_key: 'If this request is sent twice, say after a timeout, the provider charges once. Chapter 5 comes back to this.'
+    },
+    about: 'The only message that leaves the shop. It names an amount, a card and the order, and carries a key that makes sending it twice safe.'
+  },
+  'MSG-9': {
+    body: { id: 'ch_51Hq8', status: 'succeeded', amount: 2450, currency: 'GBP', metadata: { order_number: 1042 } },
+    spotlight: ['id', 'status'],
+    notes: {
+      id: 'The provider’s name for this charge. Orders saves it with the order, so a refund can find it later.',
+      status: '“succeeded” is the only status that means the money was taken.'
+    },
+    about: 'The provider answers with its own name for the charge, and whether it went through.'
+  },
+  'MSG-12': {
+    body: {
+      order: { number: 1042, status: 'paid', total: 2450, items: [{ sku: 'MUG-BLUE', quantity: 2 }] },
+      receipt: '/orders/1042/receipt'
+    },
+    spotlight: ['order.number', 'order.status'],
+    notes: {
+      'order.number': 'The number made inside Orders, now shown to the shopper.',
+      'order.status': 'Paid, because Orders marked it so in the database before replying.'
+    },
+    about: 'The Storefront learns the order went through, with the number to show on the thank-you page.'
+  }
+};
+
 const KIND_NAMES ={ person: 'Person', system: 'Software system', container: 'Container', component: 'Component', database: 'Database' };
 
 // Answers questions about an architecture, `{ elements, relationships, messages }`: what a code is,
@@ -107,4 +163,4 @@ function createArchitecture(spec) {
 const checkout = createArchitecture({ ...CHECKOUT, messages: PLACE_ORDER });
 
 // Lets Node load the model too, for model tests once the sandbox needs them.
-if (typeof module !== 'undefined') module.exports = { CHECKOUT, PLACE_ORDER, createArchitecture, checkout };
+if (typeof module !== 'undefined') module.exports = { CHECKOUT, PLACE_ORDER, PAYLOADS, createArchitecture, checkout };

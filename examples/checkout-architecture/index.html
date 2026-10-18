@@ -13,6 +13,7 @@
   <script src="../../components/sb-tabs/sb-tabs.js"></script>
   <script src="../../components/sb-sequence/sb-sequence.js"></script>
   <script src="../../components/sb-walkthrough/sb-walkthrough.js"></script>
+  <script src="../../components/sb-json/sb-json.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
@@ -46,6 +47,17 @@
       <sb-walkthrough id="order-walk" narration="bottom">
         <sb-sequence slot="conversation" id="conversation" numbered></sb-sequence>
         <sb-c4 slot="architecture" id="flow-diagram" root-label="Overview"></sb-c4>
+      </sb-walkthrough>
+    </section>
+
+    <section class="chapter" heading="3 · What’s sent">
+      <h2>Chapter 3 · What’s sent</h2>
+      <p>Each arrow in chapter 2 carries something. Inside the shop’s API, parts call each other directly; the four messages that cross a network carry their data as JSON. Follow one order through them: what the Storefront knows, what Orders adds, what the provider sends back, and what the shopper is finally told.</p>
+      <p class="try"><strong>Try:</strong> step through the four messages. Where does the order number first appear, and where does it go? Click any line of the JSON to see its path; the ringed lines have a note.</p>
+
+      <sb-walkthrough id="payload-walk" narration="bottom">
+        <sb-sequence slot="conversation" id="payload-conversation" numbered></sb-sequence>
+        <sb-json slot="payload" id="payload"></sb-json>
       </sb-walkthrough>
     </section>
     </sb-tabs>
@@ -163,6 +175,33 @@
       bringIntoView(flowDiagram, m.to);
     }
 
+    // ---- Chapter 3: what's sent ----
+    // One step per message that carries data. The fields named in each step point into the JSON.
+
+    const payloadWalk = $('payload-walk'), payloadConversation = $('payload-conversation'), payload = $('payload');
+    const carrying = PLACE_ORDER.filter((m) => PAYLOADS[m.id]);
+
+    function payloadStepHtml(m) {
+      const p = PAYLOADS[m.id];
+      const field = (path) => `<code data-ref="${esc(path)}">${esc(path.split('.').at(-1))}</code>`;
+      return `
+        <section data-step data-message="${esc(m.id)}">
+          <h3>${esc(m.label)} <sb-id code="${esc(m.id)}"></sb-id> <span class="where">from ${esc(nameOf(m.from))} to ${esc(nameOf(m.to))}</span></h3>
+          <p>${esc(p.about)}</p>
+          <p class="where">Look at: ${p.spotlight.map(field).join(', ')}</p>
+        </section>`;
+    }
+
+    function showPayload() {
+      const m = messageOf(payloadWalk.current), p = PAYLOADS[m.id];
+      payloadConversation.current = m.id;
+      payload.value = p.body;
+      payload.spotlight = p.spotlight;
+      payload.notes = p.notes;
+      payload.highlight = [];
+      bringIntoView(payloadConversation, m.id);
+    }
+
     // ---- Viewers ----
 
     outline.addEventListener('sb-select', (e) => {
@@ -176,6 +215,9 @@
 
     walk.addEventListener('sb-step', showStep);
     walk.addEventListener('sb-point', (e) => announce(e.detail.ref));
+
+    payloadWalk.addEventListener('sb-step', showPayload);
+    payloadWalk.addEventListener('sb-point', (e) => { payload.highlight = e.detail.ref ? [e.detail.ref] : []; });
 
     // Clicking a message goes to its step.
     conversation.addEventListener('sb-select', (e) => {
@@ -196,6 +238,11 @@
     conversation.messages = PLACE_ORDER;
     walk.insertAdjacentHTML('beforeend', PLACE_ORDER.map(stepHtml).join(''));
     showStep();
+
+    payloadConversation.participants = conversation.participants;
+    payloadConversation.messages = PLACE_ORDER;
+    payloadWalk.insertAdjacentHTML('beforeend', carrying.map(payloadStepHtml).join(''));
+    showPayload();
   </script>
 </body>
 </html>

@@ -2,6 +2,12 @@
 
 What changed in this sandbox, and why: one entry per change, newest first, only ever added to. Each entry is a version. See the [journal practice](../../practices/journal.md).
 
+## 0.3.0 · 2026-10-18 · Added
+
+**Changed:** Chapter 3, what's sent: the payloads of the four messages that cross a network (`MSG-2`, `MSG-8`, `MSG-9`, `MSG-12`), in the model with the fields that matter and a note on each, shown as a walkthrough of the sequence beside the JSON.
+**Why:** The conversation says who talks to whom; the payloads show what one order looks like as it passes through, and why some fields are there.
+**Open:** The saved card behind `payment_method` isn't modelled.
+
 ## 0.2.1 · 2026-10-18 · Fixed
 
 **Changed:** The page takes the whole window; paragraphs keep their readable width.

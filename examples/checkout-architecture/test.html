@@ -55,6 +55,25 @@
       assertEqual(checkout.viewOf(byId('MSG-8')), ['SYS-1', 'CON-2'], 'Payments to the provider: inside the API');
     });
 
+    // Follows a path such as basket.items[0].unit_price into a value; undefined if it leads nowhere.
+    const at = (value, path) => path.split(/\.|(?=\[)/).reduce((v, key) => v?.[key.replace(/^\[(\d+)\]$/, '$1')], value);
+
+    test('every field a payload spotlights or notes is in its body', () => {
+      for (const [id, p] of Object.entries(PAYLOADS)) {
+        for (const path of [...p.spotlight, ...Object.keys(p.notes)]) assert(at(p.body, path) !== undefined, `${id}: ${path}`);
+      }
+    });
+
+    test('the amounts agree: the basket, the charge, the provider and the order', () => {
+      const item = PAYLOADS['MSG-2'].body.basket.items[0];
+      const total = item.quantity * item.unit_price;
+      assertEqual([PAYLOADS['MSG-8'].body.amount, PAYLOADS['MSG-9'].body.amount, PAYLOADS['MSG-12'].body.order.total], [total, total, total]);
+    });
+
+    test('payloads belong to messages in the conversation', () => {
+      for (const id of Object.keys(PAYLOADS)) assert(PLACE_ORDER.some((m) => m.id === id), id);
+    });
+
     test('the sandbox page starts, and a name in the prose goes to its part in the diagram', async () => {
       const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
       await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
@@ -89,6 +108,19 @@
 
       walk.next();
       assertEqual([conversation.current, flow.path], ['MSG-9', ['SYS-1', 'CON-2']], 'Next moves the story on');
+    });
+
+    test('chapter 3 shows what each message carries, its fields spotlit', async () => {
+      const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
+      await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      const page = frame.contentDocument;
+      const walk = page.getElementById('payload-walk'), json = page.getElementById('payload');
+      assertEqual(walk.steps.length, 4, 'one step per message that carries data');
+      assertEqual([page.getElementById('payload-conversation').current, json.spotlight], ['MSG-2', ['basket.items[0].unit_price', 'payment_method']]);
+      walk.next();
+      assertEqual(page.getElementById('payload-conversation').current, 'MSG-8');
+      assertEqual(json.value.amount, 2450);
+      assert(json.querySelector('.sb-json__line--spotlit'), 'the fields that matter are marked');
     });
   </script>
 </body>

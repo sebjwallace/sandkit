@@ -28,6 +28,10 @@ main { padding: 16px 24px 40px; }
 .side { display: grid; gap: 16px; }
 #outline { max-height: 300px; }
 #order-walk { height: 760px; }
+#payload-walk { height: 700px; }
+#payload-walk h3 { margin: 0 0 6px; font-size: 16px; }
+#payload-walk h3 .where { font-size: 14px; font-weight: normal; }
+#payload-walk p { margin: 4px 0; font-size: 14px; }
 #order-walk h3 { margin: 0 0 6px; font-size: 16px; }
 #order-walk h3 .where { font-size: 14px; font-weight: normal; }
 #order-walk p { margin: 4px 0; font-size: 14px; }
