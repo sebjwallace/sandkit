@@ -130,6 +130,52 @@
       assertEqual(marked(element, 'upcoming')[1], true);
     });
 
+    // ---- Played through the model ----
+
+    test('results mark each checked step as expected or not, and leave the rest unmarked', () => {
+      const element = card();
+      element.results = [null, undefined, true, false, { ok: true }];
+      assertEqual(marked(element, 'expected'), [false, false, true, false, true]);
+      assertEqual(marked(element, 'unexpected'), [false, false, false, true, false]);
+      const marks = [...element.querySelectorAll('.sb-scenario__result')].map((mark) => [mark.textContent, mark.getAttribute('aria-label')]);
+      assertEqual(marks, [['', null], ['', null], ['✓', 'as expected'], ['✗', 'not as expected'], ['✓', 'as expected']]);
+    });
+
+    test('a result can say what actually happened, shown under its step with values marked', () => {
+      const element = card();
+      element.results = [null, null, null, { ok: false, actual: 'demand fell by 4%' }];
+      const actual = steps(element)[3].querySelector('.sb-scenario__actual');
+      assertEqual(actual.textContent, 'Actually: demand fell by 4%');
+      assertEqual(actual.querySelector('.sb-scenario__value').textContent, '4%');
+      assertEqual(element.querySelectorAll('.sb-scenario__actual').length, 1);
+    });
+
+    test('what actually happened is displayed as text, never as markup', () => {
+      const element = card();
+      element.results = [{ ok: false, actual: '<b>odd</b>' }];
+      assertEqual(element.querySelectorAll('b').length, 0);
+    });
+
+    test('the card says whether the scenario played out as expected, once anything is checked', () => {
+      const element = card();
+      const verdict = () => [element.querySelector('.sb-scenario__outcome')?.textContent ?? null, element.dataset.outcome ?? null];
+      assertEqual(verdict(), [null, null]);
+      element.results = [null, null, null];
+      assertEqual(verdict(), [null, null]);
+      element.results = [null, null, true, { ok: true }];
+      assertEqual(verdict(), ['as expected', 'expected']);
+      element.results = [null, null, true, { ok: false, actual: 'nothing' }];
+      assertEqual(verdict(), ['not as expected', 'unexpected']);
+    });
+
+    test('clearing results unmarks every step and the card', () => {
+      const element = card();
+      element.results = [true, false];
+      element.results = null;
+      assertEqual(marked(element, 'expected').concat(marked(element, 'unexpected')).some(Boolean), false);
+      assertEqual(element.dataset.outcome, undefined);
+    });
+
     // ---- Choosing a step ----
 
     test('clicking a step fires sb-select with the scenario, the step and its index, and changes nothing', () => {
@@ -174,13 +220,16 @@
 
     // ---- Instances ----
 
-    test('two cards on one page keep their own scenario, highlight and current step', () => {
+    test('two cards on one page keep their own scenario, highlight, current step and results', () => {
       mount('<div><sb-scenario></sb-scenario><sb-scenario></sb-scenario></div>');
       const [a, b] = document.querySelectorAll('#test-fixture sb-scenario');
       a.scenario = TRIP;
       b.scenario = { code: 'RAIL-1', title: 'A signal at danger', steps: [{ keyword: 'Given', text: 'a red signal', ref: 'RAIL-1.given' }] };
       a.current = 1;
       b.highlight = ['RAIL-1.given'];
+      b.results = [false];
+      assertEqual([marked(a, 'unexpected')[0], marked(b, 'unexpected')[0]], [false, true]);
+      assertEqual([a.dataset.outcome, b.dataset.outcome], [undefined, 'unexpected']);
       assertEqual([marked(a, 'current')[1], marked(b, 'current')[0]], [true, false]);
       assertEqual([marked(a, 'highlighted')[0], marked(b, 'highlighted')[0]], [false, true]);
       assertEqual(b.querySelector('.sb-scenario__title').textContent, 'A signal at danger');

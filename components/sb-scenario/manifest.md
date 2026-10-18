@@ -2,7 +2,7 @@
 
 A behaviour scenario as a card: its code, its title, and its Given / When / Then steps, laid out so they read at a glance. Use it wherever a sandbox states how something should behave: what a grid does when a generator trips, what a signal does when a train passes it, what a protocol does when a message is lost.
 
-The card knows nothing about the domain. The sandbox writes the steps and decides what clicking one means; the card makes them clear, lights up the ones being talked about, and marks where the model has got to.
+The card knows nothing about the domain. The sandbox writes the steps and decides what clicking one means; the card makes them clear, lights up the ones being talked about, marks where the model has got to, and shows which steps played out as expected when the model plays the scenario, with what actually happened where they didn't, so turning a knob shows exactly which outcome stops coming true and what came instead.
 
 Use this component through the interface below. You don't need to read its source.
 
@@ -29,6 +29,11 @@ Use this component through the interface below. You don't need to read its sourc
     card.current = e.detail.index;
     model.moveTo(e.detail.step.ref);
   });
+
+  // On every change to the model, play the scenario and check its outcomes:
+  const lowest = model.lowestFrequency(400);
+  const falls = lowest < 49.2;
+  card.results = [null, null, { ok: falls, actual: falls ? null : `fell only to ${lowest} Hz` }, model.sheds(400)];
 </script>
 ```
 
@@ -55,6 +60,9 @@ Each step:
 | `scenario` | Get or set the scenario. |
 | `highlight` | An array of refs to light up: the scenario's `code` lights the card, a step's `ref` lights its line. |
 | `current` | The index of the step the model is at. It's marked and later steps fade. `null` (the default) shows them all plainly. |
+| `results` | Each step's result by index, from the model playing the scenario: `true` as expected (✓), `false` not as expected (✗, the step in the theme's bad colour), `null` not checked, or `{ ok, actual }`, where `actual` says in plain text what really happened, shown under the step. Usually only the outcomes are checked; a Given the model doesn't match is a result too. Defaults to `[]`. |
+
+Once any step is checked, the card says whether the scenario played out **as expected** or **not as expected** (any checked step that wasn't), and a scenario not as expected is outlined in the theme's bad colour.
 
 ## Events
 
@@ -64,21 +72,23 @@ Each step:
 
 ## Styling
 
-Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-radius`.
+Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-good`, `--sb-bad`, `--sb-radius`.
 
-Classes: `sb-scenario` (`--highlighted`), `sb-scenario__head`, `sb-scenario__code`, `sb-scenario__title`, `sb-scenario__steps`, `sb-scenario__step` (`--opens` for Given, When and Then, `--continues` for And and But, `--highlighted`, `--current`, `--upcoming`), `sb-scenario__keyword`, `sb-scenario__text`, `sb-scenario__value`, `sb-scenario__empty`. The card carries `data-ref` with its code, and each step with a `ref` carries `data-ref` with it, so a sandbox can find them (see the [locating practice](../../practices/locating.md)). The current step is marked `aria-current="step"`.
+Classes: `sb-scenario` (`--highlighted`), `sb-scenario__head`, `sb-scenario__code`, `sb-scenario__title`, `sb-scenario__outcome`, `sb-scenario__steps`, `sb-scenario__step` (`--opens` for Given, When and Then, `--continues` for And and But, `--highlighted`, `--current`, `--upcoming`, `--expected`, `--unexpected`), `sb-scenario__keyword`, `sb-scenario__text`, `sb-scenario__value`, `sb-scenario__result`, `sb-scenario__actual`, `sb-scenario__empty`. The card and its outcome label carry `data-outcome` (`expected` or `unexpected`). The card carries `data-ref` with its code, and each step with a `ref` carries `data-ref` with it, so a sandbox can find them (see the [locating practice](../../practices/locating.md)). The current step is marked `aria-current="step"`.
 
 ## Works well with
 
 Suggestions only: nothing here is wired in. The sandbox composes these itself.
 
 - **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so prose can point at a scenario or one of its steps. A phrase that means several steps, such as "the same starting point" across two scenarios, can map to all their refs at once.
+- **Controls for the model's state,** such as [`sb-parameters`](../sb-parameters/manifest.md). On every change, have the model play each scenario and set `results`, so viewers can push the model until an outcome stops coming true.
 - **[`sb-controls`](../sb-controls/manifest.md) or [`sb-scrubber`](../sb-scrubber/manifest.md),** to play a scenario through the model: on each step, run it and set `current` to it.
 - **A view of the model's state,** such as [`sb-stat`](../sb-stat/manifest.md) or [`sb-graph`](../sb-graph/manifest.md). On `sb-select`, move the model to that step and let the view show what the step means.
 - **[`sb-id`](../sb-id/manifest.md)** pills in the prose citing a scenario's code.
 
 ## Notes
 
+- **The card never runs a scenario.** The model plays it and says which steps came out as expected and what actually happened; the card shows it.
 - **Readability:** a card is one scenario. Give each its own card, a few side by side, so viewers can compare them; split a long feature across views rather than stacking dozens.
 - **Dependencies:** none.
 - **Export:** safe for single-file export. Classic script, no fetches, no external assets.

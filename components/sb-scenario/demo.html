@@ -26,7 +26,10 @@
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
     .prose { margin: 12px 0 0; font-size: 14px; }
     .point { border-bottom: 1px dashed var(--sb-accent); cursor: default; }
-    .state { display: flex; gap: 18px; margin: 12px 0 0; padding: 8px 12px; border-radius: var(--sb-radius); background: var(--sb-surface-2); font-size: 13px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; margin: 0 0 12px; padding: 8px 12px; border-radius: var(--sb-radius); background: var(--sb-surface-2); font-size: 13px; }
+    .controls label { display: flex; align-items: center; gap: 8px; }
+    .controls output { min-width: 2.5em; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .state { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 12px 0 0; padding: 8px 12px; border-radius: var(--sb-radius); background: var(--sb-surface-2); font-size: 13px; }
     .state b { font-variant-numeric: tabular-nums; }
     .state [data-tone="bad"] { color: var(--sb-bad); }
     .state [data-tone="good"] { color: var(--sb-good); }
@@ -69,12 +72,14 @@
   ]
 };
 card.highlight = ['GRID-1.when'];   // a step's ref lights its line; the code lights the card
-card.current = 1;                   // the step happening now; later ones fade</pre>
+card.current = 1;                   // the step happening now; later ones fade
+card.results = [null, null, { ok: false, actual: 'fell to 49.40 Hz' }];  // from the model</pre>
       <p>Clicking a step fires <code>sb-select</code> with the step and its index, and changes nothing by itself. The sandbox decides what it means, usually moving the model to that moment and setting <code>current</code>.</p>
 
       <h3>Making it reveal, not just state</h3>
       <ul>
-        <li><strong>Tie each step to the model.</strong> Clicking a step should show the model at that moment, so the words and the behaviour can be checked against each other.</li>
+        <li><strong>Check it against the model.</strong> Have the model play the scenario and set <code>results</code> on every change, with what actually happened where it differs, so turning a knob shows exactly which outcome stops coming true, and what came instead.</li>
+        <li><strong>Tie each step to the model.</strong> Clicking a step can show the model at that moment, so the words and the behaviour can be checked against each other.</li>
         <li><strong>Point from the prose.</strong> One phrase can light the same step across several cards, such as the shared starting point, so readers see what scenarios have in common and where they part.</li>
         <li><strong>Write steps with values.</strong> "Frequency falls below 49.2 Hz" says more than "frequency falls", and the value stands out for viewers to find in the model.</li>
         <li><strong>Keep each card short.</strong> A handful of steps, one situation. Split a long one into two.</li>
@@ -85,7 +90,11 @@ card.current = 1;                   // the step happening now; later ones fade</
 
     <section class="example">
       <h2>A power grid losing a generator</h2>
-      <p>Click a step to move the model to that moment. Point at the underlined words to see which steps they mean.</p>
+      <p>Change the grid and the model checks both scenarios against it. Point at the underlined words to see which steps they mean.</p>
+      <div class="controls">
+        <label>Inertia <input type="range" id="inertia" min="2" max="12" step="1" value="6"><output id="inertia-out"></output></label>
+        <label><input type="checkbox" id="spare-critical" checked> Protection spares critical feeders</label>
+      </div>
       <div class="cards">
         <sb-scenario id="grid-trip"></sb-scenario>
         <sb-scenario id="grid-hold"></sb-scenario>
@@ -97,12 +106,15 @@ card.current = 1;                   // the step happening now; later ones fade</
         a small loss is <span class="point" data-point="GRID-2">covered by reserve</span>,
         a large one <span class="point" data-point="grid-shed">sheds load</span>, while
         <span class="point" data-point="GRID-1.but">hospitals stay connected</span>.
+        Inertia, the spinning mass of the generators, slows the fall: too little and even
+        <span class="point" data-point="GRID-2.then">the small trip</span> goes too far; so much that
+        <span class="point" data-point="GRID-1.then">the large trip</span> no longer sheds load at all.
       </p>
     </section>
 
     <section class="example">
       <h2>A railway signal at danger</h2>
-      <p>The same component for a different subject. Click a step; point at the words below.</p>
+      <p>The same component for a different subject, stepped rather than checked: click a step to mark where the story has got to.</p>
       <div class="cards">
         <sb-scenario id="rail-spad"></sb-scenario>
         <sb-scenario id="rail-clear"></sb-scenario>
@@ -141,38 +153,40 @@ card.current = 1;                   // the step happening now; later ones fade</
         { keyword: 'Given', text: 'the grid is running at 50.0 Hz', ref: 'GRID-2.given' },
         { keyword: 'And', text: 'spinning reserve is 150 MW', ref: 'GRID-2.reserve' },
         { keyword: 'When', text: 'generator "G5" trips, losing 90 MW', ref: 'GRID-2.when' },
-        { keyword: 'Then', text: 'frequency dips to 49.8 Hz', ref: 'GRID-2.then' },
+        { keyword: 'Then', text: 'frequency stays above 49.5 Hz', ref: 'GRID-2.then' },
         { keyword: 'And', text: 'reserve restores 50.0 Hz within 30 seconds', ref: 'GRID-2.restore' }
       ]
     };
 
-    // What the grid looks like after each step of each scenario: a tiny stand-in for a model.
-    const GRID_STATES = {
-      'GRID-1': [
-        { hz: 50.0, reserve: 150, supplied: 100 },
-        { hz: 50.0, reserve: 150, supplied: 100 },
-        { hz: 49.6, reserve: 0, supplied: 100 },
-        { hz: 49.1, reserve: 0, supplied: 100 },
-        { hz: 49.7, reserve: 0, supplied: 90 },
-        { hz: 49.7, reserve: 0, supplied: 90, critical: true }
-      ],
-      'GRID-2': [
-        { hz: 50.0, reserve: 150, supplied: 100 },
-        { hz: 50.0, reserve: 150, supplied: 100 },
-        { hz: 49.9, reserve: 60, supplied: 100 },
-        { hz: 49.8, reserve: 60, supplied: 100 },
-        { hz: 50.0, reserve: 60, supplied: 100 }
-      ]
-    };
+    // The model: the lowest frequency a loss drives the grid to, slowed by inertia.
+    const lowestFrequency = (lossMW, inertia) => 50 - lossMW / (inertia * 50);
+    const SHED_BELOW = 49.2;
 
-    function showGrid(code, index) {
-      const s = GRID_STATES[code][index];
-      const hzTone = s.hz < 49.5 ? 'bad' : s.hz < 50 ? '' : 'good';
+    // Checks both scenarios against the grid as it is set, step by step.
+    function checkGrid() {
+      const inertia = Number(document.getElementById('inertia').value);
+      const spareCritical = document.getElementById('spare-critical').checked;
+      const large = lowestFrequency(400, inertia);
+      const small = lowestFrequency(90, inertia);
+      const sheds = large < SHED_BELOW;
+
+      // The Givens and Whens are the setup, so only the outcomes are checked (null leaves a step unmarked).
+      // Where an outcome differs, the model says what actually happened.
+      const hz = (value) => `${value.toFixed(2)} Hz`;
+      gridTrip.results = [null, null, null,
+        { ok: large < SHED_BELOW, actual: large < SHED_BELOW ? null : `fell only to ${hz(large)}` },
+        { ok: sheds, actual: sheds ? null : 'no load was shed' },
+        { ok: !sheds || spareCritical, actual: !sheds || spareCritical ? null : 'critical feeders were shed too' }];
+      gridHold.results = [null, null, null,
+        { ok: small > 49.5, actual: small > 49.5 ? null : `fell to ${hz(small)}` },
+        true];
+
+      document.getElementById('inertia-out').textContent = `${inertia} s`;
       document.getElementById('grid-state').innerHTML = `
-        <span>Frequency <b data-tone="${hzTone}">${s.hz.toFixed(1)} Hz</b></span>
-        <span>Reserve <b>${s.reserve} MW</b></span>
-        <span>Demand supplied <b data-tone="${s.supplied < 100 ? 'bad' : ''}">${s.supplied}%</b></span>
-        ${s.critical ? '<span>Critical feeders <b data-tone="good">on</b></span>' : ''}`;
+        <span>Lowest frequency after "G2" <b data-tone="${sheds ? 'bad' : ''}">${large.toFixed(2)} Hz</b></span>
+        <span>after "G5" <b data-tone="${small > 49.5 ? '' : 'bad'}">${small.toFixed(2)} Hz</b></span>
+        <span>Demand shed <b>${sheds ? '10%' : 'none'}</b></span>
+        ${sheds ? `<span>Critical feeders <b data-tone="${spareCritical ? 'good' : 'bad'}">${spareCritical ? 'on' : 'off'}</b></span>` : ''}`;
     }
 
     // ---- Railway ----
@@ -231,12 +245,11 @@ card.current = 1;                   // the step happening now; later ones fade</
     document.querySelectorAll('.cards').forEach((group) => {
       group.addEventListener('sb-select', (e) => {
         group.querySelectorAll('sb-scenario').forEach((card) => { card.current = card === e.target ? e.detail.index : null; });
-        if (GRID_STATES[e.detail.scenario.code]) showGrid(e.detail.scenario.code, e.detail.index);
       });
     });
 
-    gridTrip.current = 0;
-    showGrid('GRID-1', 0);
+    ['inertia', 'spare-critical'].forEach((id) => document.getElementById(id).addEventListener('input', checkGrid));
+    checkGrid();
   </script>
 </body>
 </html>
