@@ -1,4 +1,4 @@
-// Sandkit sb-tabs 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-tabs 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Tabs over the panels inside it: chapters of a sandbox, views of a model, anything. Each panel is
 // a direct child titled by its `heading`; only the selected one shows. Tab sets only ever look at
 // their own direct children, so they nest freely.
@@ -97,6 +97,18 @@
 
     next() { this._choose(this._selected + 1); }
     previous() { this._choose(this._selected - 1); }
+
+    // Shows the panel holding `place`, or else the first holding a part marked data-ref="ref",
+    // quietly, as setting selected does. False if no panel holds it.
+    reveal(ref, place) {
+      const holds = place
+        ? (panel) => panel.contains(place)
+        : (panel) => [panel, ...panel.querySelectorAll('[data-ref]')].some((el) => el.dataset.ref === String(ref));
+      const index = this.panels.findIndex(holds);
+      if (index === -1) return false;
+      this.selected = index;
+      return true;
+    }
 
     // ---- Building ----
 

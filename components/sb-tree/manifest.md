@@ -53,7 +53,7 @@ Use this component through the interface below. You don't need to read its sourc
 | `highlight` | Ids of nodes to point at. A closed branch holding one is marked. |
 | `expand(id)`, `collapse(id)`, `toggle(id)` | Open or close one branch. |
 | `expandAll()`, `collapseAll()` | Open or close every branch. |
-| `reveal(id)` | Open every branch on the way to a node, and scroll it into view. Doesn't select it. |
+| `reveal(id)` | Open every branch on the way to a node, and scroll it into view. Doesn't select it. Returns `true`, or `false` if there's no such node. |
 
 Setting properties and calling methods never fires the events below; they are for what viewers do.
 
@@ -74,7 +74,7 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-surface-2`, `--sb-accent`, `--sb-
 
 Its own custom properties, to set on the element: `--sb-tree-row` (row height, `26px`), `--sb-tree-indent` (`18px`), `--sb-tree-line` (the guide lines' colour).
 
-Classes: `sb-tree__group`, `sb-tree__item` (`--selected`, `--highlighted`, `--holds-highlight`), `sb-tree__row`, `sb-tree__twisty`, `sb-tree__label`, `sb-tree__meta`, `sb-tree__empty`. Items carry `data-tone`, and the tree's ARIA states (`aria-expanded`, `aria-selected`, `aria-level`).
+Classes: `sb-tree__group`, `sb-tree__item` (`--selected`, `--highlighted`, `--holds-highlight`), `sb-tree__row`, `sb-tree__twisty`, `sb-tree__label`, `sb-tree__meta`, `sb-tree__empty`. Items carry `data-ref` with their node's id (folded ones too, since every node is drawn, so the page can find them: see the [locating practice](../../practices/locating.md)), `data-tone`, and the tree's ARIA states (`aria-expanded`, `aria-selected`, `aria-level`).
 
 Give the element a height (for example `max-height: 320px`) so a long tree scrolls.
 
@@ -84,6 +84,7 @@ Suggestions only: nothing here is wired in. The sandbox composes these itself.
 
 - **[`sb-table`](../sb-table/manifest.md),** for the contents of what's chosen: on `sb-select`, show the selected branch's children, with their details, as rows.
 - **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so mentioning a node in the prose points at it, even when it's folded away.
+- **[The locating practice](../../practices/locating.md).** A sandbox's `goTo` finds a node by its `data-ref` and calls `reveal`, even when the tree sits in a closed tab.
 - **[`sb-log`](../sb-log/manifest.md),** when the model acts on nodes: on the log's `sb-select`, `reveal` and select the node the entry concerns.
 
 ## Notes

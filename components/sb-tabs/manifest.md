@@ -38,6 +38,7 @@ Every direct child is a panel. Give each a `heading` attribute: it becomes the t
 | `panels` | The panels, in order. |
 | `selected` | The index of the panel showing. Setting it shows that panel without firing `sb-select`. |
 | `next()`, `previous()` | Move one panel along, stopping at the ends. Fires `sb-select`. |
+| `reveal(ref, place)` | Show the panel holding `place`, an element on the page, or without one the first panel holding a part marked `data-ref="ref"` (or marked so itself). Quiet, as setting `selected` is: no `sb-select`, and not remembered as the viewer's choice. Returns `true`, or `false` if no panel holds it. |
 
 ## Events
 
@@ -55,6 +56,7 @@ Classes: `sb-tabs__list`, `sb-tabs__tab`. The selected tab has `aria-selected="t
 
 Suggestions only: nothing here is wired in. The sandbox composes these itself.
 
+- **[The locating practice](../../practices/locating.md).** A sandbox's `goTo` calls `reveal` on every tab set around the place it's going to, so a ref in a hidden chapter opens it.
 - **Chapters of a sandbox,** one panel each, with a "Next chapter" button at the end of each calling `next()`.
 - **[`sb-panel`](../sb-panel/manifest.md),** around a tab set that viewers may want to float beside the rest of the sandbox.
 - **[`sb-chart`](../sb-chart/manifest.md) and [`sb-plane`](../sb-plane/manifest.md)** in hidden panels redraw at their real width when their panel is shown.
@@ -63,6 +65,7 @@ Suggestions only: nothing here is wired in. The sandbox composes these itself.
 
 - **Keyboard:** arrow keys move between tabs (wrapping round), Home and End jump to the ends, and only the selected tab is reached with the Tab key.
 - **A hidden panel stays hidden** even if the sandbox styles it with a display of its own.
+- **`data-ref` is the one thing a tab set looks for in its panels,** and only for `reveal` without a place. It shows its panels' content without otherwise inspecting it.
 - **Dependencies:** none.
 - **Export:** safe for single-file export. Classic script, no fetches, no external assets.
 - **Renaming:** if another component on the page is already called `sb-tabs`, the console says so. Replace every `sb-tabs` in `sb-tabs.js` to give this copy a new name.

@@ -79,3 +79,7 @@ Words in the prose show which they are:
 - **Use the same ref everywhere the thing appears:** the prose, the equation, the diagram, the table.
 - **Match colours as well.** If î is green on the plane, make its column, its term and its pill green too. Lighting up then confirms what colour already suggested.
 - **Keep it reversible.** Pointing at the arrow should light the equation, just as pointing at the equation lights the arrow.
+
+## Going further
+
+Highlighting lights up what's in view. To find a ref that's out of view, in a closed tab or a folded branch, and go to it, see the [locating practice](locating.md).

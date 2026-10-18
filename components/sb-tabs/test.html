@@ -119,6 +119,62 @@
       assertEqual(selections.length, 0);
     });
 
+    // ---- Revealing ----
+
+    const MARKED = '<section heading="One">1</section><section heading="Two"><p>Rule <span data-ref="RUL-014">14</span></p></section><section heading="Three" data-ref="three">3</section>';
+
+    test('reveal shows the panel holding a ref, without firing sb-select', () => {
+      const el = tabs('', MARKED);
+      const selections = recordEvents(el, 'sb-select');
+      assertEqual(el.reveal('RUL-014'), true);
+      assertEqual(visible(el), ['Two']);
+      assertEqual(selections.length, 0);
+    });
+
+    test('reveal finds a ref on the panel itself', () => {
+      const el = tabs('', MARKED);
+      assertEqual(el.reveal('three'), true);
+      assertEqual(visible(el), ['Three']);
+    });
+
+    test('reveal returns false and stays put when no panel holds the ref', () => {
+      const el = tabs('selected="2"', MARKED);
+      assertEqual(el.reveal('RUL-999'), false);
+      assertEqual(visible(el), ['Three']);
+    });
+
+    test('reveal with a place shows the panel holding that very place, when several hold the ref', () => {
+      const el = tabs('', '<section heading="One"><i data-ref="r">a</i></section><section heading="Two"><i data-ref="r">b</i></section>');
+      const second = el.querySelectorAll('[data-ref="r"]')[1];
+      assertEqual(el.reveal('r', second), true);
+      assertEqual(visible(el), ['Two']);
+      el.reveal('r');
+      assertEqual(visible(el), ['One'], 'without a place, the first');
+    });
+
+    test('reveal is not remembered as the viewer\'s choice', () => {
+      localStorage.removeItem('sb-tabs:reveal-memory');
+      const el = tabs('id="reveal-memory"', MARKED);
+      el.reveal('RUL-014');
+      assertEqual(localStorage.getItem('sb-tabs:reveal-memory'), null);
+    });
+
+    test('nested tabs each reveal only their own panel', () => {
+      const outer = tabs('', `
+        <section heading="Outer A">a</section>
+        <section heading="Outer B"><sb-tabs><div heading="Inner 1">i</div><div heading="Inner 2"><b data-ref="deep">d</b></div></sb-tabs></section>`);
+      const inner = outer.querySelector('sb-tabs');
+      outer.reveal('deep');
+      assertEqual([visible(outer), visible(inner)], [['Outer B'], ['Inner 1']]);
+      inner.reveal('deep');
+      assertEqual(visible(inner), ['Inner 2']);
+    });
+
+    test('a ref with quotes in it is matched, not broken', () => {
+      const el = tabs('', '<section heading="One">1</section><section heading="Two"><i data-ref=\'say "hi"\'>x</i></section>');
+      assertEqual(el.reveal('say "hi"'), true);
+    });
+
     // ---- Nesting and change ----
 
     test('nested tabs only see their own panels', () => {

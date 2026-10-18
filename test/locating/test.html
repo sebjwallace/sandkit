@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Locating tests</title>
+  <script src="../harness.js"></script>
+  <script src="../../components/sb-tabs/sb-tabs.js"></script>
+  <script src="../../components/sb-tree/sb-tree.js"></script>
+</head>
+<body>
+  <script>
+    // The sandbox's side of the locating practice: finding a ref on the page and going to it,
+    // through components that know nothing of each other. Copied from practices/locating.md.
+    const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+
+    const placesOf = (ref) => [...document.querySelectorAll(`[data-ref="${CSS.escape(ref)}"]`)];
+
+    function goTo(ref, index = 0) {
+      const place = placesOf(ref)[index];
+      if (!place) return false;
+      revealAround(place, ref);
+      place.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      announce(ref);
+      setTimeout(() => announce(null), 1500);
+      return true;
+    }
+
+    function revealAround(place, ref) {
+      const hosts = [];
+      for (let el = place.parentElement; el; el = el.parentElement) if (typeof el.reveal === 'function') hosts.unshift(el);
+      hosts.forEach((host) => host.reveal(ref, place));
+    }
+
+    // A rule folded away in a tree, in a chapter that isn't showing, and cited in the first chapter's prose.
+    function sandbox() {
+      const tabs = mount(`
+        <sb-tabs>
+          <section heading="Chapter 1"><p>Restocking follows <span data-ref="RUL-014">the reorder rule</span>.</p></section>
+          <section heading="Chapter 2"><sb-tree></sb-tree></section>
+        </sb-tabs>`);
+      const tree = tabs.querySelector('sb-tree');
+      tree.nodes = [{ id: 'rules', label: 'Rules', children: [{ id: 'stock', label: 'Stock', children: [{ id: 'RUL-014', label: 'Reorder at 20' }] }] }];
+      // The highlighting practice's wiring: route announced refs to the tree.
+      const route = (e) => { tree.highlight = e.detail.ref ? [e.detail.ref] : []; };
+      document.addEventListener('sb-highlight', route);
+      return { tabs, tree, node: tree.querySelector('[data-ref="RUL-014"]'), stop: () => document.removeEventListener('sb-highlight', route) };
+    }
+
+    const isShowing = (el) => !el.closest('[hidden]');
+
+    test('finds every place a ref appears, in page order', () => {
+      const { node, stop } = sandbox();
+      const places = placesOf('RUL-014');
+      assertEqual(places.length, 2);
+      assertEqual(places[1], node);
+      stop();
+    });
+
+    test('goTo opens the tab, expands the branch and lights up the node', () => {
+      const { tabs, tree, node, stop } = sandbox();
+      assert(!isShowing(node), 'hidden to begin with');
+      assertEqual(goTo('RUL-014', 1), true);
+      assertEqual(tabs.selected, 1, 'tab');
+      assertEqual(tree.expanded, ['rules', 'stock'], 'branches');
+      assert(isShowing(node), 'showing');
+      assert(node.classList.contains('sb-tree__item--highlighted'), 'lit up');
+      stop();
+    });
+
+    test('goTo neither selects nor fires viewers\' events', () => {
+      const { tabs, tree, stop } = sandbox();
+      const events = [recordEvents(tabs, 'sb-select'), recordEvents(tabs, 'sb-toggle')];
+      goTo('RUL-014', 1);
+      assertEqual(events.map((list) => list.length), [0, 0]);
+      assertEqual(tree.selected, null);
+      stop();
+    });
+
+    test('goTo returns false for a ref that appears nowhere, and changes nothing', () => {
+      const { tabs, tree, stop } = sandbox();
+      assertEqual(goTo('RUL-999'), false);
+      assertEqual([tabs.selected, tree.expanded], [0, []]);
+      stop();
+    });
+  </script>
+</body>
+</html>

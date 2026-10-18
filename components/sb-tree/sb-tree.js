@@ -1,4 +1,4 @@
-// Sandkit sb-tree 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-tree 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A tree of nested things, as in a file system or an outline: branches open and close, lines
 // join children to their parent, and everything a viewer can do, the sandbox can do too.
 //
@@ -82,7 +82,7 @@
       this.addEventListener('focusin', (e) => {
         const item = e.target.closest('.sb-tree__item');
         if (!item) return;
-        this._focused = item.dataset.id;
+        this._focused = item.dataset.ref;
         this._rove();
       });
     }
@@ -139,11 +139,13 @@
       this._showState();
     }
 
-    // Opens every branch on the way to a node, and scrolls it into view.
+    // Opens every branch on the way to a node, and scrolls it into view. False if there's no such node.
     reveal(id) {
+      if (!this._index.has(String(id))) return false;
       for (const ancestor of this._ancestors(String(id))) this._expanded.add(ancestor);
       this._showState();
-      this._item(id)?.querySelector('.sb-tree__row').scrollIntoView({ block: 'nearest' });
+      this._item(id).querySelector('.sb-tree__row').scrollIntoView({ block: 'nearest' });
+      return true;
     }
 
     // ---- Rendering ----
@@ -163,7 +165,7 @@
       const branch = isBranch(node);
       const tone = node.tone ? ` data-tone="${esc(node.tone)}"` : '';
       return `
-        <li class="sb-tree__item" role="treeitem" data-id="${esc(node.id)}" aria-level="${level}" tabindex="-1"${branch ? ' aria-expanded="false"' : ''}${tone}>
+        <li class="sb-tree__item" role="treeitem" data-ref="${esc(node.id)}" aria-level="${level}" tabindex="-1"${branch ? ' aria-expanded="false"' : ''}${tone}>
           <div class="sb-tree__row">
             <span class="sb-tree__twisty" aria-hidden="true"></span>
             <span class="sb-tree__label">${esc(node.label ?? node.id)}</span>
@@ -177,7 +179,7 @@
     _showState() {
       const holders = new Set(this._highlight.flatMap((id) => this._ancestors(id).filter((a) => !this._expanded.has(a))));
       for (const item of this.querySelectorAll('.sb-tree__item')) {
-        const id = item.dataset.id;
+        const id = item.dataset.ref;
         if (item.hasAttribute('aria-expanded')) {
           const open = this._expanded.has(id);
           item.setAttribute('aria-expanded', String(open));
@@ -195,14 +197,14 @@
     // One item takes Tab: the focused one if still visible, else the selected, else the first.
     _rove() {
       const visible = this._visibleItems();
-      const focusable = [this._focused, this._selected].map((id) => visible.find((item) => item.dataset.id === id)).find(Boolean) ?? visible[0];
+      const focusable = [this._focused, this._selected].map((id) => visible.find((item) => item.dataset.ref === id)).find(Boolean) ?? visible[0];
       for (const item of this.querySelectorAll('.sb-tree__item')) item.tabIndex = item === focusable ? 0 : -1;
     }
 
     // ---- Finding things ----
 
     _item(id) {
-      return [...this.querySelectorAll('.sb-tree__item')].find((item) => item.dataset.id === String(id));
+      return [...this.querySelectorAll('.sb-tree__item')].find((item) => item.dataset.ref === String(id));
     }
 
     // The ids of a node's branches, outermost first.
@@ -239,15 +241,15 @@
       const item = e.target.closest('.sb-tree__item');
       if (!item) return;
       item.focus();
-      if (e.target.closest('.sb-tree__twisty') && item.hasAttribute('aria-expanded')) this._setOpen(item.dataset.id, !this._expanded.has(item.dataset.id), true);
-      else this._choose(item.dataset.id);
+      if (e.target.closest('.sb-tree__twisty') && item.hasAttribute('aria-expanded')) this._setOpen(item.dataset.ref, !this._expanded.has(item.dataset.ref), true);
+      else this._choose(item.dataset.ref);
     }
 
     // The keys of a tree view: up and down move, right opens or goes in, left closes or goes out.
     _key(e) {
       const item = e.target.closest('.sb-tree__item');
       if (!item) return;
-      const id = item.dataset.id;
+      const id = item.dataset.ref;
       const visible = this._visibleItems();
       const at = visible.indexOf(item);
       const open = this._expanded.has(id), branch = item.hasAttribute('aria-expanded');

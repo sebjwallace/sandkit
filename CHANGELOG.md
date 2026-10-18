@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.6 · 2026-10-18
+- Added the locating practice: finding everywhere a ref appears on the page and going to it, through closed tabs and folded branches. `sb-tabs` 0.1.3 gains `reveal(ref)`; `sb-tree` 0.1.1 marks its nodes with `data-ref`.
+
 ## 0.2.5 · 2026-10-18
 - Added the journal practice: a sandbox records what changed and why in `JOURNAL.md`, each entry a version, and retired codes in its model.
 - The template has a `JOURNAL.md`, and `AGENTS.md`'s Roadmap is now **Where it stands**, with the version and open questions. Setting up only copies the template into new sandboxes: to add a journal to an existing one, follow "Adding a journal to an existing sandbox" in the practice.

@@ -56,6 +56,7 @@ Everywhere the thing appears. A code that only exists in the model doesn't help 
 - **In the interface:** beside names, in detail panels, in tables and logs. Use `sb-id` so the code explains itself on hover.
 - **In prose:** chapter text, explanations and notes cite codes inline.
 - **In behaviour:** where the model acts on a rule, record which rule. "Store North ordered 63 (RUL-001)" is traceable; "Store North ordered 63" is not.
+- **Found again:** parts of the page that show a thing carry its code as `data-ref`, so a sandbox can list everywhere a code appears and go to any of those places. See the [locating practice](locating.md).
 - **In conversation:** agents should name codes when explaining what the sandbox does or when proposing changes to it.
 
 ## Citing

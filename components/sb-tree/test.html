@@ -23,19 +23,19 @@
       return el;
     }
 
-    const item = (el, id) => [...el.querySelectorAll('.sb-tree__item')].find((i) => i.dataset.id === id);
+    const item = (el, id) => [...el.querySelectorAll('.sb-tree__item')].find((i) => i.dataset.ref === id);
     const isOpen = (el, id) => item(el, id).getAttribute('aria-expanded') === 'true';
-    const visible = (el) => [...el.querySelectorAll('.sb-tree__item')].filter((i) => !i.parentElement.closest('[hidden]')).map((i) => i.dataset.id);
+    const visible = (el) => [...el.querySelectorAll('.sb-tree__item')].filter((i) => !i.parentElement.closest('[hidden]')).map((i) => i.dataset.ref);
     const has = (el, id, state) => item(el, id).classList.contains(`sb-tree__item--${state}`);
     const click = (node) => node.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     const press = (el, key) => document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
-    const focused = () => document.activeElement.dataset.id;
+    const focused = () => document.activeElement.dataset.ref;
 
     // ---- Showing the tree ----
 
     test('shows every node nested under its parent, with labels, meta and levels', () => {
       const el = tree();
-      assertEqual(item(el, 'util').parentElement.closest('.sb-tree__item').dataset.id, 'lib');
+      assertEqual(item(el, 'util').parentElement.closest('.sb-tree__item').dataset.ref, 'lib');
       assertEqual(item(el, 'app').querySelector('.sb-tree__label').textContent, 'app.js');
       assertEqual(item(el, 'app').querySelector('.sb-tree__meta').textContent, '2 KB');
       assertEqual(item(el, 'util').getAttribute('aria-level'), '3');
@@ -110,6 +110,26 @@
       el.reveal('util');
       assert(visible(el).includes('util'));
       assertEqual(el.selected, null);
+    });
+
+    test('reveal says whether the tree holds the node', () => {
+      const el = tree();
+      assertEqual(el.reveal('util'), true);
+      assertEqual(el.reveal('missing'), false);
+      assertEqual(el.expanded, ['src', 'lib']);
+    });
+
+    test('every node, folded or not, carries data-ref with its id, so the page can find it', () => {
+      const el = tree();
+      assertEqual([...el.querySelectorAll('[data-ref]')].map((i) => i.dataset.ref), ['src', 'app', 'lib', 'util', 'empty', 'readme']);
+      assert(el.querySelector('[data-ref="util"]').parentElement.closest('[hidden]'), 'folded away');
+    });
+
+    test('reveal does not fire viewer events', () => {
+      const el = tree();
+      const selects = recordEvents(el, 'sb-select'), toggles = recordEvents(el, 'sb-toggle');
+      el.reveal('util');
+      assertEqual([selects.length, toggles.length], [0, 0]);
     });
 
     test('selected marks a node, and can be cleared', () => {
@@ -210,7 +230,7 @@
 
     test('Tab reaches one item: the last one focused', () => {
       const el = tree();
-      const tabbable = () => [...el.querySelectorAll('[tabindex="0"]')].map((i) => i.dataset.id);
+      const tabbable = () => [...el.querySelectorAll('[tabindex="0"]')].map((i) => i.dataset.ref);
       assertEqual(tabbable(), ['src']);
       item(el, 'src').focus();
       press(el, 'ArrowDown');

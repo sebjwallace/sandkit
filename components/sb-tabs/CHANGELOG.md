@@ -1,5 +1,8 @@
 # sb-tabs changelog
 
+## 0.1.3 · 2026-10-18
+- Added `reveal(ref, place)`: shows the panel holding a given place, or else the first holding a part marked `data-ref`, quietly, and says whether one does.
+
 ## 0.1.2 · 2026-10-17
 - A tab set moved by another element while the page loads is built once, not twice; for example, inside a walkthrough's step.
 
