@@ -57,6 +57,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-matrix`](components/sb-matrix/manifest.md) | A matrix or vector in brackets, inline or on its own: editable, with coloured and highlighted rows, columns and cells. |
 | [`sb-modal`](components/sb-modal/manifest.md) | A window over the page for the one thing that deserves attention now: a heading, content and actions, reporting how the viewer closed it. |
 | [`sb-panel`](components/sb-panel/manifest.md) | A frame viewers can pop out into a floating window, drag, resize, collapse, make full screen and dock back. |
+| [`sb-ontology`](components/sb-ontology/manifest.md) | Kinds of things and how they relate, a few at a time: classes, individuals and their links, what each kind inherits and from where, kinds to light up, and the model's problems marked where they are. |
 | [`sb-parameters`](components/sb-parameters/manifest.md) | The knobs people turn: labelled sliders with live values, changes from defaults marked, reset. |
 | [`sb-plane`](components/sb-plane/manifest.md) | A 2D coordinate plane: draggable vectors, points and shapes, and matrices that visibly move space. |
 | [`sb-profile`](components/sb-profile/manifest.md) | A data set's shape: every field across all samples with its types, presence and values, constants, keys, gaps, mixed types and rare values marked, and what changed when the samples did. Also runs from Node: `tools/analyse.mjs profile`. |

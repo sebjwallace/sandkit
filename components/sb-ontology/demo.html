@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-ontology demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-ontology.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .example h3 { margin: 22px 0 4px; font-size: 14px; }
+    .example sb-ontology { margin-bottom: 6px; }
+    .example .prose { margin: 0 0 10px; font-size: 14px; color: var(--sb-text); }
+    .point { border-bottom: 1px dashed var(--sb-accent); cursor: default; }
+    .act { font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px solid var(--sb-accent); padding: 0; cursor: pointer; }
+    .lit { background: color-mix(in srgb, var(--sb-warn) 25%, transparent); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-ontology">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Kinds of things and how they relate, a few at a time: what each kind inherits, and what the model finds wrong.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Many subjects are mostly about what kinds of things exist and how they relate: species and what eats what, the parts of an energy system and what feeds what, claims and the sources they rest on. An ontology says that once, as kinds, the things of each kind, their properties and the relations between them, with the rules those must keep. This component draws it, a few things at a time, and lets people see what belongs to what.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Showing what's wrong where it is.</strong> The model's problems sit on the things they're about, in its own words.</li>
+        <li><strong>Seeing what belongs to what.</strong> A parrotfish is a fish and a grazer at once; pumped storage is a store and a hydro plant. Point at a kind and everything of that kind lights up, inherited or not.</li>
+        <li><strong>Following who relates to whom.</strong> Select a thing and its links light up: what it points to in full, what points to it more faintly.</li>
+        <li><strong>Moving between kinds and things.</strong> The same ontology shown as kinds ("a grazer grazes algae") or as things ("the parrotfish grazes turf algae").</li>
+        <li><strong>Telling a big subject a part at a time.</strong> One ontology behind several small views, each drawing what its paragraph explains.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>A process or a flow over time.</strong> Steps one after another read better as a flowchart or a sequence diagram.</li>
+        <li><strong>Things inside things.</strong> When each thing sits in exactly one place, a tree is clearer.</li>
+        <li><strong>A network without kinds.</strong> If nothing has a kind, a plain graph of nodes and edges is simpler.</li>
+        <li><strong>Records and their fields.</strong> A database's tables and references belong in an entity-relationship diagram.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-ontology/sb-ontology.js"&gt;&lt;/script&gt;
+&lt;sb-ontology&gt;&lt;/sb-ontology&gt;
+
+&lt;script&gt;
+  const reef = document.querySelector('sb-ontology');
+  reef.data = {
+    classes: [{ id: 'Animal' }, { id: 'Fish', is: ['Animal'] }, { id: 'Alga' }],
+    relations: [{ id: 'grazes', label: 'grazes', from: 'Animal', to: 'Alga' }],
+    individuals: [
+      { id: 'parrotfish', label: 'Parrotfish', is: ['Fish'], links: [{ relation: 'grazes', to: 'turf' }] },
+      { id: 'turf', label: 'Turf algae', is: ['Alga'] },
+    ],
+  };
+  reef.show = ['parrotfish', 'turf'];   // the few things this view explains
+  reef.problems = [{ ref: 'turf', text: 'Cover not surveyed this year' }];   // what the model found
+&lt;/script&gt;</pre>
+      <p>Classes say what kinds there are, with <code>is</code> naming the kinds they belong to. Relations name the links things can have, from one kind to another. Individuals are the things themselves, each with its kinds and links. Give each view the whole ontology, and <code>show</code> the things it's about. The component draws and never judges: the model decides what's wrong and passes it in as <code>problems</code>, marked on the boxes and listed in words.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Keep each view small.</strong> About twenty boxes at most, chosen for what the words beside it explain. A whole ontology at once is a tangle nobody reads.</li>
+        <li><strong>Split, and say why.</strong> Several small views, each with a heading and a paragraph, teach more than one big one.</li>
+        <li><strong>Name kinds that cut across each other.</strong> Kinds by what something is and by what it does, such as Fish and Grazer, are where an ontology shows what a list can't.</li>
+        <li><strong>Connect the words.</strong> Route <code>sb-highlight</code> to <code>highlight</code>, and announce from <code>sb-point</code>, so pointing at a phrase lights the thing, and pointing at the thing lights the phrase.</li>
+      </ul>
+
+      <p>Viewers can point at a box to preview its links, select a box or link to keep them, drag boxes to tidy the layout, switch between kinds and things, and point at a key under a drawing to light up those links or kinds (click to keep it lit). The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example" data-ontology="reef">
+      <h2>Biodiversity on a coral reef</h2>
+      <p>One ontology of a reef's species, zones and surveys: nineteen things and over forty links, too many to read at once. The model has found three problems, marked where they are. Each view below draws a few of them, chosen for what the paragraph explains, from the same ontology.</p>
+
+      <h3>Corals and the algae inside them</h3>
+      <p class="prose">Reef-building corals such as <span class="point" data-ref="acropora">Acropora millepora</span> get most of their food from microalgae living in their tissue. Here <span class="point" data-ref="porites">Porites lobata</span> hosts two kinds, one of them <span class="point" data-ref="durusdinium">Durusdinium</span>, which tolerates heat better. Select <button class="act" data-select="cladocopium">Cladocopium</button> to see which corals depend on it.</p>
+      <sb-ontology data-show="acropora porites sarcophyton cladocopium durusdinium"></sb-ontology>
+
+      <h3>What feeds on coral</h3>
+      <p class="prose">Coral has its own predators. The <span class="point" data-ref="cots">crown-of-thorns starfish</span> can strip a reef during an outbreak, and the <span class="point" data-ref="butterflyfish">redfin butterflyfish</span> picks at polyps. <span class="point" data-ref="parrotfish.eats.acropora">Parrotfish bite coral too</span>, mostly for the algae on it. Select <button class="act" data-select="acropora">Acropora</button>: every link coming in is something feeding on it.</p>
+      <sb-ontology data-show="acropora porites butterflyfish cots parrotfish"></sb-ontology>
+
+      <h3>Grazers keep algae in check</h3>
+      <p class="prose">Left alone, algae smother coral. Three grazers keep <span class="point" data-ref="turf">turf algae</span> down, and the <span class="point" data-ref="grouper">leopard coral grouper</span> eats two of them, so fishing it changes the grazing. Nothing here grazes <span class="point" data-ref="sargassum">Sargassum</span>: a gap worth asking about.</p>
+      <sb-ontology data-show="parrotfish surgeonfish urchin turf sargassum grouper"></sb-ontology>
+
+      <h3>Kinds that cut across each other</h3>
+      <p class="prose">Kinds by what something is and kinds by what it eats overlap. The parrotfish is both a <span class="point" data-ref="Fish">fish</span> and a <span class="point" data-ref="Grazer">grazer</span>; the urchin is a grazer and an <span class="point" data-ref="Echinoderm">echinoderm</span>, not a fish. Switch to Things to see who belongs where.</p>
+      <sb-ontology level="schema" data-show="Fish Echinoderm Grazer Corallivore Piscivore"></sb-ontology>
+
+      <h3>Surveys, and a gap in the record</h3>
+      <p class="prose">Each survey covers one zone and is led by one diver. <button class="act" data-select="transect-3">Transect 3</button> was; <button class="act" data-select="transect-7">Transect 7</button> has no diver, a gap the model flags.</p>
+      <sb-ontology data-show="transect-3 transect-7 diver-1 flat crest"></sb-ontology>
+    </section>
+
+    <section class="example" data-ontology="grid">
+      <h2>A regional renewable grid</h2>
+      <p>One ontology of a region's generators, storage, substations and the places they supply, told a part at a time.</p>
+
+      <h3>Where the power comes from</h3>
+      <p class="prose">Every generator depends on the weather. <span class="point" data-ref="wind">Wind</span> drives two farms, so a still week hits both at once, while <span class="point" data-ref="rain">rainfall</span> and <span class="point" data-ref="river">river flow</span> change over seasons rather than hours. Select <button class="act" data-select="sun">Sunlight</button> to see what depends on it.</p>
+      <sb-ontology data-show="northfell skerry brackmoor glen meall wind sun river rain"></sb-ontology>
+
+      <h3>How it reaches people</h3>
+      <p class="prose">Generators feed substations, and substations supply towns and industry. <span class="point" data-ref="dunmore">Dunmore Steelworks</span> draws on the <span class="point" data-ref="south">South Substation</span> alone, but <span class="point" data-ref="north.linkedTo.south">the link between the substations</span> lets power move between north and south.</p>
+      <sb-ontology data-show="skerry brackmoor south north kelby ashby dunmore"></sb-ontology>
+
+      <h3>Storing it for later</h3>
+      <p class="prose">Select <button class="act" data-select="meall">Loch Meall</button>: it charges from the North Substation when power is plentiful and feeds it back when it's needed. <button class="act" data-select="kelby-battery">Kelby Battery</button> is placed in a town rather than a region, which the model flags.</p>
+      <sb-ontology data-show="meall kelby-battery north south kelby highlands"></sb-ontology>
+
+      <h3>One thing, two kinds</h3>
+      <p class="prose"><span class="point" data-ref="PumpedHydro">Pumped storage</span> is both a <span class="point" data-ref="Storage">store</span> and a <span class="point" data-ref="HydroPlant">hydro plant</span>, so it inherits from both: it feeds a substation like any generator, and charges from one like any store.</p>
+      <sb-ontology level="schema" data-show="WindFarm SolarFarm PumpedHydro Battery"></sb-ontology>
+    </section>
+  </main>
+
+  <script>
+    const reef = {
+      classes: [
+        { id: 'Organism' },
+        { id: 'Animal', is: ['Organism'] },
+        { id: 'Alga', is: ['Organism'] },
+        { id: 'Coral', is: ['Animal'] },
+        { id: 'StonyCoral', label: 'Stony coral', is: ['Coral'], description: 'Builds the reef from a calcium carbonate skeleton.' },
+        { id: 'SoftCoral', label: 'Soft coral', is: ['Coral'] },
+        { id: 'Fish', is: ['Animal'] },
+        { id: 'Echinoderm', is: ['Animal'] },
+        { id: 'Grazer', is: ['Animal'], description: 'Feeds mainly on algae, keeping them from smothering coral.' },
+        { id: 'Corallivore', is: ['Animal'], description: 'Feeds on coral.' },
+        { id: 'Piscivore', is: ['Animal'], description: 'Feeds on fish.' },
+        { id: 'Symbiont', is: ['Alga'], description: 'Microalgae living inside coral tissue, feeding it by photosynthesis.' },
+        { id: 'ReefZone', label: 'Reef zone' },
+        { id: 'Survey' },
+        { id: 'Diver' },
+      ],
+      properties: [
+        { id: 'iucn', label: 'IUCN status', on: 'Organism', type: 'string' },
+        { id: 'bleaching', label: 'bleaching susceptibility', on: 'Coral', type: 'string' },
+        { id: 'date', on: 'Survey', type: 'string' },
+      ],
+      relations: [
+        { id: 'eats', label: 'eats', from: 'Animal', to: 'Organism', inverse: 'is eaten by' },
+        { id: 'grazes', label: 'grazes', from: 'Grazer', to: 'Alga', is: ['eats'], inverse: 'is grazed by' },
+        { id: 'feedsOn', label: 'feeds on', from: 'Corallivore', to: 'Coral', is: ['eats'], inverse: 'is fed on by' },
+        { id: 'hosts', label: 'hosts', from: 'Coral', to: 'Symbiont', inverse: 'lives inside' },
+        { id: 'livesIn', label: 'lives in', from: 'Organism', to: 'ReefZone', inverse: 'is home to' },
+        { id: 'recorded', label: 'recorded', from: 'Survey', to: 'Organism', inverse: 'was recorded by' },
+        { id: 'surveyed', label: 'surveyed', from: 'Survey', to: 'ReefZone', inverse: 'was surveyed by' },
+        { id: 'ledBy', label: 'led by', from: 'Survey', to: 'Diver', inverse: 'led' },
+      ],
+      individuals: [
+        { id: 'acropora', label: 'Acropora millepora', is: ['StonyCoral'], values: { iucn: 'NT', bleaching: 'high' },
+          links: [{ relation: 'hosts', to: 'cladocopium' }, { relation: 'livesIn', to: 'crest' }, { relation: 'livesIn', to: 'flat' }] },
+        { id: 'porites', label: 'Porites lobata', is: ['StonyCoral'], values: { iucn: 'NT' },
+          links: [{ relation: 'hosts', to: 'cladocopium' }, { relation: 'hosts', to: 'durusdinium' }, { relation: 'livesIn', to: 'flat' }, { relation: 'livesIn', to: 'lagoon' }] },
+        { id: 'sarcophyton', label: 'Leather coral', is: ['SoftCoral'], values: { bleaching: 'medium' },
+          links: [{ relation: 'hosts', to: 'durusdinium' }, { relation: 'livesIn', to: 'lagoon' }] },
+        { id: 'cladocopium', label: 'Cladocopium', is: ['Symbiont'] },
+        { id: 'durusdinium', label: 'Durusdinium', is: ['Symbiont'] },
+        { id: 'turf', label: 'Turf algae', is: ['Alga'], links: [{ relation: 'livesIn', to: 'crest' }, { relation: 'livesIn', to: 'flat' }] },
+        { id: 'sargassum', label: 'Sargassum', is: ['Alga'], links: [{ relation: 'livesIn', to: 'lagoon' }] },
+        { id: 'parrotfish', label: 'Bullethead parrotfish', is: ['Fish', 'Grazer'], values: { iucn: 'LC' },
+          links: [{ relation: 'grazes', to: 'turf' }, { relation: 'eats', to: 'acropora' }, { relation: 'livesIn', to: 'crest' }] },
+        { id: 'surgeonfish', label: 'Striped surgeonfish', is: ['Fish', 'Grazer'], values: { iucn: 'LC' },
+          links: [{ relation: 'grazes', to: 'turf' }, { relation: 'livesIn', to: 'crest' }] },
+        { id: 'butterflyfish', label: 'Redfin butterflyfish', is: ['Fish', 'Corallivore'], values: { iucn: 'LC' },
+          links: [{ relation: 'feedsOn', to: 'acropora' }, { relation: 'feedsOn', to: 'porites' }, { relation: 'livesIn', to: 'flat' }] },
+        { id: 'grouper', label: 'Leopard coral grouper', is: ['Fish', 'Piscivore'], values: { iucn: 'Least Concern' },
+          links: [{ relation: 'eats', to: 'parrotfish' }, { relation: 'eats', to: 'surgeonfish' }, { relation: 'livesIn', to: 'crest' }, { relation: 'livesIn', to: 'lagoon' }] },
+        { id: 'cots', label: 'Crown-of-thorns starfish', is: ['Echinoderm', 'Corallivore'],
+          links: [{ relation: 'feedsOn', to: 'acropora' }, { relation: 'livesIn', to: 'flat' }] },
+        { id: 'urchin', label: 'Long-spined urchin', is: ['Echinoderm', 'Grazer'],
+          links: [{ relation: 'grazes', to: 'turf' }, { relation: 'livesIn', to: 'flat' }] },
+        { id: 'crest', label: 'Reef crest', is: ['ReefZone'] },
+        { id: 'flat', label: 'Reef flat', is: ['ReefZone'] },
+        { id: 'lagoon', label: 'Lagoon', is: ['ReefZone'] },
+        { id: 'diver-1', label: 'Diver 1', is: ['Diver'] },
+        { id: 'transect-3', label: 'Transect 3', is: ['Survey'], values: { date: '2026-03-04' },
+          links: [{ relation: 'surveyed', to: 'flat' }, { relation: 'ledBy', to: 'diver-1' },
+            { relation: 'recorded', to: 'acropora' }, { relation: 'recorded', to: 'butterflyfish' }, { relation: 'recorded', to: 'cots' }] },
+        { id: 'transect-7', label: 'Transect 7', is: ['Survey'], values: { date: '2026-03-05' },
+          links: [{ relation: 'surveyed', to: 'crest' }, { relation: 'recorded', to: 'parrotfish' }, { relation: 'recorded', to: 'turf' }] },
+      ],
+    };
+
+    const grid = {
+      classes: [
+        { id: 'Asset' },
+        { id: 'Generator', is: ['Asset'] },
+        { id: 'WindFarm', label: 'Wind farm', is: ['Generator'] },
+        { id: 'SolarFarm', label: 'Solar farm', is: ['Generator'] },
+        { id: 'HydroPlant', label: 'Hydro plant', is: ['Generator'] },
+        { id: 'Storage', is: ['Asset'], description: 'Holds energy to release when it is needed.' },
+        { id: 'Battery', is: ['Storage'] },
+        { id: 'PumpedHydro', label: 'Pumped storage', is: ['Storage', 'HydroPlant'], description: 'Pumps water uphill when power is cheap, and lets it down through turbines when it is needed.' },
+        { id: 'Substation', is: ['Asset'] },
+        { id: 'Consumer' },
+        { id: 'Town', is: ['Consumer'] },
+        { id: 'Industry', is: ['Consumer'] },
+        { id: 'Region' },
+        { id: 'Resource', description: 'What the weather provides.' },
+      ],
+      properties: [
+        { id: 'capacity', on: 'Asset', type: 'number', unit: 'MW' },
+        { id: 'hours', label: 'hours of storage', on: 'Storage', type: 'number', unit: 'h' },
+        { id: 'status', on: 'Asset', type: 'string' },
+        { id: 'population', on: 'Town', type: 'number' },
+      ],
+      relations: [
+        { id: 'feeds', label: 'feeds', from: 'Generator', to: 'Substation', inverse: 'is fed by' },
+        { id: 'chargesFrom', label: 'charges from', from: 'Storage', to: 'Substation', inverse: 'charges' },
+        { id: 'supplies', label: 'supplies', from: 'Substation', to: 'Consumer', inverse: 'is supplied by' },
+        { id: 'linkedTo', label: 'is linked to', from: 'Substation', to: 'Substation', inverse: 'is linked to' },
+        { id: 'dependsOn', label: 'depends on', from: 'Generator', to: 'Resource', inverse: 'drives' },
+        { id: 'locatedIn', label: 'is in', from: 'Asset', to: 'Region', inverse: 'contains' },
+      ],
+      individuals: [
+        { id: 'northfell', label: 'Northfell Wind', is: ['WindFarm'], values: { capacity: 240, status: 'operating' },
+          links: [{ relation: 'feeds', to: 'north' }, { relation: 'dependsOn', to: 'wind' }, { relation: 'locatedIn', to: 'highlands' }] },
+        { id: 'skerry', label: 'Skerry Offshore Wind', is: ['WindFarm'], values: { capacity: 600, status: 'operating' },
+          links: [{ relation: 'feeds', to: 'south' }, { relation: 'dependsOn', to: 'wind' }, { relation: 'locatedIn', to: 'lowlands' }] },
+        { id: 'brackmoor', label: 'Brackmoor Solar', is: ['SolarFarm'], values: { status: 'planned' },
+          links: [{ relation: 'feeds', to: 'south' }, { relation: 'dependsOn', to: 'sun' }, { relation: 'locatedIn', to: 'lowlands' }] },
+        { id: 'glen', label: 'Glen Arn Hydro', is: ['HydroPlant'], values: { capacity: 85, status: 'operating' },
+          links: [{ relation: 'feeds', to: 'north' }, { relation: 'dependsOn', to: 'river' }, { relation: 'locatedIn', to: 'highlands' }] },
+        { id: 'meall', label: 'Loch Meall Pumped Storage', is: ['PumpedHydro'], values: { capacity: 300, hours: 20, status: 'operating' },
+          links: [{ relation: 'feeds', to: 'north' }, { relation: 'chargesFrom', to: 'north' }, { relation: 'dependsOn', to: 'rain' }, { relation: 'locatedIn', to: 'highlands' }] },
+        { id: 'kelby-battery', label: 'Kelby Battery', is: ['Battery'], values: { capacity: 50, hours: 2, status: 'operating' },
+          links: [{ relation: 'chargesFrom', to: 'south' }, { relation: 'locatedIn', to: 'kelby' }] },
+        { id: 'north', label: 'North Substation', is: ['Substation'], values: { capacity: 900, status: 'operating' },
+          links: [{ relation: 'supplies', to: 'ashby' }, { relation: 'linkedTo', to: 'south' }, { relation: 'locatedIn', to: 'highlands' }] },
+        { id: 'south', label: 'South Substation', is: ['Substation'], values: { capacity: 1200, status: 'operating' },
+          links: [{ relation: 'supplies', to: 'kelby' }, { relation: 'supplies', to: 'dunmore' }, { relation: 'locatedIn', to: 'lowlands' }] },
+        { id: 'kelby', label: 'Kelby', is: ['Town'], values: { population: 42000 } },
+        { id: 'ashby', label: 'Ashby', is: ['Town'], values: { population: 18000 } },
+        { id: 'dunmore', label: 'Dunmore Steelworks', is: ['Industry'] },
+        { id: 'highlands', label: 'Highlands', is: ['Region'] },
+        { id: 'lowlands', label: 'Lowlands', is: ['Region'] },
+        { id: 'wind', label: 'Wind', is: ['Resource'] },
+        { id: 'sun', label: 'Sunlight', is: ['Resource'] },
+        { id: 'river', label: 'River flow', is: ['Resource'] },
+        { id: 'rain', label: 'Rainfall', is: ['Resource'] },
+      ],
+    };
+
+    // What each model found wrong. In a sandbox these come from the model's own rules; the
+    // component only shows them.
+    const PROBLEMS = {
+      reef: [
+        { ref: 'transect-7', text: 'No diver leads this survey' },
+        { ref: 'porites', text: 'Bleaching susceptibility not recorded' },
+        { ref: 'grouper', text: 'IUCN status written in full ("Least Concern") rather than as its code, LC' },
+      ],
+      grid: [
+        { ref: 'kelby-battery.locatedIn.kelby', text: 'Kelby is a town, not a region' },
+        { ref: 'brackmoor', text: 'No capacity given' },
+      ],
+    };
+
+    const ONTOLOGIES = { reef, grid };
+    const ontologies = [...document.querySelectorAll('sb-ontology')];
+    const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+
+    // Every view gets the whole ontology, and draws only what it shows.
+    for (const onto of ontologies) {
+      const name = onto.closest('[data-ontology]').dataset.ontology;
+      onto.data = ONTOLOGIES[name];
+      onto.problems = PROBLEMS[name];
+      onto.show = onto.dataset.show.split(' ');
+      onto.addEventListener('sb-point', (e) => announce(e.detail.id));
+    }
+
+    // Pointing at a word, or at a part of a drawing, lights it up in every view and in the words.
+    document.addEventListener('sb-highlight', (e) => {
+      const { ref } = e.detail;
+      for (const onto of ontologies) onto.highlight = ref;
+      for (const word of document.querySelectorAll('.point[data-ref], .act[data-select]')) {
+        word.classList.toggle('lit', ref != null && (word.dataset.ref ?? word.dataset.select) === ref);
+      }
+    });
+
+    for (const word of document.querySelectorAll('.point[data-ref], .act[data-select]')) {
+      const ref = word.dataset.ref ?? word.dataset.select;
+      word.addEventListener('pointerenter', () => announce(ref));
+      word.addEventListener('pointerleave', () => announce(null));
+    }
+
+    // Clicking a word selects the thing in the view just after its paragraph.
+    for (const word of document.querySelectorAll('.act[data-select]')) {
+      const onto = word.closest('.prose').nextElementSibling;
+      word.addEventListener('click', () => {
+        onto.reveal(word.dataset.select);
+        onto.selected = word.dataset.select;
+      });
+    }
+  </script>
+</body>
+</html>

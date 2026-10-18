@@ -94,6 +94,7 @@ The model in `model.js` is the heart of the sandbox: the subject captured as cod
 - **Give it a small, clear interface,** like the template's: `state`, `step()`, `reset()`, `setOption()`. The page reads state and calls these; it never reaches inside.
 - **Make it a factory when the sandbox needs several.** One machine, market or organism per chapter is common. Keep the specifications (data) apart from the engine (code), so a new instance is just a new specification.
 - **Issue codes** for the rules and entities people will discuss, following the [identifiers practice](identifiers.md), and keep them in the model as data.
+- **When the subject is mostly kinds of things and how they relate,** the model can hold an ontology (classes, individuals, relations) as data, with its rules as plain functions that report problems. Show it a few things at a time with [`sb-ontology`](../components/sb-ontology/manifest.md), passing the problems in.
 - **Make runs reproducible.** If the model uses randomness, seed it, so a reset replays the same run.
 
 **Add model tests when they become worth it, not before.** A young model doesn't need them: it is small, and the person exploring it will notice when it's wrong. Add tests once the model has grown enough that a change could quietly break earlier behaviour, when a bug has come back, or when the person asks. Then anchor the settled rules and known results (a machine halts after 107 steps; a store reorders below its reorder point) with plain assertions, no library, in `model.test.js`:

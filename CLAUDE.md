@@ -13,6 +13,8 @@ Sandkit is a toolkit for domain sandboxing. Read `README.md` for what it is, `DE
 
 ## Adding or changing a component
 
+**Components render; models compute.** If a component would check rules, infer, analyse or compute anything beyond preparing its view, ask the author before building it. It's an exception, never a default (see `DECISIONS.md`).
+
 A component is done when it has all of these:
 
 1. `components/sb-name/sb-name.js`, first line `// Sandkit sb-name 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit`, the collision guard, prefixed classes, theme tokens with fallbacks.

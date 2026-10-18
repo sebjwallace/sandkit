@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-ontology tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-ontology.js"></script>
+  <script src="sb-ontology.js"></script>
+</head>
+<body>
+  <script>
+    // A small ecosystem, as in test.mjs: a chain from Lion 4 through Zebra 12 to Grass 1, all in the Savanna.
+    const ecosystem = () => ({
+      classes: [
+        { id: 'Organism' },
+        { id: 'Animal', is: ['Organism'] },
+        { id: 'Plant', is: ['Organism'] },
+        { id: 'Lion', is: ['Animal'] },
+        { id: 'Zebra', is: ['Animal'] },
+        { id: 'Habitat' },
+      ],
+      relations: [
+        { id: 'eats', label: 'eats', from: 'Animal', to: 'Organism' },
+        { id: 'livesIn', label: 'lives in', from: 'Organism', to: 'Habitat' },
+      ],
+      individuals: [
+        { id: 'lion-4', label: 'Lion 4', is: ['Lion'], links: [{ relation: 'eats', to: 'zebra-12' }] },
+        { id: 'zebra-12', label: 'Zebra 12', is: ['Zebra'], links: [{ relation: 'eats', to: 'grass-1' }, { relation: 'livesIn', to: 'savanna' }] },
+        { id: 'grass-1', label: 'Grass 1', is: ['Plant'], links: [{ relation: 'livesIn', to: 'savanna' }] },
+        { id: 'savanna', label: 'Savanna', is: ['Habitat'] },
+      ],
+    });
+
+    // Crowded: one kind with eight kinds below it, and twelve things all linked to one hub.
+    const crowd = () => ({
+      classes: [{ id: 'Thing' }, ...Array.from({ length: 8 }, (_, i) => ({ id: `Kind${i}`, label: `A longish kind ${i}`, is: ['Thing'] }))],
+      relations: [{ id: 'near', from: 'Thing', to: 'Thing' }],
+      individuals: [{ id: 'hub', is: ['Thing'] }, ...Array.from({ length: 12 }, (_, i) => ({
+        id: `t${i}`, label: `Thing number ${i}`, is: [`Kind${i % 8}`], links: [{ relation: 'near', to: 'hub' }],
+      }))],
+    });
+
+    function showing(attributes = '') {
+      const onto = mount(`<sb-ontology ${attributes}></sb-ontology>`);
+      onto.data = ecosystem();
+      return onto;
+    }
+
+    const drawn = (onto) => [...onto.querySelectorAll('.sb-ontology__node')].map((node) => node.dataset.ref);
+    const lines = (onto) => [...onto.querySelectorAll('.sb-ontology__link')].map((link) => link.dataset.ref);
+    const node = (onto, id) => onto.querySelector(`.sb-ontology__node[data-ref="${id}"]`);
+    const button = (onto, text) => [...onto.querySelectorAll('button')].find((b) => b.textContent.trim().startsWith(text));
+
+    // ---- Showing the ontology ----
+
+    test('shows the empty text with no ontology', () => {
+      assertEqual(mount('<sb-ontology empty-text="Nothing to see."></sb-ontology>').textContent.trim(), 'Nothing to see.');
+    });
+
+    test('draws every individual, and every link between them marked with its ref', () => {
+      const onto = showing();
+      assertEqual(drawn(onto).sort(), ['grass-1', 'lion-4', 'savanna', 'zebra-12']);
+      assertEqual(lines(onto), ['lion-4.eats.zebra-12', 'zebra-12.eats.grass-1', 'zebra-12.livesIn.savanna', 'grass-1.livesIn.savanna']);
+    });
+
+    const where = (onto, id) => node(onto, id).getAttribute('transform');
+    const y = (onto, id) => Number(where(onto, id).match(/-?[\d.]+/g)[1]);
+
+    test('the same ontology is always laid out the same way', () => {
+      const a = showing(), b = showing();
+      assertEqual(where(a, 'zebra-12'), where(b, 'zebra-12'));
+    });
+
+    test('kinds sit below the kinds they belong to, however many', () => {
+      const onto = showing('level="schema"');
+      assert(y(onto, 'Organism') < y(onto, 'Animal') && y(onto, 'Animal') < y(onto, 'Lion'), 'downwards');
+      onto.data = crowd();
+      for (let i = 0; i < 8; i++) assert(y(onto, `Kind${i}`) > y(onto, 'Thing'), `Kind${i} below`);
+    });
+
+    test('no two boxes overlap, however crowded', () => {
+      const onto = mount('<sb-ontology></sb-ontology>');
+      onto.data = crowd();
+      const boxes = [...onto.querySelectorAll('.sb-ontology__node')].map((node) => {
+        const [x, y] = node.getAttribute('transform').match(/-?[\d.]+/g).map(Number);
+        const rect = node.querySelector('rect');
+        return { x, y, w: Number(rect.getAttribute('width')), h: Number(rect.getAttribute('height')) };
+      });
+      assertEqual(boxes.length, 13);
+      boxes.forEach((a, i) => boxes.slice(i + 1).forEach((b) => {
+        assert(Math.abs(a.x - b.x) >= (a.w + b.w) / 2 || Math.abs(a.y - b.y) >= (a.h + b.h) / 2, 'boxes overlap');
+      }));
+    });
+
+    test('a loop of links still draws everything', () => {
+      const onto = mount('<sb-ontology></sb-ontology>');
+      const data = ecosystem();
+      data.individuals[3].links = [{ relation: 'eats', to: 'lion-4' }];
+      onto.data = data;
+      assertEqual(drawn(onto).length, 4);
+    });
+
+    test('an individual shows its class beneath its name', () => {
+      assertEqual(node(showing(), 'lion-4').querySelector('.sb-ontology__kind').textContent, 'Lion');
+    });
+
+    test('counts the classes and individuals, and says nothing of problems when there are none', () => {
+      assertEqual(showing().querySelector('.sb-ontology__summary').textContent, '6 classes, 4 individuals');
+    });
+
+    // ---- Showing a few things ----
+
+    test('show draws only the things named, and the links between them', () => {
+      const onto = showing();
+      onto.show = ['lion-4', 'zebra-12'];
+      assertEqual(drawn(onto), ['lion-4', 'zebra-12']);
+      assertEqual(lines(onto), ['lion-4.eats.zebra-12']);
+      onto.show = null;
+      assertEqual(drawn(onto).length, 4, 'all again');
+    });
+
+    test('a kind named brings its things, and among kinds, things bring their kinds and those above', () => {
+      const onto = showing();
+      onto.show = ['Plant', 'lion-4'];
+      assertEqual(drawn(onto), ['lion-4', 'grass-1']);
+      onto.level = 'schema';
+      assertEqual(drawn(onto), ['Organism', 'Animal', 'Plant', 'Lion']);
+    });
+
+    // ---- Kinds and things ----
+
+    test('the schema shows classes, their subclass links and relations', () => {
+      const onto = showing('level="schema"');
+      assertEqual(drawn(onto), ['Organism', 'Animal', 'Plant', 'Lion', 'Zebra', 'Habitat']);
+      assertEqual(lines(onto), ['Animal.is.Organism', 'Animal.eats.Organism', 'Plant.is.Organism', 'Lion.is.Animal', 'Zebra.is.Animal', 'Organism.livesIn.Habitat']);
+      assert(onto.querySelector('[data-ref="Lion.is.Animal"]').classList.contains('sb-ontology__link--is'), 'subclass links drawn apart');
+    });
+
+    test('viewers switch level, and the sandbox hears', () => {
+      const onto = showing();
+      const events = recordEvents(onto, 'sb-level');
+      button(onto, 'Kinds').click();
+      assertEqual(onto.level, 'schema');
+      button(onto, 'Things').click();
+      assertEqual(events.map((e) => e.detail.level), ['schema', 'instances']);
+    });
+
+    test('setting the level fires nothing', () => {
+      const onto = showing();
+      const events = recordEvents(onto, 'sb-level');
+      onto.level = 'schema';
+      assertEqual(events.length, 0);
+    });
+
+    // ---- The legend ----
+
+    const key = (onto, text) => [...onto.querySelectorAll('.sb-ontology__key')].find((k) => k.firstChild.textContent === text);
+    const lit = (onto) => [...onto.querySelectorAll('[class*="--highlighted"]')].map((el) => el.dataset.ref);
+    const over = (el) => el.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+
+    test('keys count the relations among the links, and the kinds among the boxes', () => {
+      const keys = (onto, name) => [...onto.querySelectorAll(`[aria-label="${name}"] .sb-ontology__key`)].map((k) => k.textContent.trim());
+      const onto = showing();
+      assertEqual(keys(onto, 'Links'), ['eats2', 'lives in2']);
+      // Lion, Zebra, Plant and Habitat have one box each, and nothing is in every box: neither is listed.
+      assertEqual(keys(onto, 'Kinds'), ['Organism3', 'Animal2']);
+      onto.level = 'schema';
+      assertEqual(keys(onto, 'Links'), ['is a4', 'eats1', 'lives in1']);
+    });
+
+    test('of two kinds lighting the same boxes, only the more specific is listed', () => {
+      const onto = mount('<sb-ontology></sb-ontology>');
+      const data = ecosystem();
+      data.classes.push({ id: 'Mammal', is: ['Animal'] });
+      data.classes[3].is = ['Mammal'];
+      data.classes[4].is = ['Mammal'];
+      onto.data = data;
+      const kinds = [...onto.querySelectorAll('[aria-label="Kinds"] .sb-ontology__key')].map((k) => k.firstChild.textContent);
+      assertEqual(kinds, ['Organism', 'Mammal']);
+    });
+
+    test('pointing at a key lights what it names, until the pointer moves off', () => {
+      const onto = showing();
+      over(key(onto, 'eats'));
+      assertEqual(lit(onto), ['lion-4.eats.zebra-12', 'zebra-12.eats.grass-1']);
+      over(onto.querySelector('.sb-ontology__summary'));
+      assertEqual(lit(onto), []);
+    });
+
+    test('a kind lights everything of that kind, inherited too', () => {
+      const onto = showing();
+      over(key(onto, 'Animal'));
+      assertEqual(lit(onto), ['lion-4', 'zebra-12']);
+      onto.level = 'schema';
+      over(key(onto, 'Animal'));
+      assertEqual(lit(onto), ['Animal', 'Lion', 'Zebra'], 'among kinds, the kind and those below it');
+    });
+
+    test('clicking a key keeps it lit, with others, until it is clicked again', () => {
+      const onto = showing();
+      click(key(onto, 'eats'));
+      click(key(onto, 'Animal'));
+      onto.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(lit(onto).sort(), ['lion-4', 'lion-4.eats.zebra-12', 'zebra-12', 'zebra-12.eats.grass-1']);
+      assertEqual(key(onto, 'eats').getAttribute('aria-pressed'), 'true');
+      click(key(onto, 'eats'));
+      assertEqual(lit(onto), ['lion-4', 'zebra-12']);
+      assertEqual(key(onto, 'eats').getAttribute('aria-pressed'), 'false');
+    });
+
+    test('clicking a key fires nothing and changes no selection', () => {
+      const onto = showing();
+      onto.selected = 'lion-4';
+      const selects = recordEvents(onto, 'sb-select');
+      click(key(onto, 'eats'));
+      assertEqual([onto.selected, selects.length], ['lion-4', 0]);
+    });
+
+    // ---- Selecting ----
+
+    const has = (el, modifier) => el.classList.contains(`sb-ontology__${el.matches('.sb-ontology__node') ? 'node' : 'link'}--${modifier}`);
+    const link = (onto, ref) => onto.querySelector(`.sb-ontology__link[data-ref="${ref}"]`);
+    const click = (el) => el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    test('clicking a thing selects it, with its links out, in, and its neighbours, and nothing moves', () => {
+      const onto = showing();
+      const before = node(onto, 'savanna').getAttribute('transform');
+      const selects = recordEvents(onto, 'sb-select');
+      click(node(onto, 'zebra-12'));
+      assertEqual(onto.selected, 'zebra-12');
+      assertEqual(selects.map((e) => e.detail), [{ type: 'individual', id: 'zebra-12' }]);
+      assert(has(node(onto, 'zebra-12'), 'selected'), 'selected');
+      assert(has(link(onto, 'zebra-12.eats.grass-1'), 'out') && has(link(onto, 'zebra-12.livesIn.savanna'), 'out'), 'links out');
+      assert(has(link(onto, 'lion-4.eats.zebra-12'), 'in'), 'link in');
+      assert(!has(link(onto, 'grass-1.livesIn.savanna'), 'out') && !has(link(onto, 'grass-1.livesIn.savanna'), 'in'), 'others plain');
+      assertEqual(['lion-4', 'grass-1', 'savanna'].map((id) => has(node(onto, id), 'neighbour')), [true, true, true], 'neighbours');
+      assertEqual(node(onto, 'savanna').getAttribute('transform'), before, 'nothing moved');
+    });
+
+    test('clicking a link selects it; clicking empty space clears the selection', () => {
+      const onto = showing();
+      const selects = recordEvents(onto, 'sb-select');
+      click(link(onto, 'lion-4.eats.zebra-12'));
+      assert(has(link(onto, 'lion-4.eats.zebra-12'), 'out'), 'link marked');
+      click(onto.querySelector('.sb-ontology__drawing'));
+      assertEqual(onto.selected, null);
+      assertEqual(selects.map((e) => e.detail), [{ type: 'link', id: 'lion-4.eats.zebra-12' }, { type: null, id: null }]);
+    });
+
+    test('Enter on a thing does what a click does', () => {
+      const onto = showing();
+      node(onto, 'zebra-12').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      assertEqual(onto.selected, 'zebra-12');
+    });
+
+    test('setting selected marks it, and fires nothing', () => {
+      const onto = showing();
+      const selects = recordEvents(onto, 'sb-select');
+      onto.selected = 'lion-4';
+      assert(has(node(onto, 'lion-4'), 'selected'));
+      assertEqual(selects.length, 0);
+    });
+
+    // ---- Dragging ----
+
+    // Presses on a box, moves the pointer by (dx, dy) on screen, and lets go.
+    function drag(el, dx, dy) {
+      const box = el.getBoundingClientRect();
+      const at = (x, y) => ({ bubbles: true, pointerId: 1, button: 0, clientX: box.x + x, clientY: box.y + y });
+      el.dispatchEvent(new PointerEvent('pointerdown', at(5, 5)));
+      el.dispatchEvent(new PointerEvent('pointermove', at(5 + dx, 5 + dy)));
+      el.dispatchEvent(new PointerEvent('pointerup', at(5 + dx, 5 + dy)));
+      click(el);
+    }
+
+    test('viewers drag a box, its links follow, and it stays where it was left', () => {
+      const onto = showing();
+      const before = link(onto, 'zebra-12.livesIn.savanna').querySelector('.sb-ontology__line').getAttribute('d');
+      const selects = recordEvents(onto, 'sb-select');
+      drag(node(onto, 'savanna'), 40, 30);
+      assert(where(onto, 'savanna') !== where(showing(), 'savanna'), 'moved');
+      assert(link(onto, 'zebra-12.livesIn.savanna').querySelector('.sb-ontology__line').getAttribute('d') !== before, 'the link followed');
+      assertEqual(selects.length, 0, 'a drag is not a click');
+      const left = where(onto, 'savanna');
+      onto.data = ecosystem();
+      assertEqual(where(onto, 'savanna'), left, 'kept across updates');
+    });
+
+    test('a press that hardly moves is a click', () => {
+      const onto = showing();
+      drag(node(onto, 'savanna'), 1, 1);
+      assertEqual(onto.selected, 'savanna');
+    });
+
+    // ---- Pointing ----
+
+    test('highlight lights the things and links named', () => {
+      const onto = showing();
+      onto.highlight = ['savanna', 'lion-4.eats.zebra-12'];
+      assert(has(node(onto, 'savanna'), 'highlighted') && has(link(onto, 'lion-4.eats.zebra-12'), 'highlighted'), 'lit');
+      onto.highlight = 'zebra-12';
+      assertEqual([...onto.querySelectorAll('[class*="--highlighted"]')].map((el) => el.dataset.ref), ['zebra-12'], 'one ref, alone');
+      onto.highlight = null;
+      assertEqual(onto.querySelectorAll('[class*="--highlighted"]').length, 0, 'cleared');
+    });
+
+    test('pointing at a thing shows its links as selecting would, until the pointer leaves', () => {
+      const onto = showing();
+      onto.selected = 'lion-4';
+      node(onto, 'savanna').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assert(has(link(onto, 'zebra-12.livesIn.savanna'), 'in') && has(node(onto, 'grass-1'), 'neighbour'), 'savanna previewed');
+      assert(!has(link(onto, 'lion-4.eats.zebra-12'), 'out'), "the selection's links wait");
+      assert(has(node(onto, 'lion-4'), 'selected') && !has(node(onto, 'savanna'), 'selected'), 'the selection stays');
+      onto.dispatchEvent(new PointerEvent('pointerleave'));
+      assert(has(link(onto, 'lion-4.eats.zebra-12'), 'out') && !has(link(onto, 'zebra-12.livesIn.savanna'), 'in'), 'back to the selection');
+    });
+
+    test('pointing at a thing or link tells the sandbox, and leaving says so', () => {
+      const onto = showing();
+      const points = recordEvents(onto, 'sb-point');
+      node(onto, 'savanna').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      node(onto, 'savanna').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      link(onto, 'lion-4.eats.zebra-12').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      onto.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(points.map((e) => e.detail), [
+        { type: 'individual', id: 'savanna' }, { type: 'link', id: 'lion-4.eats.zebra-12' }, { type: null, id: null },
+      ]);
+    });
+
+    // ---- Details and problems ----
+
+    // The ecosystem with a property, an inverse and a source, and the problem the model found: Zebra 12 has no mass.
+    function described() {
+      const data = ecosystem();
+      data.properties = [{ id: 'mass', label: 'mass', on: 'Animal', type: 'number', unit: 'kg' }];
+      data.relations[0].inverse = 'is eaten by';
+      data.individuals[0].values = { mass: 190 };
+      data.individuals[0].source = 'SRC-3';
+      const onto = mount('<sb-ontology></sb-ontology>');
+      onto.data = data;
+      onto.problems = [{ ref: 'zebra-12', text: 'Missing mass' }];
+      return onto;
+    }
+    const details = (onto) => onto.querySelector('.sb-ontology__details');
+    // The words in an element, its pieces of text joined by spaces, since a row's cells sit side by side without any.
+    function words(el) {
+      const pieces = [];
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) pieces.push(walker.currentNode.textContent);
+      return pieces.join(' ').replace(/\s+/g, ' ').replace(/\s([,:])/g, '$1').trim();
+    }
+
+    test('problems are counted, marked on their boxes, and listed with nothing selected', () => {
+      const onto = described();
+      assert(onto.querySelector('.sb-ontology__summary').textContent.endsWith('1 problem'), 'counted');
+      assertEqual(node(onto, 'zebra-12').querySelector('.sb-ontology__badge').textContent.trim(), '1');
+      assert(!node(onto, 'lion-4').querySelector('.sb-ontology__badge'), 'only where there are problems');
+      assert(words(details(onto)).includes('Zebra 12: Missing mass'), 'listed in words');
+    });
+
+    test('the list holds only problems with things drawn, and each one selects its thing', () => {
+      const onto = described();
+      onto.show = ['lion-4'];
+      assert(!words(details(onto)).includes('Missing'), 'not drawn, not listed');
+      onto.show = null;
+      const selects = recordEvents(onto, 'sb-select');
+      click(details(onto).querySelector('.sb-ontology__go'));
+      assertEqual(selects.map((e) => e.detail), [{ type: 'individual', id: 'zebra-12' }]);
+    });
+
+    test('a problem with a link is listed with the link in words, and selects it', () => {
+      const onto = described();
+      onto.problems = [{ ref: 'grass-1.livesIn.savanna', text: 'Grass lives everywhere' }];
+      assert(words(details(onto)).includes('Grass 1 lives in Savanna: Grass lives everywhere'), 'listed');
+      assert(has(link(onto, 'grass-1.livesIn.savanna'), 'problem'), 'marked on the drawing');
+      click(details(onto).querySelector('.sb-ontology__go'));
+      assertEqual(onto.selected, 'grass-1.livesIn.savanna');
+    });
+
+    test("a thing's details: its kinds, values with units and where they come from, links both ways, and source", () => {
+      const onto = described();
+      onto.selected = 'lion-4';
+      const text = words(details(onto));
+      assert(text.startsWith('Lion 4 Lion, and so Animal, Organism'), `kinds: ${text}`);
+      assert(text.includes('mass 190 kg from Animal'), 'value');
+      assert(text.includes('eats Zebra 12'), 'link out');
+      assert(details(onto).querySelector('[data-ref="lion-4.mass"]'), 'value row ref');
+      assert(text.includes('Source: SRC-3'), 'source');
+      onto.selected = 'zebra-12';
+      assert(words(details(onto)).includes('is eaten by Lion 4'), 'link in, through the inverse');
+      assert(words(details(onto)).includes('Missing mass'), 'its problems');
+      assert(words(details(onto)).includes('mass none'), 'a missing value shown as none');
+    });
+
+    test("a kind's details: what it owns, what it inherits and from where, its kinds below, and its count", () => {
+      const onto = described();
+      onto.level = 'schema';
+      onto.selected = 'Animal';
+      const text = words(details(onto));
+      assert(text.includes('mass number, in kg own'), `own property: ${text}`);
+      assert(text.includes('eats Organism own'), 'own relation');
+      assert(text.includes('lives in Habitat from Organism'), 'inherited relation');
+      assert(text.includes('Kinds below: Lion, Zebra'), 'kinds below');
+      assert(text.includes('2 individuals, 0 directly'), 'counted');
+      assert(details(onto).querySelector('[data-ref="Animal.mass"]'), 'property row ref');
+      onto.selected = 'Lion';
+      assert(words(details(onto)).includes('mass number, in kg from Animal'), 'inherited property');
+    });
+
+    test('a name in the details selects its thing, switching level if needed', () => {
+      const onto = described();
+      onto.selected = 'lion-4';
+      click([...details(onto).querySelectorAll('.sb-ontology__go')].find((b) => b.textContent === 'Animal'));
+      assertEqual([onto.level, onto.selected], ['schema', 'Animal']);
+    });
+
+    test('details show only for something drawn', () => {
+      const onto = described();
+      onto.show = ['zebra-12'];
+      onto.selected = 'lion-4';
+      assert(!words(details(onto)).startsWith('Lion 4'), 'not drawn');
+    });
+
+    test("a link's details say it in words", () => {
+      const onto = described();
+      onto.selected = 'lion-4.eats.zebra-12';
+      assertEqual(words(details(onto)), 'Lion 4 eats Zebra 12');
+    });
+
+        // ---- Locating ----
+
+    test('reveal shows the level where a ref can be seen, and fires nothing', () => {
+      const onto = showing();
+      const events = recordEvents(onto, 'sb-level');
+      assertEqual(onto.reveal('Plant'), true);
+      assertEqual(onto.level, 'schema');
+      assertEqual(onto.reveal('zebra-12.livesIn.savanna'), true);
+      assertEqual(onto.level, 'instances');
+      assertEqual(onto.reveal('nowhere'), false);
+      assertEqual(events.length, 0);
+    });
+
+    // ---- Contract ----
+
+    test('displays names as text, never as markup', () => {
+      const onto = mount('<sb-ontology></sb-ontology>');
+      onto.data = {
+        classes: [{ id: 'C', label: '<b>class</b>' }],
+        relations: [{ id: 'r', label: '<i>rel</i>', from: 'C', to: 'C' }],
+        individuals: [{ id: 'x', label: '<b>x</b>', is: ['C'], links: [{ relation: 'r', to: 'y' }] }, { id: 'y', is: ['C'] }],
+      };
+      onto.selected = 'x';
+      assertEqual(onto.querySelectorAll('b, i').length, 0);
+      assert(onto.textContent.includes('<b>x</b>'), 'shown as written');
+    });
+
+    test('two elements on one page keep their own ontology and selection', () => {
+      mount('<div><sb-ontology id="a"></sb-ontology><sb-ontology id="b" level="schema"></sb-ontology></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-ontology');
+      a.data = ecosystem();
+      b.data = ecosystem();
+      click(node(a, 'zebra-12'));
+      assertEqual([a.selected, b.selected], ['zebra-12', null]);
+      assertEqual([a.level, b.level], ['instances', 'schema']);
+    });
+
+    test('loading the same script twice is harmless and quiet', () => {
+      assertEqual(consoleErrors, []);
+    });
+  </script>
+</body>
+</html>
