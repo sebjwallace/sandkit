@@ -48,6 +48,7 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | The sandbox's own elements | whatever it marks | — |
 | [`sb-xref`](../components/sb-xref/manifest.md) | nothing: it lists places, below | — |
 | [`sb-tour`](../components/sb-tour/manifest.md) | nothing: its steps name what they point at with `data-at` | — |
+| [`sb-comments`](../components/sb-comments/manifest.md) | nothing: it asks what's at a point, below | — |
 
 More components join as sandboxes need them. A component's manifest says what it marks and whether it has `reveal`.
 
@@ -148,6 +149,24 @@ tour.addEventListener('sb-step', (e) => {
 ```
 
 When a step means a particular view, carry it on the step (`data-view="diagram"`) and call that view's `reveal` instead, as for words in the prose.
+
+## What's at a point
+
+[`sb-comments`](../components/sb-comments/manifest.md) asks the opposite question to `placesOf`: not where a ref is, but which refs are where the viewer clicked. The innermost ref is what was clicked; the ones around it say where it sits.
+
+```js
+// What's at a point: the refs of the element there and of the parts that hold it, innermost
+// first, with the view it's in. Anything inside sb-comments itself is passed over.
+function refsAt(x, y) {
+  const top = document.elementsFromPoint(x, y).find((el) => !el.closest('sb-comments'));
+  if (!top) return null;
+  const refs = [];
+  for (let el = top.closest('[data-ref]'); el; el = el.parentElement?.closest('[data-ref]')) refs.push(el.dataset.ref);
+  return { refs, view: viewOf(top), element: top.closest('[data-ref]') ?? top };
+}
+```
+
+It uses `viewOf` from "Listing where a ref appears", so a comment and a cross-reference name views alike. A click on something without a ref still gives its view; parts people are likely to comment on deserve a ref.
 
 ## What isn't found, on purpose
 

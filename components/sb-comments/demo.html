@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-comments demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-comments.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 1000px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre, .output { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+
+    .bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+    .side-by-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; font-size: 14px; }
+    .side-by-side h3 { margin: 0 0 4px; font-size: 13px; color: var(--sb-muted); }
+    .recipe ol, .recipe ul { margin: 0 0 10px; padding-left: 20px; }
+    .beds { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .bed { padding: 8px 10px; border: 1px dashed var(--sb-border); border-radius: var(--sb-radius); }
+    .bed strong { display: block; margin-bottom: 4px; }
+    .plant { display: inline-block; margin: 2px 4px 2px 0; padding: 1px 8px; border-radius: 999px; background: var(--sb-surface-2); }
+    @media (max-width: 720px) { .side-by-side { grid-template-columns: minmax(0, 1fr); } }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-comments">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Comments from the people exploring a sandbox, each citing what it's about.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>A sandbox carries understanding from a model to the people exploring it. Comments carry it back. Press Comment, click whatever you have something to say about, and write it down; the comment remembers exactly what it was about, so no one has to describe "the third row of the second table". When you're done, copy your comments as a prompt for the agent building the sandbox, or download them as a file to send to whoever asked for your thoughts, and the page is left as it was.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Feedback while exploring.</strong> Note a doubt the moment it occurs, pinned to the part it's about.</li>
+        <li><strong>Gathering views.</strong> Send a sandbox to the people who know the subject; they comment and send the file back.</li>
+        <li><strong>Telling an agent precisely what to change.</strong> Each comment cites the codes it's about, the view, the version and the state of the model.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>A conversation.</strong> For back-and-forth, talk; comments are for considered notes, sent in one go.</li>
+        <li><strong>Changing the model.</strong> Parameters and controls change it directly. Comments are about what should change.</li>
+        <li><strong>Notes for every reader.</strong> Notes everyone should see belong in the sandbox itself, as a callout or annotations.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-comments/sb-comments.js"&gt;&lt;/script&gt;
+
+&lt;sb-shell heading="My sandbox"&gt;
+  &lt;sb-comments id="feedback" slot="actions"&gt;&lt;/sb-comments&gt;
+&lt;/sb-shell&gt;
+
+&lt;script&gt;
+  comments.context = { title: 'My sandbox', version: '0.3.0', goal: 'What it helps people understand.' };
+  comments.snapshot = () =&gt; ({ chapter: tabs.selected, step: model.state.time });
+  comments.addEventListener('sb-pick', (e) =&gt; comments.pick(refsAt(e.detail.x, e.detail.y)));
+&lt;/script&gt;</pre>
+      <p>The component never searches the page. In comment mode it says where the viewer clicked, and the sandbox answers with what's there, using <code>refsAt</code> from the <a href="../../practices/locating.md">locating practice</a>. What the agent does with the comments it receives is in the <a href="../../practices/feedback.md">feedback practice</a>.</p>
+
+      <h3>Making it reveal, not just collect</h3>
+      <ul>
+        <li><strong>Give the parts people talk about a code.</strong> A comment on a part with a code cites it exactly; one without cites only its view.</li>
+        <li><strong>Snapshot what matters.</strong> The chapter, the step, the scenario: whatever a comment can't be understood without.</li>
+        <li><strong>Say what changed because of them.</strong> When a version answers comments, the journal says which, so people see their comments made a difference.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example" id="recipe-example">
+      <h2>Comments on a recipe</h2>
+      <p>Press Comment, click an ingredient or a step, and write what you think. Shift-click to add another part to the same comment. Press Done to copy or download them, or Cancel to forget them. What you'd send shows on the right.</p>
+      <div class="bar"><sb-comments id="recipe-comments"></sb-comments></div>
+      <div class="side-by-side">
+        <div class="recipe">
+          <div data-view="Ingredients">
+            <h3>Ingredients</h3>
+            <ul>
+              <li data-ref="ING-1">200 g plain flour</li>
+              <li data-ref="ING-2">2 eggs</li>
+              <li data-ref="ING-3">300 ml milk</li>
+            </ul>
+          </div>
+          <div data-view="Method">
+            <h3>Method</h3>
+            <ol>
+              <li data-ref="STEP-1">Whisk the flour, eggs and milk until smooth.</li>
+              <li data-ref="STEP-2">Rest the batter for 30 minutes.</li>
+              <li data-ref="STEP-3">Fry thin pancakes in a hot pan.</li>
+            </ol>
+          </div>
+        </div>
+        <div>
+          <h3>What would be sent</h3>
+          <pre class="output" id="recipe-output"></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="example" id="garden-example">
+      <h2>Comments on a garden plan</h2>
+      <p>Plants sit inside beds, so a comment on a plant cites the bed too: the innermost first, then what holds it. Each comment also records the season being planned.</p>
+      <div class="bar"><sb-comments id="garden-comments"></sb-comments></div>
+      <div class="side-by-side">
+        <div data-view="Plan">
+          <h3>Spring plan</h3>
+          <div class="beds">
+            <div class="bed" data-ref="BED-A"><strong>Bed A · sunny</strong><span class="plant" data-ref="tomatoes">Tomatoes</span><span class="plant" data-ref="basil">Basil</span></div>
+            <div class="bed" data-ref="BED-B"><strong>Bed B · shady</strong><span class="plant" data-ref="lettuce">Lettuce</span><span class="plant" data-ref="peppers">Peppers</span></div>
+          </div>
+        </div>
+        <div>
+          <h3>What would be sent</h3>
+          <pre class="output" id="garden-output"></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Declare everything first; the demo starts at the bottom.
+
+    const $ = (id) => document.getElementById(id);
+
+    // What's at a point: the refs of the element there and the parts that hold it, innermost
+    // first. A sandbox has this from the locating practice; this one names views by data-view.
+    function refsAt(x, y) {
+      const top = document.elementsFromPoint(x, y).find((el) => !el.closest('sb-comments'));
+      if (!top) return null;
+      const refs = [];
+      for (let el = top.closest('[data-ref]'); el; el = el.parentElement?.closest('[data-ref]')) refs.push(el.dataset.ref);
+      return { refs, view: top.closest('[data-view]')?.dataset.view ?? null, element: top.closest('[data-ref]') ?? top };
+    }
+
+    // Shows what would be sent, as it would be sent.
+    function showOutput(comments, output) {
+      output.textContent = comments.comments.length ? comments.toMarkdown() : 'Nothing yet: comments appear here as they would be sent.';
+    }
+
+    const examples = [
+      { comments: $('recipe-comments'), output: $('recipe-output'), context: { title: 'Pancakes', version: '0.2.0', goal: 'Make thin pancakes that don\'t tear.' } },
+      { comments: $('garden-comments'), output: $('garden-output'), context: { title: 'Garden plan', version: '0.1.0', goal: 'Plan beds so each plant gets the light it needs.' }, snapshot: () => ({ season: 'spring' }) }
+    ];
+
+    // ---- Wiring ----
+
+    for (const { comments, output, context, snapshot } of examples) {
+      comments.context = context;
+      if (snapshot) comments.snapshot = snapshot;
+      comments.addEventListener('sb-pick', (e) => comments.pick(refsAt(e.detail.x, e.detail.y)));
+      comments.addEventListener('sb-comment', () => showOutput(comments, output));
+      comments.addEventListener('click', () => setTimeout(() => showOutput(comments, output))); // after a delete or a send
+      // One in comment mode at a time.
+      comments.addEventListener('sb-mode', (e) => {
+        if (e.detail.active) examples.forEach((other) => { if (other.comments !== comments) other.comments.active = false; });
+      });
+    }
+
+    // ---- Start ----
+
+    examples.forEach(({ comments, output }) => showOutput(comments, output));
+  </script>
+</body>
+</html>

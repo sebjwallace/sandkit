@@ -45,7 +45,7 @@ The version identifies the entry, so cite it like a code: "the reorder rule was 
 
 - **Heading:** version · date · kind (`Breaking`, `Added` or `Fixed`).
 - **Changed** (required): what changed, citing every code touched.
-- **Why** (required): the reason, and what prompted it: the person, a source (`SRC-`), a contradiction, or your own finding.
+- **Why** (required): the reason, and what prompted it: the person, a source (`SRC-`), comments they sent (`FB-`, see the [feedback practice](feedback.md)), a contradiction, or your own finding.
 - **Retired** (only if any): each retired code and what replaced it, or "removed" if nothing did.
 - **Open** (optional): questions or doubts the change leaves.
 

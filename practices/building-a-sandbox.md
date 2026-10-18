@@ -157,6 +157,7 @@ What it shows:  one line per chapter built
 Checked:        what was checked, if anything, or what the person should look at
 Assumed:        what is simplified or rests on assumptions
 Rough edges:    known issues left for later
+Feedback:       if comments came in, which ones this iteration answered (FB- codes)
 Next:           2–4 named directions, each with what it adds and what it costs
 ```
 

@@ -13,6 +13,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [Locating](practices/locating.md) | Find everywhere a ref appears and go to it, through closed tabs and folded branches: `data-ref` on parts, `reveal(ref)`, and the sandbox's `goTo`. Supported by `sb-tabs`, `sb-tree`, `sb-id`, `sb-table`, `sb-rules` and `sb-graph`. |
 | [Journal](practices/journal.md) | What changed in a sandbox and why, one entry per version, and where it stands now: for audit and handover. Retired codes recorded in the model. |
 | [Identifiers](practices/identifiers.md) | Short, stable codes for the things in a sandbox, and citing them everywhere. Supported by `sb-id`. |
+| [Feedback](practices/feedback.md) | Collecting comments with `sb-comments`, and what the agent does on receiving them: saved as sources, `FB-` codes, answered in the journal. Supported by `sb-comments`. |
 
 ## Shell
 
@@ -31,6 +32,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-callout`](components/sb-callout/manifest.md) | A stand-out block for definitions, notes, tips, questions, answers and warnings; optionally collapsible. |
 | [`sb-chart`](components/sb-chart/manifest.md) | Values over time as lines, with reference lines, the latest values marked, and a legend. |
 | [`sb-code`](components/sb-code/manifest.md) | Code or pseudocode stepped through a trace the model records: the running line marked, variables beside it with changes shown. |
+| [`sb-comments`](components/sb-comments/manifest.md) | Comments from the people exploring a sandbox: in a session, click any part and say what you think; each comment cites its refs, view, version and state, and all are copied as one prompt or downloaded. |
 | [`sb-controls`](components/sb-controls/manifest.md) | Play, pause, step, reset and speed. Keeps the clock and tells the sandbox how many steps to take. |
 | [`sb-decision-tree`](components/sb-decision-tree/manifest.md) | Questions branching on their answers down to outcomes: one case traced with its value at each question, the answers that would have changed its outcome marked, branches thickened by how many cases took them. |
 | [`sb-erd`](components/sb-erd/manifest.md) | Entities and their fields, with each reference drawn from the exact field to the exact field it refers to. |

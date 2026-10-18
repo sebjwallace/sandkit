@@ -27,7 +27,7 @@ Example prefixes for different kinds of sandbox:
 |---|---|
 | Supply chain | `RUL` rule, `DC` distribution centre, `ST` store, `SUP` supplier, `SHP` shipment |
 | Event-driven system | `SVC` service, `TOP` topic, `EVT` event type, `RUL` routing rule |
-| Discovery of an unfamiliar domain | `CLM` claim, `QST` question, `ANS` answer, `SRC` source, `ASM` assumption |
+| Discovery of an unfamiliar domain | `CLM` claim, `QST` question, `ANS` answer, `SRC` source, `ASM` assumption, `FB` feedback received |
 | Physics or chemistry | `EQN` equation, `PAR` parameter, `RXN` reaction |
 
 ## Rules

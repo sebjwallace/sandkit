@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-comments tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-comments.js"></script>
+</head>
+<body>
+  <script>
+    let presses = 0; // clicks that reached the page's own button
+
+    function setup(attrs = '') {
+      const area = mount(`<div><sb-comments ${attrs}></sb-comments><button class="target" data-ref="RUL-1">Rule 1</button></div>`);
+      area.querySelector('.target').addEventListener('click', () => presses++);
+      return { el: area.querySelector('sb-comments'), target: area.querySelector('.target') };
+    }
+
+    const button = (el, action) => el.querySelector(`[data-action="${action}"]`);
+    const box = (el) => el.querySelector('.sb-comments__box');
+    const clickAt = (node, init = {}) => {
+      const r = node.getBoundingClientRect();
+      node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: r.left + 2, clientY: r.top + 2, ...init }));
+    };
+
+    // Writes a comment in the open box and saves it.
+    function write(el, text, kind) {
+      const area = box(el).querySelector('textarea');
+      area.value = text;
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+      if (kind) box(el).querySelector(`input[value="${kind}"]`).checked = true;
+      button(el, 'save').click();
+    }
+
+    // ---- Comment mode ----
+
+    test('Comment starts a session: the page dims, and a banner offers Cancel and Done', () => {
+      const { el } = setup();
+      const modes = recordEvents(el, 'sb-mode');
+      button(el, 'start').click();
+      assert(el.active && el.querySelector('.sb-comments__dim').matches(':popover-open'));
+      assert(el.querySelector('.sb-comments__banner').matches(':popover-open'));
+      assert(button(el, 'start').disabled, 'one session at a time');
+      assertEqual(modes.map((e) => e.detail.active), [true]);
+      el.active = false;
+    });
+
+    test('in comment mode, a click picks instead of reaching what\'s beneath', () => {
+      const { el, target } = setup();
+      const picks = recordEvents(el, 'sb-pick');
+      presses = 0;
+      el.active = true;
+      clickAt(target);
+      assertEqual(presses, 0, 'the button underneath never heard it');
+      assertEqual(picks.length, 1);
+      assertEqual(picks[0].detail.add, false);
+      assert(typeof picks[0].detail.x === 'number' && typeof picks[0].detail.y === 'number');
+      el.active = false;
+    });
+
+    test('outside comment mode, clicks pass through', () => {
+      const { el, target } = setup();
+      const picks = recordEvents(el, 'sb-pick');
+      presses = 0;
+      clickAt(target);
+      assertEqual([presses, picks.length], [1, 0]);
+    });
+
+    test('Escape closes the comment box, but never ends the session', () => {
+      const { el } = setup();
+      const modes = recordEvents(el, 'sb-mode');
+      el.active = true;
+      el.pick(null);
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      assert(!box(el).matches(':popover-open'), 'the box closes');
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      assertEqual([el.active, modes.length], [true, 0]);
+      el.active = false;
+    });
+
+    test('setting active fires no event', () => {
+      const { el } = setup();
+      const modes = recordEvents(el, 'sb-mode');
+      el.active = true;
+      el.active = false;
+      assertEqual(modes.length, 0);
+    });
+
+    // ---- Writing comments ----
+
+    test('a pick opens a box citing what was picked; saving keeps the comment and fires sb-comment', () => {
+      const { el, target } = setup();
+      const saved = recordEvents(el, 'sb-comment');
+      el.active = true;
+      el.pick({ refs: ['RUL-1', 'TBL-2'], view: 'Rules', element: target });
+      assert(box(el).matches(':popover-open'));
+      assert(box(el).textContent.includes('About RUL-1, TBL-2 · Rules'));
+      assert(button(el, 'save').disabled, 'nothing written yet');
+      write(el, 'This fires too often.', 'correction');
+      const [c] = el.comments;
+      assertEqual([c.n, c.kind, c.text, c.refs, c.view], [1, 'correction', 'This fires too often.', ['RUL-1', 'TBL-2'], 'Rules']);
+      assertEqual(saved.length, 1);
+      assert(!box(el).matches(':popover-open'));
+      el.active = false;
+    });
+
+    test('picking nothing still makes a comment, citing nothing', () => {
+      const { el } = setup();
+      el.pick(null);
+      assert(box(el).textContent.includes('A general comment'));
+      write(el, 'Generally good.');
+      assertEqual([el.comments[0].refs, el.comments[0].view], [[], null]);
+    });
+
+    test('shift-click adds to the open comment', () => {
+      const { el, target } = setup();
+      el.addEventListener('sb-pick', (e) => el.pick(e.detail.add ? { refs: ['B'], view: 'Two', element: target } : { refs: ['A'], view: 'One', element: target }));
+      el.active = true;
+      clickAt(target);
+      clickAt(target, { shiftKey: true });
+      write(el, 'Both of these.');
+      assertEqual([el.comments[0].refs, el.comments[0].view], [['A', 'B'], 'One']);
+      el.active = false;
+    });
+
+    test('the model\'s state is taken when a comment is saved, kept as data', () => {
+      const { el } = setup();
+      const state = { chapter: 'ch-2', step: 12 };
+      let calls = 0;
+      el.snapshot = () => { calls++; return state; };
+      el.pick(null);
+      assertEqual(calls, 0, 'not when the box opens');
+      write(el, 'Here.');
+      state.step = 99;
+      assertEqual([calls, el.comments[0].state], [1, { chapter: 'ch-2', step: 12 }]);
+    });
+
+    test('numbers only go up: deleting #2 and adding one gives #4', () => {
+      const { el } = setup();
+      for (const text of ['one', 'two', 'three']) { el.pick(null); write(el, text); }
+      button(el, 'done').click();
+      el.querySelector('[data-action="delete"][data-n="2"]').click();
+      el.pick(null);
+      write(el, 'four');
+      assertEqual(el.comments.map((c) => c.n), [1, 3, 4]);
+    });
+
+    test('editing a comment keeps its number and what it cites', () => {
+      const { el } = setup();
+      el.pick({ refs: ['X'], view: 'V', element: null });
+      write(el, 'first');
+      button(el, 'done').click();
+      el.querySelector('[data-action="edit"][data-n="1"]').click();
+      assertEqual(box(el).querySelector('textarea').value, 'first');
+      write(el, 'second', 'idea');
+      assertEqual(el.comments.map((c) => [c.n, c.text, c.kind, c.refs]), [[1, 'second', 'idea', ['X']]]);
+    });
+
+    // ---- What it produces ----
+
+    test('toMarkdown writes the comments as a prompt, in the agreed format', () => {
+      const { el } = setup();
+      el.context = { title: 'Checkout architecture', version: '0.4.0', goal: 'Understand how a shop\'s checkout is built.' };
+      el.comments = [
+        { n: 1, kind: 'correction', text: 'Payment retries happen here.', refs: ['CMP-4', 'CNT-2'], view: 'Containers', state: { chapter: 'ch-3', step: 12 } },
+        { n: 2, kind: 'question', text: 'Why once a day?', refs: [], view: null, state: null }
+      ];
+      const today = new Date().toISOString().slice(0, 10);
+      assertEqual(el.toMarkdown(), [
+        '# Feedback on Checkout architecture (version 0.4.0)',
+        '',
+        `${today}. Goal: Understand how a shop's checkout is built.`,
+        '',
+        'Please read this sandbox\'s journal practice, address each comment below, and cite the comments you address in the journal entry\'s **Why**.',
+        '',
+        '## #1 · Correction · CMP-4, CNT-2 · Containers',
+        'Payment retries happen here.',
+        'State: chapter ch-3, step 12.',
+        '',
+        '## #2 · Question',
+        'Why once a day?',
+        ''
+      ].join('\n'));
+    });
+
+    test('names the author when given, remembered with the comments', () => {
+      const { el } = setup();
+      button(el, 'done').click();
+      const author = el.querySelector('.sb-comments__author');
+      author.value = 'Priya';
+      author.dispatchEvent(new Event('input', { bubbles: true }));
+      el.pick(null);
+      write(el, 'Hello');
+      assert(el.toMarkdown().includes('From Priya, '));
+      assertEqual(el.comments[0].author, 'Priya');
+    });
+
+    test('markdown in a comment stays text: it can\'t make headings or lists', () => {
+      const { el } = setup();
+      el.comments = [{ n: 1, kind: 'idea', text: '# Not a heading\n- not a list\n1. nor this', refs: [] }];
+      const body = el.toMarkdown().split('## #1 · Idea\n')[1];
+      assert(body.startsWith('\\# Not a heading\n\\- not a list\n1\\. nor this'), body);
+    });
+
+    test('shows comment text and refs as text, never as markup', () => {
+      const { el } = setup();
+      el.pick({ refs: ['<b>R</b>'], view: '<i>V</i>', element: null });
+      assertEqual(box(el).querySelectorAll('b, i').length, 0);
+      write(el, '<img src=x onerror="window.leaked = 1">');
+      button(el, 'done').click();
+      assertEqual(el.querySelectorAll('.sb-comments__tray img, .sb-comments__tray b, .sb-comments__tray i').length, 0);
+      assert(el.querySelector('.sb-comments__item-text').textContent.includes('<img'));
+      assertEqual(window.leaked, undefined);
+    });
+
+    test('Done in the list clears everything, back to a clean page; numbering starts again', () => {
+      const { el } = setup();
+      for (const text of ['one', 'two']) { el.pick(null); write(el, text); }
+      button(el, 'done').click();
+      button(el, 'close').click();
+      assert(!el.querySelector('.sb-comments__tray').matches(':popover-open'));
+      assertEqual([el.comments, el.querySelector('.sb-comments__count').textContent], [[], '']);
+      el.pick(null);
+      write(el, 'again');
+      assertEqual(el.comments[0].n, 1);
+    });
+
+    test('keeps nothing in the browser: comments last only as long as the page', () => {
+      const before = localStorage.length;
+      const { el } = setup('id="nothing-kept"');
+      el.pick(null);
+      write(el, 'gone on reload');
+      assertEqual(localStorage.length, before);
+    });
+
+    test('two on one page keep their own comments and modes', () => {
+      const area = mount('<div><sb-comments></sb-comments><sb-comments></sb-comments></div>');
+      const [a, b] = area.querySelectorAll('sb-comments');
+      a.active = true;
+      a.pick(null);
+      write(a, 'only in a');
+      assertEqual([a.comments.length, b.comments.length, b.active], [1, 0, false]);
+      assert(a.querySelector('input[type="radio"]').name !== (b.pick(null), b.querySelector('input[type="radio"]').name));
+      a.active = false;
+    });
+
+    // ---- Ending a session ----
+
+    test('the banner counts the comments so far', () => {
+      const { el } = setup();
+      el.active = true;
+      el.pick(null);
+      write(el, 'one');
+      assertEqual(el.querySelector('.sb-comments__count').textContent, '1 comment');
+      el.active = false;
+    });
+
+    test('Cancel ends the session and forgets its comments, as if nothing happened', () => {
+      const { el } = setup();
+      const modes = recordEvents(el, 'sb-mode');
+      button(el, 'start').click();
+      el.pick(null);
+      write(el, 'never mind');
+      el.pick(null); // a comment half-written
+      button(el, 'discard').click();
+      assertEqual([el.active, el.comments, box(el).matches(':popover-open')], [false, [], false]);
+      assertEqual(modes.map((e) => e.detail.active), [true, false]);
+    });
+
+    test('Done ends commenting and opens the list, ready to copy or download', () => {
+      const { el } = setup();
+      button(el, 'start').click();
+      el.pick(null);
+      write(el, 'one');
+      button(el, 'done').click();
+      assertEqual(el.active, false);
+      assert(el.querySelector('.sb-comments__tray').matches(':popover-open'));
+      assert(!button(el, 'copy').disabled && !button(el, 'download').disabled);
+      assertEqual(el.comments.length, 1, 'kept until sent');
+    });
+
+    test('Keep commenting goes back to the session, comments and all', () => {
+      const { el } = setup();
+      button(el, 'start').click();
+      el.pick(null);
+      write(el, 'one');
+      button(el, 'done').click();
+      button(el, 'resume').click();
+      assertEqual([el.active, el.comments.length], [true, 1]);
+      assert(!el.querySelector('.sb-comments__tray').matches(':popover-open'));
+      el.active = false;
+    });
+  </script>
+</body>
+</html>
