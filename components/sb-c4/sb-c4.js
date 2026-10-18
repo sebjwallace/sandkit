@@ -1,4 +1,4 @@
-// Sandkit sb-c4 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-c4 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A C4 architecture diagram you can walk into. The sandbox describes the whole architecture once,
 // as nested elements and the relationships between them; each view shows one level, with a path
 // back up. Relationships deep inside roll up to the boxes you can see, so every view stays true.
@@ -291,8 +291,8 @@
       this._pointedAt = null; // { type, id } of what is under the pointer
       this.addEventListener('click', (e) => this._click(e));
       this.addEventListener('dblclick', (e) => {
-        const box = e.target.closest('[data-element]');
-        if (box) this._enter(box.dataset.element);
+        const box = e.target.closest('.sb-c4__element');
+        if (box) this._enter(box.dataset.ref);
       });
       this.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && this._path.length) {
@@ -301,8 +301,8 @@
         }
       });
       this.addEventListener('pointerover', (e) => {
-        const part = e.target.closest('[data-element], [data-link]');
-        this._pointAt(part ? (part.dataset.element ? { type: 'element', id: part.dataset.element } : { type: 'link', id: part.dataset.link }) : null);
+        const part = e.target.closest('.sb-c4__element, .sb-c4__relationship');
+        this._pointAt(part ? (part.dataset.link ? { type: 'link', id: part.dataset.link } : { type: 'element', id: part.dataset.ref }) : null);
       });
       this.addEventListener('pointerleave', () => this._pointAt(null));
     }
@@ -344,12 +344,13 @@
       this._showHighlight();
     }
 
-    // Goes to the view where an element can be seen, and highlights it.
+    // Goes to the view where an element can be seen, and highlights it. False if there's no such element.
     reveal(id) {
       const entry = this._elements.get(String(id));
-      if (!entry) return;
+      if (!entry) return false;
       this.path = entry.ancestors;
       this.highlight = { elements: [String(id)] };
+      return true;
     }
 
     // Only elements with children can be entered; a path stops at the first that can't.
@@ -430,7 +431,7 @@
       const count = e.children?.length;
       const inside = count ? `<text class="sb-c4__inside" data-enter="${esc(e.id)}" x="${b.x + b.width / 2}" y="${b.y + b.height - BOX.padding + 1}" text-anchor="middle">⤢ ${count} inside</text>` : '';
       return `
-        <g class="${classes.join(' ')}" data-element="${esc(e.id)}">
+        <g class="${classes.join(' ')}" data-ref="${esc(e.id)}">
           <title>${esc(e.name ?? e.id)}${e.description ? `: ${esc(e.description)}` : ''}</title>
           ${shape(b)}
           <text text-anchor="middle" y="${b.y + BOX.padding + 12 + b.rim}">${lines.join('')}</text>
@@ -456,13 +457,14 @@
       const bx = end.x - ux * ARROW.length, by = end.y - uy * ARROW.length;
       const d = `M${start.x},${start.y} Q${control.x},${control.y} ${bx},${by}`;
       const one = link.relationships.length === 1 ? link.relationships[0] : null;
+      const ref = one?.id != null ? ` data-ref="${esc(one.id)}"` : ''; // a line carrying several has no single ref
       const label = one ? one.label ?? '' : `${link.relationships.length} relationships`;
       const technology = one?.technology ? `[${one.technology}]` : '';
       const mid = placeLabel(technology ? [label, technology] : [label], pointAt, boxes, placed);
       const detail = technology ? `<tspan class="sb-c4__label-detail" x="${mid.x}" dy="${LABEL.line}">${esc(technology)}</tspan>` : '';
       const listing = link.relationships.map((r) => `${this._name(r.from)} → ${this._name(r.to)}${r.label ? `: ${r.label}` : ''}`).join('\n');
       return `
-        <g class="sb-c4__relationship" data-link="${esc(link.key)}">
+        <g class="sb-c4__relationship" data-link="${esc(link.key)}"${ref}>
           <title>${esc(listing)}</title>
           <path class="sb-c4__hit" d="${d}"/>
           <path class="sb-c4__line" d="${d}"/>
@@ -508,7 +510,7 @@
         }
       }
       for (const el of this.querySelectorAll('.sb-c4__element')) {
-        const id = el.dataset.element;
+        const id = el.dataset.ref;
         el.classList.toggle('sb-c4__element--highlighted', outlined.has(id));
         el.classList.toggle('sb-c4__element--holds-highlight', holders.has(id));
         el.classList.toggle('sb-c4__element--faded', !!pointed && !kept.has(id));
@@ -547,9 +549,9 @@
       if (step) return this._go(JSON.parse(step.dataset.path));
       const enter = e.target.closest('[data-enter]');
       if (enter) return this._enter(enter.dataset.enter);
-      const box = e.target.closest('[data-element]');
+      const box = e.target.closest('.sb-c4__element');
       const link = e.target.closest('[data-link]');
-      if (box) this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'element', id: box.dataset.element } }));
+      if (box) this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'element', id: box.dataset.ref } }));
       else if (link) {
         const found = this._view.links.find((l) => l.key === link.dataset.link);
         this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'relationship', relationships: found.relationships } }));

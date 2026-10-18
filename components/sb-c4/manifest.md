@@ -74,7 +74,7 @@ Use this component through the interface below. You don't need to read its sourc
 | `model` | `{ elements, relationships }`. Setting it redraws, keeping the path as far as it still leads. |
 | `path` | The ids of the elements we're inside, outermost first; `[]` for the top. Only elements with children can be entered, from their parent; a path stops at the first step that can't. Setting it doesn't fire `sb-navigate`. |
 | `highlight` | `{ elements: [ids], relationships: [ids] }`: what to point at. An element that can be seen is outlined; one folded inside a box marks that box. A relationship lights the line it's rolled into. |
-| `reveal(id)` | Goes to the view where an element can be seen, and highlights it. |
+| `reveal(id)` | Goes to the view where an element can be seen, and highlights it. Returns `true`, or `false` if there's no such element. Doesn't fire `sb-navigate`. |
 
 ## Viewers
 
@@ -94,6 +94,8 @@ Use this component through the interface below. You don't need to read its sourc
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-surface`, `--sb-accent`, `--sb-accent-soft`, `--sb-accent-text`, `--sb-good`, `--sb-warn`, `--sb-bad`.
 
 Classes: `sb-c4__path`, `sb-c4__step` (the current one has `aria-current`), `sb-c4__divider`, `sb-c4__svg`, `sb-c4__boundary`, `sb-c4__boundary-label`, `sb-c4__element` (with its kind, such as `--person`, and `--external`, the tone, `--highlighted`, `--holds-highlight`, `--faded`), `sb-c4__shape`, `sb-c4__name`, `sb-c4__kind`, `sb-c4__description`, `sb-c4__inside`, `sb-c4__relationship` (`--highlighted`, `--faded`), `sb-c4__line`, `sb-c4__arrow`, `sb-c4__label`, `sb-c4__label-detail`.
+
+Boxes carry `data-ref` with their element's id, and a line carrying a single relationship with an `id` carries that id, so a sandbox can find them (see the [locating practice](../../practices/locating.md)). Only the current view is drawn, so an element inside a box that hasn't been entered isn't on the page to find; `reveal` goes to it.
 
 ## Works well with
 

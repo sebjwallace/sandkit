@@ -41,8 +41,8 @@
       return el;
     }
 
-    const boxes = (el) => [...el.querySelectorAll('.sb-c4__element')].map((b) => b.dataset.element);
-    const box = (el, id) => [...el.querySelectorAll('.sb-c4__element')].find((b) => b.dataset.element === id);
+    const boxes = (el) => [...el.querySelectorAll('.sb-c4__element')].map((b) => b.dataset.ref);
+    const box = (el, id) => [...el.querySelectorAll('.sb-c4__element')].find((b) => b.dataset.ref === id);
     const link = (el, key) => [...el.querySelectorAll('.sb-c4__relationship')].find((l) => l.dataset.link === key);
     const links = (el) => [...el.querySelectorAll('.sb-c4__relationship')].map((l) => l.dataset.link);
     const label = (el, key) => link(el, key).querySelector('.sb-c4__label').textContent;
@@ -202,6 +202,36 @@
       el.reveal('checkout');
       assertEqual(el.path, ['shop', 'api']);
       assert(has(box(el, 'checkout'), 'highlighted'));
+    });
+
+    test('reveal says whether the model holds the element', () => {
+      const el = diagram();
+      assertEqual(el.reveal('checkout'), true);
+      assertEqual(el.reveal('missing'), false);
+      assertEqual(el.path, ['shop', 'api'], 'stays where it was');
+    });
+
+    test('reveal does not fire viewers\' events', () => {
+      const el = diagram();
+      const navigations = recordEvents(el, 'sb-navigate'), selections = recordEvents(el, 'sb-select');
+      el.reveal('checkout');
+      assertEqual([navigations.length, selections.length], [0, 0]);
+    });
+
+    // ---- Locating ----
+
+    test('boxes carry data-ref with their element\'s id, so the page can find them', () => {
+      const el = diagram(['shop']);
+      assertEqual([...el.querySelectorAll('.sb-c4__element[data-ref]')].length, el.querySelectorAll('.sb-c4__element').length);
+      assert(el.querySelector('[data-ref="api"]').matches('.sb-c4__element'));
+      assertEqual(el.querySelector('[data-ref="checkout"]'), null, 'not drawn in this view, so not found');
+    });
+
+    test('a line carrying one relationship with an id carries data-ref; a rolled-up line doesn\'t', () => {
+      const el = diagram(['shop']);
+      assert(el.querySelector('[data-ref="r1"]').matches('.sb-c4__relationship'), 'shopper to web app');
+      const rolled = [...el.querySelectorAll('.sb-c4__relationship')].find((l) => l.querySelector('.sb-c4__label').textContent.includes('2 relationships'));
+      assert(rolled && !rolled.hasAttribute('data-ref'), 'the web app to API line carries two');
     });
 
     // ---- Pointing ----

@@ -35,7 +35,7 @@ A component is done when it has all of these:
 
 ## Example sandboxes
 
-`examples/` holds full sandboxes built with Sandkit (supply chain, linear algebra). They follow `practices/building-a-sandbox.md`: iterations, one chapter at a time, each ending with a handover offering 2–4 directions. Each has a `test.html` with model tests and a smoke test of its page.
+`examples/` holds full sandboxes built with Sandkit (supply chain, linear algebra, checkout architecture). They follow `practices/building-a-sandbox.md`: iterations, one chapter at a time, each ending with a handover offering 2–4 directions. Each has a `test.html` with model tests and a smoke test of its page.
 
 ## Commits
 

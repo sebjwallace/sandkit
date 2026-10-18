@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.8 · 2026-10-18
+- Added a third example sandbox, checkout architecture: chapter 1, the parts, with names in the prose that go to their part. `sb-c4` 0.1.1 marks its boxes and lines with `data-ref`, and `reveal` says whether it holds the element.
+
 ## 0.2.7 · 2026-10-18
 - More components mark their parts for the locating practice: `sb-id` 0.1.2, `sb-table` 0.1.1, `sb-rules` 0.1.1 and `sb-graph` 0.1.1 carry `data-ref`.
 

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout Architecture Sandbox</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-c4/sb-c4.js"></script>
+  <script src="../../components/sb-tree/sb-tree.js"></script>
+  <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="model.js"></script>
+</head>
+<body>
+  <sb-shell heading="Checkout Architecture Sandbox">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p><strong>Goal:</strong> see how a shop’s checkout is built: the parts behind the Pay button, how they talk when someone pays, and where each part shows up in the code and the data.</p>
+  </sb-shell>
+
+  <main>
+    <section class="chapter">
+      <h2>Chapter 1 · The parts</h2>
+      <p>To a shopper, checking out is one button. Behind it, several parts each do one job. The diagram draws them as architects do, in the C4 style: at the top, people and whole systems; inside the shop, the apps and the database it’s made of; inside the <button type="button" class="go" data-go="CON-2">Shop API</button>, the components that do the work. Each line is one part calling another, and a call made deep inside rolls up to the box you can see.</p>
+      <p>The shopper only ever talks to the <button type="button" class="go" data-go="CON-1">Storefront</button>. The card is charged by the <button type="button" class="go" data-go="SYS-2">Payment provider</button>, outside the shop altogether, and only one part of the shop ever talks to it: <button type="button" class="go" data-go="CMP-3">Payments</button>.</p>
+      <p class="try"><strong>Try:</strong> go into the shop, then into the API, and find who places orders and who charges the card. Select any part, in the diagram or the outline, to see everything that crosses its edge. Click a name above to go to it; point at a code to see where it is.</p>
+
+      <div class="stage">
+        <sb-c4 id="diagram" root-label="Overview" class="panel"></sb-c4>
+        <aside class="side">
+          <sb-tree id="outline" class="panel"></sb-tree>
+          <div id="details" class="panel details" aria-live="polite"></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Declare everything first; the sandbox starts at the bottom.
+
+    const $ = (id) => document.getElementById(id);
+    const diagram = $('diagram'), outline = $('outline');
+    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const nameOf = (code) => checkout.element(code)?.name ?? code;
+
+    // The outline is the same architecture as the diagram, every part at once, with its code.
+    const toNode = (element) => ({ id: element.id, label: element.name, meta: element.id, ...(element.children && { children: element.children.map(toNode) }) });
+
+    // ---- The selected part ----
+
+    // Everything crossing a part's edge, said in words, naming the part inside that makes each call.
+    function renderDetails(code) {
+      const part = checkout.element(code);
+      const inside = checkout.path(code).map(nameOf).reverse();
+      const { outgoing, incoming } = checkout.connections(code);
+      const sentence = ({ relationship: r }) => `${esc(nameOf(r.from))} ${esc(r.label.toLowerCase())} ${esc(nameOf(r.to))}`;
+      const list = (title, crossings) => crossings.length ? `
+        <h4>${title}</h4>
+        <ul>${crossings.map((c) => `<li><sb-id code="${esc(c.relationship.id)}"></sb-id> ${sentence(c)}</li>`).join('')}</ul>` : '';
+      $('details').innerHTML = `
+        <h3>${esc(part.name)} <sb-id code="${esc(code)}"></sb-id></h3>
+        <p class="where">${esc(checkout.define(code).kind)}${part.technology ? `, ${esc(part.technology)}` : ''}${inside.length ? `, inside ${inside.map(esc).join(', inside ')}` : ''}</p>
+        <p>${esc(part.description)}</p>
+        ${list('Calls out', outgoing)}
+        ${list('Called by', incoming)}`;
+    }
+
+    function select(code) {
+      outline.selected = code;
+      outline.reveal(code);
+      renderDetails(code);
+    }
+
+    // ---- Pointing (practices/highlighting.md) ----
+
+    const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+
+    document.addEventListener('sb-highlight', (e) => {
+      const ref = e.detail.ref;
+      const part = checkout.element(ref) ? [ref] : [], line = checkout.relationship(ref) ? [ref] : [];
+      outline.highlight = part;
+      diagram.highlight = { elements: part, relationships: line };
+    });
+
+    document.addEventListener('sb-resolve', (e) => { e.detail.definition = checkout.define(e.detail.code); });
+
+    // ---- Going to a part (practices/locating.md) ----
+
+    const placesOf = (ref) => [...document.querySelectorAll(`[data-ref="${CSS.escape(ref)}"]`)];
+
+    function goTo(ref, index = 0) {
+      const place = placesOf(ref)[index];
+      if (!place) return false;
+      revealAround(place, ref);
+      place.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      announce(ref);
+      setTimeout(() => announce(null), 1500);
+      return true;
+    }
+
+    // Outermost first: a tab must open before the tree inside it can expand.
+    function revealAround(place, ref) {
+      const hosts = [];
+      for (let el = place.parentElement; el; el = el.parentElement) if (typeof el.reveal === 'function') hosts.unshift(el);
+      hosts.forEach((host) => host.reveal(ref, place));
+    }
+
+    // Names in the prose: pointing previews, clicking goes.
+    for (const word of document.querySelectorAll('.go')) {
+      const code = word.dataset.go;
+      word.addEventListener('click', () => goTo(code));
+      word.addEventListener('pointerenter', () => announce(code));
+      word.addEventListener('pointerleave', () => announce(null));
+      word.addEventListener('focus', () => announce(code));
+      word.addEventListener('blur', () => announce(null));
+    }
+
+    // ---- Viewers ----
+
+    outline.addEventListener('sb-select', (e) => {
+      diagram.reveal(e.detail.node.id);
+      renderDetails(e.detail.node.id);
+    });
+
+    diagram.addEventListener('sb-select', (e) => {
+      if (e.detail.type === 'element') select(e.detail.id);
+    });
+
+    // ---- Start ----
+
+    diagram.model = CHECKOUT;
+    outline.nodes = CHECKOUT.elements.map(toNode);
+    select('SYS-1');
+  </script>
+</body>
+</html>
