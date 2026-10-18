@@ -18,12 +18,14 @@
   <script src="../../components/sb-table/sb-table.js"></script>
   <script src="../../components/sb-panel/sb-panel.js"></script>
   <script src="../../components/sb-xref/sb-xref.js"></script>
+  <script src="../../components/sb-tour/sb-tour.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
   <sb-shell heading="Checkout Architecture Sandbox">
     <sb-theme-settings slot="settings"></sb-theme-settings>
     <p><strong>Goal:</strong> see how a shop’s checkout is built: the parts behind the Pay button, how they talk when someone pays, and where each part shows up in the code and the data.</p>
+    <button type="button" slot="actions" id="tour-start" class="tour-start">Take the tour</button>
   </sb-shell>
 
   <main>
@@ -38,7 +40,7 @@
         <sb-c4 id="diagram" root-label="Overview" class="panel"></sb-c4>
         <aside class="side">
           <sb-tree id="outline" class="panel"></sb-tree>
-          <div id="details" class="panel details" aria-live="polite"></div>
+          <div id="details" class="panel details" data-ref="details" aria-live="polite"></div>
         </aside>
       </div>
     </section>
@@ -94,6 +96,15 @@
       </sb-walkthrough>
     </section>
     </sb-tabs>
+
+    <sb-tour id="checkout-tour" heading="Finding your way around">
+      <div data-step>This sandbox shows how a shop’s checkout is built, in five chapters: the parts, an order going through, what’s sent, what’s kept, and what happens when a card is declined.</div>
+      <div data-step data-at="SYS-1">This is the shop, drawn as architects do. Click <b>⤢ 3 inside</b> to go in and see what it’s made of.</div>
+      <div data-step data-at="CMP-3">The outline shows every part at once, folded inside the part that holds it. Payments sits inside the Shop API.</div>
+      <div data-step data-at="details" data-wait>What the selected part talks to, and along which line. Click any code, such as one of these, to see everywhere it appears. Next comes on once you have.</div>
+      <div data-step data-at="MSG-8" data-in="conversation">Chapter 2 follows one order, message by message. This is the moment the card is charged: the only call that leaves the shop.</div>
+      <div data-step>That’s the way around. Each chapter has a <b>Try</b> to start with, and any code can be clicked to follow it.</div>
+    </sb-tour>
 
     <sb-panel id="xref-panel" heading="Where it appears" hidden>
       <sb-xref id="xref"></sb-xref>
@@ -321,13 +332,16 @@
     const placesOf = (ref) => [...document.querySelectorAll(`[data-ref="${CSS.escape(ref)}"]`)];
 
     function goTo(ref, index = 0) {
-      const place = placesOf(ref)[index];
+      let place = placesOf(ref)[index];
       if (!place) return false;
       revealAround(place, ref);
+      // Revealing can redraw what holds the place, so find it again if it was replaced.
+      if (!place.isConnected) place = placesOf(ref)[index];
+      if (!place) return false;
       place.scrollIntoView({ block: 'center', behavior: 'smooth' });
       announce(ref);
       setTimeout(() => announce(null), 1500);
-      return true;
+      return place;
     }
 
     // Outermost first: a tab must open before the tree inside it can expand.
@@ -378,6 +392,19 @@
       showXref(ref);
     }
 
+    // ---- The tour ----
+    // Each step goes to what it points at. A step naming a view (data-in) goes to the place inside
+    // that view, since the first place a ref appears may be somewhere it can't be shown.
+
+    const tour = $('checkout-tour');
+
+    function placeForStep({ ref, element }) {
+      if (!ref) return null;
+      const within = element.dataset.in;
+      const index = within ? placesOf(ref).findIndex((place) => place.closest(`#${within}`)) : 0;
+      return index === -1 ? null : goTo(ref, index) || null;
+    }
+
     // ---- Viewers ----
 
     outline.addEventListener('sb-select', (e) => {
@@ -389,7 +416,15 @@
       if (e.detail.type === 'element') select(e.detail.id);
     });
 
-    document.addEventListener('sb-select', (e) => { if (e.detail.code) openXref(e.detail.code); }); // a pill clicked
+    // A pill clicked: show where its code appears, which is also what the tour's fourth step waits for.
+    document.addEventListener('sb-select', (e) => {
+      if (!e.detail.code) return;
+      openXref(e.detail.code);
+      tour.ready = true;
+    });
+
+    tour.addEventListener('sb-step', (e) => { tour.anchor = placeForStep(e.detail); });
+    $('tour-start').addEventListener('click', () => tour.start());
     xref.addEventListener('sb-go', (e) => goTo(e.detail.ref, e.detail.index));
     xref.addEventListener('sb-follow', (e) => showXref(e.detail.ref));
     xref.addEventListener('sb-back', (e) => showXref(e.detail.ref));

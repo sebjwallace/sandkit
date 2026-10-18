@@ -2,6 +2,12 @@
 
 What changed in this sandbox, and why: one entry per change, newest first, only ever added to. Each entry is a version. See the [journal practice](../../practices/journal.md).
 
+## 0.7.0 · 2026-10-18 · Added
+
+**Changed:** A six-step tour (`sb-tour`), started from "Take the tour" in the header: the shop in the diagram, Payments in the outline, the details panel (waiting until a code is clicked), and the charge in chapter 2's sequence, opening the folded branch and the closed chapter on the way. A step naming a view (`data-in`) goes to the place inside it.
+**Why:** A first visit needs to know where to look, and the tour tests going to a part through every kind of hiding place this sandbox has.
+**Open:** None new.
+
 ## 0.6.0 · 2026-10-18 · Added
 
 **Changed:** Clicking any code opens a cross-reference beside the page: everywhere the thing appears, in any chapter, grouped by chapter and view, with places in closed chapters marked and those in a walkthrough's other steps listed but not gone to; and what the model links it to (`linksOf`), walkable with a trail and Back.

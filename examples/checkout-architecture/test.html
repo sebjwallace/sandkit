@@ -221,6 +221,34 @@
       xref.querySelector('.sb-xref__back').click();
       assertEqual([xref.subject.ref, xref.places.length], ['REL-5', placesOfRel5], 'and Back returns, with its places');
     });
+
+    test('the tour opens what hides each part, waits for a code to be clicked, and finishes', async () => {
+      const frame = mount('<iframe src="index.html" style="width: 1300px; height: 900px"></iframe>');
+      await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      const page = frame.contentDocument;
+      const tour = page.getElementById('checkout-tour'), chapters = page.getElementById('chapters');
+      assert(page.getElementById('xref-panel').checkVisibility() === false, 'the cross-reference waits to be opened');
+
+      page.getElementById('tour-start').click();
+      assertEqual([tour.current.index, tour.anchor], [0, null], 'an opening, in the middle');
+      tour.next();
+      assert(tour.anchor.matches('#diagram .sb-c4__element'), 'the shop, in the diagram');
+      tour.next();
+      assert(tour.anchor.matches('#outline .sb-tree__item') && tour.anchor.checkVisibility(), 'Payments, its branch opened');
+
+      tour.next();
+      assertEqual(tour.anchor, page.getElementById('details'));
+      tour.next();
+      assertEqual(tour.current.index, 3, 'waits for a code to be clicked');
+      page.querySelector('#details sb-id button').click();
+      tour.next();
+      assertEqual(chapters.selected, 1, 'chapter 2 opened');
+      assert(tour.anchor.closest('#conversation') && tour.anchor.checkVisibility(), 'the charge, in the sequence');
+
+      tour.next();
+      tour.next();
+      assertEqual(tour.open, false, 'done');
+    });
   </script>
 </body>
 </html>

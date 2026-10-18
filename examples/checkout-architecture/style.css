@@ -32,6 +32,7 @@ main { padding: 16px 24px 40px; }
 #store-walk { height: 600px; }
 #fail-walk { height: 760px; }
 #xref { display: block; padding: 4px 2px; }
+.tour-start { padding: 5px 12px; border: 1px solid var(--sb-accent); border-radius: var(--sb-radius); background: var(--sb-accent); color: var(--sb-accent-text); font: inherit; font-size: 13px; cursor: pointer; }
 #fail-walk h3 { margin: 0 0 6px; font-size: 16px; }
 #fail-walk h3 .where { font-size: 14px; font-weight: normal; }
 #fail-walk p { margin: 4px 0; font-size: 14px; }
