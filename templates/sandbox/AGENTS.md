@@ -5,16 +5,20 @@ This folder is a domain sandbox: a small, self-contained application that houses
 ## Read first
 
 1. **The goal,** at the top of `index.html`. It says what this sandbox is for, and should guide every change.
-2. **`lib/sandkit/practices/building-a-sandbox.md`,** the method this sandbox follows.
-3. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
+2. **Where it stands,** below.
+3. **`JOURNAL.md`,** what changed and why, newest first. Read only as far back as you need.
+4. **`lib/sandkit/practices/building-a-sandbox.md`,** the method this sandbox follows.
+5. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
 
-## Roadmap
+## Where it stands
 
-How this sandbox is meant to grow. Update it at the end of every iteration, when the person chooses where to go next.
+Where this sandbox is now, and how it is meant to grow. Rewrite it at the end of every iteration, when the person chooses where to go next; the journal holds the history.
 
+- **Version:** {{the latest entry in JOURNAL.md}}
 - **Chapters built:** {{one line each}}
 - **Chapters planned:** {{one line each, in order}}
 - **Chosen direction:** {{what the person asked for next, and why}}
+- **Open questions:** {{codes, one line each}}
 
 ## Files
 
@@ -22,6 +26,7 @@ How this sandbox is meant to grow. Update it at the end of every iteration, when
 |---|---|
 | `index.html` | The sandbox: goal, chapters, and the interactive surface. |
 | `model.js` | The domain model. Code that runs, with no UI. |
+| `JOURNAL.md` | What changed and why, one entry per version, newest first. |
 | `style.css` | The sandbox's own styles, using the theme tokens (`--sb-*`). |
 | `lib/sandkit/` | Sandkit components, shell and practices, copied in. See `SOURCE.md` for where they came from. |
 | `components/` | Components this sandbox owns (ejected or written here), if any. |
@@ -36,6 +41,7 @@ How this sandbox is meant to grow. Update it at the end of every iteration, when
 ## Conventions
 
 - **Work in iterations.** One chapter or change at a time, handed over before the next. See `lib/sandkit/practices/building-a-sandbox.md`.
+- **Journal every change.** After any meaningful change, add an entry to `JOURNAL.md`, update Where it stands, and commit if the folder uses Git (tagging a breaking version). See `lib/sandkit/practices/journal.md`.
 - **Declare everything, then start.** Page scripts declare their state and functions first, and start the sandbox in one marked section at the end.
 - **Codes for what people discuss.** Rules, entities, claims and sources get stable codes (see `lib/sandkit/practices/identifiers.md`), issued in the model and cited everywhere.
 - **Reveal, don't merely display.** Show why things happen, not only that they did.

@@ -42,8 +42,8 @@ const scriptTags = (html, name) =>
 
 test('a new sandbox starts from the template, with the shell, catalog and practices', (sandbox) => {
   assert(setup(sandbox).ok, 'setup succeeded');
-  for (const file of ['index.html', 'model.js', 'style.css', 'AGENTS.md', 'lib/sandkit/CATALOG.md',
-    'lib/sandkit/shell/sb-shell.js', 'lib/sandkit/shell/manifest.md', 'lib/sandkit/practices/building-a-sandbox.md']) {
+  for (const file of ['index.html', 'model.js', 'style.css', 'AGENTS.md', 'JOURNAL.md', 'lib/sandkit/CATALOG.md',
+    'lib/sandkit/shell/sb-shell.js', 'lib/sandkit/shell/manifest.md', 'lib/sandkit/practices/building-a-sandbox.md', 'lib/sandkit/practices/journal.md']) {
     assert(existsSync(join(sandbox, file)), `missing ${file}`);
   }
 });

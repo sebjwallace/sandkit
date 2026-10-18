@@ -45,7 +45,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 
 1. **Copy the template.** Copy the contents of `templates/sandbox/` into the sandbox folder.
 2. **Copy what the sandbox uses into `lib/sandkit/`, keeping Sandkit's own paths.** Links between manifests and practices then still work.
-   - Always: `CATALOG.md`, `CHANGELOG.md`, `practices/building-a-sandbox.md` (this guide), `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/manifest.md`, `shell/CHANGELOG.md`.
+   - Always: `CATALOG.md`, `CHANGELOG.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/manifest.md`, `shell/CHANGELOG.md`.
    - For each component used: `components/<name>/<name>.js`, `components/<name>/manifest.md` and `components/<name>/CHANGELOG.md`.
    - Every practice the sandbox follows, from `practices/`.
    - Not tests or demos. They stay in Sandkit.
@@ -60,7 +60,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
    - sb-log 0.1.0
 
    ## Files
-   - CATALOG.md, CHANGELOG.md, practices/building-a-sandbox.md, practices/identifiers.md
+   - CATALOG.md, CHANGELOG.md, practices/building-a-sandbox.md, practices/journal.md, practices/identifiers.md
    - shell/sb-theme-settings.js, shell/sb-shell.js, shell/manifest.md, shell/CHANGELOG.md
    - components/sb-log/sb-log.js, components/sb-log/manifest.md, components/sb-log/CHANGELOG.md
    ```
@@ -68,12 +68,12 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 
 ```
 my-sandbox/
-  index.html  model.js  style.css  AGENTS.md
+  index.html  model.js  style.css  AGENTS.md  JOURNAL.md
   lib/sandkit/
     SOURCE.md  CATALOG.md  CHANGELOG.md
     shell/        sb-theme-settings.js  sb-shell.js  manifest.md  CHANGELOG.md
     components/   sb-log/  sb-log.js  manifest.md  CHANGELOG.md
-    practices/    building-a-sandbox.md  identifiers.md
+    practices/    building-a-sandbox.md  journal.md  identifiers.md
 ```
 
 **Use components through their manifests. You don't need to read their source,** and doing so only spends effort. Never edit files in `lib/`. To change a component, eject it into the sandbox's own `components/` folder, as `AGENTS.md` describes.
@@ -141,12 +141,17 @@ A sandbox aims to be built with as little testing as possible. Testing is overhe
 - **Make no assumptions about the environment.** You may have no browser, no automation and no Node, or different ones from what Sandkit uses. If you can't check something, say so in the handover, and ask the person to try it.
 - **Screenshots are expensive.** If you take any, take few, and only of what you need to see.
 
-## 8. Hand it over
+## 8. Record it in the journal
+
+Add an entry to `JOURNAL.md` saying what changed and why, which raises the sandbox's version, and update **Where it stands** in `AGENTS.md`. If the folder uses Git, commit the change with its entry, and tag a breaking version. See the [journal practice](journal.md).
+
+## 9. Hand it over
 
 End every iteration with a short handover:
 
 ```
 Open:           how to open the sandbox
+Version:        the new version, and whether it was breaking
 Try first:      the one thing to do first
 What it shows:  one line per chapter built
 Checked:        what was checked, if anything, or what the person should look at
@@ -165,7 +170,7 @@ Then wait for the person to try it and choose.
 
 ## Next iterations
 
-When the person responds, record the direction they chose, and the chapter plan as it now stands, in the **Roadmap** section of the sandbox's `AGENTS.md`, so the next session, person or agent, can pick it up. Then build that one iteration, to the bar above, and hand over again.
+When the person responds, record the direction they chose, and the chapter plan as it now stands, in **Where it stands** in the sandbox's `AGENTS.md`, so the next session, person or agent, can pick it up. Then build that one iteration, to the bar above, record it in the journal, and hand over again.
 
 That loop, explore, question, correct, extend, is the point of a sandbox.
 

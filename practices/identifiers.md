@@ -33,6 +33,7 @@ Example prefixes for different kinds of sandbox:
 ## Rules
 
 - **Codes are stable.** Once issued, a code always refers to the same thing. Never renumber, and never reuse a code for something else, even after the original is removed. Retired codes stay retired.
+- **Retired codes still answer.** Record each one in the model with the version that retired it and what replaced it, and answer for it in `sb-resolve`, so its pill says where it went instead of showing as unresolved. The [journal practice](journal.md) shows how.
 - **Codes live in the model first.** Give each thing its code where it is defined, as data. Everything else (UI, logs, prose, conversation) refers to that.
 - **Names can change; codes don't.** Show both where there is room: "Store North (`ST-N`)". The name is for reading, the code is for referring.
 - **Don't encode meaning that may change.** `ST-N` is fine while stores are named by region; avoid codes like `ST-BUSY` that describe a state.
