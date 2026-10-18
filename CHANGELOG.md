@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.10 · 2026-10-18
+- The checkout architecture example gains chapter 2, placing an order. `sb-sequence` 0.1.1 marks participants, and messages and notes given an id, with `data-ref`. `sb-walkthrough` 0.1.1 frames each view.
+
 ## 0.2.9 · 2026-10-18
 - The locating practice says when to skip `goTo`: when you know which view you mean, call its `reveal`. Words that go somewhere keep their target in an attribute of their own, not `data-ref`.
 

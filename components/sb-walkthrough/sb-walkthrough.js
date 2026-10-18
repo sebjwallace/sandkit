@@ -1,4 +1,4 @@
-// Sandkit sb-walkthrough 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-walkthrough 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A story told across several views, one step at a time. Children marked data-step are the
 // narration, shown one at a time with Back and Next; children with a slot are the views, laid out
 // beside it. Each step names the views to look at (data-focus), which are outlined, and the refs to
@@ -42,7 +42,9 @@
     .sb-walkthrough[narration="bottom"] .sb-walkthrough__views[data-count="2"] { grid-template: minmax(0, 1fr) / repeat(2, minmax(0, 1fr)); }
     .sb-walkthrough__views:is([data-count="3"], [data-count="4"]) { grid-template: repeat(2, minmax(0, 1fr)) / repeat(2, minmax(0, 1fr)); }
     .sb-walkthrough__views[data-count="3"] > :first-child { grid-row: span 2; }
-    .sb-walkthrough__view { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+    /* Each view is framed like the narration, so it's clear where one ends and the next begins. The
+       padding leaves room for a focused view's outline. */
+    .sb-walkthrough__view { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); }
     .sb-walkthrough__view > * { flex: 1; min-height: 0; overflow: auto; }
     .sb-walkthrough .sb-walkthrough--focused { outline: 3px solid var(--sb-accent, #2563eb); outline-offset: 3px; }`;
 

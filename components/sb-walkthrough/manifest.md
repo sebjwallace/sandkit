@@ -51,7 +51,7 @@ Use this component through the interface below. You don't need to read its sourc
 
 The narration sits on the left, or along the bottom with `narration="bottom"`. The views fill the rest: one fills it; two stack (beside bottom narration, they sit side by side); three put the first large with two beside it; four make two by two. Give the element a height; it is 640px by default.
 
-Each view is placed in a cell of its own. A view that leaves something behind when it moves out of the page, such as a panel that pops out and leaves a placeholder, keeps that in its place. Outlines are drawn on the view itself, so they follow it.
+Each view is placed in a cell of its own, framed like the narration, with a gap between cells. A view that leaves something behind when it moves out of the page, such as a panel that pops out and leaves a placeholder, keeps that in its place. Outlines are drawn on the view itself, so they follow it.
 
 ## Attributes
 
