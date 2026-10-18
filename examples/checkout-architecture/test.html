@@ -154,6 +154,11 @@
       assertEqual(orders.rows[0].status, 'paid');
       assertEqual(orders.querySelectorAll('.sb-table__cell--changed').length, 2, 'status and charge_id changed');
       assert(page.querySelector('#schema [data-ref="orders.status"]').classList.contains('sb-erd__field--highlighted'), 'the field lit in the diagram');
+
+      walk.current.element.querySelector('[data-ref="orders.status"]').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assertEqual(JSON.stringify(orders.highlight), '{"columns":["status"]}', 'pointing at a field lights its column');
+      walk.current.element.querySelector('[data-ref="orders"]').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assertEqual(JSON.stringify(orders.highlight), '{"rows":["1042"]}', 'pointing at a table lights its rows');
     });
   </script>
 </body>

@@ -280,9 +280,14 @@
     payloadWalk.addEventListener('sb-point', (e) => { payload.highlight = e.detail.ref ? [e.detail.ref] : []; });
 
     storeWalk.addEventListener('sb-step', showStore);
+    // A table's name lights it in the diagram and all its rows; a field lights its column too.
     storeWalk.addEventListener('sb-point', (e) => {
       const ref = e.detail.ref;
-      schema.highlight = !ref ? writtenBy(writing[storeWalk.step]) : ref.includes('.') ? { fields: [ref] } : { entities: [ref] };
+      const [table, column] = ref ? ref.split('.') : [];
+      schema.highlight = !ref ? writtenBy(writing[storeWalk.step]) : column ? { fields: [ref] } : { entities: [ref] };
+      for (const [id, el] of Object.entries(rowTables)) {
+        el.highlight = id !== table ? {} : column ? { columns: [column] } : { rows: el.rows.map((row) => row.id) };
+      }
     });
 
     // Clicking a message goes to its step.

@@ -6,7 +6,7 @@ Use components through their manifests, never their source. Codes are issued in 
 
 ## Where it stands
 
-- **Version:** 0.4.0
+- **Version:** 0.4.1
 - **Chapters built:**
   1. The parts: the architecture as a C4 diagram to walk into, an outline of every part, and what crosses a selected part's edge. Names in the prose go to their part in the diagram.
   2. Placing an order: one checkout as thirteen messages, told as a walkthrough with the sequence and the architecture side by side; the architecture follows each message to the level where it can be seen, and pointing at a line's code lights every message along it.

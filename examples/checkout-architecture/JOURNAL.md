@@ -2,6 +2,12 @@
 
 What changed in this sandbox, and why: one entry per change, newest first, only ever added to. Each entry is a version. See the [journal practice](../../practices/journal.md).
 
+## 0.4.1 · 2026-10-18 · Fixed
+
+**Changed:** In chapter 4, pointing at a table or field in a step lights it in the rows as well as the diagram.
+**Why:** It lit only the diagram, so the rows beside it seemed not to respond.
+**Open:** None.
+
 ## 0.4.0 · 2026-10-18 · Added
 
 **Changed:** Chapter 4, where it's kept: the Shop database's tables and starting rows in the model, with every write the order makes tied to its message (`MSG-4`, `MSG-6`, `MSG-11`) and replayed one at a time; shown as a walkthrough of the tables' diagram beside their rows.
