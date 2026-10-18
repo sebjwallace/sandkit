@@ -9,7 +9,7 @@ Run from a Sandkit clone with Node. Not copied into sandboxes.
 | Tool | What it does |
 |---|---|
 | `tools/setup.mjs` | Sets up a sandbox with Sandkit's files, or updates them. |
-| `tools/analyse.mjs` | Runs a component's analysis on data files, without a page: `profile` for now. `list` shows them all. |
+| `tools/analyse.mjs` | Runs a component's analysis on data files, without a page: `profile` and `dependencies`. `list` shows them all. |
 
 ## Practices
 
@@ -44,6 +44,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-comments`](components/sb-comments/manifest.md) | Comments from the people exploring a sandbox: in a session, click any part and say what you think; each comment cites its refs, view, version and state, and all are copied as one prompt or downloaded. |
 | [`sb-controls`](components/sb-controls/manifest.md) | Play, pause, step, reset and speed. Keeps the clock and tells the sandbox how many steps to take. |
 | [`sb-decision-tree`](components/sb-decision-tree/manifest.md) | Questions branching on their answers down to outcomes: one case traced with its value at each question, the answers that would have changed its outcome marked, branches thickened by how many cases took them. |
+| [`sb-dependencies`](components/sb-dependencies/manifest.md) | What goes with what in a data set: fields that determine others, change together or are present together, near-misses listed first with the samples that break them, and what changed when the samples did. Also runs from Node: `tools/analyse.mjs dependencies`. |
 | [`sb-erd`](components/sb-erd/manifest.md) | Entities and their fields, with each reference drawn from the exact field to the exact field it refers to. |
 | [`sb-flowchart`](components/sb-flowchart/manifest.md) | A process laid out from its structure, optionally in swim lanes running down or across; the current step and the way it came marked. |
 | [`sb-graph`](components/sb-graph/manifest.md) | State machines, workflows and networks: active nodes, edges and rule lines lit up; things moving along edges. |

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-dependencies demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-dependencies.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { font: inherit; padding: 4px 12px; color: var(--sb-text); background: var(--sb-surface-2); border: 0; border-radius: var(--sb-radius); cursor: pointer; }
+    .actions button[hidden] { display: none; }
+    .example .prose { margin: 0 0 8px; font-size: 14px; color: var(--sb-text); }
+    .example .hint { margin: 0 0 10px; }
+    .act { font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px solid var(--sb-accent); padding: 0; cursor: pointer; }
+    .chosen { margin: 10px 0 0; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .chosen[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-dependencies">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>What goes with what in a pile of data: the rules it carries, and the samples that break them.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Data carries rules nobody wrote down. Every order from Germany is in euros; a product's name and price always come with its code; a refund never arrives without a reason. Finding those rules tells you what the model needs to know, and the few samples that break a rule are often the most interesting thing in the data: a mistake, an edge case, or an exception someone should explain.</p>
+      <p>This reads every sample and reports which fields <strong>determine</strong> others, which <strong>change together</strong> as one thing, which optional fields are <strong>present together</strong>, and which rules <strong>nearly</strong> hold, with the samples that break them.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Finding a domain's rules.</strong> "Country determines currency" is a rule for the model, found rather than guessed.</li>
+        <li><strong>Spotting entities hiding in records.</strong> Fields that change together, such as a product's code, name and price, are one thing, and usually want to be modelled as one.</li>
+        <li><strong>Questioning the exceptions.</strong> A rule that holds 97% of the time comes with the 3% that don't, named, so someone can go and look.</li>
+        <li><strong>Seeing what a subset is like.</strong> Narrow the samples and every rule that appeared, vanished or changed strength is marked.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>What a single field holds.</strong> Its values, types and gaps are a profile's job, not this.</li>
+        <li><strong>Rules that hold only sometimes.</strong> "When an order is cancelled, it has a refund" is a conditional rule; narrow the samples to cancelled orders and see what appears, or use a tool made for association rules.</li>
+        <li><strong>Small data.</strong> With a handful of samples every field seems to decide every other, so rules need enough samples per value to be reported. Below that, read the samples.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-dependencies/sb-dependencies.js"&gt;&lt;/script&gt;
+&lt;sb-dependencies&gt;&lt;/sb-dependencies&gt;
+
+&lt;script&gt;
+  const deps = document.querySelector('sb-dependencies');
+  deps.options = { id: 'orderId' };   // so exceptions name samples by their id
+  deps.samples = orders;              // raw samples: it works everything out
+  deps.addEventListener('sb-select', (e) =&gt; showSamples(e.detail.samples));
+&lt;/script&gt;</pre>
+      <p>Hand it the samples as they are. Click a near-miss to see its exceptions; clicking an exception's samples tells the sandbox which they are.</p>
+
+      <h3>An agent can run it too</h3>
+      <p>The same analysis runs from the command line, with no page, so an agent can find a data set's rules before a sandbox exists, near-misses first:</p>
+      <pre>node tools/analyse.mjs dependencies data/ --md --id orderId</pre>
+      <p>What the agent reads and what you see here come from the same function, so they always agree.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Treat findings as evidence, not truth.</strong> A rule seen in the data is an inference until someone confirms it, and an exception is a question until someone explains it. Give them codes in the sandbox's record.</li>
+        <li><strong>Start from the near-misses.</strong> They're listed first because they're where the data disagrees with itself.</li>
+        <li><strong>Narrow the samples.</strong> A rule that appears within a subset is a rule about that subset: delivered orders ship from their country's warehouse, while returns all go to the hub.</li>
+        <li><strong>Name the id field,</strong> so an exception says which samples, and someone can open them.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A shop's orders</h2>
+      <p>120 orders as an online shop exports them.</p>
+      <p class="prose">
+        The country decides the currency, and almost always the VAT rate: open the near-miss to see the three orders charged 5%, and click them to read them. A product's code, name and price change together, and its category and department follow, as a chain. Refunds always come with a reason.
+        Narrow to <button class="act" data-filter="delivered">delivered orders</button>, and the country now decides the warehouse too; narrow to <button class="act" data-filter="returned">returns</button> and see what's left.
+      </p>
+      <p class="hint">Click an underlined word to narrow the orders.</p>
+      <div class="actions"><span id="orders-showing"></span><button id="orders-all" hidden>Show all</button></div>
+      <sb-dependencies id="orders"></sb-dependencies>
+      <pre class="chosen" id="orders-chosen" hidden></pre>
+    </section>
+
+    <section class="example">
+      <h2>Wildlife sightings</h2>
+      <p>160 records from volunteers counting animals at four sites.</p>
+      <p class="prose">
+        A species tells you whether it's a bird or a mammal, except for one hedgehog recorded as a bird. A surveyor and their code go together, and so do a site and its position, when a position was taken; position is there or not as a whole.
+        Who recorded the odd hedgehog? Narrow to <button class="act" data-filter="Ana">Ana's records</button>, then <button class="act" data-filter="Dev">Dev's</button>, and watch the near-miss.
+      </p>
+      <p class="hint">Click an underlined word to narrow the records.</p>
+      <div class="actions"><span id="sightings-showing"></span><button id="sightings-all" hidden>Show all</button></div>
+      <sb-dependencies id="sightings"></sb-dependencies>
+      <pre class="chosen" id="sightings-chosen" hidden></pre>
+    </section>
+  </main>
+
+  <script>
+    // ---- Made-up data, the same every time ----
+
+    // A small repeatable random sequence, so the demo always shows the same data.
+    function sequence(seed) {
+      return () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    }
+
+    // Country decides currency and, but for three orders, VAT. A product's sku, name and price go
+    // together; its category follows, and the department follows the category. Delivered orders
+    // ship from the country's warehouse; returns go back to the hub. Refunds come with reasons.
+    function makeOrders() {
+      const random = sequence(7);
+      const pick = (list) => list[Math.floor(random() * list.length)];
+      const COUNTRIES = { GB: ['GBP', 0.2, 'Leeds'], FR: ['EUR', 0.2, 'Lille'], DE: ['EUR', 0.19, 'Lille'], IE: ['EUR', 0.23, 'Leeds'] };
+      const PRODUCTS = [
+        ['MUG-01', 'Tall mug', 9, 'mugs'], ['MUG-02', 'Espresso cup', 7, 'mugs'], ['TEE-S', 'T-shirt, small', 15, 'shirts'], ['TEE-L', 'T-shirt, large', 16, 'shirts'],
+        ['CAP-01', 'Cap', 12, 'hats'], ['BEA-01', 'Beanie', 11, 'hats'], ['PIN-01', 'Enamel pin', 4, 'pins'], ['PIN-02', 'Pin set', 10, 'pins'],
+      ];
+      const DEPARTMENTS = { mugs: 'home', pins: 'home', shirts: 'clothing', hats: 'clothing' };
+      return Array.from({ length: 120 }, (_, i) => {
+        const country = pick(Object.keys(COUNTRIES));
+        const [currency, vat, warehouse] = COUNTRIES[country];
+        const [sku, productName, unitPrice, category] = pick(PRODUCTS);
+        const status = pick(['delivered', 'delivered', 'delivered', 'returned']);
+        return {
+          orderId: `ORD-${1001 + i}`,
+          channel: 'web',
+          country, currency,
+          vatRate: [23, 61, 104].includes(i) ? 0.05 : vat,
+          sku, productName, unitPrice, category,
+          department: DEPARTMENTS[category],
+          quantity: 1 + Math.floor(random() * 3),
+          status,
+          warehouse: status === 'returned' ? 'Returns hub' : warehouse,
+          ...(status === 'returned' ? { refund: unitPrice, refundReason: pick(['damaged', 'wrong size', 'changed mind']) } : {}),
+        };
+      });
+    }
+
+    // Each species is a bird or a mammal, but for one hedgehog Dev recorded as a bird. A surveyor
+    // and their code go together; a site decides its habitat and position, when a position was taken.
+    function makeSightings() {
+      const random = sequence(11);
+      const pick = (list) => list[Math.floor(random() * list.length)];
+      const SITES = { 'Mill Lane': ['hedgerow', 53.81, -1.55], 'Oak Wood': ['woodland', 53.83, -1.6], 'River Path': ['riverbank', 53.79, -1.52], 'Top Field': ['hedgerow', 53.85, -1.58] };
+      const SURVEYORS = { Ana: 'V01', Ben: 'V02', Chloe: 'V03', Dev: 'V04' };
+      const CLASSES = { robin: 'bird', blackbird: 'bird', wren: 'bird', hedgehog: 'mammal', fox: 'mammal', badger: 'mammal' };
+      return Array.from({ length: 160 }, (_, i) => {
+        const site = pick(Object.keys(SITES));
+        const [habitat, lat, lon] = SITES[site];
+        const surveyor = i === 63 ? 'Dev' : pick(Object.keys(SURVEYORS));
+        const species = i === 63 ? 'hedgehog' : pick(Object.keys(CLASSES));
+        return {
+          id: `SGT-${String(i + 1).padStart(3, '0')}`,
+          protocol: 'hedgerow-v2',
+          site, habitat,
+          surveyor, surveyorCode: SURVEYORS[surveyor],
+          species,
+          class: i === 63 ? 'bird' : CLASSES[species],
+          count: 1 + Math.floor(random() * 6),
+          weather: pick(['dry', 'dry', 'rain', 'mist']),
+          ...(random() < 0.6 ? { gps: { lat, lon } } : {}),
+        };
+      });
+    }
+
+    // ---- Narrowing, and showing an exception's samples ----
+
+    function explore(name, samples, id, field) {
+      const deps = document.getElementById(name);
+      const showing = document.getElementById(`${name}-showing`);
+      const all = document.getElementById(`${name}-all`);
+      const chosen = document.getElementById(`${name}-chosen`);
+
+      function show(list, value) {
+        deps.samples = list;
+        showing.textContent = value ? `Showing ${field} = ${value}: ${list.length} of ${samples.length}.` : `All ${samples.length} samples.`;
+        all.hidden = !value;
+        chosen.hidden = true;
+      }
+
+      deps.options = { id };
+      deps.addEventListener('sb-select', (e) => {
+        const ids = new Set(e.detail.samples);
+        chosen.textContent = samples.filter((sample) => ids.has(sample[id])).map((sample) => JSON.stringify(sample)).join('\n');
+        chosen.hidden = false;
+      });
+      for (const button of deps.closest('.example').querySelectorAll('[data-filter]')) {
+        const value = button.dataset.filter;
+        button.addEventListener('click', () => show(samples.filter((sample) => sample[field] === value), value));
+      }
+      all.addEventListener('click', () => show(samples));
+      show(samples);
+    }
+
+    // ---- Start ----
+
+    explore('orders', makeOrders(), 'orderId', 'status');
+    explore('sightings', makeSightings(), 'id', 'surveyor');
+  </script>
+</body>
+</html>

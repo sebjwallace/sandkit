@@ -10,6 +10,7 @@
 //   them. Samples are joined in the order given, a folder's files in name order.
 // - Writes compact JSON by default; --md writes a short summary, if the analysis has one. Findings come first.
 // - Other options pass to the analysis: `--limit 20` becomes { limit: 20 }. Numbers become numbers.
+//   Options the analysis names in its `flags` take no value: `--pairs` becomes { pairs: true }.
 //
 // A component has a core when its script sets `module.exports`. Scripts are run with `new Function`
 // rather than `require`, so they load the same wherever this clone sits, whatever a package.json
@@ -64,12 +65,13 @@ function parse(text, where) {
   }
 }
 
-// Splits the arguments into inputs and options: `--md` alone, every other option with a value.
-function parseArgs(args) {
+// Splits the arguments into inputs and options: `--md` and the analysis's flags alone, every other option with a value.
+function parseArgs(args, flags = []) {
   const inputs = [], options = {};
   let md = false;
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--md') md = true;
+    else if (flags.includes(args[i].slice(2))) options[args[i].slice(2)] = true;
     else if (args[i].startsWith('--')) {
       const value = args[++i];
       if (value === undefined) fail(`${args[i - 1]} needs a value.`);
@@ -83,7 +85,7 @@ function analyse(name, args) {
   const available = analyses();
   const analysis = available.find((a) => a.name === name);
   if (!analysis) fail(`There's no analysis called "${name}". Available: ${available.map((a) => a.name).join(', ')}.`);
-  const { inputs, options, md } = parseArgs(args);
+  const { inputs, options, md } = parseArgs(args, analysis.run.flags);
   if (!inputs.length) fail(`Name the files or folders to analyse: node tools/analyse.mjs ${name} <file or folder ...>`);
 
   const samples = inputs.flatMap(readSamples);

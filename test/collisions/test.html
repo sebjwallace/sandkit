@@ -9,7 +9,7 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-code', 'sb-decision-tree', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-scrubber', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings'];
+    window.TAGS = ['sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-scrubber', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
@@ -20,6 +20,7 @@
   <script src="../../components/sb-wireframe/sb-wireframe.js"></script>
   <script src="../../components/sb-xref/sb-xref.js"></script>
   <script src="../../components/sb-profile/sb-profile.js"></script>
+  <script src="../../components/sb-dependencies/sb-dependencies.js"></script>
   <script src="../../components/sb-tour/sb-tour.js"></script>
   <script src="../../components/sb-comments/sb-comments.js"></script>
   <script src="../../components/sb-walkthrough/sb-walkthrough.js"></script>

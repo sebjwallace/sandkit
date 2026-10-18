@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.25 · 2026-10-18
+- Forty components: added `sb-dependencies`, what goes with what in a data set, near-misses first with the samples that break them; its core also runs from Node. `tools/analyse.mjs` takes an analysis's flags without a value (`--pairs`). The building practice finds dependencies after profiling, treating rules as candidates and exceptions as questions. `sb-profile` 0.1.1 points to it.
+
 ## 0.2.24 · 2026-10-18
 - Thirty-nine components: added `sb-profile`, a data set's shape and value domain, with what's surprising marked. It is the first component with a core, an analysis that also runs from Node. Added `tools/analyse.mjs`, which runs any component's core on JSON or JSON Lines files. The building practice profiles data sources first.
 

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-dependencies tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-dependencies.js"></script>
+  <script src="sb-dependencies.js"></script>
+</head>
+<body>
+  <script>
+    // 100 orders, as in test.mjs: country decides currency, and VAT except for three British orders;
+    // sku, name and price go together, then category, then department; refunds come with reasons.
+    const COUNTRIES = { GB: ['GBP', 0.2], FR: ['EUR', 0.2], DE: ['EUR', 0.19], US: ['USD', 0] };
+    const PRODUCTS = ['Mug', 'Cup', 'Rake', 'Hoe', 'Kite', 'Ball', 'Lamp', 'Rug', 'Pot', 'Seed'];
+    const DEPARTMENTS = ['home', 'home', 'garden', 'garden', 'toys'];
+    const orders = Array.from({ length: 100 }, (_, i) => {
+      const country = Object.keys(COUNTRIES)[i % 4];
+      const product = Math.floor(i / 10);
+      const category = Math.floor(product / 2);
+      const returned = i % 5 === 0;
+      return {
+        orderId: `ORD-${i}`,
+        channel: 'web',
+        country,
+        currency: COUNTRIES[country][0],
+        vatRate: [8, 48, 88].includes(i) ? 0.05 : COUNTRIES[country][1],
+        sku: `SKU-${product}`,
+        productName: PRODUCTS[product],
+        unitPrice: 5 + product,
+        category: `C${category}`,
+        department: DEPARTMENTS[category],
+        status: returned ? 'returned' : i % 2 ? 'delivered' : 'shipped',
+        ...(returned ? { refund: 1 + i, refundReason: ['damaged', 'late', 'wrong size'][Math.floor(i / 5) % 3] } : {}),
+      };
+    });
+
+    function showing(samples = orders, options = { id: 'orderId' }) {
+      const deps = mount('<sb-dependencies></sb-dependencies>');
+      deps.options = options;
+      deps.samples = samples;
+      return deps;
+    }
+
+    const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
+    const sections = (deps) => [...deps.querySelectorAll('.sb-dependencies__heading')].map(text);
+    const rows = (deps) => [...deps.querySelectorAll('.sb-dependencies__row')].map(text);
+    const row = (deps, start) => [...deps.querySelectorAll('.sb-dependencies__row')].find((r) => text(r).startsWith(start));
+    const strength = (deps) => deps.querySelector('.sb-dependencies__strength');
+
+    // ---- Showing what goes with what ----
+
+    test('shows the empty text before there are samples', () => {
+      assertEqual(text(mount('<sb-dependencies empty-text="Load some data."></sb-dependencies>')), 'Load some data.');
+      assertEqual(text(mount('<sb-dependencies></sb-dependencies>')), 'No samples yet.');
+    });
+
+    test('sums up the findings in a line', () => {
+      assertEqual(text(showing().querySelector('.sb-dependencies__summary')),
+        '4 rules, 1 near-miss, 1 group that changes together, 1 group always present together.');
+    });
+
+    test('draws findings in their groups, near-misses first among the rules', () => {
+      const deps = showing();
+      assertEqual(sections(deps), ['Determines', 'Change together', 'Present together']);
+      assertEqual(rows(deps), [
+        'country determines currency, vatRate holds in 97%: 3 exceptions',
+        'sku determines category → department',
+        'category determines department',
+        'sku, productName, unitPrice change together',
+        'refund, refundReason present together, in 20 of 100',
+      ]);
+      assert(row(deps, 'country').classList.contains('sb-dependencies__row--near'), 'the near-miss row is marked');
+    });
+
+    test('a row with a near-miss comes before rows of exact rules, whatever the field order', () => {
+      const samples = Array.from({ length: 40 }, (_, i) => ({ a: Math.floor(i / 2) % 4, b: Math.floor(i / 2) % 4 < 2 ? 'low' : 'high', c: i % 2, d: i === 5 ? 'odd' : i % 2 ? 'x' : 'y' }));
+      assertEqual(rows(showing(samples, {})).map((r) => r.split(' ')[0]), ['c', 'a', 'd']);
+    });
+
+    test('says what wasn\'t considered, and why', () => {
+      assertEqual(text(showing().querySelector('.sb-dependencies__skipped')),
+        'Not considered: orderId (every value different), channel (always the same), refund (every value different)');
+    });
+
+    test('every field name carries data-ref with its path', () => {
+      const refs = [...row(showing(), 'country').querySelectorAll('[data-ref]')].map((el) => el.dataset.ref);
+      assertEqual(refs, ['country', 'currency', 'vatRate']);
+    });
+
+    test('the dependencies property is the core\'s result for the same samples', () => {
+      const deps = showing();
+      assertEqual(deps.dependencies, customElements.get('sb-dependencies').dependencies(orders, { id: 'orderId' }));
+    });
+
+    test('displays field names and values as text, never as markup', () => {
+      const samples = Array.from({ length: 20 }, (_, i) => ({ '<b>key</b>': i % 2 ? '<i>a</i>' : 'b', other: i === 3 ? '<img>' : i % 2 ? 'x' : 'y', more: i % 2 }));
+      const deps = showing(samples, { threshold: 0.9 });
+      strength(deps).click();
+      assertEqual(deps.querySelectorAll('b, i, img').length, 0);
+      assert(text(deps).includes('<b>key</b>'), 'the name is shown as written');
+    });
+
+    test('leaves out of the summary what wasn\'t found', () => {
+      const unrelated = Array.from({ length: 40 }, (_, i) => ({ a: i % 2, b: Math.floor(i / 2) % 2 }));
+      assertEqual(text(showing(unrelated, {}).querySelector('.sb-dependencies__summary')), 'Nothing goes with anything.');
+    });
+
+    // ---- Near-misses ----
+
+    test('a near-miss opens to show its exceptions, and closes again', () => {
+      const deps = showing();
+      strength(deps).click();
+      assertEqual(strength(deps).getAttribute('aria-expanded'), 'true');
+      assertEqual(text(deps.querySelector('.sb-dependencies__exceptions')), 'vatRate: GB usually goes with 0.2, but 0.05 in 3 samples: ORD-8, ORD-48, ORD-88');
+      strength(deps).click();
+      assertEqual(deps.querySelector('.sb-dependencies__exceptions'), null);
+    });
+
+    test('clicking an exception\'s samples fires sb-select with them; pointing fires nothing', () => {
+      const deps = showing();
+      strength(deps).click();
+      const selections = recordEvents(deps, 'sb-select');
+      const samples = deps.querySelector('.sb-dependencies__samples');
+      samples.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assertEqual(selections.length, 0, 'pointing');
+      samples.click();
+      assertEqual(selections[0].detail.samples, ['ORD-8', 'ORD-48', 'ORD-88']);
+      assertEqual(selections[0].detail.finding.to, 'vatRate');
+    });
+
+    // ---- Changes since the last samples ----
+
+    test('setting new samples marks rules that appeared, disappeared or changed', () => {
+      const deps = showing();
+      deps.samples = orders.filter((order) => order.status !== 'returned');
+      const mark = (start) => text(row(deps, start).querySelector('.sb-dependencies__mark'));
+      assert(text(deps.querySelector('.sb-dependencies__summary')).endsWith('Since the last samples: 1 new, 1 gone, 1 changed.'), 'tallied');
+      assertEqual(mark('country'), 'new', 'country now determines status');
+      assert(text(row(deps, 'country')).includes('vatRate holds in 96.2%: 3 exceptions was 97%'), 'strength changed');
+      assertEqual(mark('refund'), 'gone', 'the refund fields are gone');
+      assert(row(deps, 'refund').querySelector('.sb-dependencies__item--gone'), 'struck through');
+    });
+
+    test('marks last only until the next update', () => {
+      const deps = showing();
+      deps.samples = orders.filter((order) => order.status !== 'returned');
+      deps.samples = orders.filter((order) => order.status !== 'returned');
+      assertEqual(deps.querySelectorAll('.sb-dependencies__mark').length, 0);
+    });
+
+    // ---- Contract ----
+
+    test('two elements on one page keep their own samples', () => {
+      mount('<div><sb-dependencies id="a"></sb-dependencies><sb-dependencies id="b"></sb-dependencies></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-dependencies');
+      a.samples = orders;
+      b.samples = orders.slice(0, 40);
+      assertEqual([a.dependencies.count, b.dependencies.count], [100, 40]);
+      strength(a).click();
+      assertEqual(b.querySelectorAll('.sb-dependencies__exceptions').length, 0, 'opening in one leaves the other');
+    });
+
+    test('loading the same script twice is harmless and quiet', () => {
+      assertEqual(consoleErrors, []);
+    });
+  </script>
+</body>
+</html>

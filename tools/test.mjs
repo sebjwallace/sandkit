@@ -218,9 +218,38 @@ test('analyse list names each analysis and its component', () => {
   assert(ok && /^profile +sb-profile +The shape/m.test(output), `listed:\n${output}`);
 });
 
+test('analyse list names sb-dependencies\' analysis too', () => {
+  assert(/^dependencies +sb-dependencies +What goes with what/m.test(analyse('list').output), 'listed');
+});
+
+// Forty samples where kind decides half, and group but for one.
+const related = (i) => ({ id: `S${i}`, kind: ['a', 'b', 'c', 'd'][i % 4], half: i % 4 < 2 ? 'first' : 'second', group: i === 7 ? 'odd' : i % 2 ? 'x' : 'y' });
+
+test('analyse finds dependencies, the same as the core', (folder) => {
+  const samples = Array.from({ length: 40 }, (_, i) => related(i));
+  write(folder, 'data.json', JSON.stringify(samples));
+  const module = { exports: {} };
+  new Function('module', readFileSync(join(COMPONENTS, 'sb-dependencies/sb-dependencies.js'), 'utf8'))(module);
+  const output = analyse('dependencies', join(folder, 'data.json'), '--id', 'id').output;
+  assert(output === `${JSON.stringify(module.exports.dependencies(samples, { id: 'id' }))}\n`, `same result:\n${output}`);
+});
+
+test('analyse takes an analysis\'s flags without a value', (folder) => {
+  write(folder, 'data.json', JSON.stringify(Array.from({ length: 40 }, (_, i) => related(i))));
+  const { ok, output } = analyse('dependencies', '--pairs', join(folder, 'data.json'));
+  assert(ok && JSON.parse(output).count === 40, `the file after --pairs is read as input:\n${output}`);
+});
+
+test('analyse dependencies --md leads with near-misses', (folder) => {
+  write(folder, 'data.json', JSON.stringify(Array.from({ length: 40 }, (_, i) => related(i))));
+  const { output } = analyse('dependencies', join(folder, 'data.json'), '--md', '--id', 'id');
+  assert(output.includes('## Near-misses') && output.includes('but odd in 1 sample (S7)'), `near-miss:\n${output}`);
+  assert(output.indexOf('## Near-misses') < output.indexOf('## Rules'), 'near-misses first');
+});
+
 test('analyse explains an unknown analysis, bad JSON and missing inputs', (folder) => {
   const unknown = analyse('nope', folder);
-  assert(!unknown.ok && unknown.output.includes('Available: profile'), 'unknown analysis');
+  assert(!unknown.ok && unknown.output.includes('Available: dependencies, profile'), 'unknown analysis');
   write(folder, 'bad.jsonl', '{"a":1}\n{oops}\n');
   const bad = analyse('profile', join(folder, 'bad.jsonl'));
   assert(!bad.ok && bad.output.includes('bad.jsonl, line 2 isn\'t valid JSON'), `bad JSON: ${bad.output}`);
