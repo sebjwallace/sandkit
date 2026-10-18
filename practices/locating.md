@@ -31,6 +31,7 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | [`sb-id`](../components/sb-id/manifest.md) | each pill, with its code | — |
 | [`sb-table`](../components/sb-table/manifest.md) | each row with an `id` (not rows a viewer's search hides) | — |
 | [`sb-rules`](../components/sb-rules/manifest.md) | each rule's row | — |
+| [`sb-rule`](../components/sb-rule/manifest.md) | the card, with its code, and each line given a `ref` | — |
 | [`sb-graph`](../components/sb-graph/manifest.md) | each node, and each edge and label line given an `id` | — |
 | [`sb-sequence`](../components/sb-sequence/manifest.md) | each participant, and each message and note given an `id` | — |
 | [`sb-erd`](../components/sb-erd/manifest.md) | each entity, and each field as `entity.field` | — |

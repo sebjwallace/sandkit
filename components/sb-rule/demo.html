@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-rule demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-rule.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; align-items: start; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; margin: 0 0 12px; padding: 8px 12px; border-radius: var(--sb-radius); background: var(--sb-surface-2); font-size: 13px; }
+    .controls label { display: flex; align-items: center; gap: 8px; }
+    .controls output { min-width: 3.5em; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .prose { margin: 12px 0 0; font-size: 14px; }
+    .point { border-bottom: 1px dashed var(--sb-accent); cursor: default; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-rule">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>One rule as a card: which way it goes right now, and whether it holds.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <section class="guide">
+      <p>A rule says what must, must not or may happen, sometimes only in certain situations. Written in a list or a document, it's easy to agree with and hard to picture. This card lays one rule out to read at a glance, with its MUSTs and values standing out, and then lets the model show it at work: which branch is in force right now, and whether what's happening keeps to it.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Seeing a rule respond.</strong> Beside the knobs of a model, a few rule cards show limits tightening, branches switching and rules breaking as people push the situation.</li>
+        <li><strong>Reading rules one at a time.</strong> Each card holds one situation, so a rule can be discussed, pointed at and cited by its code.</li>
+        <li><strong>Any way of stating rules.</strong> Mandates and conditionals cover most, but a subject's own keywords and modal words (SHALL, SHOULD) work just as well.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li>Many rules at once, with the one about to apply marked: a rules table.</li>
+        <li>A sequence of things happening, start to finish: a scenario.</li>
+        <li>Rules that branch many levels deep to an outcome: a decision tree.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <p>Give each card a rule. Lines have an optional keyword, text and a depth; the model says which lines apply now (<code>path</code>) and whether the rule holds (<code>status</code>). See the <a href="manifest.md">manifest</a> for the recommended shapes and the full contract.</p>
+      <pre>card.rule = {
+  kind: 'CONDITIONAL', code: 'ROV-R2', title: 'Wheel slip',
+  lines: [
+    { keyword: 'GIVEN', text: 'the rover is on a drive' },
+    { keyword: 'IF', text: 'wheel slip is above 60%' },
+    { text: 'the drive MUST stop', depth: 1 },
+    { keyword: 'ELSE' },
+    { text: 'the rover MAY drive blind', depth: 1 }
+  ]
+};
+card.path = [0, 1, 2];        // the lines that apply now
+card.status = 'broken';       // or 'holds', 'idle'</pre>
+      <p>Clicking a line fires <code>sb-select</code> and changes nothing by itself. Below, clicking a condition makes it true.</p>
+
+      <h3>Making it reveal, not just state</h3>
+      <ul>
+        <li><strong>Drive it from the model.</strong> Recompute <code>path</code> and <code>status</code> on every change, so a rule visibly switches branch and breaks. A rule that never changes is only text.</li>
+        <li><strong>Put the knobs near the rules.</strong> The situation and the rule should be in view together, so people can push one and watch the other.</li>
+        <li><strong>Write rules with values.</strong> "Steeper than 30°" can be checked; "too steep" can't.</li>
+        <li><strong>Point from the prose.</strong> One phrase can light the same kind of line across several cards, such as every limit.</li>
+      </ul>
+    </section>
+
+    <h2 class="part">Examples</h2>
+
+    <section class="example">
+      <h2>A Mars rover's flight rules</h2>
+      <p>Rovers drive by rules written in advance, because a question to Earth takes twenty minutes to answer.</p>
+      <div class="controls">
+        <label>Wheel slip <input type="range" id="slip" min="0" max="80" step="5" value="20"><output id="slip-out"></output></label>
+        <label>Battery <input type="range" id="battery" min="10" max="100" step="5" value="70"><output id="battery-out"></output></label>
+        <label>Rover is
+          <select id="mode">
+            <option value="blind">driving blind</option>
+            <option value="visual">using visual odometry</option>
+            <option value="stopped">stopped</option>
+          </select>
+        </label>
+      </div>
+      <div class="cards">
+        <sb-rule id="rov-slip"></sb-rule>
+        <sb-rule id="rov-battery"></sb-rule>
+      </div>
+      <p class="prose">
+        Slip decides <span class="point" data-point="rov-demands">what the rule demands</span>, from
+        <span class="point" data-point="ROV-R2.stop">stopping outright</span> to
+        <span class="point" data-point="ROV-R2.blind">driving freely</span>, while
+        <span class="point" data-point="ROV-R1">the battery rule</span> holds whatever the ground.
+      </p>
+    </section>
+
+    <section class="example">
+      <h2>Skiing in avalanche country</h2>
+      <p>Backcountry parties settle their limits before they leave, so a good day doesn't talk them into a bad slope.</p>
+      <div class="controls">
+        <label>Danger level <input type="range" id="danger" min="1" max="5" step="1" value="2"><output id="danger-out"></output></label>
+        <label>Steepest slope planned <input type="range" id="slope" min="20" max="45" step="1" value="33"><output id="slope-out"></output></label>
+        <label><input type="checkbox" id="kit" checked> Everyone has their kit</label>
+      </div>
+      <div class="cards">
+        <sb-rule id="av-slope"></sb-rule>
+        <sb-rule id="av-kit"></sb-rule>
+      </div>
+      <p class="prose">
+        As the danger rises, <span class="point" data-point="av-limits">the steepest slope allowed</span> falls,
+        and at <span class="point" data-point="AV-R2.high">level 4 or higher</span> most of the mountain is off limits.
+        <span class="point" data-point="AV-R1">The kit rule</span> never bends.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    // ---- Mars rover ----
+
+    $('rov-slip').rule = {
+      kind: 'CONDITIONAL', code: 'ROV-R2', title: 'Wheel slip',
+      lines: [
+        { keyword: 'Given', text: 'the rover is on a drive', ref: 'ROV-R2.given' },
+        { keyword: 'If', text: 'wheel slip is above 60%', ref: 'ROV-R2.high' },
+        { text: 'the drive MUST stop', depth: 1, ref: 'ROV-R2.stop' },
+        { keyword: 'Else if', text: 'wheel slip is above 30%', ref: 'ROV-R2.some' },
+        { text: 'the rover MUST use visual odometry', depth: 1, ref: 'ROV-R2.visual' },
+        { keyword: 'Else', ref: 'ROV-R2.else' },
+        { text: 'the rover MAY drive blind', depth: 1, ref: 'ROV-R2.blind' }
+      ]
+    };
+
+    $('rov-battery').rule = {
+      kind: 'MANDATE', code: 'ROV-R1', title: 'Battery reserve',
+      lines: [{ text: 'the rover MUST NOT drive below 40% battery', ref: 'ROV-R1.line' }]
+    };
+
+    // The model: which branch slip selects, and whether what the rover is doing obeys it.
+    function roverRules() {
+      const slip = Number($('slip').value);
+      const battery = Number($('battery').value);
+      const mode = $('mode').value;
+      const branch = slip > 60 ? { path: [0, 1, 2], needs: 'stopped' }
+        : slip > 30 ? { path: [0, 3, 4], needs: 'visual' }
+        : { path: [0, 5, 6], needs: null };
+      $('rov-slip').path = branch.path;
+      $('rov-slip').status = !branch.needs || mode === branch.needs ? 'holds' : 'broken';
+      $('rov-battery').path = [];
+      $('rov-battery').status = battery >= 40 ? 'holds' : mode === 'stopped' ? 'holds' : 'broken';
+      $('slip-out').textContent = `${slip}%`;
+      $('battery-out').textContent = `${battery}%`;
+    }
+
+    // Clicking a condition makes it true.
+    const ROVER_CONDITIONS = { 1: 70, 3: 45, 5: 10 };
+
+    // ---- Avalanche ----
+
+    $('av-slope').rule = {
+      kind: 'CONDITIONAL', code: 'AV-R2', title: 'Slope angle',
+      lines: [
+        { keyword: 'Given', text: 'the day\'s forecast danger level', ref: 'AV-R2.given' },
+        { keyword: 'If', text: 'the danger level is 4 or higher', ref: 'AV-R2.high' },
+        { text: 'the party MUST NOT enter slopes steeper than 30°', depth: 1, ref: 'AV-R2.limit-high' },
+        { keyword: 'Else if', text: 'the danger level is 3', ref: 'AV-R2.considerable' },
+        { text: 'the party MUST NOT enter slopes steeper than 35°', depth: 1, ref: 'AV-R2.limit-considerable' },
+        { keyword: 'Else', ref: 'AV-R2.else' },
+        { text: 'the party MAY ski slopes up to 40°', depth: 1, ref: 'AV-R2.limit-low' }
+      ]
+    };
+
+    $('av-kit').rule = {
+      kind: 'MANDATE', code: 'AV-R1', title: 'Rescue kit',
+      lines: [{ text: 'everyone MUST carry a transceiver, probe and shovel', ref: 'AV-R1.line' }]
+    };
+
+    function avalancheRules() {
+      const danger = Number($('danger').value);
+      const slope = Number($('slope').value);
+      const branch = danger >= 4 ? { path: [0, 1, 2], limit: 30 }
+        : danger === 3 ? { path: [0, 3, 4], limit: 35 }
+        : { path: [0, 5, 6], limit: 40 };
+      $('av-slope').path = branch.path;
+      $('av-slope').status = slope <= branch.limit ? 'holds' : 'broken';
+      $('av-kit').status = $('kit').checked ? 'holds' : 'broken';
+      $('danger-out').textContent = ['', 'low', 'moderate', 'considerable', 'high', 'very high'][danger];
+      $('slope-out').textContent = `${slope}°`;
+    }
+
+    const AVALANCHE_CONDITIONS = { 1: 4, 3: 3, 5: 2 };
+
+    // ---- Pointing: prose words that mean several lines ----
+
+    const GROUPS = {
+      'rov-demands': ['ROV-R2.stop', 'ROV-R2.visual', 'ROV-R2.blind'],
+      'av-limits': ['AV-R2.limit-high', 'AV-R2.limit-considerable', 'AV-R2.limit-low']
+    };
+
+    const cards = [...document.querySelectorAll('sb-rule')];
+
+    function point(ref) {
+      const refs = ref ? GROUPS[ref] ?? [ref] : [];
+      cards.forEach((card) => { card.highlight = refs; });
+    }
+
+    // ---- Start ----
+
+    document.querySelectorAll('.point').forEach((word) => {
+      word.addEventListener('pointerenter', () => point(word.dataset.point));
+      word.addEventListener('pointerleave', () => point(null));
+    });
+
+    ['slip', 'battery', 'mode'].forEach((id) => $(id).addEventListener('input', roverRules));
+    ['danger', 'slope', 'kit'].forEach((id) => $(id).addEventListener('input', avalancheRules));
+
+    $('rov-slip').addEventListener('sb-select', (e) => {
+      if (!(e.detail.index in ROVER_CONDITIONS)) return;
+      $('slip').value = ROVER_CONDITIONS[e.detail.index];
+      roverRules();
+    });
+
+    $('av-slope').addEventListener('sb-select', (e) => {
+      if (!(e.detail.index in AVALANCHE_CONDITIONS)) return;
+      $('danger').value = AVALANCHE_CONDITIONS[e.detail.index];
+      avalancheRules();
+    });
+
+    roverRules();
+    avalancheRules();
+  </script>
+</body>
+</html>

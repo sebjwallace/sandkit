@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-rule tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-rule.js"></script>
+  <script src="sb-rule.js"></script>
+</head>
+<body>
+  <script>
+    const SLOPE = {
+      kind: 'CONDITIONAL',
+      code: 'AV-R2',
+      title: 'Slope angle',
+      lines: [
+        { keyword: 'Given', text: 'the forecast danger level', ref: 'AV-R2.given' },
+        { keyword: 'If', text: 'the danger level is 4 or higher', ref: 'AV-R2.high' },
+        { text: 'the party MUST NOT enter slopes steeper than 30°', depth: 1, ref: 'AV-R2.limit-high' },
+        { keyword: 'Else' },
+        { text: 'the party MAY ski slopes up to 40°', depth: 1, ref: 'AV-R2.limit-low' }
+      ]
+    };
+
+    const card = (rule = SLOPE) => {
+      const element = mount('<sb-rule></sb-rule>');
+      element.rule = rule;
+      return element;
+    };
+    const lines = (element) => [...element.querySelectorAll('.sb-rule__line')];
+    const marked = (element, modifier) => lines(element).map((line) => line.classList.contains(`sb-rule__line--${modifier}`));
+    const texts = (element, part) => [...element.querySelectorAll(`.sb-rule__${part}`)].map((el) => el.textContent);
+
+    // ---- Showing a rule ----
+
+    test('says so when there is no rule yet', () => {
+      assertEqual(mount('<sb-rule></sb-rule>').textContent.trim(), 'No rule yet.');
+    });
+
+    test('shows the kind, the code, the title and every line in order', () => {
+      const element = card();
+      assertEqual([texts(element, 'kind'), texts(element, 'code'), texts(element, 'title')], [['CONDITIONAL'], ['AV-R2'], ['Slope angle']]);
+      assertEqual(texts(element, 'keyword'), ['Given', 'If', '', 'Else', '']);
+    });
+
+    test('leaves out a kind, code and title not given', () => {
+      const element = card({ lines: [{ text: 'everyone MUST carry kit' }] });
+      assertEqual(element.querySelector('.sb-rule__kind, .sb-rule__code, .sb-rule__title'), null);
+    });
+
+    test('capitalises keywords by style, keeping the words as written', () => {
+      const keyword = card().querySelector('.sb-rule__keyword');
+      assertEqual(getComputedStyle(keyword).textTransform, 'uppercase');
+      assertEqual(keyword.textContent, 'Given');
+    });
+
+    test('indents a line\'s text by its depth', () => {
+      const [, condition, mandate] = card().querySelectorAll('.sb-rule__text');
+      const indent = (text) => parseFloat(getComputedStyle(text).paddingLeft);
+      assert(indent(mandate) > indent(condition), 'the mandate sits deeper');
+    });
+
+    test('a rule without keywords takes no room for them', () => {
+      const element = card({ lines: [{ text: 'everyone MUST carry kit' }] });
+      assertEqual(element.querySelector('.sb-rule__keyword').getBoundingClientRect().width, 0);
+    });
+
+    test('marks modal words, quoted text and standalone numbers', () => {
+      const element = card({ lines: [{ text: 'rover "R2" MUST NOT drive below 40% or above 12.5°, as R2 MUST stop and MAY wait; MUSTER is no modal' }] });
+      assertEqual(texts(element, 'modal'), ['MUST NOT', 'MUST', 'MAY']);
+      assertEqual(texts(element, 'value'), ['"R2"', '40%', '12.5°']);
+    });
+
+    test('modals can be replaced with the sandbox\'s own words', () => {
+      const element = card({ lines: [{ text: 'the operator SHALL NOT bypass it, and SHOULD log it, but MUST not panic' }] });
+      element.modals = ['SHALL NOT', 'SHALL', 'SHOULD'];
+      assertEqual(texts(element, 'modal'), ['SHALL NOT', 'SHOULD']);
+    });
+
+    test('displays text as text, never as markup', () => {
+      const element = card({ kind: '<i>k</i>', code: '<u>c</u>', title: '<b>t</b>', lines: [{ keyword: '<s>If</s>', text: '<em>x</em> MUST "<q>y</q>" 3' }] });
+      element.status = '<b>odd</b>';
+      assertEqual(element.querySelectorAll('i, u, b, s, em, q').length, 0);
+      assertEqual(element.querySelector('.sb-rule__text').textContent, '<em>x</em> MUST "<q>y</q>" 3');
+    });
+
+    // ---- What applies now ----
+
+    test('path marks the lines in force and fades the rest', () => {
+      const element = card();
+      element.path = [0, 1, 2];
+      assertEqual(marked(element, 'on-path'), [true, true, true, false, false]);
+      assertEqual(marked(element, 'off-path'), [false, false, false, true, true]);
+    });
+
+    test('an empty path shows every line plainly', () => {
+      const element = card();
+      element.path = [0];
+      element.path = null;
+      assertEqual(marked(element, 'on-path').concat(marked(element, 'off-path')).some(Boolean), false);
+    });
+
+    test('status is shown in words, and a broken rule is marked on the card', () => {
+      const element = card();
+      const words = () => element.querySelector('.sb-rule__status')?.textContent ?? null;
+      assertEqual(words(), null);
+      element.status = 'holds';
+      assertEqual(words(), 'holds');
+      element.status = 'idle';
+      assertEqual(words(), 'not in force');
+      element.status = 'broken';
+      assertEqual([words(), element.dataset.status], ['broken', 'broken']);
+      element.status = null;
+      assertEqual([words(), element.dataset.status], [null, undefined]);
+    });
+
+    // ---- Highlighting ----
+
+    test('a line\'s ref lights the line, and the code lights the card', () => {
+      const element = card();
+      element.highlight = ['AV-R2.limit-high', 'AV-R2.limit-low'];
+      assertEqual(marked(element, 'highlighted'), [false, false, true, false, true]);
+      assert(!element.classList.contains('sb-rule--highlighted'), 'card not lit');
+      element.highlight = ['AV-R2'];
+      assert(element.classList.contains('sb-rule--highlighted'), 'card lit');
+      element.highlight = null;
+      assert(!element.classList.contains('sb-rule--highlighted'), 'cleared');
+    });
+
+    test('a rule without a code never lights as a whole', () => {
+      const element = card({ lines: [{ text: 'a' }] });
+      element.highlight = [undefined];
+      assert(!element.classList.contains('sb-rule--highlighted'), 'not lit');
+    });
+
+    // ---- Choosing a line ----
+
+    test('clicking a line fires sb-select with the rule, the line and its index, and changes nothing', () => {
+      const element = card();
+      const selections = recordEvents(element, 'sb-select');
+      lines(element)[2].querySelector('.sb-rule__modal').click();
+      assertEqual(selections.length, 1);
+      assertEqual(selections[0].detail.rule, SLOPE);
+      assertEqual(selections[0].detail.line, SLOPE.lines[2]);
+      assertEqual(selections[0].detail.index, 2);
+      assertEqual(element.path, []);
+    });
+
+    test('a line can be chosen from the keyboard', () => {
+      const element = card();
+      const selections = recordEvents(element, 'sb-select');
+      assertEqual(lines(element)[0].tabIndex, 0);
+      lines(element)[3].dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      assertEqual(selections[0].detail.index, 3);
+    });
+
+    test('clicking the heading selects nothing', () => {
+      const element = card();
+      const selections = recordEvents(element, 'sb-select');
+      element.querySelector('.sb-rule__title').click();
+      assertEqual(selections.length, 0);
+    });
+
+    // ---- Locating ----
+
+    test('the card carries its code and lines with a ref carry theirs as data-ref', () => {
+      const element = card();
+      assertEqual(element.dataset.ref, 'AV-R2');
+      assertEqual(lines(element).map((line) => line.dataset.ref ?? null), ['AV-R2.given', 'AV-R2.high', 'AV-R2.limit-high', null, 'AV-R2.limit-low']);
+      element.rule = { lines: [] };
+      assertEqual(element.dataset.ref, undefined);
+    });
+
+    // ---- Instances ----
+
+    test('two cards on one page keep their own rule, path, status and modals', () => {
+      mount('<div><sb-rule></sb-rule><sb-rule></sb-rule></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-rule');
+      a.rule = SLOPE;
+      b.rule = { kind: 'MANDATE', code: 'AV-R1', lines: [{ text: 'everyone SHALL carry kit' }] };
+      a.path = [0];
+      b.status = 'broken';
+      b.modals = ['SHALL'];
+      assertEqual([marked(a, 'on-path')[0], marked(b, 'on-path')[0]], [true, false]);
+      assertEqual([a.dataset.status, b.dataset.status], [undefined, 'broken']);
+      assertEqual([texts(a, 'modal'), texts(b, 'modal')], [['MUST NOT', 'MAY'], ['SHALL']]);
+    });
+
+    test('loading the same script twice is harmless and quiet', () => {
+      assertEqual(consoleErrors, []);
+    });
+  </script>
+</body>
+</html>
