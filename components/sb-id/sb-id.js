@@ -1,4 +1,4 @@
-// Sandkit sb-id 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-id 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A short identifying code, shown as a pill. Hover or focus shows what it refers to; clicking it
 // highlights every mention of it on the page. Hovering also announces the code page-wide, so
 // anything else marked with it can light up. Supports the identifiers and highlighting practices
@@ -126,6 +126,7 @@
         `<button type="button" class="sb-id__pill" aria-describedby="${this._cardId}">${esc(this.code)}</button>` +
         `<div class="sb-id__card" id="${this._cardId}" popover="manual" role="tooltip"></div>`;
       this.classList.toggle('sb-id--highlighted', highlightedCode !== null && this.code === highlightedCode);
+      this.dataset.ref = this.code; // so the page can find every mention (practices/locating.md)
 
       const pill = this.querySelector('.sb-id__pill');
       pill.addEventListener('mouseenter', () => this._point());

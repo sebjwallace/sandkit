@@ -1,4 +1,4 @@
-// Sandkit sb-graph 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-graph 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Things joined by connections: state machines, workflows, networks, flows. Highlights what is
 // active, and can show things moving along the connections.
 //
@@ -233,7 +233,7 @@
       const key = edgeKey(edge);
       const active = this._active.edges.includes(key);
       return `
-        <path class="sb-graph__edge${active ? ' sb-graph__edge--active' : ''}" d="${path.d}" marker-end="url(#${this._id}-${active ? 'arrow-active' : 'arrow'})"/>
+        <path class="sb-graph__edge${active ? ' sb-graph__edge--active' : ''}"${refAttr(edge.id)} d="${path.d}" marker-end="url(#${this._id}-${active ? 'arrow-active' : 'arrow'})"/>
         <path class="sb-graph__edge-hit" d="${path.d}" data-edge-id="${esc(key)}"><title>${esc(lineTexts(edge).join('\n') || key)}</title></path>`;
     }
 
@@ -244,7 +244,7 @@
       const top = path.labelAt.y - ((lines.length - 1) * LINE_HEIGHT) / 2 + 4;
       const spans = lines.map((line, i) => {
         const active = line.id != null && this._active.lines.includes(line.id);
-        return `<tspan x="${path.labelAt.x}" y="${top + i * LINE_HEIGHT}"${active ? ' class="sb-graph__line--active"' : ''}>${esc(line.text)}</tspan>`;
+        return `<tspan x="${path.labelAt.x}" y="${top + i * LINE_HEIGHT}"${refAttr(line.id)}${active ? ' class="sb-graph__line--active"' : ''}>${esc(line.text)}</tspan>`;
       }).join('');
       return `<text class="sb-graph__edge-label" text-anchor="middle" data-edge-id="${esc(edgeKey(edge))}">${spans}</text>`;
     }
@@ -269,7 +269,7 @@
         <rect class="sb-graph__meter" x="${-meterWidth / 2}" y="16" width="${clamp01(n.value / n.max) * meterWidth}" height="5" rx="2"/>` : '';
 
       return `
-        <g class="${esc(classes.join(' '))}" data-node-id="${esc(n.id)}" transform="translate(${n.x}, ${n.y})">
+        <g class="${esc(classes.join(' '))}" data-ref="${esc(n.id)}" transform="translate(${n.x}, ${n.y})">
           <title>${esc(n.label ?? n.id)}</title>
           ${shape}
           <text class="sb-graph__label" y="${labelY}" text-anchor="middle">${esc(n.label ?? n.id)}</text>
@@ -294,11 +294,11 @@
     // ---- Interaction ----
 
     _select(e) {
-      const node = e.target.closest('[data-node-id]');
+      const node = e.target.closest('.sb-graph__node');
       const edge = e.target.closest('[data-edge-id]');
       if (node) {
-        this.selected = node.dataset.nodeId;
-        this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'node', id: node.dataset.nodeId } }));
+        this.selected = node.dataset.ref;
+        this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'node', id: node.dataset.ref } }));
       } else if (edge) {
         this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { type: 'edge', id: edge.dataset.edgeId } }));
       }
@@ -306,6 +306,9 @@
   }
 
   const edgeKey = (edge) => edge.id ?? `${edge.from}->${edge.to}`;
+
+  // Things the sandbox gave an id are marked with it, so the page can find them.
+  const refAttr = (id) => (id != null ? ` data-ref="${esc(id)}"` : '');
 
   // An edge label is a string (lines separated by \n) or a list of lines, each a string or { id, text }.
   function labelLines(edge) {

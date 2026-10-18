@@ -54,7 +54,7 @@ A pill asks once the page has loaded (so the listener can be added anywhere), ag
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-text`, `--sb-radius`, `--sb-font`.
 
-Classes: `sb-id__pill`, `sb-id__card`, `sb-id__kind`, `sb-id__title`, `sb-id__description`. The element carries `sb-id--unresolved` and `sb-id--highlighted` when they apply.
+Classes: `sb-id__pill`, `sb-id__card`, `sb-id__kind`, `sb-id__title`, `sb-id__description`. The element carries `sb-id--unresolved` and `sb-id--highlighted` when they apply. The element carries `data-ref` with its code, so a sandbox can find every mention: see the [locating practice](../../practices/locating.md).
 
 ## Works well with
 

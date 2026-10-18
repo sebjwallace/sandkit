@@ -61,7 +61,7 @@ A child marked `slot="<rule id>"` replaces that rule's code cell, so a sandbox c
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`.
 
-Classes: `sb-rules__table`, `sb-rules__group`, `sb-rules__rule` (with `--active` and `--fired`), `sb-rules__code`, `sb-rules__status`, `sb-rules__empty`.
+Classes: `sb-rules__table`, `sb-rules__group`, `sb-rules__rule` (with `--active` and `--fired`), `sb-rules__code`, `sb-rules__status`, `sb-rules__empty`. Each rule's row carries `data-ref` with the rule's id, so a sandbox can find it and go to it: see the [locating practice](../../practices/locating.md).
 
 Give the element a height (for example `max-height: 320px`) so a long table scrolls.
 

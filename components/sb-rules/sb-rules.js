@@ -1,4 +1,4 @@
-// Sandkit sb-rules 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-rules 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A table of the rules a model follows, showing which one is about to apply and which one just
 // did. "A table that lists rules displays; one that highlights the rule that just fired reveals."
 //
@@ -146,7 +146,7 @@
         return `<td>${esc(value)}</td>`;
       }).join('');
       return `
-        <tr class="sb-rules__rule" data-rule-id="${esc(rule.id)}">
+        <tr class="sb-rules__rule" data-ref="${esc(rule.id)}">
           <td class="sb-rules__code">${esc(rule.id)}</td>${cells}<td class="sb-rules__status"></td>
         </tr>`;
     }
@@ -167,7 +167,7 @@
     _showStatus() {
       if (!this.isConnected || !this._rules.length) return;
       for (const row of this.querySelectorAll('.sb-rules__rule')) {
-        const id = row.dataset.ruleId;
+        const id = row.dataset.ref;
         const isActive = id === String(this._active), isFired = id === String(this._fired);
         row.classList.toggle('sb-rules__rule--active', isActive);
         row.classList.toggle('sb-rules__rule--fired', isFired && !isActive);
@@ -187,7 +187,7 @@
 
     _rowFor(id) {
       if (id == null) return null;
-      return [...this.querySelectorAll('.sb-rules__rule')].find((row) => row.dataset.ruleId === String(id));
+      return [...this.querySelectorAll('.sb-rules__rule')].find((row) => row.dataset.ref === String(id));
     }
 
     // ---- Interaction ----
@@ -195,7 +195,7 @@
     _select(e) {
       const row = e.target.closest('.sb-rules__rule');
       if (!row) return;
-      const rule = this._rules.find((r) => String(r.id) === row.dataset.ruleId);
+      const rule = this._rules.find((r) => String(r.id) === row.dataset.ref);
       this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { rule } }));
     }
   }

@@ -1,4 +1,4 @@
-// Sandkit sb-table 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-table 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Rows and columns to sort, search and filter, with the cells that just changed marked, so a
 // step of the model shows what it changed rather than only how things now stand.
 //
@@ -214,7 +214,8 @@
       const highlighted = this._highlight.rows?.some((id) => String(id) === String(row.id));
       const classes = ['sb-table__row', highlighted && 'sb-table__row--highlighted'].filter(Boolean).join(' ');
       const tone = row.tone ? ` data-tone="${esc(row.tone)}"` : '';
-      return `<tr class="${classes}" data-index="${this._rows.indexOf(row)}"${tone}>${columns.map((c) => this._cell(row, c)).join('')}</tr>`;
+      const ref = row.id != null ? ` data-ref="${esc(row.id)}"` : '';
+      return `<tr class="${classes}" data-index="${this._rows.indexOf(row)}"${ref}${tone}>${columns.map((c) => this._cell(row, c)).join('')}</tr>`;
     }
 
     _cell(row, column) {

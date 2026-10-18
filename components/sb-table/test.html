@@ -217,6 +217,29 @@
       assertEqual(el.querySelectorAll('b, i').length, 0);
       assertEqual(el.querySelector('td').title, 'was <b>bold</b>');
     });
+
+    // ---- Locating ----
+
+    test('rows with an id carry data-ref, so the page can find them; rows without one don\'t', () => {
+      const el = table();
+      el.rows = [...ROWS, { name: 'Pluto', moons: 5, type: 'dwarf' }];
+      const refs = [...el.querySelectorAll('tbody tr')].map((tr) => tr.dataset.ref ?? null);
+      assertEqual(refs, ['mars', 'earth', 'saturn', 'venus', null]);
+    });
+
+    test('a row a viewer\'s search hides is not on the page to be found', () => {
+      const el = table('search');
+      el.query = 'gas';
+      assertEqual([...el.querySelectorAll('[data-ref]')].map((tr) => tr.dataset.ref), ['saturn']);
+    });
+
+    test('two tables mark only their own rows', () => {
+      mount('<div><sb-table></sb-table><sb-table></sb-table></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-table');
+      a.rows = ROWS;
+      b.rows = [{ id: 'pluto', name: 'Pluto' }];
+      assertEqual([a.querySelectorAll('[data-ref]').length, b.querySelectorAll('[data-ref]').length], [4, 1]);
+    });
   </script>
 </body>
 </html>

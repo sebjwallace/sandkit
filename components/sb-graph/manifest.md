@@ -68,7 +68,7 @@ Use this component through the interface below. You don't need to read its sourc
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-accent-text`, `--sb-good`, `--sb-warn`, `--sb-bad`.
 
-Classes: `sb-graph__node` (with `--box` or `--circle`, `--active`, `--selected`, `--terminal`, and the tone), `sb-graph__shape`, `sb-graph__ring`, `sb-graph__label`, `sb-graph__sublabel`, `sb-graph__meter`, `sb-graph__edge` (`--active`), `sb-graph__edge-label`, `sb-graph__line--active`, `sb-graph__token`.
+Classes: `sb-graph__node` (with `--box` or `--circle`, `--active`, `--selected`, `--terminal`, and the tone), `sb-graph__shape`, `sb-graph__ring`, `sb-graph__label`, `sb-graph__sublabel`, `sb-graph__meter`, `sb-graph__edge` (`--active`), `sb-graph__edge-label`, `sb-graph__line--active`, `sb-graph__token`. Nodes, edges given an `id`, and label lines given an `id` carry `data-ref` with it (on the node's group, the drawn edge and the line), so a sandbox can find them: see the [locating practice](../../practices/locating.md).
 
 ## Works well with
 

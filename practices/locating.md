@@ -18,7 +18,7 @@ Cross-references list the places a ref appears; comments cite the refs under wha
 Two parts, both plain DOM.
 
 - **`data-ref` names what a part is.** Every part a component draws for a thing with an id carries `data-ref` with that id, unchanged: a tree's node, a tab's content, an equation's term. The sandbox marks its own elements the same way, such as a phrase in the prose that mentions a rule. Several parts may share a ref, and only a part's outermost element carries it. Whether a part also answers pointing is up to each component.
-- **`reveal(ref, place)` shows a part a component has hidden.** A component that can hide parts (a closed tab, a folded branch) offers `reveal`: it opens, expands or switches until the part is visible within it, and returns `true`, or `false` if it holds no such part. It never selects, never fires the events viewers' actions fire, and never undoes a viewer's search or filter. `place` is optional: the element being gone to, for components holding the sandbox's content, where a ref may appear in several panels. Components that draw their own parts go by the ref alone.
+- **`reveal(ref, place)` shows a part a component has hidden.** A component that can hide parts (a closed tab, a folded branch) offers `reveal`: it opens, expands or switches until the part is visible within it, and returns `true`, or `false` if it holds no such part. It never selects, never fires the events viewers' actions fire, and never undoes a viewer's search or filter. `place` is optional: the element being gone to, for components holding the sandbox's content, where a ref may appear in several panels. Components that draw their own parts go by the ref alone. Scrolling isn't hiding: `scrollIntoView` scrolls a table's own scroll box as well as the page, so a component that only scrolls has no `reveal`.
 
 So "where does it appear?" is a single query, and "take me there" is calling `reveal` on whatever holds the place.
 
@@ -28,6 +28,10 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 |---|---|---|
 | [`sb-tree`](../components/sb-tree/manifest.md) | every node, folded ones too | opens the branches on the way |
 | [`sb-tabs`](../components/sb-tabs/manifest.md) | — | shows the panel holding the place, or else the ref |
+| [`sb-id`](../components/sb-id/manifest.md) | each pill, with its code | — |
+| [`sb-table`](../components/sb-table/manifest.md) | each row with an `id` (not rows a viewer's search hides) | — |
+| [`sb-rules`](../components/sb-rules/manifest.md) | each rule's row | — |
+| [`sb-graph`](../components/sb-graph/manifest.md) | each node, and each edge and label line given an `id` | — |
 | [`sb-math`](../components/sb-math/manifest.md), [`sb-annotate`](../components/sb-annotate/manifest.md), [`sb-walkthrough`](../components/sb-walkthrough/manifest.md), [`sb-wireframe`](../components/sb-wireframe/manifest.md) | the parts the sandbox marks in their content | — |
 | The sandbox's own elements | whatever it marks | — |
 

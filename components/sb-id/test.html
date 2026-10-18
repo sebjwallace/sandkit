@@ -155,6 +155,15 @@
       document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: null } }));
       assert(!a.classList.contains('sb-id--lit'), 'cleared');
     });
+
+    // ---- Locating ----
+
+    test('each pill carries data-ref with its code, kept in step when the code changes', () => {
+      const [a, b] = pills('<sb-id code="RUL-001"></sb-id> <sb-id code="RUL-002"></sb-id>');
+      assertEqual([a.dataset.ref, b.dataset.ref], ['RUL-001', 'RUL-002']);
+      a.code = 'RUL-003';
+      assertEqual(a.dataset.ref, 'RUL-003');
+    });
   </script>
 </body>
 </html>

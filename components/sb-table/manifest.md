@@ -72,7 +72,7 @@ When a filter or search hides rows, the table says how many it shows ("3 of 12 r
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-radius`.
 
-Classes: `sb-table__bar`, `sb-table__search`, `sb-table__count`, `sb-table__scroll`, `sb-table__table`, `sb-table__sort` (the heading buttons; sorted headings carry `aria-sort`), `sb-table__row` (`--highlighted`), `sb-table__cell` (`--number`, `--changed`, `--highlighted`), `sb-table__empty`. Rows carry `data-tone`; changed numbers carry `data-change="up"` or `"down"`, and every changed cell's `title` says what it was.
+Classes: `sb-table__bar`, `sb-table__search`, `sb-table__count`, `sb-table__scroll`, `sb-table__table`, `sb-table__sort` (the heading buttons; sorted headings carry `aria-sort`), `sb-table__row` (`--highlighted`), `sb-table__cell` (`--number`, `--changed`, `--highlighted`), `sb-table__empty`. Rows with an `id` carry `data-ref` with it, so a sandbox can find them and go to them (see the [locating practice](../../practices/locating.md)); rows hidden by search or `filter` aren't drawn, so aren't found. Rows carry `data-tone`; changed numbers carry `data-change="up"` or `"down"`, and every changed cell's `title` says what it was.
 
 Give the element a height (for example `max-height: 320px`) so a long table scrolls under its headings.
 
