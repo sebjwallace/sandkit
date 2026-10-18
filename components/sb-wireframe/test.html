@@ -169,6 +169,15 @@
       assertEqual(moves.length, 0);
     });
 
+    test('reveal says whether it holds the part, and a place picks between parts sharing a ref', () => {
+      const el = flow();
+      assertEqual(el.reveal('missing'), false);
+      assertEqual(el.reveal('count'), true);
+      assertEqual(showing(el), ['basket'], 'without a place, the first');
+      assertEqual(el.reveal('count', el.querySelectorAll('[data-ref="count"]')[1]), true);
+      assertEqual(showing(el), ['pay'], 'with one, the screen holding it');
+    });
+
     // ---- Pointing ----
 
     test('pointing at a part lights its ref and fires sb-point; leaving clears it', () => {

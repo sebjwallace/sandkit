@@ -38,8 +38,11 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | [`sb-flowchart`](../components/sb-flowchart/manifest.md) | each step and lane, and each edge given an `id` | — |
 | [`sb-statechart`](../components/sb-statechart/manifest.md) | each state | — |
 | [`sb-decision-tree`](../components/sb-decision-tree/manifest.md) | each question and outcome | — |
+| [`sb-wireframe`](../components/sb-wireframe/manifest.md) | the parts the sandbox marks in its screens | goes to the screen holding the place, or else the ref |
+| [`sb-panel`](../components/sb-panel/manifest.md) | — | expands the panel if it holds the place or the ref, and brings it to the front |
+| [`sb-image`](../components/sb-image/manifest.md) | each mark | glides to the mark |
 | [`sb-c4`](../components/sb-c4/manifest.md) | each box in the current view, and each line carrying one relationship with an `id` | goes to the view where an element can be seen |
-| [`sb-math`](../components/sb-math/manifest.md), [`sb-annotate`](../components/sb-annotate/manifest.md), [`sb-walkthrough`](../components/sb-walkthrough/manifest.md), [`sb-wireframe`](../components/sb-wireframe/manifest.md) | the parts the sandbox marks in their content | — |
+| [`sb-math`](../components/sb-math/manifest.md), [`sb-annotate`](../components/sb-annotate/manifest.md), [`sb-walkthrough`](../components/sb-walkthrough/manifest.md) | the parts the sandbox marks in their content | — |
 | The sandbox's own elements | whatever it marks | — |
 
 More components join as sandboxes need them. A component's manifest says what it marks and whether it has `reveal`.

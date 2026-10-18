@@ -56,6 +56,7 @@ Setting properties never fires the events below; they are for what viewers do.
 | Method | Meaning |
 |---|---|
 | `reset()` | Glides back to the highlighted mark, or else the view. The same as the circling arrow. |
+| `reveal(id)` | Glides to a mark and highlights it, as setting `highlight` does. Returns `true`, or `false` if there's no such mark. |
 
 ## Events
 
@@ -81,7 +82,7 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-surface`, `--sb-surface-2`, `--sb
 
 Its own custom properties, to set on the element: `--sb-image-height` (a fixed height for the frame, instead of the view's shape; the view then fits inside it), `--sb-image-max-height` (default `70vh`).
 
-Classes: `sb-image__frame` (`--dragging`), `sb-image__stage` (`--glide`), `sb-image__img`, `sb-image__marks`, `sb-image__mark` (`--box`, `--pin`, `--highlighted`, and the tone), `sb-image__label`, `sb-image__tools`, `sb-image__tool`, `sb-image__message`, `sb-image__caption`. Marks carry `data-id`.
+Classes: `sb-image__frame` (`--dragging`), `sb-image__stage` (`--glide`), `sb-image__img`, `sb-image__marks`, `sb-image__mark` (`--box`, `--pin`, `--highlighted`, and the tone), `sb-image__label`, `sb-image__tools`, `sb-image__tool`, `sb-image__message`, `sb-image__caption`. Marks carry `data-id`, and `data-ref` with the same id so a sandbox can find them (see the [locating practice](../../practices/locating.md)).
 
 ## Works well with
 

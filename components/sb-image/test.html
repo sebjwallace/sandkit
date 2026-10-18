@@ -247,6 +247,17 @@
       assertEqual(el.querySelector('.sb-image__label').textContent, '<i>label</i>');
       assertEqual(el.querySelector('.sb-image__mark').dataset.id, '"><b>x</b>');
     });
+
+    // ---- Locating ----
+
+    test('marks carry data-ref, and reveal glides to one, saying whether it exists', async () => {
+      const el = await image((el) => { el.marks = [BOX, PIN]; });
+      assert(el.querySelector('[data-ref="pin"]').matches('.sb-image__mark'), 'found by its id');
+      assertEqual(el.reveal('missing'), false);
+      assertEqual(el.highlight, null);
+      assertEqual(el.reveal('pin'), true);
+      assertEqual(highlighted(el), ['pin']);
+    });
   </script>
 </body>
 </html>

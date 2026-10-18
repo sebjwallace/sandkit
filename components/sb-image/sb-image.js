@@ -1,4 +1,4 @@
-// Sandkit sb-image 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-image 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // An image to zoom and pan, starting on just the part that matters, with boxes and pins marking
 // what the prose is about. Highlighting a mark glides to it and dims the rest, so words can steer
 // the eye around a large picture.
@@ -85,7 +85,7 @@
     if (mark.tone) classes.push(`sb-image__mark--${mark.tone}`);
     if (highlighted) classes.push('sb-image__mark--highlighted');
     const label = mark.label ? `<span class="sb-image__label">${esc(mark.label)}</span>` : '';
-    return `<button type="button" class="${esc(classes.join(' '))}" style="${place}" data-id="${esc(mark.id)}" aria-label="${esc(mark.label || mark.id)}">${label}</button>`;
+    return `<button type="button" class="${esc(classes.join(' '))}" style="${place}" data-id="${esc(mark.id)}" data-ref="${esc(mark.id)}" aria-label="${esc(mark.label || mark.id)}">${label}</button>`;
   }
 
   // The camera is where the frame looks: the image point at its centre (cx, cy, as fractions of
@@ -145,6 +145,13 @@
       this._highlight = id == null ? null : String(id);
       this._showMarks();
       if (this._natural) this._place(this._home(), true);
+    }
+
+    // Glides to a mark and highlights it, as setting highlight does. False if there's no such mark.
+    reveal(id) {
+      if (!this._marks.some((mark) => String(mark.id) === String(id))) return false;
+      this.highlight = id;
+      return true;
     }
 
     // The part of the image in the frame now, as { x, y, w, h } fractions, or null before it loads.

@@ -1,4 +1,4 @@
-// Sandkit sb-panel 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-panel 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A frame that lets viewers rearrange a sandbox: wrap any content in a panel, and viewers can pop
 // it out into a floating window, drag and resize it, collapse it, make it full screen, and dock it
 // back where it started. The panel never looks inside its content.
@@ -152,6 +152,18 @@
 
     bringToFront() {
       if (this.floating) this.style.zIndex = String(++frontmost);
+    }
+
+    // Shows what the panel holds, if it holds `place`, or else a part marked data-ref="ref":
+    // expands it and brings it to the front. Quiet, and not remembered as the viewer's choice.
+    // False if it holds no such part.
+    reveal(ref, place) {
+      const holds = place ? this.contains(place) : [...this.querySelectorAll('[data-ref]')].some((el) => el.dataset.ref === String(ref));
+      if (!holds) return false;
+      this.removeAttribute('collapsed');
+      this._showState();
+      this.bringToFront();
+      return true;
     }
 
     // ---- Building ----

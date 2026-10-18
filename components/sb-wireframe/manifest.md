@@ -69,7 +69,7 @@ Plain HTML elements (headings, paragraphs, buttons, inputs, selects, links, rule
 | `screen` | The id of the screen showing, or `null` with no screens. An unknown id shows the first. Setting it doesn't fire `sb-navigate`. |
 | `screens` | The screen elements, in order. |
 | `highlight` | The refs to point at: `['checkout']`. Every part with one is outlined; a part on another screen marks that screen in the bar. |
-| `reveal(ref)` | Goes to the screen holding the part, and highlights it. |
+| `reveal(ref, place)` | Goes to the screen holding `place`, a part on the page, or without one the first part marked with the ref, and highlights it. Returns `true`, or `false` if there's no such part. Doesn't fire `sb-navigate`. |
 
 ## Viewers
 

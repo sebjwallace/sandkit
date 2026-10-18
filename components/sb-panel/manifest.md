@@ -36,6 +36,7 @@ Give a panel an `id` and each viewer's arrangement (floating or docked, position
 | `toggleCollapsed()` | Collapse the panel to its bar, or expand it again. |
 | `toggleFullscreen()` | Make the panel fill the screen, or leave full screen. |
 | `bringToFront()` | Raise a floating panel above other floating panels. Touching one does this too. |
+| `reveal(ref, place)` | If the panel holds `place`, or else a part marked `data-ref="ref"`, expand it if collapsed and bring it to the front. Quiet: no `sb-layout`, and not remembered as the viewer's choice. Returns `true`, or `false` if it holds no such part. See the [locating practice](../../practices/locating.md). |
 
 ## Events
 

@@ -1,5 +1,8 @@
 # sb-panel changelog
 
+## 0.1.2 · 2026-10-18
+- Added `reveal(ref, place)`: expands a collapsed panel holding a part, and brings it to the front, quietly (see the locating practice).
+
 ## 0.1.1 · 2026-10-17
 - A panel moved by another element while the page loads is built once, not twice.
 

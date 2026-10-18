@@ -167,6 +167,27 @@
       const el = panel('heading="<b>bold</b>"');
       assertEqual(el.querySelector('.sb-panel__bar b'), null);
     });
+
+    // ---- Revealing ----
+
+    test('reveal expands a collapsed panel holding the ref, quietly, and not remembered', () => {
+      localStorage.removeItem('sb-panel:reveal-test');
+      const el = panel('id="reveal-test"', '<p data-ref="RUL-1">Rule</p>');
+      press(el, 'collapse');
+      const saved = localStorage.getItem('sb-panel:reveal-test');
+      const layouts = recordEvents(el, 'sb-layout');
+      assertEqual(el.reveal('RUL-1'), true);
+      assertEqual([el.collapsed, layouts.length], [false, 0]);
+      assertEqual(localStorage.getItem('sb-panel:reveal-test'), saved, 'the viewer\'s choice is kept');
+    });
+
+    test('reveal returns false, and changes nothing, for what the panel doesn\'t hold', () => {
+      const el = panel('', '<p data-ref="RUL-1">Rule</p>');
+      press(el, 'collapse');
+      assertEqual(el.reveal('RUL-2'), false);
+      assert(el.collapsed);
+      assertEqual(el.reveal('anything', el.querySelector('p')), true, 'a place it holds');
+    });
   </script>
 </body>
 </html>

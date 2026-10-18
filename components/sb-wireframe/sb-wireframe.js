@@ -1,4 +1,4 @@
-// Sandkit sb-wireframe 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-wireframe 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A wireframe prototype written in plain HTML. Everything inside is drawn as a wireframe; children
 // marked data-screen become screens shown one at a time, data-go moves between them, and parts
 // marked data-ref can be pointed at, highlighted and clicked.
@@ -137,13 +137,15 @@
       this._showHighlight();
     }
 
-    // Goes to the screen holding a part, and highlights it.
-    reveal(ref) {
-      const part = this._parts().find((p) => p.dataset.ref === String(ref));
-      if (!part) return;
+    // Goes to the screen holding `place`, or else the first part marked with the ref, and
+    // highlights it. False if there's no such part.
+    reveal(ref, place) {
+      const part = place && this.contains(place) ? place : this._parts().find((p) => p.dataset.ref === String(ref));
+      if (!part) return false;
       const screen = this.screens.find((s) => s.contains(part));
       if (screen) this.screen = screen.dataset.screen;
       this.highlight = [String(ref)];
+      return true;
     }
 
     // ---- Rendering ----
