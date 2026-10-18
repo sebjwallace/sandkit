@@ -182,6 +182,14 @@
       assertEqual(el.querySelectorAll('b, i').length, 0);
       assertEqual(card(el, 'r').querySelector('.sb-board__from').textContent, 'from <i>x</i>');
     });
+
+    // ---- Locating ----
+
+    test('cards and columns carry data-ref, so the page can find them', () => {
+      const el = board();
+      assert(el.querySelector('[data-ref="b"]').matches('.sb-board__card'), 'a card');
+      assert(el.querySelector('[data-ref="doing"]').matches('.sb-board__column'), 'a column');
+    });
   </script>
 </body>
 </html>

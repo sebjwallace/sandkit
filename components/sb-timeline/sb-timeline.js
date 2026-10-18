@@ -1,4 +1,4 @@
-// Sandkit sb-timeline 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-timeline 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Events laid out in time: moments and spans in lanes, so what overlapped shows, with a line for
 // now that leaves what hasn't happened yet faded. Viewers zoom and pan; setting `view` glides the
 // timeline to the stretch the prose is about.
@@ -224,7 +224,7 @@
       const cls = (name) => `sb-timeline__${name}${lit && ` sb-timeline__${name}${lit}`}`;
       const laneAttr = lane.id == null ? '' : ` data-lane="${esc(lane.id)}"`;
       return `
-        <div class="${cls('label')}" style="grid-row: ${row}"${laneAttr}>${esc(lane.label ?? lane.id)}</div>
+        <div class="${cls('label')}" style="grid-row: ${row}"${laneAttr}${lane.id == null ? '' : ` data-ref="${esc(lane.id)}"`}>${esc(lane.label ?? lane.id)}</div>
         <div class="${cls('track')}" style="grid-row: ${row}"${laneAttr}>${this._eventsIn(lane).map((e) => this._eventHtml(e)).join('')}</div>`;
     }
 
@@ -242,7 +242,7 @@
       const tone = event.tone ? ` data-tone="${esc(event.tone)}"` : '';
       const when = isSpan(event) ? `${this._format(event.at)} to ${this._format(event.end)}` : this._format(event.at);
       const about = [event.label ?? event.id, when, event.note].filter((part) => part != null).join(', ');
-      return `<div class="${classes}" tabindex="0" data-id="${esc(event.id)}"${tone}${done} title="${esc(about)}" aria-label="${esc(about)}">${esc(event.label ?? event.id)}</div>`;
+      return `<div class="${classes}" tabindex="0" data-id="${esc(event.id)}" data-ref="${esc(event.id)}"${tone}${done} title="${esc(about)}" aria-label="${esc(about)}">${esc(event.label ?? event.id)}</div>`;
     }
 
     _nowHtml() {

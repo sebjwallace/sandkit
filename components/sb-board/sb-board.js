@@ -1,4 +1,4 @@
-// Sandkit sb-board 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-board 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Things moving through stages, as cards in columns: orders through a warehouse, bills through
 // parliament, patients through a ward. Each column counts its cards against its limit, so a
 // bottleneck shows, and cards that just moved say where they came from. Dragging a card asks the
@@ -138,7 +138,7 @@
       const count = column.limit == null ? cards.length : `${cards.length} / ${column.limit}`;
       const label = `${column.label ?? column.id}, ${plural(cards.length)}${over ? `, over its limit of ${column.limit}` : ''}`;
       return `
-        <section class="${classes}" data-column="${esc(column.id)}" aria-label="${esc(label)}">
+        <section class="${classes}" data-column="${esc(column.id)}" data-ref="${esc(column.id)}" aria-label="${esc(label)}">
           <div class="sb-board__head"><span>${esc(column.label ?? column.id)}</span><span class="sb-board__count">${esc(count)}</span></div>
           <ul class="sb-board__cards">${cards.map((item) => this._cardHtml(item)).join('')}</ul>
         </section>`;
@@ -156,7 +156,7 @@
       const draggable = this.hasAttribute('movable') ? ' draggable="true"' : '';
       const note = item.note == null ? '' : `<span class="sb-board__note">${esc(item.note)}</span>`;
       return `
-        <li class="${classes}" tabindex="0" data-id="${esc(item.id)}"${tone}${draggable}>
+        <li class="${classes}" tabindex="0" data-id="${esc(item.id)}" data-ref="${esc(item.id)}"${tone}${draggable}>
           ${esc(item.label ?? item.id)}${note}${this._fromHtml(move)}
         </li>`;
     }

@@ -41,6 +41,8 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | [`sb-wireframe`](../components/sb-wireframe/manifest.md) | the parts the sandbox marks in its screens | goes to the screen holding the place, or else the ref |
 | [`sb-panel`](../components/sb-panel/manifest.md) | — | expands the panel if it holds the place or the ref, and brings it to the front |
 | [`sb-image`](../components/sb-image/manifest.md) | each mark | glides to the mark |
+| [`sb-timeline`](../components/sb-timeline/manifest.md) | each event, and each lane's label | — |
+| [`sb-board`](../components/sb-board/manifest.md) | each card and column | — |
 | [`sb-c4`](../components/sb-c4/manifest.md) | each box in the current view, and each line carrying one relationship with an `id` | goes to the view where an element can be seen |
 | [`sb-math`](../components/sb-math/manifest.md), [`sb-annotate`](../components/sb-annotate/manifest.md), [`sb-walkthrough`](../components/sb-walkthrough/manifest.md) | the parts the sandbox marks in their content | — |
 | The sandbox's own elements | whatever it marks | — |

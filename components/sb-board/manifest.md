@@ -74,7 +74,9 @@ Cards appear in their column in the order of `items`.
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-radius`.
 
-Classes: `sb-board__columns`, `sb-board__column` (`--over`, `--highlighted`, `--drop`; carries `data-column`), `sb-board__head`, `sb-board__count`, `sb-board__cards`, `sb-board__card` (`--moved`, `--new`, `--highlighted`, `--dragging`; carries `data-id` and `data-tone`), `sb-board__note`, `sb-board__from`, `sb-board__empty`.
+Classes: `sb-board__columns`, `sb-board__column` (`--over`, `--highlighted`, `--drop`; carries `data-column` and `data-ref`), `sb-board__head`, `sb-board__count`, `sb-board__cards`, `sb-board__card` (`--moved`, `--new`, `--highlighted`, `--dragging`; carries `data-id`, `data-ref` and `data-tone`), `sb-board__note`, `sb-board__from`, `sb-board__empty`.
+
+Cards and columns carry `data-ref` with their id, beside `data-id` and `data-column`, so a sandbox can find them (see the [locating practice](../../practices/locating.md)).
 
 Columns share the width, each at least 150 pixels; with more than fit, the board scrolls sideways.
 

@@ -93,7 +93,7 @@ Viewers' zooming survives new `events` and `now`, so a running model doesn't sna
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-accent-text`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-radius`.
 
-Classes: `sb-timeline__frame` (`--dragging`), `sb-timeline__label` and `sb-timeline__track` (both `--highlighted`; carry `data-lane`), `sb-timeline__event` (`--point`, `--span`, `--future`, `--ongoing`, `--highlighted`; carries `data-id` and `data-tone`), `sb-timeline__overlay`, `sb-timeline__grid`, `sb-timeline__now`, `sb-timeline__now-label`, `sb-timeline__axis`, `sb-timeline__tick`, `sb-timeline__tools`, `sb-timeline__tool`, `sb-timeline__empty`. While gliding, the element has `sb-timeline--glide`.
+Classes: `sb-timeline__frame` (`--dragging`), `sb-timeline__label` and `sb-timeline__track` (both `--highlighted`; carry `data-lane`), `sb-timeline__event` (`--point`, `--span`, `--future`, `--ongoing`, `--highlighted`; carries `data-id` and `data-tone`, and `data-ref` with the event's id so a sandbox can find it: see the [locating practice](../../practices/locating.md); a lane's label carries `data-ref` with the lane's id), `sb-timeline__overlay`, `sb-timeline__grid`, `sb-timeline__now`, `sb-timeline__now-label`, `sb-timeline__axis`, `sb-timeline__tick`, `sb-timeline__tools`, `sb-timeline__tool`, `sb-timeline__empty`. While gliding, the element has `sb-timeline--glide`.
 
 ## Works well with
 

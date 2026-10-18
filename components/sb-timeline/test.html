@@ -279,6 +279,17 @@
       assertEqual(el.querySelectorAll('b, i').length, 0);
       assertEqual(event(el, 'r').textContent, '<b>bold</b>');
     });
+
+    // ---- Locating ----
+
+    test('events, and lanes by their label, carry data-ref, so the page can find them', () => {
+      const el = timeline();
+      el.lanes = LANES;
+      el.events = EVENTS;
+      assert(el.querySelector('[data-ref="build"]').matches('.sb-timeline__event'), 'an event');
+      assert(el.querySelector('[data-ref="b"]').matches('.sb-timeline__label'), 'a lane, once');
+      assertEqual(el.querySelectorAll('[data-ref="b"]').length, 1);
+    });
   </script>
 </body>
 </html>
