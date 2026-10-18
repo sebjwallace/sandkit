@@ -1,5 +1,8 @@
 # sb-panel changelog
 
+## 0.1.3 · 2026-10-18
+- A panel with the `hidden` attribute is hidden; its own display style no longer overrides it.
+
 ## 0.1.2 · 2026-10-18
 - Added `reveal(ref, place)`: expands a collapsed panel holding a part, and brings it to the front, quietly (see the locating practice).
 

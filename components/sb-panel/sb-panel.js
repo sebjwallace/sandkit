@@ -1,4 +1,4 @@
-// Sandkit sb-panel 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-panel 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A frame that lets viewers rearrange a sandbox: wrap any content in a panel, and viewers can pop
 // it out into a floating window, drag and resize it, collapse it, make it full screen, and dock it
 // back where it started. The panel never looks inside its content.
@@ -19,6 +19,7 @@
   }
 
   const CSS = `
+    .sb-panel[hidden] { display: none; }
     .sb-panel { box-sizing: border-box; display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); }
     .sb-panel__bar { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 12px; border-bottom: 1px solid var(--sb-border, #d5d9e0); background: var(--sb-surface-2, #eef0f3); border-radius: var(--sb-radius, 8px) var(--sb-radius, 8px) 0 0; user-select: none; }
     .sb-panel__heading { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; }

@@ -188,6 +188,13 @@
       assert(el.collapsed);
       assertEqual(el.reveal('anything', el.querySelector('p')), true, 'a place it holds');
     });
+
+    test('the hidden attribute hides the panel', () => {
+      const el = panel('hidden');
+      assertEqual(getComputedStyle(el).display, 'none');
+      el.hidden = false;
+      assert(getComputedStyle(el).display !== 'none');
+    });
   </script>
 </body>
 </html>
