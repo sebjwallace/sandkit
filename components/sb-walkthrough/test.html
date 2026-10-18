@@ -120,6 +120,69 @@
       assertEqual(el.views[0], view);
     });
 
+    // ---- Resizing ----
+
+    const divider = (el, axis) => el.querySelector(`.sb-walkthrough__divider[data-axis="${axis}"]`);
+    const dividers = (el) => [...el.querySelectorAll('.sb-walkthrough__divider:not([hidden])')].map((d) => d.dataset.axis);
+    const width = (el) => Math.round(el.getBoundingClientRect().width);
+    const box = (el) => el.getBoundingClientRect();
+    function drag(handle, clientX, clientY) {
+      handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX, clientY }));
+      handle.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX, clientY }));
+      handle.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX, clientY }));
+    }
+    const views = (n) => STORY.split('\n').filter((line) => !line.includes('slot=')).join('\n')
+      + ['a', 'b', 'c', 'd'].slice(0, n).map((name) => `<div slot="${name}">${name}</div>`).join('');
+
+    test('offers a divider wherever two areas meet', () => {
+      assertEqual(dividers(walkthrough('', views(1))), ['narration']);
+      assertEqual(dividers(walkthrough('', views(2))), ['narration', 'rows']);
+      assertEqual(dividers(walkthrough('narration="bottom"', views(2))), ['narration', 'columns']);
+      assertEqual(dividers(walkthrough('', views(3))), ['narration', 'columns', 'rows']);
+      assertEqual(dividers(walkthrough('', views(4))), ['narration', 'columns', 'rows']);
+    });
+
+    test('dragging the narration divider sets its width, and double-clicking resets it', () => {
+      const el = walkthrough();
+      drag(divider(el, 'narration'), box(el).left + 406, 0);
+      assertEqual(el.style.getPropertyValue('--sb-walkthrough-width'), '400px');
+      assertEqual(width(el.querySelector('.sb-walkthrough__narration')), 400);
+      divider(el, 'narration').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      assertEqual(width(el.querySelector('.sb-walkthrough__narration')), 320);
+    });
+
+    test('along the bottom, the narration divider sets how tall the narration may be', () => {
+      const el = walkthrough('narration="bottom"');
+      drag(divider(el, 'narration'), 0, box(el).bottom - 156);
+      assertEqual(el.style.getPropertyValue('--sb-walkthrough-height'), '150px');
+    });
+
+    test('dragging between views shares the room between them', () => {
+      const el = walkthrough('', views(4));
+      const list = el.querySelector('.sb-walkthrough__views');
+      drag(divider(el, 'columns'), box(list).left + 206, 0);
+      assertEqual(width(el.views[0].parentElement), 200);
+      assertEqual(width(el.views[2].parentElement), 200);
+      divider(el, 'columns').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      assertEqual(width(el.views[0].parentElement), width(el.views[1].parentElement));
+    });
+
+    test('no area can be dragged away', () => {
+      const el = walkthrough('', views(4));
+      drag(divider(el, 'narration'), box(el).left - 500, 0);
+      assertEqual(width(el.querySelector('.sb-walkthrough__narration')), 120);
+      drag(divider(el, 'columns'), box(el).right + 500, 0);
+      assertEqual(width(el.views[1].parentElement), 120);
+    });
+
+    test('arrow keys move a focused divider', () => {
+      const el = walkthrough();
+      const handle = divider(el, 'narration');
+      handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      assertEqual(width(el.querySelector('.sb-walkthrough__narration')), 344);
+      assertEqual(handle.getAttribute('role'), 'separator');
+    });
+
     test('steps and views added later take their places', async () => {
       const el = walkthrough();
       el.insertAdjacentHTML('beforeend', '<section data-step>Fourth</section><div slot="log">Log</div>');

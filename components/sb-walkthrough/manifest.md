@@ -51,7 +51,7 @@ Use this component through the interface below. You don't need to read its sourc
 
 The narration sits on the left, or along the bottom with `narration="bottom"`. The views fill the rest: one fills it; two stack (beside bottom narration, they sit side by side); three put the first large with two beside it; four make two by two. Give the element a height; it is 640px by default.
 
-Each view is placed in a cell of its own, framed like the narration, with a gap between cells. A view that leaves something behind when it moves out of the page, such as a panel that pops out and leaves a placeholder, keeps that in its place. Outlines are drawn on the view itself, so they follow it.
+Each view is placed in a cell of its own, framed like the narration, with a gap between cells. Viewers resize the areas by dragging the dividers in those gaps. A view that leaves something behind when it moves out of the page, such as a panel that pops out and leaves a placeholder, keeps that in its place. Outlines are drawn on the view itself, so they follow it.
 
 ## Attributes
 
@@ -73,6 +73,7 @@ Each view is placed in a cell of its own, framed like the narration, with a gap 
 
 - **Back and Next,** or the arrow keys while the narration has focus, move through the steps.
 - **Pointing** at a marked word (hover or focus) fires `sb-point`, and outlines the word's own views if it names any.
+- **Dragging a divider** between the narration and the views, or between views, resizes them; so do the arrow keys on a focused divider, and double-clicking resets it. No area goes below 120px. Dragging the narration's divider sets `--sb-walkthrough-width` (or `-height`) on the element; sizes last for the visit.
 
 ## Events
 
@@ -85,7 +86,7 @@ Each view is placed in a cell of its own, framed like the narration, with a gap 
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-text`, `--sb-radius`. Sizes: `--sb-walkthrough-width` (the narration on the left, 320px) and `--sb-walkthrough-height` (the most the narration along the bottom takes, 240px).
 
-Classes: `sb-walkthrough__narration`, `sb-walkthrough__steps`, `sb-walkthrough__controls`, `sb-walkthrough__count`, `sb-walkthrough__button` (`--next`), `sb-walkthrough__views` (with `data-count`), `sb-walkthrough__view` (a cell), and `sb-walkthrough--focused` on outlined views.
+Classes: `sb-walkthrough__narration`, `sb-walkthrough__steps`, `sb-walkthrough__controls`, `sb-walkthrough__count`, `sb-walkthrough__button` (`--next`), `sb-walkthrough__views` (with `data-count`), `sb-walkthrough__view` (a cell), `sb-walkthrough__divider` (with `data-axis`: `narration`, `columns` or `rows`), and `sb-walkthrough--focused` on outlined views.
 
 ## Works well with
 
