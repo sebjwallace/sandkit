@@ -1,4 +1,4 @@
-// Sandkit sb-table 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-table 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Rows and columns to sort, search and filter, with the cells that just changed marked, so a
 // step of the model shows what it changed rather than only how things now stand.
 //
@@ -29,7 +29,7 @@
     .sb-table__scroll { flex: 1 1 auto; min-height: 0; overflow: auto; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); }
     .sb-table__table { width: 100%; border-collapse: collapse; }
     .sb-table__table th, .sb-table__table td { padding: 5px 10px; text-align: left; vertical-align: baseline; border-bottom: 1px solid var(--sb-surface-2, #eef0f3); }
-    .sb-table__table thead th { position: sticky; top: 0; z-index: 1; padding: 0; background: var(--sb-surface, #fff); border-bottom-color: var(--sb-border, #d5d9e0); }
+    .sb-table__table thead th { position: sticky; top: 0; z-index: 1; padding: 0; background: var(--sb-surface-2, #eef0f3); border-bottom-color: var(--sb-border, #d5d9e0); }
     .sb-table__sort { all: unset; box-sizing: border-box; display: block; width: 100%; padding: 5px 10px; color: var(--sb-muted, #616e7c); font-weight: 600; text-align: inherit; white-space: nowrap; cursor: pointer; }
     .sb-table__sort:hover, th[aria-sort] .sb-table__sort { color: var(--sb-text, #1f2933); }
     .sb-table__sort:focus-visible { outline: 2px solid var(--sb-accent, #2563eb); outline-offset: -2px; }

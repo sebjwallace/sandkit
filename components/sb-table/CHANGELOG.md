@@ -1,5 +1,8 @@
 # sb-table changelog
 
+## 0.1.3 · 2026-10-18
+- The heading row is shaded with `--sb-surface-2`, as the title of an `sb-erd` table is, so it stands apart from the rows.
+
 ## 0.1.2 · 2026-10-18
 - The table is framed, with a border and the surface colour, so it has a clear edge against the page around it.
 
