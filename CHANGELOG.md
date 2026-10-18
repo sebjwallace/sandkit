@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.23 · 2026-10-18
+- The template and every component demo cap their main area at `--sb-page-width`, so a viewer's Page width setting (shell 0.1.2) takes effect; without one, each keeps its own width (the template's is the whole window).
+
 ## 0.2.22 · 2026-10-18
 - Thirty-eight components: added `sb-comments`, comments from the people exploring a sandbox, each citing what it's about. Added the feedback practice: collecting comments, and what the agent does on receiving them. The journal, identifiers and building practices cite feedback (`FB-`), and the locating practice gains `refsAt`.
 

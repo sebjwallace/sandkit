@@ -1,4 +1,4 @@
-// Sandkit sb-theme-settings 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-theme-settings 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Theming for a sandbox: the theme tokens, the viewer's chosen theme and saved presets,
 // and a Theme section for the shell's settings:
 //
@@ -70,7 +70,15 @@
     { label: 'Monospace', value: 'ui-monospace, Menlo, Consolas, monospace' }
   ];
 
-  const STORAGE_KEYS = { choice: 'sb-theme', presets: 'sb-theme-presets' };
+  // How wide the page may grow, set as --sb-page-width. Until the viewer picks one, nothing is set
+  // and each page keeps its own default width.
+  const WIDTHS = [
+    { id: 'narrow', label: 'Narrow', value: '900px' },
+    { id: 'wide', label: 'Wide', value: '1400px' },
+    { id: 'full', label: 'Full', value: 'none' }
+  ];
+
+  const STORAGE_KEYS = { choice: 'sb-theme', presets: 'sb-theme-presets', width: 'sb-page-width' };
 
   // ---- Helpers ----
 
@@ -101,6 +109,7 @@
   //   choice   what the viewer picked: a theme id, 'auto', or a preset id
   //   presets  viewer-made themes: { id, label, base, tokens }, a base theme plus the tokens that differ
   //   draft    unsaved token edits, shown live on top of the current choice
+  //   width    the page width the viewer picked, or null for the page's own; kept apart from themes and presets
 
   const systemDark = matchMedia('(prefers-color-scheme: dark)');
 
@@ -108,6 +117,7 @@
     choice: storage.read(STORAGE_KEYS.choice, 'auto'),
     presets: storage.read(STORAGE_KEYS.presets, []),
     draft: null,
+    width: storage.read(STORAGE_KEYS.width, null),
 
     findPreset(id) {
       return this.presets.find((p) => p.id === id);
@@ -124,6 +134,12 @@
       this.choice = id;
       this.draft = null;
       storage.write(STORAGE_KEYS.choice, id);
+      this.apply();
+    },
+
+    chooseWidth(id) {
+      this.width = id;
+      storage.write(STORAGE_KEYS.width, id);
       this.apply();
     },
 
@@ -162,9 +178,13 @@
     },
 
     // Imported presets replace any with the same id.
-    merge({ choice, presets = [] }) {
+    merge({ choice, presets = [], width }) {
       const incoming = presets.map((p) => p.id);
       this._setPresets(this.presets.filter((p) => !incoming.includes(p.id)).concat(presets));
+      if (width) {
+        this.width = width;
+        storage.write(STORAGE_KEYS.width, width);
+      }
       this.choose(choice ?? this.choice);
     },
 
@@ -176,6 +196,9 @@
       TOKENS.forEach((t) => root.style.removeProperty(`--sb-${t.name}`));
       const overrides = { ...this.findPreset(this.choice)?.tokens, ...this.draft };
       Object.entries(overrides).forEach(([name, value]) => root.style.setProperty(`--sb-${name}`, value));
+      const width = WIDTHS.find((w) => w.id === this.width)?.value;
+      if (width) root.style.setProperty('--sb-page-width', width);
+      else root.style.removeProperty('--sb-page-width');
       document.dispatchEvent(new CustomEvent('sb-theme', { detail: { choice: this.choice, theme: base } }));
     },
 
@@ -200,6 +223,9 @@
     .sb-theme-settings__option input { accent-color: var(--sb-accent, #2563eb); margin: 0; }
     .sb-theme-settings__swatch { margin-left: auto; display: inline-flex; gap: 3px; padding: 4px; border-radius: 6px; background: var(--sb-bg); border: 1px solid var(--sb-border); }
     .sb-theme-settings__swatch i { width: 12px; height: 12px; border-radius: 3px; }
+    .sb-theme-settings__widths { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 14px; }
+    .sb-theme-settings__widths-label { margin-right: auto; }
+    .sb-theme-settings__widths .sb-theme-settings__option { padding: 5px 10px; }
     .sb-theme-settings__delete { border: 0; background: none; color: var(--sb-muted, #616e7c); font-size: 18px; line-height: 1; padding: 0 2px; cursor: pointer; }
     .sb-theme-settings__delete:hover { color: var(--sb-bad, #c53030); }
 
@@ -261,13 +287,14 @@
     constructor() {
       super();
       this._radioName = `sb-theme-choice-${++instanceCount}`;
+      this._widthName = `sb-page-width-${instanceCount}`;
       this._themes = BUILT_IN_THEMES;
       this._onThemeChange = () => this._render();
     }
 
     get heading() { return this.getAttribute('heading') || 'Theme'; }
     get settingsKey() { return 'theme'; }
-    exportSettings() { return { choice: theme.choice, presets: theme.presets }; }
+    exportSettings() { return { choice: theme.choice, presets: theme.presets, width: theme.width }; }
     importSettings(data) { theme.merge(data); }
 
     // The themes on offer. A sandbox adds its own (defined in its stylesheet) with:
@@ -293,14 +320,17 @@
       this._built = true;
       this.innerHTML = `
         <div class="sb-theme-settings__list"></div>
+        <div class="sb-theme-settings__widths" role="radiogroup" aria-label="Page width"></div>
         <button type="button" class="sb-theme-settings__button" data-action="customise" aria-expanded="false">Customise…</button>
         <div class="sb-theme-settings__editor" hidden></div>`;
       this._list = this.querySelector('.sb-theme-settings__list');
       this._editor = this.querySelector('.sb-theme-settings__editor');
+      this._widths = this.querySelector('.sb-theme-settings__widths');
 
       this.addEventListener('click', (e) => this._onClick(e));
       this.addEventListener('change', (e) => {
         if (e.target.closest('.sb-theme-settings__list')) theme.choose(e.target.value);
+        if (e.target.closest('.sb-theme-settings__widths')) theme.chooseWidth(e.target.value);
       });
       this.addEventListener('input', (e) => {
         const { token, unit = '' } = e.target.dataset;
@@ -327,6 +357,7 @@
     _render() {
       if (!this._built) return;
       this._renderList();
+      this._renderWidths();
       const previewing = theme.draft && this._editorChoice === theme.choice;
       if (previewing) this._showDraftState();
       else this._renderEditor();
@@ -346,6 +377,14 @@
         </label>`);
       this._list.innerHTML = builtIn.concat(saved).join('');
       this._list.querySelectorAll('input').forEach((input) => { input.checked = input.value === theme.choice; });
+    }
+
+    _renderWidths() {
+      const options = WIDTHS.map((w) => `
+        <label class="sb-theme-settings__option">
+          <input type="radio" name="${this._widthName}" value="${w.id}" ${w.id === theme.width ? 'checked' : ''}> ${w.label}
+        </label>`);
+      this._widths.innerHTML = `<span class="sb-theme-settings__widths-label">Page width</span>${options.join('')}`;
     }
 
     _toggleEditor(button) {

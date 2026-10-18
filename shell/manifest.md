@@ -50,7 +50,9 @@ Style the page with the theme tokens, for example `body { background: var(--sb-b
 
 ## sb-theme-settings
 
-The Theme section: built-in themes (Match system, Light, Dark), viewer-saved presets, and a token editor. Loading its script applies the viewer's theme at once.
+The Theme section: built-in themes (Match system, Light, Dark), viewer-saved presets, a token editor, and the page width. Loading its script applies the viewer's theme and width at once.
+
+**Page width.** Viewers choose Narrow (900px), Wide (1400px) or Full. The choice sets `--sb-page-width` on `<html>` (`900px`, `1400px` or `none`); until a viewer chooses, nothing is set. The sandbox decides what it caps, usually its main area: `main { max-width: var(--sb-page-width, none); margin: 0 auto; }`, where the fallback is its own default.
 
 | Member | Meaning |
 |---|---|
@@ -62,7 +64,7 @@ The Theme section: built-in themes (Match system, Light, Dark), viewer-saved pre
 
 ## Theme tokens
 
-`--sb-bg`, `--sb-surface`, `--sb-surface-2`, `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-accent`, `--sb-accent-text`, `--sb-accent-soft`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-font`, `--sb-radius`.
+`--sb-bg`, `--sb-surface`, `--sb-surface-2`, `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-accent`, `--sb-accent-text`, `--sb-accent-soft`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-font`, `--sb-radius`. `--sb-page-width` is set only by the viewer's page width choice; themes don't define it.
 
 ## Notes
 

@@ -170,7 +170,8 @@
       const el = shell();
       const themes = el.querySelector('sb-theme-settings');
       themes.querySelectorAll('.sb-theme-settings__delete').forEach((button) => button.click());
-      assertEqual(el.settings.sections.theme, { choice: 'auto', presets: [] });
+      const { choice, presets } = el.settings.sections.theme;
+      assertEqual({ choice, presets }, { choice: 'auto', presets: [] });
     });
 
     test('importing presets replaces any with the same id', () => {
@@ -179,6 +180,27 @@
       el.importSettings({ format: 'sandkit-settings', sections: { theme: { presets: [preset('One')] } } });
       el.importSettings({ format: 'sandkit-settings', sections: { theme: { presets: [preset('Two')] } } });
       assertEqual(el.settings.sections.theme.presets.map((p) => p.label), ['Two']);
+    });
+
+    test('choosing a page width sets --sb-page-width, with Full as none', () => {
+      const themes = shell().querySelector('sb-theme-settings');
+      themes.querySelector('[value="narrow"]').click();
+      assertEqual(root.style.getPropertyValue('--sb-page-width'), '900px');
+      assertEqual(localStorage.getItem('sb-page-width'), '"narrow"');
+      themes.querySelector('[value="full"]').click();
+      assertEqual(root.style.getPropertyValue('--sb-page-width'), 'none');
+    });
+
+    test('the page width is exported and imported, and kept when the theme changes', () => {
+      const el = shell();
+      const themes = el.querySelector('sb-theme-settings');
+      themes.querySelector('[value="wide"]').click();
+      themes.querySelector('[value="dark"]').click();
+      assertEqual(root.style.getPropertyValue('--sb-page-width'), '1400px');
+      assertEqual(el.settings.sections.theme.width, 'wide');
+      el.importSettings({ format: 'sandkit-settings', sections: { theme: { width: 'narrow' } } });
+      assert(themes.querySelector('[value="narrow"]').checked, 'Narrow shown as chosen');
+      themes.querySelector('[value="full"]').click();
     });
 
     test('sandboxes can add their own themes', () => {

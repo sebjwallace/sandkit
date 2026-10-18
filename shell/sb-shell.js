@@ -1,4 +1,4 @@
-// Sandkit sb-shell 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-shell 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The sandbox shell: the header and the settings dialog around a sandbox.
 //
 //   <sb-shell heading="My sandbox" controls="fullscreen settings collapse">

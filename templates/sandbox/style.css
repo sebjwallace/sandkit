@@ -11,8 +11,9 @@ body {
   line-height: 1.45;
 }
 
-/* The page takes the whole window, so diagrams have room; paragraphs keep a readable width of their own. */
-main { padding: 16px 24px 40px; display: grid; gap: 14px; }
+/* The page takes the whole window, so diagrams have room, unless the viewer picks a page width in Settings.
+   Paragraphs keep a readable width of their own. */
+main { max-width: var(--sb-page-width, none); margin: 0 auto; padding: 16px 24px 40px; display: grid; gap: 14px; }
 
 .chapter h2 { margin: 0 0 6px; font-size: 18px; }
 .chapter p { margin: 0 0 6px; max-width: 900px; font-size: 14px; }
