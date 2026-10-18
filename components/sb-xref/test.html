@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-xref tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-xref.js"></script>
+</head>
+<body>
+  <script>
+    const RULE = { ref: 'RUL-014', title: 'Reorder below the reorder point', kind: 'Rule' };
+    const PLACES = [
+      { view: 'Rules', context: 'RUL-014 · Reorder when stock falls low' },
+      { view: 'Chapter 2', context: '…stores reorder (RUL-014), so…' },
+      { view: 'Rules', context: 'Also RUL-014 here', hidden: true },
+      { view: 'Orders', context: '3 rows', unavailable: 'Hidden by your search' }
+    ];
+    const LINKS = [
+      { relation: 'rests on', ref: 'CLM-012', title: 'Stores reorder weekly' },
+      { relation: 'affects', ref: 'ST-N', title: 'Store North' },
+      { relation: 'rests on', ref: 'ASM-004', title: 'Lead time is constant' }
+    ];
+
+    function xref(subject = RULE) {
+      const el = mount('<sb-xref></sb-xref>');
+      el.subject = subject;
+      el.places = PLACES;
+      el.links = LINKS;
+      return el;
+    }
+
+    const text = (el, selector) => [...el.querySelectorAll(selector)].map((n) => n.textContent.trim().replace(/\s+/g, ' '));
+    const place = (el, index) => el.querySelector(`.sb-xref__place[data-index="${index}"]`);
+    const link = (el, ref) => [...el.querySelectorAll('.sb-xref__link')].find((l) => l.querySelector('.sb-xref__code').textContent === ref);
+    const click = (node) => node.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const point = (node) => node.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+
+    function recordHighlights() {
+      const refs = [];
+      const listen = (e) => refs.push(e.detail.ref);
+      document.addEventListener('sb-highlight', listen);
+      return { refs, stop: () => document.removeEventListener('sb-highlight', listen) };
+    }
+
+    // ---- Showing ----
+
+    test('with no subject, it asks for one', () => {
+      assertEqual(mount('<sb-xref></sb-xref>').textContent.trim(), 'Choose something to see where it appears.');
+      assertEqual(mount('<sb-xref empty-text="Click a code."></sb-xref>').textContent.trim(), 'Click a code.');
+    });
+
+    test('shows the subject\'s code, title and kind, and how many places and links', () => {
+      const el = xref();
+      assertEqual(text(el, '.sb-xref__head .sb-xref__code'), ['RUL-014']);
+      assertEqual(text(el, '.sb-xref__title'), ['Reorder below the reorder point']);
+      assertEqual(text(el, '.sb-xref__kind'), ['Rule']);
+      assertEqual(text(el, '.sb-xref__count'), ['Appears in 4 places · 3 links']);
+    });
+
+    test('groups places by view, in the order views first appear, keeping each place\'s index', () => {
+      const el = xref();
+      assertEqual(text(el, '.sb-xref__group-name').slice(0, 3), ['Rules', 'Chapter 2', 'Orders']);
+      const rules = el.querySelectorAll('.sb-xref__group')[0];
+      assertEqual([...rules.querySelectorAll('.sb-xref__place')].map((p) => p.dataset.index), ['0', '2']);
+    });
+
+    test('marks the ref where it appears in a place\'s context', () => {
+      assertEqual(text(xref(), '.sb-xref__place mark'), ['RUL-014', 'RUL-014', 'RUL-014']);
+    });
+
+    test('says which places are hidden for now, and why others can\'t be gone to', () => {
+      const el = xref();
+      assert(place(el, 2).textContent.includes('going there opens it'), 'hidden');
+      assert(place(el, 3).textContent.includes('Hidden by your search'), 'unavailable, with the reason');
+      assert(place(el, 3).classList.contains('sb-xref__place--unavailable'));
+    });
+
+    test('groups links by relation, in the order relations first appear', () => {
+      const el = xref();
+      const groups = [...el.querySelectorAll('.sb-xref__group')].slice(-2);
+      assertEqual(groups.map((g) => g.querySelector('.sb-xref__group-name').textContent), ['rests on', 'affects']);
+      assertEqual(text(groups[0], '.sb-xref__link .sb-xref__code'), ['CLM-012', 'ASM-004']);
+    });
+
+    test('without links, there is no Linked to section', () => {
+      const el = xref();
+      el.links = [];
+      assert(!el.textContent.includes('Linked to'));
+      assertEqual(text(el, '.sb-xref__count'), ['Appears in 4 places']);
+    });
+
+    test('with no places, it says so, and why that might be', () => {
+      const el = xref();
+      el.places = [];
+      assert(el.textContent.includes('Not on this page'));
+      assert(el.textContent.includes('spelled two ways'));
+    });
+
+    test('shows text as text, never as markup, context included', () => {
+      const el = mount('<sb-xref></sb-xref>');
+      el.subject = { ref: '<b>X</b>', title: '<i>t</i>', kind: '<u>k</u>' };
+      el.places = [{ view: '<em>v</em>', context: '<img src=x onerror="window.leaked = 1"> <b>X</b>', unavailable: '<s>no</s>' }];
+      el.links = [{ relation: '<q>r</q>', ref: '<b>L</b>', title: '<sup>t</sup>' }];
+      assertEqual(el.querySelectorAll('b, i, u, em, img, s, q, sup').length, 0);
+      assert(el.textContent.includes('<img src=x'), 'the markup is shown as text');
+      assertEqual(window.leaked, undefined);
+    });
+
+    test('marks nothing with data-ref, so it never lists itself as a place', () => {
+      assertEqual(xref().querySelectorAll('[data-ref]').length, 0);
+    });
+
+    // ---- Viewers ----
+
+    test('clicking a place fires sb-go with the ref and its index', () => {
+      const el = xref();
+      const goes = recordEvents(el, 'sb-go');
+      click(place(el, 2));
+      assertEqual(goes.map((e) => e.detail), [{ ref: 'RUL-014', index: 2 }]);
+    });
+
+    test('clicking a place that can\'t be gone to fires nothing', () => {
+      const el = xref();
+      const goes = recordEvents(el, 'sb-go');
+      click(place(el, 3));
+      assertEqual(goes.length, 0);
+    });
+
+    test('clicking a link fires sb-follow with its ref', () => {
+      const el = xref();
+      const follows = recordEvents(el, 'sb-follow');
+      click(link(el, 'ASM-004'));
+      assertEqual(follows.map((e) => e.detail), [{ ref: 'ASM-004' }]);
+    });
+
+    test('pointing at a place announces the subject; at a link, the link; leaving, nothing', () => {
+      const el = xref();
+      const seen = recordHighlights();
+      point(place(el, 0));
+      point(place(el, 1));
+      point(link(el, 'ST-N'));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      seen.stop();
+      assertEqual(seen.refs, ['RUL-014', 'ST-N', null], 'announced once per change');
+    });
+
+    // ---- The trail ----
+
+    test('a new subject puts the last on the trail; the same one again doesn\'t', () => {
+      const el = xref();
+      el.subject = { ref: 'CLM-012', title: 'Stores reorder weekly' };
+      el.subject = { ref: 'CLM-012', title: 'Stores reorder weekly' };
+      assertEqual(el.trail.map((s) => s.ref), ['RUL-014']);
+      assertEqual(text(el, '.sb-xref__crumb'), ['RUL-014']);
+      assertEqual(text(el, '.sb-xref__here'), ['CLM-012']);
+    });
+
+    test('Back restores the last subject and fires sb-back, so the sandbox can refresh', () => {
+      const el = xref();
+      el.subject = { ref: 'CLM-012' };
+      const backs = recordEvents(el, 'sb-back');
+      click(el.querySelector('.sb-xref__back'));
+      assertEqual(el.subject.ref, 'RUL-014');
+      assertEqual(el.trail, []);
+      assertEqual(backs.map((e) => e.detail), [{ ref: 'RUL-014' }]);
+    });
+
+    test('clicking a crumb goes back to it, dropping what came after', () => {
+      const el = xref();
+      el.subject = { ref: 'CLM-012' };
+      el.subject = { ref: 'SRC-003' };
+      el.subject = { ref: 'ASM-004' };
+      const backs = recordEvents(el, 'sb-back');
+      click([...el.querySelectorAll('.sb-xref__crumb')].find((c) => c.textContent === 'CLM-012'));
+      assertEqual([el.subject.ref, el.trail.map((s) => s.ref)], ['CLM-012', ['RUL-014']]);
+      assertEqual(backs[0].detail.ref, 'CLM-012');
+    });
+
+    test('a long trail shows its latest crumbs', () => {
+      const el = xref();
+      for (const ref of ['A', 'B', 'C', 'D', 'E', 'F']) el.subject = { ref };
+      assertEqual(text(el, '.sb-xref__crumb'), ['B', 'C', 'D', 'E']);
+      assert(el.querySelector('.sb-xref__trail').textContent.includes('…'));
+    });
+
+    test('clearTrail forgets the trail', () => {
+      const el = xref();
+      el.subject = { ref: 'CLM-012' };
+      el.clearTrail();
+      assertEqual([el.trail, el.querySelector('.sb-xref__trail')], [[], null]);
+    });
+
+    test('setting properties fires no events', () => {
+      const el = mount('<sb-xref></sb-xref>');
+      const fired = ['sb-go', 'sb-follow', 'sb-back'].map((name) => recordEvents(el, name));
+      el.subject = RULE;
+      el.places = PLACES;
+      el.links = LINKS;
+      el.subject = { ref: 'CLM-012' };
+      el.clearTrail();
+      assertEqual(fired.map((list) => list.length), [0, 0, 0]);
+    });
+
+    // ---- Two at once ----
+
+    test('two cross-references on one page keep their own subjects and trails', () => {
+      mount('<div><sb-xref></sb-xref><sb-xref></sb-xref></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-xref');
+      a.subject = RULE;
+      a.subject = { ref: 'CLM-012' };
+      b.subject = { ref: 'ST-N' };
+      assertEqual([a.trail.length, b.trail.length], [1, 0]);
+      assertEqual([a.subject.ref, b.subject.ref], ['CLM-012', 'ST-N']);
+    });
+  </script>
+</body>
+</html>

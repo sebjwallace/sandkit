@@ -46,6 +46,7 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | [`sb-c4`](../components/sb-c4/manifest.md) | each box in the current view, and each line carrying one relationship with an `id` | goes to the view where an element can be seen |
 | [`sb-math`](../components/sb-math/manifest.md), [`sb-annotate`](../components/sb-annotate/manifest.md), [`sb-walkthrough`](../components/sb-walkthrough/manifest.md) | the parts the sandbox marks in their content | — |
 | The sandbox's own elements | whatever it marks | — |
+| [`sb-xref`](../components/sb-xref/manifest.md) | nothing: it lists places, below | — |
 
 More components join as sandboxes need them. A component's manifest says what it marks and whether it has `reveal`.
 
@@ -83,6 +84,53 @@ function revealAround(place, ref) {
 - **When you know which view you mean, call its `reveal` directly.** A sentence about the diagram goes to the diagram: `diagram.reveal('CMP-3')` walks in and shows the part, even when it isn't drawn yet. `goTo` is for when you don't know where a thing is, as in a list of every place it appears.
 - **A word that goes somewhere is a link, not a place.** Don't mark it with `data-ref`, or it's the first place found; keep its target in an attribute of your own, such as `data-go`.
 - **Going is a click, not a point.** Call `goTo` on a click (see "Pointing shows, clicking acts" in the highlighting practice), and let pointing at the same word preview it with `announce`.
+
+## Listing where a ref appears
+
+[`sb-xref`](../components/sb-xref/manifest.md) lists every place a ref appears, grouped by view, and what the model links it to. It never searches the page: the sandbox gives it the places, and goes when one is clicked.
+
+```js
+// The words inside an element, as they read: its pieces of text joined by spaces, since table
+// cells and the lines of a diagram sit side by side without any. A diagram's tooltips are left out.
+function textOf(el) {
+  const pieces = [];
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) if (!walker.currentNode.parentElement.closest('title')) pieces.push(walker.currentNode.textContent);
+  return pieces.join(' ').replace(/\s+/g, ' ').replace(/\s([.,;:)])/g, '$1').replace(/\(\s/g, '(').trim();
+}
+
+// The view a place is in: the nearest heading the sandbox gave, such as a chapter, and the view it
+// fills in a layout, such as a walkthrough's slot.
+function viewOf(place) {
+  const heading = place.closest('[heading]')?.getAttribute('heading');
+  const slot = place.closest('[slot]')?.getAttribute('slot');
+  return [heading, slot].filter(Boolean).join(' › ') || 'Page';
+}
+
+// A walkthrough's other steps can't be gone to: its steps are what reveal.
+const unavailable = (place) => (place.closest('[data-step][hidden]') ? 'In another step of a walkthrough' : undefined);
+
+function showXref(ref) {
+  const thing = model.find(ref);
+  xref.subject = { ref, title: thing?.name ?? ref, kind: thing?.kind };
+  xref.places = placesOf(ref).map((place) => ({
+    view: viewOf(place),
+    context: textOf(place).slice(0, 120),
+    hidden: !place.checkVisibility(),
+    unavailable: unavailable(place)
+  }));
+  xref.links = model.linksOf?.(ref) ?? [];
+}
+
+xref.addEventListener('sb-go', (e) => goTo(e.detail.ref, e.detail.index));
+xref.addEventListener('sb-follow', (e) => showXref(e.detail.ref));
+xref.addEventListener('sb-back', (e) => showXref(e.detail.ref));
+document.addEventListener('sb-select', (e) => { if (e.detail.code) showXref(e.detail.code); }); // a pill clicked
+```
+
+- **Name views as readers know them.** Give chapters and panels a `heading`, and the names follow. A place's context is the words around it; take a row or paragraph rather than a lone code when the code alone says little.
+- **Put it in a panel** beside the model, so going somewhere never hides the list.
+- **Give links in the model's words** ("rests on", "affects"), so a chain of evidence can be walked, and Back walks it home.
 
 ## What isn't found, on purpose
 

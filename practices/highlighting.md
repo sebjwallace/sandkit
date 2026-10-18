@@ -29,6 +29,7 @@ No component knows about any other. Each just announces, or listens, or both.
 |---|---|---|
 | [`sb-id`](../components/sb-id/manifest.md) | its code, while hovered or focused | itself, when its code is announced |
 | [`sb-math`](../components/sb-math/manifest.md) | the `data-ref` of the part hovered or focused | every part marked with the announced ref |
+| [`sb-xref`](../components/sb-xref/manifest.md) | the ref of the place or link hovered or focused | — |
 | Other components | — | through the sandbox, below |
 
 ## Wiring the rest

@@ -59,3 +59,4 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-venn`](components/sb-venn/manifest.md) | Two or three sets as overlapping circles: every region named, counted and marked when empty, read out in words when pointed at, with what changed region since the last update marked. |
 | [`sb-walkthrough`](components/sb-walkthrough/manifest.md) | A story told across several views, a step at a time: each step outlines the views to look at and names what to highlight in them. |
 | [`sb-wireframe`](components/sb-wireframe/manifest.md) | A wireframe prototype written in plain HTML: one screen or a clickable flow, its parts pointed at and highlighted, themed by a few colours. |
+| [`sb-xref`](components/sb-xref/manifest.md) | Where a thing appears and what it's linked to: every place on the page a ref shows up, grouped by view, with hidden ones marked; the model's links to walk along, with a trail and Back. |

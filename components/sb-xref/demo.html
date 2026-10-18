@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-xref demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-xref.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 1000px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+
+    .side-by-side { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+    .page { display: grid; gap: 12px; font-size: 14px; }
+    .page h3 { margin: 0 0 4px; font-size: 13px; color: var(--sb-muted); }
+    .page p { margin: 0; }
+    .page table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .page td { padding: 4px 8px; border-bottom: 1px solid var(--sb-surface-2); }
+    .page details { padding: 6px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
+    .page summary { cursor: pointer; font-weight: 600; }
+    .code { padding: 1px 6px; border: 0; border-radius: 4px; background: var(--sb-surface-2); color: var(--sb-text); font: 600 12px ui-monospace, Menlo, Consolas, monospace; cursor: pointer; }
+    .code:hover { background: var(--sb-accent-soft); }
+    [data-ref] { border-radius: 4px; transition: background 0.2s; }
+    .lit { background: var(--sb-accent-soft); box-shadow: 0 0 0 2px var(--sb-accent); }
+    .status { margin-top: 8px; min-height: 1.5em; font-size: 12px; color: var(--sb-muted); }
+    sb-xref { max-height: 460px; overflow: auto; }
+    @media (max-width: 760px) { .side-by-side { grid-template-columns: minmax(0, 1fr); } }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-xref">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Where a thing appears, and what it's linked to.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>A sandbox earns trust when people can follow its claims back to where they came from. Codes make that possible, but only if people can find them: where else this rule is used, what that claim rests on, which source that came from. A cross-reference answers both at once. Choose a code, and it lists every place on the page the thing appears, and what the model says it's connected to. Click a place to go there, even into a closed section; click a connection to move to it, and walk the chain with Back to return.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Checking a claim.</strong> From a rule to the claim it rests on, to the source behind that, and back.</li>
+        <li><strong>Seeing a thing's reach.</strong> Grouped by view, the places show at a glance whether a rule is in the table, the prose and the diagram, or only one of them.</li>
+        <li><strong>Finding what's tucked away.</strong> Places in closed tabs or folded branches are listed too, and going to one opens it.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Lighting up what's in view.</strong> Pointing at a code already does that, through the highlighting practice. A cross-reference is for what isn't in view, or for following on.</li>
+        <li><strong>Explaining one thing.</strong> A pill's card says what a code means; the cross-reference says where it is and what it touches.</li>
+        <li><strong>A guided story.</strong> To lead people through things in order, use a walkthrough.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-xref/sb-xref.js"&gt;&lt;/script&gt;
+&lt;sb-xref&gt;&lt;/sb-xref&gt;
+
+&lt;script&gt;
+  function showXref(ref) {
+    xref.subject = { ref, title: model.find(ref).name, kind: 'Rule' };
+    xref.places = placesOf(ref).map((place) =&gt; ({ view: viewOf(place), context: place.textContent }));
+    xref.links = model.linksOf(ref);
+  }
+  xref.addEventListener('sb-go', (e) =&gt; goTo(e.detail.ref, e.detail.index));
+  xref.addEventListener('sb-follow', (e) =&gt; showXref(e.detail.ref));
+  xref.addEventListener('sb-back', (e) =&gt; showXref(e.detail.ref));
+&lt;/script&gt;</pre>
+      <p>The cross-reference never searches the page itself. Mark the places a thing appears with <code>data-ref</code>, as Sandkit's components already do; the sandbox finds them with <code>placesOf</code> and goes with <code>goTo</code>, both in the <a href="../../practices/locating.md">locating practice</a>, which has the whole of this wiring.</p>
+
+      <h3>Making it reveal, not just list</h3>
+      <ul>
+        <li><strong>Name the views well.</strong> "Chapter 2 › Network" says more than a tag name. The grouping is the shape of a thing's reach.</li>
+        <li><strong>Say why a place can't be gone to.</strong> "Hidden by your search" keeps the viewer's choice and tells them what it costs.</li>
+        <li><strong>Give the model's links.</strong> Relations in the model's own words ("rests on", "affects") turn a list into a chain people can walk.</li>
+        <li><strong>Float it beside the model,</strong> in a panel, so going somewhere never hides the list you came from.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Why the town is warned about floods</h2>
+      <p>A live page: the codes below are marked where they appear, and the demo finds and goes as a sandbox would. Click a code to look it up; click a place to go there, even into the closed Sources; follow a link, then go Back.</p>
+      <div class="side-by-side">
+        <div class="page" id="flood-page">
+          <section data-view="Explanation">
+            <h3>Explanation</h3>
+            <p>The town is warned when rain passes 30 mm (<button type="button" class="code" data-ref="RUL-3">RUL-3</button>), because the river rises within six hours of heavy rain (<button type="button" class="code" data-ref="CLM-2">CLM-2</button>). That holds only when the ground is already wet (<button type="button" class="code" data-ref="ASM-1">ASM-1</button>).</p>
+          </section>
+          <section data-view="Rules">
+            <h3>Rules</h3>
+            <table>
+              <tr data-ref="RUL-3"><td>RUL-3</td><td>Warn the town when rain passes 30 mm</td><td data-ref="CLM-2">rests on CLM-2</td></tr>
+              <tr data-ref="RUL-4"><td>RUL-4</td><td>Close the riverside path when the gauge passes 2 m</td><td data-ref="CLM-2">rests on CLM-2</td></tr>
+            </table>
+          </section>
+          <details data-view="Sources">
+            <summary>Sources</summary>
+            <p data-ref="SRC-1">SRC-1 · Gauge records, 2010–2024: the river peaked within six hours in 41 of 44 storms (<span data-ref="CLM-2">CLM-2</span>).</p>
+            <p data-ref="ASM-1">ASM-1 · Assumed: the ground is already wet. Dry ground soaks up the first rain, and the rise is slower.</p>
+          </details>
+        </div>
+        <div>
+          <sb-xref id="flood-xref" empty-text="Click a code on the left."></sb-xref>
+        </div>
+      </div>
+    </section>
+
+    <section class="example">
+      <h2>A clause in a contract</h2>
+      <p>The places and links written by hand, for a sandbox whose model says where its clauses are. One place is in an archived version, so it can't be gone to. Following a link moves on; Back returns.</p>
+      <div class="side-by-side">
+        <sb-xref id="contract-xref"></sb-xref>
+        <div class="status" id="contract-status">Click a place or a link.</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Declare everything first; the demo starts at the bottom.
+
+    const $ = (id) => document.getElementById(id);
+
+    // ---- Example 1: a live page ----
+    // What the demo's model knows about each code, and what it links to.
+    const FLOOD = {
+      'RUL-3': { title: 'Warn the town when rain passes 30 mm', kind: 'Rule', links: [['rests on', 'CLM-2']] },
+      'RUL-4': { title: 'Close the riverside path when the gauge passes 2 m', kind: 'Rule', links: [['rests on', 'CLM-2']] },
+      'CLM-2': { title: 'The river rises within six hours of heavy rain', kind: 'Claim', links: [['rests on', 'SRC-1'], ['rests on', 'ASM-1'], ['used by', 'RUL-3'], ['used by', 'RUL-4']] },
+      'SRC-1': { title: 'Gauge records, 2010–2024', kind: 'Source', links: [['supports', 'CLM-2']] },
+      'ASM-1': { title: 'The ground is already wet', kind: 'Assumption', links: [['qualifies', 'CLM-2']] }
+    };
+
+    const floodXref = $('flood-xref');
+    const placesOf = (ref) => [...$('flood-page').querySelectorAll(`[data-ref="${CSS.escape(ref)}"]`)];
+    const viewOf = (place) => place.closest('[data-view]')?.dataset.view ?? 'Page';
+    // The words inside an element, as they read: its pieces of text joined by spaces, since table
+    // cells and lines of a diagram sit side by side without any. A diagram's tooltips are left out.
+    function textOf(el) {
+      const pieces = [];
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) if (!walker.currentNode.parentElement.closest('title')) pieces.push(walker.currentNode.textContent);
+      return pieces.join(' ').replace(/\s+/g, ' ').replace(/\s([.,;:)])/g, '$1').replace(/\(\s/g, '(').trim();
+    }
+
+    // A code or a cell says little alone, so its context is the paragraph or row around it.
+    const contextOf = (place) => textOf(place.closest('p, tr') ?? place);
+
+    function showFlood(ref) {
+      const thing = FLOOD[ref];
+      floodXref.subject = { ref, title: thing.title, kind: thing.kind };
+      floodXref.places = placesOf(ref).map((place) => ({ view: viewOf(place), context: contextOf(place), hidden: !!place.closest('details:not([open])') }));
+      floodXref.links = thing.links.map(([relation, linked]) => ({ relation, ref: linked, title: FLOOD[linked].title }));
+    }
+
+    // Going: a sandbox calls each component's reveal; on this plain page, that's opening the details.
+    function goTo(ref, index) {
+      const place = placesOf(ref)[index];
+      const closed = place.closest('details');
+      if (closed) closed.open = true;
+      place.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      place.classList.add('lit');
+      setTimeout(() => place.classList.remove('lit'), 1200);
+    }
+
+    // ---- Example 2: written by hand ----
+    const CONTRACT = {
+      'CL-4.2': {
+        subject: { ref: 'CL-4.2', title: 'Invoices are paid within 30 days', kind: 'Clause' },
+        places: [
+          { view: 'The contract', context: '4.2 The buyer pays each invoice within 30 days of receiving it (CL-4.2).' },
+          { view: 'Schedule B', context: 'Late payment under CL-4.2 accrues interest at 2% a month.' },
+          { view: 'Schedule B', context: 'Disputed amounts are excluded from CL-4.2 until resolved.', hidden: true },
+          { view: 'Version 1', context: 'CL-4.2 originally said 60 days.', unavailable: 'In an archived version' }
+        ],
+        links: [
+          { relation: 'amended by', ref: 'CL-9.1', title: 'Payment terms shortened to 30 days' },
+          { relation: 'refers to', ref: 'SCH-B', title: 'Late payment and disputes' }
+        ]
+      },
+      'CL-9.1': {
+        subject: { ref: 'CL-9.1', title: 'Payment terms shortened to 30 days', kind: 'Amendment' },
+        places: [{ view: 'Amendments', context: '9.1 In CL-4.2, “60 days” becomes “30 days”, from 1 March.' }],
+        links: [{ relation: 'amends', ref: 'CL-4.2', title: 'Invoices are paid within 30 days' }]
+      },
+      'SCH-B': {
+        subject: { ref: 'SCH-B', title: 'Late payment and disputes', kind: 'Schedule' },
+        places: [{ view: 'Contents', context: 'Schedule B (SCH-B): late payment and disputes' }],
+        links: [{ relation: 'referred to by', ref: 'CL-4.2', title: 'Invoices are paid within 30 days' }]
+      }
+    };
+
+    const contractXref = $('contract-xref');
+
+    function showClause(ref) {
+      const found = CONTRACT[ref];
+      contractXref.subject = found.subject;
+      contractXref.places = found.places;
+      contractXref.links = found.links;
+    }
+
+    // ---- Wiring ----
+
+    for (const code of document.querySelectorAll('#flood-page .code')) code.addEventListener('click', () => showFlood(code.dataset.ref));
+    floodXref.addEventListener('sb-go', (e) => goTo(e.detail.ref, e.detail.index));
+    floodXref.addEventListener('sb-follow', (e) => showFlood(e.detail.ref));
+    floodXref.addEventListener('sb-back', (e) => showFlood(e.detail.ref));
+
+    // Pointing at a place or link lights every place on the page marked with that ref.
+    document.addEventListener('sb-highlight', (e) => {
+      for (const el of document.querySelectorAll('#flood-page [data-ref]')) el.classList.toggle('lit', el.dataset.ref === e.detail.ref);
+    });
+
+    contractXref.addEventListener('sb-go', (e) => {
+      const place = CONTRACT[e.detail.ref].places[e.detail.index];
+      $('contract-status').textContent = `A sandbox would go to “${place.view}” now${place.hidden ? ', opening it' : ''}.`;
+    });
+    contractXref.addEventListener('sb-follow', (e) => showClause(e.detail.ref));
+    contractXref.addEventListener('sb-back', (e) => showClause(e.detail.ref));
+
+    // ---- Start ----
+
+    showFlood('CLM-2');
+    showClause('CL-4.2');
+  </script>
+</body>
+</html>
