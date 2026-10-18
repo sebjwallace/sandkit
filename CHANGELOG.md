@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.19 · 2026-10-18
+- The locating practice says why a walkthrough's hidden steps aren't gone to: its steps are what reveal.
+
 ## 0.2.18 · 2026-10-18
 - `sb-timeline` and `sb-board` 0.1.1 carry `data-ref` for the locating practice, beside their documented `data-id`.
 

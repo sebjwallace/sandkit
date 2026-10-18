@@ -21,4 +21,3 @@ Use components through their manifests, never their source. Codes are issued in 
   - Database calls are shown without their replies, to keep the conversation short. Is that clear enough?
   - Chapter 2's walkthrough has thirteen steps and chapter 5's eleven; the walkthrough manifest suggests five to ten. Group them into stages if they feel long.
   - Chapter 5's sequence numbers messages by position, so `MSG-17` shows as 12. Chapter 2's numbers happen to match its codes.
-  - Words in the walkthroughs' hidden steps carry `data-ref`, so they're found as places but can't be gone to: `sb-walkthrough` has no `reveal` yet (second wave).

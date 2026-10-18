@@ -87,6 +87,7 @@ function revealAround(place, ref) {
 ## What isn't found, on purpose
 
 - **Things a component doesn't draw,** such as rows hidden by a viewer's filter, or cells on a canvas. They aren't in the page, so they can't be found or gone to. A sandbox that needs them answers from its model, which knows where everything is.
+- **A walkthrough's hidden steps.** A walkthrough's steps are what do the revealing: each one outlines views and lights parts inside them. Its words carry `data-ref` to say what they point at, so they're found, but nothing goes into a walkthrough to open a step. Go to the views it points at instead.
 - **Other pages.** Finding across pages needs an index and links into each page, which wait until a sandbox needs them.
 
 ## Good practice
