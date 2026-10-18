@@ -6,7 +6,7 @@ Use components through their manifests, never their source. Codes are issued in 
 
 ## Where it stands
 
-- **Version:** 0.7.0
+- **Version:** 0.8.0
 - **Chapters built:**
   1. The parts: the architecture as a C4 diagram to walk into, an outline of every part, and what crosses a selected part's edge. Names in the prose go to their part in the diagram.
   2. Placing an order: one checkout as thirteen messages, told as a walkthrough with the sequence and the architecture side by side; the architecture follows each message to the level where it can be seen.
@@ -15,6 +15,7 @@ Use components through their manifests, never their source. Codes are issued in 
   5. When payment fails: the declined conversation from the charge on, beside the rows it undoes, ending with what a lost reply and the idempotency key mean.
 - **Across chapters:** clicking any code opens a cross-reference (`sb-xref`) floating beside the page: every place the thing appears, in any chapter, and what the model links it to (a part's place and lines, a line's ends and messages), with a trail and Back.
 - **A tour:** "Take the tour" in the header points at the shop in the diagram, Payments in the outline (opening its branch), the selected part's details (waiting for a code to be clicked) and the charge in chapter 2's sequence (opening the chapter).
+- **Comments:** Comment in the header starts a session; each comment cites what was clicked, its chapter and view, the version, and the chapter and walkthrough step showing. Feedback received goes in `sources/feedback/` (see Sandkit's feedback practice). Keep the version in `comments.context` in step with this journal.
 - **Chapters planned:** none. The first plan is complete.
 - **Chosen direction:** none yet; waiting on the handover.
 - **Open questions:**

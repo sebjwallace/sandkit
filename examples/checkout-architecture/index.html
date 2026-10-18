@@ -19,6 +19,7 @@
   <script src="../../components/sb-panel/sb-panel.js"></script>
   <script src="../../components/sb-xref/sb-xref.js"></script>
   <script src="../../components/sb-tour/sb-tour.js"></script>
+  <script src="../../components/sb-comments/sb-comments.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
@@ -26,6 +27,7 @@
     <sb-theme-settings slot="settings"></sb-theme-settings>
     <p><strong>Goal:</strong> see how a shop’s checkout is built: the parts behind the Pay button, how they talk when someone pays, and where each part shows up in the code and the data.</p>
     <button type="button" slot="actions" id="tour-start" class="tour-start">Take the tour</button>
+    <sb-comments slot="actions" id="comments"></sb-comments>
   </sb-shell>
 
   <main>
@@ -405,6 +407,27 @@
       return index === -1 ? null : goTo(ref, index) || null;
     }
 
+    // ---- Comments (practices/feedback.md) ----
+
+    const comments = $('comments'), chapters = $('chapters');
+
+    // What's at a point: the refs of the element there and of the parts that hold it, innermost first.
+    function refsAt(x, y) {
+      const top = document.elementsFromPoint(x, y).find((el) => !el.closest('sb-comments'));
+      if (!top) return null;
+      const refs = [];
+      for (let el = top.closest('[data-ref]'); el; el = el.parentElement?.closest('[data-ref]')) refs.push(el.dataset.ref);
+      return { refs, view: viewOf(top), element: top.closest('[data-ref]') ?? top };
+    }
+
+    // The chapter showing, and the step of its walkthrough if it has one: what a comment can't be
+    // understood without.
+    function snapshot() {
+      const chapter = chapters.panels[chapters.selected];
+      const walkthrough = chapter.querySelector('sb-walkthrough');
+      return { chapter: chapter.getAttribute('heading'), ...(walkthrough && { step: walkthrough.step + 1 }) };
+    }
+
     // ---- Viewers ----
 
     outline.addEventListener('sb-select', (e) => {
@@ -424,6 +447,9 @@
     });
 
     tour.addEventListener('sb-step', (e) => { tour.anchor = placeForStep(e.detail); });
+
+    comments.addEventListener('sb-pick', (e) => comments.pick(refsAt(e.detail.x, e.detail.y)));
+    comments.addEventListener('sb-mode', (e) => { if (e.detail.active) tour.close(); });
     $('tour-start').addEventListener('click', () => tour.start());
     xref.addEventListener('sb-go', (e) => goTo(e.detail.ref, e.detail.index));
     xref.addEventListener('sb-follow', (e) => showXref(e.detail.ref));
@@ -466,6 +492,9 @@
     });
 
     // ---- Start ----
+
+    comments.context = { title: 'Checkout architecture', version: '0.8.0', goal: 'See how a shop’s checkout is built: the parts behind the Pay button, how they talk when someone pays, and where each part shows up in the code and the data.' }; // the version: the latest entry in JOURNAL.md
+    comments.snapshot = snapshot;
 
     diagram.model = CHECKOUT;
     outline.nodes = CHECKOUT.elements.map(toNode);

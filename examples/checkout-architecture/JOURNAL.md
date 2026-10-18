@@ -2,6 +2,12 @@
 
 What changed in this sandbox, and why: one entry per change, newest first, only ever added to. Each entry is a version. See the [journal practice](../../practices/journal.md).
 
+## 0.8.0 · 2026-10-18 · Added
+
+**Changed:** Comments (`sb-comments`) in the header: in a session, clicking any part writes a comment citing its refs (innermost first), chapter and view, with the version and the chapter and walkthrough step showing; Done copies them as a prompt or downloads them. Added `sources/feedback/` for feedback received.
+**Why:** To collect what people think of the sandbox, pinned to exactly what they mean, so it can be answered in this journal.
+**Open:** None new.
+
 ## 0.7.0 · 2026-10-18 · Added
 
 **Changed:** A six-step tour (`sb-tour`), started from "Take the tour" in the header: the shop in the diagram, Payments in the outline, the details panel (waiting until a code is clicked), and the charge in chapter 2's sequence, opening the folded branch and the closed chapter on the way. A step naming a view (`data-in`) goes to the place inside it.

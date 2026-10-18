@@ -249,6 +249,40 @@
       tour.next();
       assertEqual(tour.open, false, 'done');
     });
+
+    test('comments cite what was clicked, the view, the version and where the viewer was', async () => {
+      const frame = mount('<iframe src="index.html" style="width: 1300px; height: 900px"></iframe>');
+      await new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+      const page = frame.contentDocument;
+      const comments = page.getElementById('comments');
+      const clickOn = (node, init = {}) => {
+        const r = node.getBoundingClientRect();
+        node.dispatchEvent(new frame.contentWindow.MouseEvent('click', { bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, ...init }));
+      };
+      const write = (text) => {
+        const area = comments.querySelector('.sb-comments__box textarea');
+        area.value = text;
+        area.dispatchEvent(new Event('input', { bubbles: true }));
+        comments.querySelector('[data-action="save"]').click();
+      };
+
+      page.getElementById('outline').expanded = ['SYS-1'];
+      comments.querySelector('[data-action="start"]').click();
+      clickOn(page.querySelector('#diagram [data-ref="SYS-2"]'));
+      write('Is the provider really outside the shop?');
+      clickOn(page.querySelector('#outline [data-ref="CON-1"] .sb-tree__row'));
+      write('Is the Storefront one app, or several?');
+      assertEqual(page.getElementById('chapters').selected, 0, 'picking never acted on the page');
+
+      comments.querySelector('[data-action="done"]').click();
+      const prompt = comments.toMarkdown();
+      assert(prompt.startsWith('# Feedback on Checkout architecture (version 0.8.0)'), prompt.split('\n')[0]);
+      assert(prompt.includes('## #1 · Question · SYS-2 · 1 · The parts'), 'the part and its chapter');
+      assert(prompt.includes('## #2 · Question · CON-1, SYS-1 · 1 · The parts'), 'a part in the outline, and what holds it');
+      assert(prompt.includes('State: chapter 1 · The parts.'), 'where the viewer was');
+      comments.querySelector('[data-action="close"]').click();
+      assertEqual(comments.comments, [], 'Done leaves a clean page');
+    });
   </script>
 </body>
 </html>
