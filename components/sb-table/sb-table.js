@@ -1,4 +1,4 @@
-// Sandkit sb-table 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-table 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Rows and columns to sort, search and filter, with the cells that just changed marked, so a
 // step of the model shows what it changed rather than only how things now stand.
 //
@@ -25,7 +25,8 @@
     .sb-table__bar[hidden] { display: none; }
     .sb-table__search { flex: 0 1 220px; min-width: 0; padding: 4px 8px; font: inherit; color: inherit; background: var(--sb-surface, #fff); border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); }
     .sb-table__count { color: var(--sb-muted, #616e7c); font-size: 12px; }
-    .sb-table__scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+    /* Framed, so the table has a clear edge against the page around it. */
+    .sb-table__scroll { flex: 1 1 auto; min-height: 0; overflow: auto; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); }
     .sb-table__table { width: 100%; border-collapse: collapse; }
     .sb-table__table th, .sb-table__table td { padding: 5px 10px; text-align: left; vertical-align: baseline; border-bottom: 1px solid var(--sb-surface-2, #eef0f3); }
     .sb-table__table thead th { position: sticky; top: 0; z-index: 1; padding: 0; background: var(--sb-surface, #fff); border-bottom-color: var(--sb-border, #d5d9e0); }
@@ -34,6 +35,7 @@
     .sb-table__sort:focus-visible { outline: 2px solid var(--sb-accent, #2563eb); outline-offset: -2px; }
     th[aria-sort="ascending"] .sb-table__sort::after { content: ' ▲'; font-size: 0.8em; }
     th[aria-sort="descending"] .sb-table__sort::after { content: ' ▼'; font-size: 0.8em; }
+    .sb-table__table tbody tr:last-child td { border-bottom: 0; }
     .sb-table__table .sb-table__cell--number { text-align: right; font-variant-numeric: tabular-nums; }
     .sb-table__row { cursor: pointer; }
     .sb-table__row:hover { background: var(--sb-surface-2, #eef0f3); }
@@ -45,7 +47,7 @@
     .sb-table__cell[data-change="down"]::after { content: ' ▼'; font-size: 0.75em; }
     .sb-table__table .sb-table__cell--highlighted { background: var(--sb-accent-soft, #eaf0ff); box-shadow: inset 0 0 0 1px var(--sb-accent, #2563eb); }
     .sb-table__table .sb-table__row--highlighted { background: var(--sb-accent-soft, #eaf0ff); box-shadow: inset 3px 0 0 var(--sb-accent, #2563eb); }
-    .sb-table__empty { padding: 5px 0; color: var(--sb-muted, #616e7c); }`;
+    .sb-table__empty { padding: 5px 10px; color: var(--sb-muted, #616e7c); }`;
 
   // Fields on a row that steer the table rather than being shown.
   const RESERVED = ['id', 'tone'];
