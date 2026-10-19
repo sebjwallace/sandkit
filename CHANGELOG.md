@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.33 · 2026-10-19
+- Forty-four components: added `sb-source`, one source as a sheet of paper with the passages the model cites marked where they are and quotes it can't find listed. The sources practice shows sources with it; the locating practice lists it.
+
 ## 0.2.32 · 2026-10-19
 - Added the sources practice: source material kept in `sources/`, described in one `catalogue.json`, arrivals processed from `sources/inbox/`, never edited but superseded, and cited from the model's `ITEMS` by quote, page, region or annotation, never by line. Added `tools/sources.mjs check`, copied into sandboxes. Files that can't be read as they are get a readable copy, catalogued as derived from the original. The template has an empty catalogue, an inbox and `ITEMS` in `model.js`; the identifiers, journal, building and pages practices point to it.
 

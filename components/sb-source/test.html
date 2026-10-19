@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-source tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-source.js"></script>
+  <script src="sb-source.js"></script>
+</head>
+<body>
+  <script>
+    const SOURCE = {
+      id: 'SRC-3', title: 'Interview with the depot manager', path: 'sources/interviews/depot.txt', format: 'transcript',
+      author: 'Priya Shah', authored: '2026-10-02', captured: '2026-10-03', status: 'reviewed', stance: 'assertive',
+      role: 'answer', respondsTo: 'SRC-2', sensitivity: 'internal', summary: 'How the depot really works.'
+    };
+
+    const TEXT = [
+      'Q: When do you reorder?',
+      '',
+      'A: We reorder as soon as we\n   drop under forty. That is the rule.',
+      '',
+      'Q: And deliveries?',
+      '',
+      'A: Twice a week.',
+      'Mondays and Thursdays.',
+      'Never at weekends.',
+      '',
+      'Q: Anything else?',
+      '',
+      'A: The forklift is old. We reorder parts often.'
+    ].join('\n');
+
+    const show = (passages = [], extra = {}) => {
+      const view = mount('<sb-source></sb-source>');
+      Object.assign(view, { source: SOURCE, content: TEXT, passages, ...extra });
+      return view;
+    };
+    const marks = (view) => [...view.querySelectorAll('mark.sb-source__passage')];
+    const marked = (view, id) => marks(view).filter((m) => m.dataset.passages.split(' ').includes(id)).map((m) => m.textContent).join('');
+    const labels = (view) => [...view.querySelectorAll('.sb-source__page .sb-source__label')].map((l) => l.dataset.label);
+    const field = (view, label) => [...view.querySelectorAll('.sb-source__fields div')].find((d) => d.querySelector('dt').textContent === label)?.querySelector('dd');
+    const point = (target) => target.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+    const gaps = (view) => [...view.querySelectorAll('.sb-source__gap')];
+    const visible = (el) => getComputedStyle(el).display !== 'none';
+    // The source's own words, as they are in the file: gaps are the component's, not the source's.
+    const sourceText = (view) => [...view.querySelector('.sb-source__text').childNodes]
+      .filter((node) => !node.classList?.contains('sb-source__gap')).map((node) => node.textContent).join('');
+
+    // A text node inside the source, and selecting a part of it as a viewer would.
+    function select(view, words) {
+      const walker = document.createTreeWalker(view.querySelector('.sb-source__text'), NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const at = node.data.indexOf(words);
+        if (at < 0) continue;
+        const range = document.createRange();
+        range.setStart(node, at);
+        range.setEnd(node, at + words.length);
+        getSelection().removeAllRanges();
+        getSelection().addRange(range);
+        view.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+        return;
+      }
+      throw new Error(`"${words}" isn't in one text node`);
+    }
+
+    // ---- The source and what's known about it ----
+
+    test('says what to do when no source is set', () => {
+      const view = mount('<sb-source></sb-source>');
+      assertEqual(view.textContent.trim(), 'Choose a source to see it here.');
+    });
+
+    test('shows the code, title, format and summary, and carries the source\'s id as its ref', () => {
+      const view = show();
+      assertEqual(view.querySelector('.sb-source__id').textContent, 'SRC-3');
+      assertEqual(view.querySelector('.sb-source__name').textContent, 'Interview with the depot manager');
+      assertEqual(view.querySelector('.sb-source__format').textContent, 'transcript · txt');
+      assertEqual(view.querySelector('.sb-source__summary').textContent, 'How the depot really works.');
+      assertEqual(view.dataset.ref, 'SRC-3');
+    });
+
+    test('labels each detail it\'s given, the status marked by its value, and leaves out the rest', () => {
+      const view = show();
+      assertEqual([...view.querySelectorAll('.sb-source__fields dt')].map((dt) => dt.textContent),
+        ['Author', 'Written', 'Added', 'Status', 'Stance', 'Role', 'Sensitivity']);
+      assertEqual(field(view, 'Role').textContent, 'answer, to SRC-2');
+      assert(field(view, 'Status').classList.contains('sb-source__status--reviewed'), 'status class');
+      view.source = { id: 'SRC-4', title: 'Bare', status: 'superseded' };
+      assertEqual([...view.querySelectorAll('.sb-source__fields dt')].map((dt) => dt.textContent), ['Status']);
+      assert(field(view, 'Status').classList.contains('sb-source__status--superseded'), 'superseded');
+    });
+
+    test('names the format once when the file type says the same, and links to what it supersedes or came from', () => {
+      const view = show([], { source: { id: 'SRC-5', title: 'Rules', path: 'rules.pdf', format: 'pdf', supersedes: 'SRC-1', derivedFrom: ['SRC-2', 'SRC-3'] } });
+      assertEqual(view.querySelector('.sb-source__format').textContent, 'pdf');
+      assertEqual(view.querySelector('.sb-source__links').textContent, 'Supersedes SRC-1 · Derived from SRC-2, SRC-3');
+    });
+
+    test('shows the source\'s text, and its path, as text: markup is never rendered', () => {
+      const view = show([], { source: { ...SOURCE, title: '<i>Tricky</i>', summary: '<img src=x onerror=alert(1)>' }, content: 'Plain <b>bold</b> & <script>x()<\/script>' });
+      assertEqual(sourceText(view), 'Plain <b>bold</b> & <script>x()<\/script>');
+      assertEqual(view.querySelector('.sb-source__name').textContent, '<i>Tricky</i>');
+      assert(!view.querySelector('b, i, img, script'), 'no markup from the source');
+      assertEqual(view.querySelector('.sb-source__path').textContent, 'sources/interviews/depot.txt');
+    });
+
+    test('pretty-prints JSON, and sets data and code in fixed-width type', () => {
+      const view = show([{ id: 'P', quote: '"limit": 40' }], { source: { id: 'SRC-6', path: 'data/stock.json' }, content: '{"limit":40,"site":"North"}' });
+      assertEqual(sourceText(view), '{\n  "limit": 40,\n  "site": "North"\n}');
+      assert(view.querySelector('.sb-source__text--code'), 'fixed-width');
+      assertEqual(view.found.map((p) => p.id), ['P']);
+      view.source = { id: 'SRC-7', path: 'data/stock.csv' };
+      assert(view.querySelector('.sb-source__text--code'), 'csv is fixed-width');
+      view.source = { id: 'SRC-8', path: 'notes.txt' };
+      assert(!view.querySelector('.sb-source__text--code'), 'prose is not');
+    });
+
+    // ---- Passages ----
+
+    test('marks each quote where it is, whitespace and capitals aside, with its id as the ref', () => {
+      const view = show([{ id: 'RUL-1', quote: 'we reorder as soon as we drop under forty' }]);
+      assertEqual(marked(view, 'RUL-1'), 'We reorder as soon as we\n   drop under forty');
+      assertEqual(marks(view)[0].dataset.ref, 'RUL-1');
+      assertEqual(labels(view), ['RUL-1']);
+    });
+
+    test('marks every place a quote appears', () => {
+      const view = show([{ id: 'RUL-2', quote: 'reorder' }]);
+      assertEqual(marks(view).length, 3);
+      assertEqual(labels(view), ['RUL-2', 'RUL-2', 'RUL-2']);
+    });
+
+    test('lists quotes it can\'t find as not found, with their words, and counts what it found', () => {
+      const view = show([{ id: 'RUL-1', quote: 'drop under forty' }, { id: 'PAR-2', quote: 'drop under thirty', label: 'Reorder point' }]);
+      assertEqual(view.found.map((p) => p.id), ['RUL-1']);
+      assertEqual(view.missing.map((p) => p.id), ['PAR-2']);
+      assertEqual(view.querySelector('.sb-source__count').textContent, '1 of 2 cited passages found here');
+      const missing = view.querySelector('.sb-source__missing');
+      assert(missing.textContent.includes('Not found in this source'), missing.textContent);
+      assertEqual(missing.querySelector('li').textContent, 'Reorder point: “drop under thirty”');
+    });
+
+    test('overlapping passages share their overlap, which belongs to the shorter one', () => {
+      const view = show([{ id: 'LONG', quote: 'we drop under forty. That is the rule' }, { id: 'SHORT', quote: 'under forty' }]);
+      const shared = marks(view).find((m) => m.textContent === 'under forty');
+      assertEqual(shared.dataset.ref, 'SHORT');
+      assertEqual(shared.dataset.passages.split(' ').sort(), ['LONG', 'SHORT']);
+      assertEqual(marked(view, 'LONG'), 'we\n   drop under forty. That is the rule');
+      assertEqual(labels(view), ['LONG', 'SHORT']);
+    });
+
+    test('labels take no part in the text, so a selection or copy never picks them up', () => {
+      const view = show([{ id: 'RUL-1', quote: 'drop under forty' }]);
+      const label = view.querySelector('.sb-source__page .sb-source__label');
+      assertEqual(label.textContent, '');
+      assertEqual(label.dataset.label, 'RUL-1');
+    });
+
+    // ---- Lighting up, and going to a passage ----
+
+    test('highlight lights every mark and label of the passages named', () => {
+      const view = show([{ id: 'RUL-2', quote: 'reorder' }, { id: 'RUL-3', quote: 'Twice a week' }]);
+      view.highlight = ['RUL-2'];
+      assertEqual(marks(view).filter((m) => m.classList.contains('sb-source__passage--lit')).map((m) => m.textContent), ['reorder', 'reorder', 'reorder']);
+      assertEqual(view.querySelectorAll('.sb-source__label--lit').length, 3);
+      view.highlight = [];
+      assertEqual(view.querySelectorAll('.sb-source__passage--lit').length, 0);
+    });
+
+    test('current marks a passage wherever it appears', () => {
+      const view = show([{ id: 'RUL-2', quote: 'reorder' }, { id: 'RUL-3', quote: 'Twice a week' }]);
+      view.current = 'RUL-3';
+      assertEqual(marks(view).filter((m) => m.classList.contains('sb-source__passage--current')).map((m) => m.textContent), ['Twice a week']);
+      view.current = null;
+      assertEqual(view.querySelectorAll('.sb-source__passage--current').length, 0);
+    });
+
+    test('setting current scrolls the paper to the passage, never the page', () => {
+      // The paper sits below the fold, where moving the page to it would show.
+      const view = mount('<div style="height: 3000px"></div><sb-source style="height: 300px"></sb-source>').nextElementSibling;
+      Object.assign(view, { source: SOURCE, content: `${'Line\n'.repeat(80)}The end.`, passages: [{ id: 'END', quote: 'The end' }], expanded: true });
+      scrollTo(0, 0);
+      view.current = 'END';
+      assertEqual(scrollY, 0);
+      assert(view.querySelector('.sb-source__body').scrollTop > 0, 'the paper scrolled');
+    });
+
+    test('pointing at a mark or label lights its passage and fires sb-point, then null on leaving', () => {
+      const view = show([{ id: 'RUL-2', quote: 'reorder' }]);
+      const events = recordEvents(view, 'sb-point');
+      point(marks(view)[0]);
+      assertEqual(marks(view).filter((m) => m.classList.contains('sb-source__passage--lit')).length, 3);
+      view.dispatchEvent(new PointerEvent('pointerleave'));
+      point(view.querySelector('.sb-source__page .sb-source__label'));
+      assertEqual(events.map((e) => e.detail.id), ['RUL-2', null, 'RUL-2']);
+    });
+
+    // ---- Folding ----
+
+    test('folds runs of uncited lines into gaps, keeping each cited line and the written line before it', () => {
+      const view = show([{ id: 'RUL-3', quote: 'Twice a week' }]);
+      assertEqual(gaps(view).map((g) => g.textContent), ['⋯ 5 lines', '⋯ 6 lines']);
+      const shown = [...view.querySelector('.sb-source__text').childNodes].filter((n) => n.nodeType === 3 || visible(n)).map((n) => n.textContent).join('');
+      assertEqual(shown, '⋯ 5 linesQ: And deliveries?\n\nA: Twice a week.\n⋯ 6 lines');
+    });
+
+    test('never folds a single line, and folds nothing when there are no passages', () => {
+      // The blank line between the question and the answer is alone, so it stays.
+      assertEqual(gaps(show([{ id: 'A', quote: 'When do you reorder' }, { id: 'B', quote: 'drop under forty' }])).map((g) => g.textContent), ['⋯ 10 lines']);
+      const view = show();
+      assertEqual(gaps(view).length, 0);
+      assert(!view.querySelector('.sb-source__toggle'), 'no toggle without folds');
+    });
+
+    test('clicking a gap opens only that one', () => {
+      const view = show([{ id: 'RUL-3', quote: 'Twice a week' }]);
+      gaps(view)[0].click();
+      const folds = [...view.querySelectorAll('.sb-source__fold')];
+      assertEqual(folds.map(visible), [true, false]);
+      assertEqual(gaps(view).map(visible), [false, true]);
+    });
+
+    test('the toggle shows everything and back, firing sb-toggle, and expanded does the same without firing', () => {
+      const view = show([{ id: 'RUL-3', quote: 'Twice a week' }]);
+      const events = recordEvents(view, 'sb-toggle');
+      const toggle = view.querySelector('.sb-source__toggle');
+      toggle.click();
+      assert(view.expanded && view.hasAttribute('expanded'), 'expanded');
+      assertEqual(toggle.textContent, 'Show cited only');
+      assert([...view.querySelectorAll('.sb-source__fold')].every(visible), 'all shown');
+      toggle.click();
+      assertEqual(events.map((e) => e.detail.expanded), [true, false]);
+      view.expanded = true;
+      assertEqual(toggle.getAttribute('aria-pressed'), 'true');
+      assertEqual(events.length, 2);
+    });
+
+    test('new passages fold any opened gaps again', () => {
+      const view = show([{ id: 'RUL-3', quote: 'Twice a week' }]);
+      gaps(view)[0].click();
+      view.passages = [{ id: 'RUL-3', quote: 'Twice a week' }];
+      assert(gaps(view).every(visible), 'gaps closed');
+    });
+
+    // ---- Markdown ----
+
+    test('styles Markdown lightly, keeping its marks so the text is still exactly the file', () => {
+      const notes = '# Points\n\n- **P1** is *stiff* when cold, see `FLT-2`.\n\n> Quiet night.';
+      const view = show([], { source: { id: 'SRC-9', path: 'notes.md' }, content: notes });
+      assertEqual(sourceText(view), notes);
+      const styled = (style) => [...view.querySelectorAll(`.sb-source__md-${style}`)].map((s) => s.textContent).join('');
+      assertEqual(styled('h1'), '# Points');
+      assertEqual(styled('strong'), '**P1**');
+      assertEqual(styled('em'), '*stiff*');
+      assertEqual(styled('code'), '`FLT-2`');
+      assertEqual(styled('quote'), '> Quiet night.');
+      assertEqual(styled('mark'), '#- ******``> ');
+    });
+
+    test('a quote across Markdown styling is still found and marked whole', () => {
+      const view = show([{ id: 'ASM-1', quote: 'is *stiff* when cold' }], { source: { id: 'SRC-9', path: 'notes.md' }, content: '- **P1** is *stiff* when cold.' });
+      assertEqual(marked(view, 'ASM-1'), 'is *stiff* when cold');
+    });
+
+    // ---- Selecting ----
+
+    test('selecting words fires sb-passage with the source and the words, once per selection', () => {
+      const view = show();
+      const events = recordEvents(view, 'sb-passage');
+      select(view, 'Twice a week');
+      view.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+      assertEqual(events.map((e) => e.detail), [{ source: 'SRC-3', quote: 'Twice a week' }]);
+      getSelection().removeAllRanges();
+    });
+
+    test('a long selection is cut at a word, and whitespace is evened out', () => {
+      const long = `${'word '.repeat(80)}end`;
+      const view = show([], { content: `Start\n  ${long}` });
+      const events = recordEvents(view, 'sb-passage');
+      select(view, long);
+      const quote = events[0].detail.quote;
+      assert(quote.length <= 300 && quote.endsWith('word') && !quote.includes('  '), quote);
+      getSelection().removeAllRanges();
+    });
+
+    // ---- Images ----
+
+    const PLAN = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="#ddd"/></svg>')}`;
+    const IMAGE = { id: 'SRC-11', title: 'Plan', path: 'plans/junction.svg', format: 'image' };
+
+    async function showImage(passages) {
+      const view = mount('<sb-source style="display: block; width: 500px"></sb-source>');
+      Object.assign(view, { source: IMAGE, url: PLAN, passages });
+      const image = view.querySelector('.sb-source__image');
+      await waitFor(() => image.complete && image.getBoundingClientRect().height > 0);
+      return view;
+    }
+
+    const drag = (view, from, to) => {
+      const figure = view.querySelector('.sb-source__figure');
+      const rect = figure.getBoundingClientRect();
+      const at = ([x, y]) => ({ bubbles: true, button: 0, pointerId: 1, clientX: rect.left + x * rect.width, clientY: rect.top + y * rect.height });
+      figure.dispatchEvent(new PointerEvent('pointerdown', at(from)));
+      figure.dispatchEvent(new PointerEvent('pointermove', at(to)));
+      figure.dispatchEvent(new PointerEvent('pointerup', at(to)));
+    };
+
+    test('shows an image whole, each region a labelled box placed by fractions of it', async () => {
+      const view = await showImage([{ id: 'ENT-1', region: [0.1, 0.2, 0.3, 0.4] }, { id: 'ENT-2', quote: 'no region' }]);
+      const box = view.querySelector('.sb-source__region');
+      assertEqual([box.style.left, box.style.top, box.style.width, box.style.height], ['10%', '20%', '30%', '40%']);
+      assertEqual(box.dataset.ref, 'ENT-1');
+      assertEqual(labels(view), ['ENT-1']);
+      assertEqual(view.missing.map((p) => p.id), ['ENT-2']);
+      assert(view.querySelector('.sb-source__missing').textContent.includes('Not marked on this image'), 'says why');
+      assertEqual(view.querySelector('.sb-source__format').textContent, 'image · svg');
+    });
+
+    test('dragging across an image fires sb-passage with the region, rounded; a click names nothing', async () => {
+      const view = await showImage([]);
+      const events = recordEvents(view, 'sb-passage');
+      drag(view, [0.5, 0.5], [0.25, 0.1]);
+      drag(view, [0.5, 0.5], [0.502, 0.5]);
+      assertEqual(events.map((e) => e.detail), [{ source: 'SRC-11', region: [0.25, 0.1, 0.25, 0.4] }]);
+      assert(!view.querySelector('.sb-source__draft'), 'the box drawn while dragging is gone');
+    });
+
+    // ---- PDFs and other files ----
+
+    const PDF = { id: 'SRC-12', title: 'Rule book', path: 'rules/section-4.pdf', format: 'pdf' };
+    const PDF_PASSAGES = [{ id: 'RUL-7', page: 1, quote: 'must not pass' }, { id: 'RUL-8', page: 2, quote: '40 km/h' }];
+    const showPdf = (extra = {}) => {
+      const view = mount('<sb-source></sb-source>');
+      Object.assign(view, { source: PDF, url: 'about:blank#rules.pdf', passages: PDF_PASSAGES, ...extra });
+      return view;
+    };
+
+    test('opens a PDF in the browser\'s viewer at the current passage\'s page, listing its passages as not checked', () => {
+      const view = showPdf({ current: 'RUL-8' });
+      assert(view.querySelector('.sb-source__pdf').src.endsWith('about:blank#page=2'), view.querySelector('.sb-source__pdf').src);
+      assertEqual([...view.querySelectorAll('.sb-source__cited li')].map((li) => li.textContent.trim().replace(/\s+/g, ' ')),
+        ['p. 1 “must not pass”', 'p. 2 “40 km/h”']);
+      assert(view.querySelector('.sb-source__count').textContent.includes('not checked'), 'says so');
+      assertEqual(view.found.length, 2);
+    });
+
+    test('clicking a PDF\'s passage opens the viewer at its page', () => {
+      const view = showPdf();
+      view.querySelector('.sb-source__cited li').click();
+      assert(view.querySelector('.sb-source__pdf').src.endsWith('#page=1'), view.querySelector('.sb-source__pdf').src);
+    });
+
+    test('naming a passage in a PDF by hand fires sb-passage with its page and quote', () => {
+      const view = showPdf();
+      const events = recordEvents(view, 'sb-passage');
+      const form = view.querySelector('.sb-source__pick form');
+      form.elements.quote.value = '  held   at J1 ';
+      form.elements.page.value = '2';
+      form.requestSubmit();
+      assertEqual(events.map((e) => e.detail), [{ source: 'SRC-12', page: 2, quote: 'held at J1' }]);
+    });
+
+    test('offers a link to a file it can\'t show, and says when nothing is loaded', () => {
+      const view = mount('<sb-source></sb-source>');
+      Object.assign(view, { source: { id: 'SRC-14', path: 'decks/plan.pptx' }, url: 'decks/plan.pptx' });
+      const link = view.querySelector('.sb-source__note a');
+      assertEqual(link.getAttribute('href'), 'decks/plan.pptx');
+      view.url = null;
+      assertEqual(view.querySelector('.sb-source__note').textContent, 'The file isn\'t loaded.');
+    });
+
+    // ---- The paper ----
+
+    test('the paper has a full screen button, and redrawing keeps the folds, marks and current passage', () => {
+      const view = show([{ id: 'RUL-3', quote: 'Twice a week' }], { current: 'RUL-3', expanded: true });
+      assert(view.querySelector('.sb-source__desk .sb-source__full'), 'full screen button');
+      view.content = TEXT;
+      assert(view.classList.contains('sb-source--expanded'), 'still expanded');
+      assertEqual(view.querySelectorAll('.sb-source__passage--current').length, 1);
+    });
+
+    // ---- Instances and loading ----
+
+    test('two instances side by side keep their own source, passages and state', () => {
+      const a = mount('<sb-source></sb-source><sb-source></sb-source>');
+      const b = a.nextElementSibling;
+      Object.assign(a, { source: SOURCE, content: TEXT, passages: [{ id: 'RUL-1', quote: 'drop under forty' }] });
+      Object.assign(b, { source: IMAGE, url: PLAN, passages: [{ id: 'ENT-1', region: [0, 0, 0.5, 0.5] }] });
+      assert(a.isConnected && b.isConnected, 'both on the page');
+      a.highlight = ['RUL-1'];
+      a.current = 'RUL-1';
+      assertEqual(a.dataset.ref, 'SRC-3');
+      assertEqual(b.dataset.ref, 'SRC-11');
+      assertEqual(b.querySelectorAll('.sb-source__passage--lit, .sb-source__passage--current').length, 0);
+      assertEqual(a.querySelectorAll('.sb-source__passage--lit').length, 1);
+    });
+
+    test('loading the script twice is skipped quietly', () => {
+      assertEqual(consoleErrors.length, 0);
+      assertEqual(customElements.get('sb-source').origin, 'sandkit/sb-source');
+    });
+  </script>
+</body>
+</html>

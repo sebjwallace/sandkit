@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-source demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-source.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+
+    .side-by-side { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 18px; align-items: start; }
+    @media (max-width: 640px) { .side-by-side { grid-template-columns: 1fr; } }
+    .side { font-size: 13px; }
+    .side h3 { margin: 0 0 6px; font-size: 13px; color: var(--sb-muted); }
+    .items { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+    .items button { width: 100%; padding: 5px 8px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); font: inherit; text-align: left; cursor: pointer; }
+    .items button:hover, .items button.is-lit { border-color: var(--sb-accent); background: var(--sb-accent-soft); }
+    .items code { font: 600 11px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); }
+    sb-source { height: 600px; }
+    #plan, #notes { height: auto; }
+    .named { margin: 8px 0 0; font-size: 12px; color: var(--sb-muted); }
+    .named code { font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-text); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-source">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>One source, with the passages the model cites marked where they are.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>A sandbox is only as trustworthy as what it's built from. When a rule says "reorder below forty", someone will ask: says who? This component answers by showing the source itself, the interview, the policy, the plan, with the very words the rule rests on marked. The source sits on its own sheet of paper, apart from the card of what's known about it, so it always reads as the ground truth rather than more of the sandbox.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Checking a claim.</strong> Point at a rule and see the words it came from; judge for yourself whether they say what the model says.</li>
+        <li><strong>Catching drift.</strong> A citation whose quote is no longer in its source is listed in red, not hidden. Models change and sources get corrected; this is where the gap shows.</li>
+        <li><strong>Long material.</strong> Interviews and documents fold down to the lines that are cited, so the part that matters is in front of you, with the rest a click away.</li>
+        <li><strong>Gathering evidence.</strong> Select words, drag across an image, or name a PDF passage, and the sandbox hears which passage someone means, ready to cite or comment on.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>The sandbox's own explanations.</strong> Text written for the sandbox, with notes on its phrases, belongs in an annotated passage, not on paper: it isn't a source.</li>
+        <li><strong>Reading data closely.</strong> To explore a data set's shape, or walk a JSON document by its paths, use a component made for that; this one shows data as the file it is.</li>
+        <li><strong>A whole library of sources.</strong> Show one source at a time here, and choose it from a list or search elsewhere.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-source/sb-source.js"&gt;&lt;/script&gt;
+&lt;sb-source&gt;&lt;/sb-source&gt;
+
+&lt;script&gt;
+  const view = document.querySelector('sb-source');
+  view.source = catalogue.sources.find((s) =&gt; s.id === 'SRC-3');
+  view.content = await (await fetch(view.source.path)).text();
+  view.passages = [{ id: 'RUL-014', quote: 'we reorder as soon as we drop under forty' }];
+&lt;/script&gt;</pre>
+      <p>The page loads the file, which needs the sandbox served; the component never fetches. Give images and PDFs as <code>url</code> instead of <code>content</code>. Keep sources in a catalogue and cite them from the model, as the <a href="../../practices/sources.md">sources practice</a> describes. The <a href="manifest.md">manifest</a> has the full contract.</p>
+
+      <h3>Making it reveal</h3>
+      <ul>
+        <li><strong>Connect it both ways.</strong> List what cites the source beside it: pointing at an item lights its words, and pointing at the words lights the item.</li>
+        <li><strong>Go to what's being discussed.</strong> Set <code>current</code> when someone asks about a rule, so the source opens at its words.</li>
+        <li><strong>Leave the broken citations in.</strong> A quote that isn't found is a finding: fix it in the model, never by hiding it.</li>
+        <li><strong>Keep the details honest.</strong> Status, stance and author tell people how far to trust a source; fill them in when cataloguing, and mark a source reviewed once a person has checked it.</li>
+      </ul>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A power grid: what the control room said</h2>
+      <p>The model's rules for losing a power station each cite the interview they came from. The long interview folds down to the lines that are cited; open a gap, or show all. Point at a rule to see the words it rests on; click one to go to it. One citation has drifted from what was said.</p>
+      <div class="side-by-side">
+        <div class="side">
+          <h3>Cited by the model</h3>
+          <ul class="items" id="grid-items"></ul>
+        </div>
+        <sb-source id="grid"></sb-source>
+      </div>
+      <p class="named" id="grid-named">Select some words in the interview to name a new passage.</p>
+    </section>
+
+    <section class="example">
+      <h2>A rail junction: the track plan</h2>
+      <p>The junction’s signals and points each cite the region of the plan that shows them. Point at one to light up its box.</p>
+      <div class="side-by-side">
+        <div class="side">
+          <h3>Cited by the model</h3>
+          <ul class="items" id="plan-items"></ul>
+        </div>
+        <sb-source id="plan"></sb-source>
+      </div>
+      <p class="named" id="plan-named">Drag across the plan to name a region.</p>
+    </section>
+
+    <section class="example">
+      <h2>A rail junction: the rule book</h2>
+      <p>The junction’s rules cite the rule book, a PDF. A PDF can’t be searched here, so its passages are listed with their pages; click one to open the viewer there.</p>
+      <div class="side-by-side">
+        <div class="side">
+          <h3>Cited by the model</h3>
+          <ul class="items" id="rules-items"></ul>
+        </div>
+        <sb-source id="rules"></sb-source>
+      </div>
+      <p class="named" id="rules-named">Open “Name a passage in this PDF” to name one by hand.</p>
+    </section>
+
+    <section class="example">
+      <h2>A rail junction: the handover notes</h2>
+      <p>An assumption and an open question rest on the night signaller’s notes, written in Markdown: headings, lists and emphasis are styled, with their marks kept.</p>
+      <div class="side-by-side">
+        <div class="side">
+          <h3>Cited by the model</h3>
+          <ul class="items" id="notes-items"></ul>
+        </div>
+        <sb-source id="notes"></sb-source>
+      </div>
+      <p class="named" id="notes-named">Select some words in the notes to name a passage.</p>
+    </section>
+  </main>
+
+  <script>
+    // ---- Wiring an example ----
+    // The list of what cites the source, pointing lit both ways, clicking to go to a passage,
+    // and whatever a viewer names shown below.
+
+    function showExample(name, { source, content = null, url = null, items }) {
+      const view = document.getElementById(name);
+      const list = document.getElementById(`${name}-items`);
+      const named = document.getElementById(`${name}-named`);
+      view.source = source;
+      view.content = content;
+      view.url = url;
+      view.passages = items.map(({ title, ...passage }) => passage);
+      list.innerHTML = items.map(({ id, title }) => `<li><button data-ref="${id}"><code>${id}</code> ${title}</button></li>`).join('');
+
+      list.addEventListener('pointerover', (e) => { view.highlight = [e.target.closest('button')?.dataset.ref].filter(Boolean); });
+      list.addEventListener('pointerleave', () => { view.highlight = []; });
+      list.addEventListener('click', (e) => { view.current = e.target.closest('button')?.dataset.ref ?? null; });
+      view.addEventListener('sb-point', (e) => {
+        for (const button of list.querySelectorAll('button')) button.classList.toggle('is-lit', button.dataset.ref === e.detail.id);
+      });
+      view.addEventListener('sb-passage', (e) => { named.innerHTML = `Named: <code>${escapeHtml(JSON.stringify(e.detail))}</code>`; });
+      return view;
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    }
+
+    // ---- A power grid: an interview ----
+
+    const GRID_SOURCE = {
+      id: 'SRC-4', title: 'Interview with a control room engineer', path: 'sources/interviews/control-room.txt',
+      format: 'transcript', author: 'Dana Okafor', authored: '2026-09-14', captured: '2026-09-15',
+      status: 'reviewed', stance: 'assertive', role: 'answer', respondsTo: 'SRC-2', sensitivity: 'internal',
+      summary: 'What happens in the first minute after a large power station trips.'
+    };
+
+    const GRID_TEXT = `Q: Thanks for making the time. How long have you worked in the control room?
+
+A: Eleven years now, the last four as a shift lead. Before that I was in protection engineering, setting up the relays at substations.
+
+Q: What does a normal shift look like?
+
+A: Mostly watching and nudging. We balance supply and demand minute by minute, buy a bit more here, ask a station to back off there. The forecasts are good, so most of the work is small corrections.
+
+Q: Walk me through the first minute after a big unit trips.
+
+A: The frequency drops straight away. Inertia from everything still spinning slows the fall, which buys us a few seconds. Within two seconds the fast frequency response kicks in from batteries.
+
+Q: Has that changed over your time here?
+
+A: A lot. When I started there were far more big coal and gas units, so far more spinning mass. Now with more wind and solar there's less inertia, so the drop is faster, and the batteries matter much more than they did.
+
+Q: Who decides how much response to hold?
+
+A: There's a planning team that sets it each day, based on the biggest single loss we could suffer. We hold enough to cover that, with a margin. On windy nights it can be a lot.
+
+Q: And if the first response isn't enough?
+
+A: Then primary response from the other generators, inside ten seconds. If the frequency still falls below 48.8 Hz, low frequency demand disconnection takes blocks of demand off automatically. Nobody presses a button for that. It's set in the relays.
+
+Q: Which demand goes first?
+
+A: It's set region by region, in stages. Hospitals and the like are on protected circuits. It's planned years ahead, not on the day.
+
+Q: How often does it get that far?
+
+A: Rarely. Once in my career. <b>Most days</b> you'd never know a unit had tripped.`;
+
+    const GRID_ITEMS = [
+      { id: 'RUL-1', title: 'Inertia slows the fall', quote: 'Inertia from everything still spinning slows the fall' },
+      { id: 'RUL-2', title: 'Batteries respond first', quote: 'Within two seconds the fast frequency response kicks in from batteries' },
+      { id: 'PAR-1', title: 'Fast response: within 2 s', quote: 'Within two seconds' },
+      { id: 'RUL-3', title: 'Demand disconnected below the floor', quote: 'If the frequency still falls below 48.8 Hz, low frequency demand disconnection takes blocks of demand off automatically' },
+      { id: 'PAR-2', title: 'Frequency floor: 49.2 Hz', quote: 'falls below 49.2 Hz' }
+    ];
+
+    // ---- A rail junction: the track plan, the rule book and the notes ----
+
+    const TRACK_PLAN = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" font-family="Helvetica, Arial, sans-serif">
+      <rect width="640" height="300" fill="#fff"/>
+      <text x="24" y="34" font-size="18" font-weight="bold" fill="#222">Hale Junction: track plan</text>
+      <path d="M20 200 H620" stroke="#222" stroke-width="5"/>
+      <path d="M300 200 C380 200 420 110 500 110 H620" stroke="#222" stroke-width="5" fill="none"/>
+      <circle cx="300" cy="200" r="9" fill="none" stroke="#c00" stroke-width="3"/><text x="286" y="232" font-size="13" fill="#c00">P1 points</text>
+      <path d="M120 200 V160 M120 160 H140" stroke="#222" stroke-width="3"/><circle cx="148" cy="160" r="8" fill="#c00"/><text x="104" y="150" font-size="13">J1</text>
+      <path d="M250 200 V160 M250 160 H270" stroke="#222" stroke-width="3"/><circle cx="278" cy="160" r="8" fill="#c00"/><text x="234" y="150" font-size="13">J2</text>
+      <text x="520" y="96" font-size="13" fill="#555">to Westby</text><text x="520" y="226" font-size="13" fill="#555">to Northgate</text>
+    </svg>`;
+
+    const PLAN_SOURCE = {
+      id: 'SRC-11', title: 'Track plan of Hale Junction', path: 'sources/plans/hale-junction.svg', format: 'image',
+      author: 'Network infrastructure office', authored: '2025-03-01', status: 'catalogued', stance: 'assertive', sensitivity: 'internal',
+      summary: 'Where the signals and points sit at the junction.'
+    };
+
+    const PLAN_ITEMS = [
+      { id: 'ENT-1', title: 'Signal J1', region: [0.15, 0.44, 0.1, 0.14] },
+      { id: 'ENT-2', title: 'Signal J2', region: [0.355, 0.44, 0.1, 0.14] },
+      { id: 'ENT-3', title: 'Points P1', region: [0.43, 0.6, 0.12, 0.2] }
+    ];
+
+    const RULES_SOURCE = {
+      id: 'SRC-12', title: 'Rule book, section 4: junction working', path: 'sources/rules/section-4.pdf', format: 'pdf',
+      author: 'Rail safety board', authored: '2024-11-20', status: 'reviewed', stance: 'assertive', sensitivity: 'public',
+      summary: 'How trains and signallers work a junction.'
+    };
+
+    const RULE_BOOK = 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFs0IDAgUiA2IDAgUl0gL0NvdW50IDIgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvVGltZXMtUm9tYW4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA1OTUgODQyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSAzIDAgUiA+PiA+PiAvQ29udGVudHMgNSAwIFIgPj4KZW5kb2JqCjUgMCBvYmoKPDwgL0xlbmd0aCA0MzQgPj4Kc3RyZWFtCkJUIC9GMSAxNiBUZiA2MCA3NDAgVGQgKFJ1bGUgYm9vazogU2VjdGlvbiA0LiBKdW5jdGlvbiB3b3JraW5nKSBUaiBFVApCVCAvRjEgMTMgVGYgNjAgNzE4IFRkICgpIFRqIEVUCkJUIC9GMSAxMyBUZiA2MCA2OTYgVGQgKDQuMSBBIHRyYWluIG11c3Qgbm90IHBhc3Mgc2lnbmFsIEoyIGF0IGRhbmdlcikgVGogRVQKQlQgL0YxIDEzIFRmIDYwIDY3NCBUZCAodW5sZXNzIGF1dGhvcmlzZWQgYnkgdGhlIHNpZ25hbGxlci4pIFRqIEVUCkJUIC9GMSAxMyBUZiA2MCA2NTIgVGQgKCkgVGogRVQKQlQgL0YxIDEzIFRmIDYwIDYzMCBUZCAoNC4yIFRoZSBwb2ludHMgYXQgSGFsZSBKdW5jdGlvbiBhcmUgc2V0IGJ5IHRoZSkgVGogRVQKQlQgL0YxIDEzIFRmIDYwIDYwOCBUZCAoc2lnbmFsbGVyIGFuZCBsb2NrZWQgYmVmb3JlIGEgcm91dGUgaXMgY2xlYXJlZC4pIFRqIEVUCmVuZHN0cmVhbQplbmRvYmoKNiAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDU5NSA4NDJdIC9SZXNvdXJjZXMgPDwgL0ZvbnQgPDwgL0YxIDMgMCBSID4+ID4+IC9Db250ZW50cyA3IDAgUiA+PgplbmRvYmoKNyAwIG9iago8PCAvTGVuZ3RoIDQwNyA+PgpzdHJlYW0KQlQgL0YxIDE2IFRmIDYwIDc0MCBUZCAoUnVsZSBib29rOiBTZWN0aW9uIDQgKGNvbnRpbnVlZCkpIFRqIEVUCkJUIC9GMSAxMyBUZiA2MCA3MTggVGQgKCkgVGogRVQKQlQgL0YxIDEzIFRmIDYwIDY5NiBUZCAoNC4zIFNwZWVkIHRocm91Z2ggdGhlIGRpdmVyZ2luZyByb3V0ZSBpcyBsaW1pdGVkKSBUaiBFVApCVCAvRjEgMTMgVGYgNjAgNjc0IFRkICh0byA0MCBrbS9oLikgVGogRVQKQlQgL0YxIDEzIFRmIDYwIDY1MiBUZCAoKSBUaiBFVApCVCAvRjEgMTMgVGYgNjAgNjMwIFRkICg0LjQgV2hlbiB0aGUganVuY3Rpb24gaXMgYmxvY2tlZCwgdHJhaW5zIGFyZSBoZWxkKSBUaiBFVApCVCAvRjEgMTMgVGYgNjAgNjA4IFRkIChhdCBzaWduYWwgSjEgYW5kIHRoZSBjb250cm9sIG9mZmljZSBpcyB0b2xkLikgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgOAowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTIxIDAwMDAwIG4gCjAwMDAwMDAxOTMgMDAwMDAgbiAKMDAwMDAwMDMxOSAwMDAwMCBuIAowMDAwMDAwODA0IDAwMDAwIG4gCjAwMDAwMDA5MzAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA4IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgoxMzg4CiUlRU9GCg==';
+
+    const RULES_ITEMS = [
+      { id: 'RUL-7', title: 'No passing J2 at danger', page: 1, quote: 'A train must not pass signal J2 at danger' },
+      { id: 'RUL-8', title: 'Diverging route: 40 km/h', page: 2, quote: 'limited to 40 km/h' },
+      { id: 'RUL-9', title: 'Hold at J1 when blocked', page: 2, quote: 'trains are held at signal J1' }
+    ];
+
+    const HANDOVER_NOTES = `# Hale Junction: shift handover
+
+Written by the night signaller for the morning shift.
+
+## Points
+
+- **P1** stiff when cold. Allow *an extra minute* to set and lock before clearing a route.
+- Fault logged with maintenance as \`FLT-2231\`.
+
+## Signals
+
+- J1 and J2 working normally.
+- Drivers report J2 is hard to see in low sun from the Northgate side.
+
+> Nothing else to hand over. Quiet night.`;
+
+    const NOTES_SOURCE = {
+      id: 'SRC-13', title: 'Shift handover notes', path: 'sources/notes/handover-2026-10-12.md', format: 'notes',
+      author: 'Night signaller', authored: '2026-10-12', status: 'inbox', stance: 'speculative', sensitivity: 'internal',
+      summary: 'What the night shift passed on about the points and signals.'
+    };
+
+    const NOTES_ITEMS = [
+      { id: 'ASM-1', title: 'Points take a minute longer in the cold', quote: 'stiff when cold. Allow *an extra minute* to set and lock' },
+      { id: 'QST-2', title: 'Is J2 visible enough?', quote: 'J2 is hard to see in low sun' }
+    ];
+
+    // ---- Start ----
+
+    showExample('grid', { source: GRID_SOURCE, content: GRID_TEXT, items: GRID_ITEMS }).current = 'RUL-3';
+    showExample('plan', { source: PLAN_SOURCE, url: `data:image/svg+xml,${encodeURIComponent(TRACK_PLAN)}`, items: PLAN_ITEMS });
+    showExample('rules', { source: RULES_SOURCE, url: RULE_BOOK, items: RULES_ITEMS }).current = 'RUL-8';
+    showExample('notes', { source: NOTES_SOURCE, content: HANDOVER_NOTES, items: NOTES_ITEMS });
+  </script>
+</body>
+</html>
