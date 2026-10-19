@@ -1,5 +1,8 @@
 # sb-source changelog
 
+## 0.1.2 · 2026-10-19
+- The folded corner is lighter, mixed from the paper and the text colour rather than black, so it reads as a turned page in dark themes as well as light, and matches `sb-sources`' cards.
+
 ## 0.1.1 · 2026-10-19
 - JSON shows exactly as the file is, no longer re-laid out, so a quote copied from it is in the file and the sources check agrees. HTML is set in fixed-width type, as code.
 - Folding keeps every less indented line above a passage too, so a field in JSON or YAML keeps the structure it sits in.

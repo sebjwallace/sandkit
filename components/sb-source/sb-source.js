@@ -1,4 +1,4 @@
-// Sandkit sb-source 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-source 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // One source, with the passages the model cites marked where they are. Quotes it can't find are
 // listed as not found, never hidden. A source's text is never rendered as markup.
 //
@@ -58,7 +58,7 @@
     .sb-source__sheet { --sb-source-sheet: var(--sb-source-paper, color-mix(in srgb, var(--sb-surface, #fff) 94%, #f3e2b8)); position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 14px 6px 6px 0; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.14)) drop-shadow(0 5px 12px rgba(0, 0, 0, 0.2)); }
     .sb-source__sheet::before, .sb-source__page { clip-path: polygon(0 0, calc(100% - var(--sb-source-fold)) 0, 100% var(--sb-source-fold), 100% 100%, 0 100%); }
     .sb-source__sheet::before { content: ''; position: absolute; inset: 5px -5px -5px 5px; border: 1px solid var(--sb-source-edge); border-radius: 2px; background: color-mix(in srgb, var(--sb-source-sheet) 75%, var(--sb-bg, #f4f5f7)); }
-    .sb-source__sheet::after { content: ''; position: absolute; top: 0; right: 0; width: var(--sb-source-fold); height: var(--sb-source-fold); border-left: 1px solid var(--sb-source-edge); border-bottom: 1px solid var(--sb-source-edge); border-bottom-left-radius: 2px; background: linear-gradient(to top right, color-mix(in srgb, var(--sb-source-sheet) 72%, #000) 50%, transparent 50%); }
+    .sb-source__sheet::after { content: ''; position: absolute; top: 0; right: 0; width: var(--sb-source-fold); height: var(--sb-source-fold); border-left: 1px solid var(--sb-source-edge); border-bottom: 1px solid var(--sb-source-edge); border-bottom-left-radius: 2px; background: linear-gradient(to top right, color-mix(in srgb, var(--sb-source-sheet) 84%, var(--sb-text, #1f2933)) 50%, transparent 50%); }
     .sb-source__page { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 18px 30px 0 26px; border: 1px solid var(--sb-source-edge); border-radius: 2px; background: linear-gradient(135deg, color-mix(in srgb, var(--sb-source-sheet) 97%, #fff), var(--sb-source-sheet) 45%, color-mix(in srgb, var(--sb-source-sheet) 93%, #000)); }
     /* The paper's top line stays put while the text under it scrolls, keeping its controls to hand. */
     .sb-source__running { flex: none; display: flex; align-items: center; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--sb-border, #d5d9e0); }
