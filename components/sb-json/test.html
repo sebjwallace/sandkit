@@ -191,15 +191,45 @@
 
     // ---- Notes ----
 
-    test('a noted path is marked where it starts, and its note shows when selected', () => {
+    const noteShown = (el) => note(el).matches(':popover-open');
+
+    test('a noted path is marked where it starts', () => {
       const el = json();
       el.notes = { customer: 'Who placed the order.' };
       assertEqual(linesWith(el, 'noted'), ['3']);
-      assert(note(el).hidden, 'hidden until selected');
+    });
+
+    test('pointing at a noted line shows its note in a card above it, moving nothing', () => {
+      const el = json();
+      el.notes = { customer: 'Who placed the order.' };
+      const code = el.querySelector('.sb-json__code').getBoundingClientRect().top;
+      assert(!noteShown(el), 'hidden until pointed at');
+      hover(line(el, 'customer'));
+      assertEqual([noteShown(el), note(el).textContent], [true, 'Who placed the order.']);
+      assertEqual(el.querySelector('.sb-json__code').getBoundingClientRect().top, code, 'the code stays put');
+      assert(note(el).getBoundingClientRect().bottom <= line(el, 'customer').getBoundingClientRect().top, 'above the line');
+      hover(line(el, 'id'));
+      assert(!noteShown(el), 'hidden on a line without one');
+      hover(line(el, 'customer'));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assert(!noteShown(el), 'hidden on leaving');
+    });
+
+    test('a focused noted line shows its note, and the line is described by it', () => {
+      const el = json();
+      el.notes = { customer: 'Who placed the order.' };
+      line(el, 'customer').focus();
+      assert(noteShown(el), 'shown');
+      assertEqual(line(el, 'customer').getAttribute('aria-describedby'), note(el).id);
+      press('ArrowDown');
+      assert(!noteShown(el), 'gone when focus moves on');
+    });
+
+    test('selecting a noted path doesn\'t keep its note on show', () => {
+      const el = json();
+      el.notes = { customer: 'Who placed the order.' };
       el.selected = 'customer';
-      assertEqual([note(el).hidden, note(el).textContent], [false, 'Who placed the order.']);
-      el.selected = 'id';
-      assert(note(el).hidden, 'hidden for a path without one');
+      assert(!noteShown(el));
     });
 
     // ---- Highlighting ----
@@ -254,6 +284,7 @@
       el.value = { '<b>k</b>': '<i>v</i>' };
       el.notes = { '["<b>k</b>"]': '<img src=x>' };
       el.selected = '["<b>k</b>"]';
+      hover(line(el, '["<b>k</b>"]'));
       assertEqual(el.querySelectorAll('b, i, img').length, 0);
       assertEqual(bar(el), '["<b>k</b>"]');
       assertEqual(note(el).textContent, '<img src=x>');

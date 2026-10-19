@@ -1,7 +1,7 @@
-// Sandkit sb-json 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-json 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // JSON shown cleanly, with the parts that matter in the spotlight and the rest folded away, so
 // prose about a large payload can point at exactly the lines it means. Clicking a line shows its
-// path, and any note the sandbox wrote for it.
+// path; pointing at one shows any note the sandbox wrote for it.
 //
 //   json.value = { order: { id: 'A1', total: 4200, items: [...] } };
 //   json.spotlight = ['order.total'];
@@ -28,8 +28,7 @@
     .sb-json__toggle { padding: 3px 10px; font: inherit; font-size: 12px; color: var(--sb-text, #1f2933); background: var(--sb-surface-2, #eef0f3); border: 0; border-radius: var(--sb-radius, 8px); cursor: pointer; }
     .sb-json__toggle[hidden] { display: none; }
     .sb-json__toggle:focus-visible { outline: 2px solid var(--sb-accent, #2563eb); outline-offset: 1px; }
-    .sb-json__note { margin-bottom: 6px; padding: 6px 10px; border-left: 3px solid var(--sb-accent, #2563eb); border-radius: 0 var(--sb-radius, 8px) var(--sb-radius, 8px) 0; background: var(--sb-accent-soft, #eaf0ff); color: var(--sb-text, #1f2933); }
-    .sb-json__note[hidden] { display: none; }
+    .sb-json__note { position: fixed; inset: auto; margin: 0; max-width: 300px; padding: 6px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-top: 3px solid var(--sb-accent, #2563eb); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); font: 13px/1.45 var(--sb-font, system-ui, sans-serif); }
     .sb-json__code { max-height: var(--sb-json-height, none); overflow: auto; padding: 6px 0; border-radius: var(--sb-radius, 8px); background: var(--sb-surface-2, #eef0f3); font: 12.5px/1.6 ui-monospace, Menlo, Consolas, monospace; }
     .sb-json__line, .sb-json__gap { display: flex; padding-right: 12px; cursor: pointer; outline: none; }
     .sb-json__line:focus-visible, .sb-json__gap:focus-visible { box-shadow: inset 0 0 0 2px var(--sb-accent, #2563eb); }
@@ -49,6 +48,9 @@
     .sb-json__number, .sb-json__literal { color: var(--sb-warn, #b7791f); }
     .sb-json__punct { color: var(--sb-muted, #616e7c); }
     .sb-json__empty { color: var(--sb-muted, #616e7c); }`;
+
+  const NOTE_GAP = 6;
+  const VIEWPORT_MARGIN = 8;
 
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const isContainer = (value) => value !== null && typeof value === 'object';
@@ -103,6 +105,8 @@
     return { lines, values };
   }
 
+  let instanceCount = 0; // links each instance's noted lines to its own note card
+
   class SbJson extends HTMLElement {
     static origin = ORIGIN;
     static observedAttributes = ['expanded', 'empty-text'];
@@ -118,16 +122,32 @@
       this._selected = null;
       this._hovered = null;
       this._opened = new Set(); // lines a viewer unfolded by clicking a gap
+      this._noteId = `sb-json-note-${++instanceCount}`;
       this.addEventListener('click', (e) => this._click(e));
       this.addEventListener('keydown', (e) => this._key(e));
-      this.addEventListener('pointerover', (e) => this._hover(e.target.closest('.sb-json__line')?.dataset.path ?? null));
-      this.addEventListener('pointerleave', () => this._hover(null));
+      this.addEventListener('pointerover', (e) => {
+        const row = e.target.closest('.sb-json__line');
+        this._hover(row?.dataset.path ?? null);
+        this._showNote(row);
+      });
+      this.addEventListener('pointerleave', () => {
+        this._hover(null);
+        this._showNote(null);
+      });
+      this.addEventListener('focusin', (e) => this._showNote(e.target.closest('.sb-json__line')));
+      this.addEventListener('focusout', (e) => { if (!this.contains(e.relatedTarget)) this._showNote(null); });
+      this._onScroll = () => this._showNote(null);
     }
 
     connectedCallback() {
       addStyle();
       this.classList.add('sb-json');
+      document.addEventListener('scroll', this._onScroll, { capture: true, passive: true });
       this.render();
+    }
+
+    disconnectedCallback() {
+      document.removeEventListener('scroll', this._onScroll, { capture: true });
     }
 
     attributeChangedCallback() { this.render(); }
@@ -154,7 +174,7 @@
     get expanded() { return this.hasAttribute('expanded'); }
     set expanded(on) { this.toggleAttribute('expanded', Boolean(on)); }
 
-    // { path: text }: what a part means, shown when it's selected or pointed at.
+    // { path: text }: what a part means, shown beside a line of it while pointed at or focused.
     get notes() { return this._notes; }
     set notes(notes) {
       this._notes = notes || {};
@@ -191,8 +211,8 @@
           <span class="sb-json__path"></span>
           <button type="button" class="sb-json__toggle"></button>
         </div>
-        <div class="sb-json__note" hidden></div>
-        <div class="sb-json__code" role="listbox" aria-label="JSON">${this._rowsHtml()}</div>`;
+        <div class="sb-json__code" role="listbox" aria-label="JSON">${this._rowsHtml()}</div>
+        <div class="sb-json__note" id="${this._noteId}" popover="manual" role="tooltip"></div>`;
       this._showState();
       if (focusedPath != null) this._line(focusedPath)?.focus();
     }
@@ -239,6 +259,8 @@
         row.classList.toggle('sb-json__line--hovered', this._hovered != null && within(path, this._hovered));
         row.classList.toggle('sb-json__line--highlighted', inAny(path, pointed));
         row.classList.toggle('sb-json__line--noted', line.starts && this._notes[path] != null);
+        if (this._notes[path] != null) row.setAttribute('aria-describedby', this._noteId);
+        else row.removeAttribute('aria-describedby');
         row.setAttribute('aria-selected', String(path === this._selected));
       }
       for (const gap of this.querySelectorAll('.sb-json__gap')) {
@@ -249,19 +271,36 @@
       this._rove();
     }
 
-    // The bar names the path being pointed at, or else the selected one, with its note.
+    // The bar names the path being pointed at, or else the selected one.
     _showBar() {
       const path = this._hovered ?? this._selected;
       const label = this.querySelector('.sb-json__path');
       label.classList.toggle('sb-json__path--empty', path == null);
       label.textContent = path == null ? 'Click a line to see its path.' : path === '' ? '(the whole document)' : path;
-      const note = this.querySelector('.sb-json__note');
-      note.textContent = path == null ? '' : this._notes[path] ?? '';
-      note.hidden = !note.textContent;
       const toggle = this.querySelector('.sb-json__toggle');
       toggle.hidden = !this._spotlight.length;
       toggle.textContent = this.expanded ? 'Fold the rest' : `Show all ${this._lines.length} lines`;
       toggle.setAttribute('aria-pressed', String(this.expanded));
+    }
+
+    // A line's note, in a card just above it, or below when there's no room. The card sits in the
+    // top layer, so nothing in the page moves and no scrolling box clips it.
+    _showNote(row) {
+      const card = this.querySelector('.sb-json__note');
+      const note = row ? this._notes[row.dataset.path] : null;
+      if (!card || row === this._noteRow) return;
+      this._noteRow = note == null ? null : row;
+      if (note == null) {
+        if (card.matches(':popover-open')) card.hidePopover();
+        return;
+      }
+      card.textContent = note;
+      card.showPopover();
+      const start = (row.querySelector('.sb-json__text > span') ?? row).getBoundingClientRect();
+      const above = start.top - NOTE_GAP - card.offsetHeight;
+      const left = Math.min(start.left, innerWidth - card.offsetWidth - VIEWPORT_MARGIN);
+      card.style.left = `${Math.max(VIEWPORT_MARGIN, left)}px`;
+      card.style.top = `${above >= VIEWPORT_MARGIN ? above : start.bottom + NOTE_GAP}px`;
     }
 
     // One row takes Tab: the selected line if shown, else the first row.

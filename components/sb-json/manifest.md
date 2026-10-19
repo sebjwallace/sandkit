@@ -2,7 +2,7 @@
 
 JSON shown cleanly, with the parts that matter in the spotlight and everything else folded away. Use it wherever a sandbox talks about data: an API response, a message between services, a configuration, a record the model produces. Real payloads are long, and prose about them usually means a few lines; the spotlight shows just those lines, in place, with the structure around them.
 
-The whole document is always inside. Viewers can unfold any gap, or show everything with the spotlit parts still marked. Clicking a line shows its path in a bar above the code, with the sandbox's note for it, so the JSON carries its own documentation.
+The whole document is always inside. Viewers can unfold any gap, or show everything with the spotlit parts still marked. Clicking a line shows its path in a bar above the code, and pointing at one shows the sandbox's note for it, so the JSON carries its own documentation.
 
 Use this component through the interface below. You don't need to read its source.
 
@@ -45,7 +45,7 @@ Paths are matched exactly as written, so copy them from the bar: click a line an
 | `value` | Any JSON value. A copy is kept, as `JSON.stringify` would write it. To show JSON text, set `JSON.parse(text)`. Setting it folds any gaps the viewer opened. |
 | `spotlight` | Paths that matter. Only these, and the lines that open and close around them, show; each run of other lines folds into a gap such as `⋯ 12 lines`, which a viewer can click to unfold. Empty shows everything. Setting it folds any opened gaps again. |
 | `expanded` | Whether everything shows. Mirrors the attribute. |
-| `notes` | `{ path: text }`. A noted path is marked with a small ring where it starts; its note shows under the bar when it's selected or pointed at. |
+| `notes` | `{ path: text }`. A noted path is marked with a small ring where it starts; its note shows in a card beside a line of it while that line is pointed at or focused. |
 | `selected` | The selected path, or `null`. Its lines are shaded, and the bar shows it. |
 | `highlight` | Paths to point at, shaded more strongly. One inside a folded gap marks the gap. |
 
@@ -62,6 +62,7 @@ Setting properties never fires the events below; they are for what viewers do.
 
 - **Pointing at a line** shades the part it belongs to and names its path in the bar, so a viewer sees what a click would select. Leaving shows the selection again.
 - **The bar** shows the path pointed at or selected, and the toggle when there's a spotlight.
+- **A note** shows in a card just above the line pointed at or focused, or below when there's no room. The card sits over the page, in the top layer, so nothing moves and no scrolling box clips it; it goes when the pointer leaves, focus moves on or the page scrolls. Noted lines are described by it, for screen readers.
 - **Line numbers** are the full document's, so they stay the same when lines fold.
 
 ## Keyboard
@@ -70,11 +71,11 @@ The code takes one Tab stop. Up and Down move through the lines and gaps; Home a
 
 ## Styling
 
-Theme tokens: `--sb-text`, `--sb-muted`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-good` (strings), `--sb-warn` (numbers, `true`, `false`, `null`), `--sb-font`, `--sb-radius`.
+Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-good` (strings), `--sb-warn` (numbers, `true`, `false`, `null`), `--sb-font`, `--sb-radius`.
 
 Its own custom property, to set on the element: `--sb-json-height` (the code's greatest height before it scrolls; default none).
 
-Classes: `sb-json__bar`, `sb-json__path` (`--empty`), `sb-json__toggle`, `sb-json__note`, `sb-json__code`, `sb-json__line` (`--spotlit`, `--selected`, `--hovered`, `--highlighted`, `--noted`), `sb-json__gap` (`--holds-highlight`), `sb-json__gutter`, `sb-json__text`, `sb-json__key`, `sb-json__string`, `sb-json__number`, `sb-json__literal`, `sb-json__punct`, `sb-json__empty`. Lines carry `data-path`.
+Classes: `sb-json__bar`, `sb-json__path` (`--empty`), `sb-json__toggle`, `sb-json__note` (the card), `sb-json__code`, `sb-json__line` (`--spotlit`, `--selected`, `--hovered`, `--highlighted`, `--noted`), `sb-json__gap` (`--holds-highlight`), `sb-json__gutter`, `sb-json__text`, `sb-json__key`, `sb-json__string`, `sb-json__number`, `sb-json__literal`, `sb-json__punct`, `sb-json__empty`. Lines carry `data-path`.
 
 ## Works well with
 

@@ -41,12 +41,12 @@
   <main>
     <h2 class="part">About</h2>
     <article class="guide">
-      <p>Reading about data usually means jumping between a paragraph and a long block of JSON, hunting for the three lines the paragraph is talking about. This component keeps the whole document but puts those lines in the spotlight: everything else folds away into quiet gaps, and the lines that open and close around them stay, so you still see where they live. Unfold a gap, or show everything, whenever you want the full picture. Click any line to see its path, and the note the sandbox wrote for it.</p>
+      <p>Reading about data usually means jumping between a paragraph and a long block of JSON, hunting for the three lines the paragraph is talking about. This component keeps the whole document but puts those lines in the spotlight: everything else folds away into quiet gaps, and the lines that open and close around them stay, so you still see where they live. Unfold a gap, or show everything, whenever you want the full picture. Click any line to see its path, and point at one to read the note the sandbox wrote for it.</p>
 
       <h3>Where it helps</h3>
       <ul>
         <li><strong>Explaining a payload.</strong> An API response, a message on a queue, an event, a saved file: prose points at the fields it discusses, and the JSON narrows to them.</li>
-        <li><strong>Documenting data in place.</strong> Notes on paths turn the JSON into its own reference: click a field to read what it means.</li>
+        <li><strong>Documenting data in place.</strong> Notes on paths turn the JSON into its own reference: point at a field to read what it means.</li>
         <li><strong>Showing what the model produces.</strong> When the model builds a record or a message, show it as it really is, spotlighting the part the current step changed.</li>
       </ul>
 
@@ -65,7 +65,7 @@
   const json = document.querySelector('sb-json');
   json.value = response;                         // any JSON value
   json.spotlight = ['order.total'];              // fold the rest away
-  json.notes = { 'order.total': 'In pence.' };   // shown when it's clicked
+  json.notes = { 'order.total': 'In pence.' };   // shown when it's pointed at
 &lt;/script&gt;</pre>
       <p>Paths are written as code would reach the part: <code>order.items[0].price</code>. You don't need to work them out: click a line and its path is in the bar above the code, ready to copy. Viewers unfold a gap by clicking it, and show everything with the toggle; the spotlit lines stay marked either way.</p>
 
@@ -83,7 +83,7 @@
     <h2 class="part">Examples</h2>
     <section class="example">
       <h2>An online order</h2>
-      <p>Point at a dashed word to see where it lives; click a solid one to bring it into the spotlight. Click any line for its path and note.</p>
+      <p>Point at a dashed word to see where it lives; click a solid one to bring it into the spotlight. Click any line for its path; point at a ringed one for its note.</p>
       <p class="prose">
         The shop charges the
         <button class="act" data-path="payment.amount">amount</button>, which should equal the
