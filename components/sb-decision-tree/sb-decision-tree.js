@@ -1,4 +1,4 @@
-// Sandkit sb-decision-tree 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-decision-tree 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A decision tree: questions that branch on their answers down to outcomes. Shows the way one case
 // went, with its value at each question, and which other answers would have changed the outcome.
 //
@@ -87,10 +87,12 @@
       Object.assign(item, measure(item.lines));
       items.push(item);
       item.children = children.map((child) => build(child, depth + 1, item));
-      item.outcomes = item.leaf ? [text] : unique(item.children.flatMap((c) => c.outcomes));
+      // { key: text }: an outcome is known by its key, or else its text, so outcomes worded alike
+      // are one outcome unless keyed apart.
+      item.outcomes = item.leaf ? new Map([[String(node.key ?? text), text]]) : new Map(item.children.flatMap((c) => [...c.outcomes]));
       if (parent) {
         item.answer = [node.answer, counts[item.id]].filter(present).join(' · ');
-        item.otherwise = `→ ${listed(item.outcomes)}`;
+        item.otherwise = `→ ${listed(unique([...item.outcomes.values()]))}`;
         item.labelWidth = Math.max(item.answer.length, item.otherwise.length) * LABEL.charWidth + LABEL.padding;
       }
       item.along = sideways ? item.width : item.height;
@@ -321,11 +323,11 @@
       const onPath = new Set(path);
       const tracing = path.length > 0;
       const end = this._items.get(path.at(-1));
-      const outcome = end?.leaf ? end.outcomes[0] : null;
+      const outcome = end?.leaf ? [...end.outcomes.keys()][0] : null;
 
       const wentOnFrom = (item) => onPath.has(item.id) && item.children.some((c) => onPath.has(c.id));
       const taken = (item) => onPath.has(item.id) && onPath.has(item.parent.id);
-      const alternative = (item) => !onPath.has(item.id) && wentOnFrom(item.parent) && item.outcomes.some((o) => o !== outcome);
+      const alternative = (item) => !onPath.has(item.id) && wentOnFrom(item.parent) && [...item.outcomes.keys()].some((o) => o !== outcome);
 
       for (const el of this.querySelectorAll('[data-node-id]')) {
         const id = el.dataset.nodeId;

@@ -145,6 +145,21 @@
       assert(has(branch(el, 'tshirt'), 'alternative'), 'still windy would not');
     });
 
+    test('outcomes worded alike are one outcome, unless their keys tell them apart', () => {
+      const keyed = (key) => ({ ...WEAR, children: [WEAR.children[0], { ...WEAR.children[1], children: [
+        { id: 'jumper', answer: 'yes', outcome: 'Jumper', key: 'thick' },
+        { ...WEAR.children[1].children[1], children: [{ id: 'jumper-too', answer: 'yes', outcome: 'Jumper', key }, { id: 'tshirt', answer: 'no', outcome: 'T-shirt' }] }
+      ] }] });
+      const toThinJumper = [{ id: 'rain' }, { id: 'cold' }, { id: 'windy' }, { id: 'jumper-too' }];
+      const el = tree(keyed('thin'));
+      el.trace = toThinJumper;
+      assert(has(branch(el, 'jumper'), 'alternative'), 'a thick jumper is another outcome');
+      assertEqual(otherwise(el, 'cold').textContent, '→ Jumper or T-shirt', 'each wording listed once');
+      el.root = keyed('thick');
+      el.trace = toThinJumper;
+      assert(!has(branch(el, 'jumper'), 'alternative'), 'the same key is the same outcome');
+    });
+
     test('a case still on its way marks every answer not taken', () => {
       const el = tree();
       el.trace = [{ id: 'rain', value: 'no' }, { id: 'cold' }];

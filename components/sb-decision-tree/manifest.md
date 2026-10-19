@@ -37,7 +37,8 @@ Use this component through the interface below. You don't need to read its sourc
 |---|---|---|
 | `id` | yes | Identifies the node, unique across the tree. Numbers are treated as text. |
 | `question` | no | A question's text, with `\n` between lines. Defaults to `id`. |
-| `outcome` | no | An outcome's text. Defaults to `id`. Outcomes with the same text are the same outcome. |
+| `outcome` | no | An outcome's text. Defaults to `id`. Outcomes with the same text are the same outcome, unless `key` tells them apart. |
+| `key` | no | What makes an outcome the same as another, when its text isn't enough: outcomes with the same `key` are the same, whatever their text. |
 | `answer` | no | Labels the branch into this node from its question. |
 | `tone` | no | `good`, `warn` or `bad`, coloured with the theme's status tokens. Most useful on outcomes. |
 | `children` | no | The answers to a question, in order. |
@@ -87,7 +88,7 @@ Suggestions only: nothing here is wired in. The sandbox composes these itself.
 ## Notes
 
 - **Layout:** each outcome takes the next place across, and each question sits centred over its answers, so nothing overlaps. Answers sit on the branches, with room left for what they lead to.
-- **Size:** drawn at its real size, never scaled. It takes the width of its container, and a wider tree scrolls within it rather than shrinking its text. Made for trees of up to a few dozen outcomes.
+- **Size:** drawn at its real size, never scaled. It takes the width of its container, and a wider tree scrolls within it rather than shrinking its text. Made for trees of up to a few dozen outcomes. To bring a node into view, scroll to its `data-ref`, which scrolls the tree and the page alike: the sandbox's `goTo(id)` does it (see the [locating practice](../../practices/locating.md)), or `tree.querySelector('[data-ref="…"]').scrollIntoView({ block: 'nearest', inline: 'nearest' })`. The tree never hides a node, so it has no `reveal`.
 - **Left for later:** each outcome's mix of cases (how sure it is), editing the tree, and folding branches away wait until a sandbox needs them.
 - **Dependencies:** none.
 - **Export:** safe for single-file export. Classic script, no fetches, no external assets.
