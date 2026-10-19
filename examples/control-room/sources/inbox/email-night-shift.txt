@@ -1,0 +1,4 @@
+From: Night shift supervisor
+Subject: Booking response on windy nights
+
+Saw the workshop notes. One thing: on the busiest nights the battery providers sometimes can't take a booking at short notice. If the button is there, it should say when a booking was refused, not just go grey.

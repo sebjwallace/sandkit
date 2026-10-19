@@ -6,6 +6,7 @@ Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking
 
 ## 0.2.35 · 2026-10-19
 - Forty-six components: added `sb-source-trace`, why something in the model is there as one graph flowing left to right, from the sources to what rests on it. `tools/analyse.mjs trace` runs it from Node. The sources practice gains "Tracing", with trace mode; the locating practice lists it.
+- A fourth example, `examples/control-room/`: a power grid control room's frequency screen, every part traceable to invented but realistic sources, with Sources and Trace in the header. Served from Sandkit's root.
 
 ## 0.2.34 · 2026-10-19
 - Forty-five components: added `sb-sources`, a sandbox's source material as cards of paper to search, filter and sort, with how many sources each filter value would show, a slider for the dates written, replaced sources marked and files not yet catalogued listed apart. The sources and locating practices list it.

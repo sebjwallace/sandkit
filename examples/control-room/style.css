@@ -1,0 +1,46 @@
+body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+main { max-width: var(--sb-page-width, 1100px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+
+.chapter, .panel { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+.chapter h2 { margin: 0 0 6px; font-size: 18px; }
+.chapter p { margin: 0 0 8px; max-width: 75ch; }
+.try { padding: 8px 12px; border-left: 3px solid var(--sb-accent); background: var(--sb-accent-soft); border-radius: 0 var(--sb-radius) var(--sb-radius) 0; }
+.panel h3 { margin: 0 0 10px; font-size: 14px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 760px) { .stage { grid-template-columns: 1fr; } }
+
+/* The operator's screen. */
+.warning { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 2px solid var(--sb-warn); border-radius: 6px; font-weight: 600; }
+.warning[hidden] { display: none; }
+.is-booked { opacity: 0.75; }
+.readouts > .readout { flex: 1; }
+.readout { display: grid; gap: 2px; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+.value { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.options { display: flex; gap: 16px; margin-bottom: 8px; font-size: 14px; }
+.verdict { margin: 8px 0 0; font-weight: 600; }
+.verdict[data-tone="bad"] { color: var(--sb-bad); }
+.verdict[data-tone="good"] { color: var(--sb-good); }
+
+/* The header's own buttons, beside the shell's controls. */
+.header-button { padding: 5px 12px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); font: inherit; font-size: 13px; cursor: pointer; }
+.header-button:hover { border-color: var(--sb-muted); }
+.header-button[aria-pressed="true"] { border-color: var(--sb-accent); background: var(--sb-accent); color: var(--sb-accent-text, #fff); }
+
+/* Trace mode: a banner says so, and what can be traced is outlined as the pointer reaches it. */
+.trace-bar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 16px; background: var(--sb-accent); color: var(--sb-accent-text, #fff); font-size: 14px; }
+.trace-bar[hidden] { display: none; }
+.trace-bar button { padding: 3px 12px; border: 1px solid currentColor; border-radius: 999px; background: none; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.is-tracing main { cursor: help; }
+.is-tracing .is-traceable { outline: 2px dashed var(--sb-accent); outline-offset: 3px; cursor: pointer; }
+
+/* The modals: the trace wide enough for its graph, a source tall enough to read. */
+#sources-modal { --sb-modal-width: 960px; }
+#trace-modal { --sb-modal-width: 1240px; }
+#source-modal { --sb-modal-width: 900px; }
+#sources { height: 70vh; }
+#trace { height: 72vh; }
+#source { height: 72vh; }
+#serve-modal pre { padding: 8px 12px; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 13px ui-monospace, Menlo, Consolas, monospace; }

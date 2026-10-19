@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control Room Sandbox</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-wireframe/sb-wireframe.js"></script>
+  <script src="../../components/sb-chart/sb-chart.js"></script>
+  <script src="../../components/sb-controls/sb-controls.js"></script>
+  <script src="../../components/sb-modal/sb-modal.js"></script>
+  <script src="../../components/sb-sources/sb-sources.js"></script>
+  <script src="../../components/sb-source/sb-source.js"></script>
+  <script src="../../components/sb-source-trace/sb-source-trace.js"></script>
+  <script src="model.js"></script>
+</head>
+<body>
+  <sb-shell heading="Control Room Sandbox">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p><strong>Goal:</strong> see how the grid holds its frequency in the first seconds after its largest unit trips, and why the control room's new screen is designed the way it is, traced back to what operators and the standard said.</p>
+    <button type="button" slot="actions" class="header-button" id="sources-button">Sources</button>
+    <button type="button" slot="actions" class="header-button" id="trace-button" aria-pressed="false">Trace</button>
+  </sb-shell>
+
+  <div class="trace-bar" id="trace-bar" hidden>
+    <span><strong>Tracing.</strong> Click anything outlined to see why it's there.</span>
+    <button type="button" id="trace-stop">Stop tracing</button>
+  </div>
+
+  <main>
+    <section class="chapter">
+      <h2>Chapter 1 · The first seconds after a trip</h2>
+      <p>When the largest unit on the grid trips, 1,320 MW vanish at once and the frequency starts to fall. Everything still spinning slows the fall; batteries answer within two seconds, generators within ten. On windy nights there's less spinning, so the fall is faster, and the frequency can break its 49.5 Hz limit before help arrives. The operators' new screen is built for those nights.</p>
+      <p class="try"><strong>Try:</strong> choose a windy night and press play to trip the unit: the frequency breaks the limit. Reset, press <em>Book extra response</em> on the screen, and play again. Then press <strong>Trace</strong> in the header and click that button to see why it's there.</p>
+    </section>
+
+    <section class="stage">
+      <div class="panel">
+        <h3>The operator's screen</h3>
+        <sb-wireframe id="screen">
+          <section data-screen="frequency" heading="Frequency">
+            <div class="sb-wireframe__stack">
+              <div class="warning" data-ref="SCR-4" id="low-inertia">Low inertia tonight: a trip will fall fast.
+                <button class="sb-wireframe__primary" data-ref="SCR-3" id="book">Book extra response</button>
+              </div>
+              <div class="sb-wireframe__row readouts">
+                <div class="sb-wireframe__box readout" data-ref="SCR-1"><span class="label">Frequency</span><span class="value" id="frequency">50.00 Hz</span></div>
+                <div class="sb-wireframe__box readout" data-ref="SCR-2"><span class="label">Rate of fall</span><span class="value" id="rocof">0.00 Hz/s</span></div>
+              </div>
+              <div class="sb-wireframe__box status" data-ref="SCR-5"><span class="label">Demand disconnection</span> <span id="disconnection">Armed at 48.8 Hz, not needed</span></div>
+            </div>
+          </section>
+        </sb-wireframe>
+      </div>
+
+      <div class="panel">
+        <h3>Frequency after the trip</h3>
+        <div class="options">
+          <label><input type="radio" name="wind" value="calm" checked> Calm day</label>
+          <label><input type="radio" name="wind" value="windy"> Windy night</label>
+        </div>
+        <sb-chart id="chart"></sb-chart>
+        <sb-controls id="controls"></sb-controls>
+        <p class="verdict" id="verdict"></p>
+      </div>
+    </section>
+  </main>
+
+  <sb-modal id="sources-modal" heading="Source material">
+    <sb-sources id="sources"></sb-sources>
+  </sb-modal>
+
+  <sb-modal id="trace-modal" heading="Why it's there">
+    <sb-source-trace id="trace"></sb-source-trace>
+  </sb-modal>
+
+  <sb-modal id="source-modal" heading="Source">
+    <sb-source id="source"></sb-source>
+  </sb-modal>
+
+  <sb-modal id="serve-modal" heading="This needs the sandbox served">
+    <p>Sources are read from the sandbox's own files, which a page opened by double-clicking can't do. From a Sandkit clone, run:</p>
+    <pre>node tools/serve.mjs examples/control-room</pre>
+    <p>and open the address it gives. Everything else works either way.</p>
+  </sb-modal>
+
+  <script>
+    // Declare everything first; the sandbox starts at the bottom.
+
+    const model = createModel();
+    const $ = (id) => document.getElementById(id);
+    const served = location.protocol !== 'file:';
+    const traceable = new Set(model.items.map((item) => item.id));
+    let catalogue = [];
+
+    // ---- The screen and the chart ----
+
+    function render() {
+      const { state, limits } = model;
+      const tripped = state.tripped;
+      $('frequency').textContent = `${state.frequency.toFixed(2)} Hz`;
+      $('rocof').textContent = `${tripped ? state.rocof.toFixed(2) : '0.00'} Hz/s`;
+      $('low-inertia').hidden = !model.lowInertia;
+      $('book').textContent = model.options.extraBooked ? 'Extra response booked' : 'Book extra response';
+      $('book').classList.toggle('is-booked', model.options.extraBooked);
+      $('disconnection').textContent = state.disconnected ? 'Disconnected 1,500 MW of demand' : 'Armed at 48.8 Hz, not needed';
+
+      $('chart').data = {
+        series: [{ label: 'Frequency', values: state.history }],
+        lines: [{ value: limits.limit, label: 'Limit 49.5 Hz', tone: 'warn' }, { value: limits.floor, label: 'Disconnection 48.8 Hz', tone: 'bad' }],
+        yMin: 49.2, yMax: 50.05,
+        xLabel: `${state.time.toFixed(1)} s`,
+        marks: tripped ? [{ at: limits.tripAtS / limits.stepS, label: 'Trip', tone: 'bad' }] : []
+      };
+      $('controls').label = `${state.time.toFixed(1)} s`;
+      $('verdict').textContent = !tripped ? 'Press play to trip the largest unit.'
+        : model.breached ? `Lowest ${state.lowest.toFixed(2)} Hz: the limit was broken.`
+          : `Lowest ${state.lowest.toFixed(2)} Hz: held above the limit.`;
+      $('verdict').dataset.tone = !tripped ? '' : model.breached ? 'bad' : 'good';
+    }
+
+    function restart() {
+      model.reset();
+      $('controls').running = false;
+      render();
+    }
+
+    // ---- Sources: loaded from the sandbox's files, so only when served ----
+
+    // The server lists folders from where it was started, which may be above this page (as for
+    // Sandkit's own examples), so the listing's paths are made relative to the page, as the catalogue's are.
+    async function listSources() {
+      const here = decodeURIComponent(location.pathname).slice(1).replace(/[^/]*$/, '');
+      const files = await (await fetch(`/_sandkit/files?dir=${encodeURIComponent(`${here}sources`)}`)).json();
+      return files.map((file) => ({ ...file, path: file.path.slice(here.length) }));
+    }
+
+    async function loadCatalogue() {
+      catalogue = (await (await fetch('sources/catalogue.json')).json()).sources;
+      $('sources').catalogue = catalogue;
+      $('sources').files = await listSources();
+      $('trace').items = model.items;
+      $('trace').catalogue = catalogue;
+    }
+
+    // Opens a source on its own sheet, with every passage the model cites from it marked.
+    async function openSource(id) {
+      const entry = catalogue.find((s) => s.id === id);
+      if (!entry) return;
+      const view = $('source');
+      const image = /\.(svg|png|jpe?g|gif|webp)$/i.test(entry.path);
+      view.source = entry;
+      view.content = image ? null : await (await fetch(entry.path)).text();
+      view.url = image ? entry.path : null;
+      view.passages = model.items.flatMap((item) => (item.sources ?? [])
+        .filter((c) => c.source === id).map(({ source, ...citation }) => ({ id: item.id, ...citation })));
+      $('source-modal').show();
+    }
+
+    // ---- Trace mode: point at anything with a code to see why it's there ----
+
+    function setTracing(on) {
+      if (on && !served) { $('serve-modal').show(); return; }
+      document.body.classList.toggle('is-tracing', on);
+      $('trace-button').setAttribute('aria-pressed', String(on));
+      $('trace-bar').hidden = !on;
+      if (!on) outline(null);
+    }
+
+    const tracing = () => document.body.classList.contains('is-tracing');
+
+    // What a click or the pointer would trace: the innermost part whose code the model knows.
+    function traceableAt(target) {
+      if (target.closest('sb-modal, sb-shell, .trace-bar')) return null;
+      for (let part = target.closest('[data-ref]'); part; part = part.parentElement?.closest('[data-ref]')) {
+        if (traceable.has(part.dataset.ref)) return part;
+      }
+      return null;
+    }
+
+    let outlined = null;
+    function outline(part) {
+      outlined?.classList.remove('is-traceable');
+      outlined = part;
+      part?.classList.add('is-traceable');
+    }
+
+    // Shown first, so the trace has its room when it lays out and can bring its subject into view.
+    function openTrace(id) {
+      const trace = $('trace');
+      $('trace-modal').show();
+      trace.subject = id;
+      trace.clearTrail();
+    }
+
+    // ---- Wiring ----
+
+    $('controls').addEventListener('sb-tick', (e) => {
+      for (let i = 0; i < e.detail.steps; i++) model.step();
+      if (model.state.done) $('controls').running = false;
+      render();
+    });
+    $('controls').addEventListener('sb-reset', restart);
+    for (const radio of document.querySelectorAll('input[name="wind"]')) {
+      radio.addEventListener('change', () => { model.setOption('wind', radio.value); restart(); });
+    }
+    $('screen').addEventListener('sb-select', (e) => {
+      if (e.detail.ref !== 'SCR-3') return;
+      model.setOption('extraBooked', !model.options.extraBooked);
+      restart();
+    });
+
+    $('sources-button').addEventListener('click', () => (served ? $('sources-modal').show() : $('serve-modal').show()));
+    $('trace-button').addEventListener('click', () => setTracing(!tracing()));
+    $('trace-stop').addEventListener('click', () => setTracing(false));
+    $('sources').addEventListener('sb-open', (e) => openSource(e.detail.id));
+    $('trace').addEventListener('sb-open', (e) => openSource(e.detail.id));
+
+    // In trace mode, pointing outlines what can be traced, and a click traces it instead of acting.
+    document.addEventListener('pointerover', (e) => { if (tracing()) outline(traceableAt(e.target)); }, true);
+    document.addEventListener('click', (e) => {
+      if (!tracing() || e.target.closest('sb-modal, sb-shell, .trace-bar')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const part = traceableAt(e.target);
+      if (part) openTrace(part.dataset.ref);
+    }, true);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && tracing() && !document.querySelector('sb-modal[open]')) setTracing(false);
+    });
+
+    // ---- Start ----
+
+    render();
+    if (served) loadCatalogue();
+  </script>
+</body>
+</html>

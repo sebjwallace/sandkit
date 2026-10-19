@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Control room tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="model.js"></script>
+</head>
+<body>
+  <script>
+    // Trips the largest unit and runs the twenty seconds after it.
+    function run(options) {
+      const model = createModel(options);
+      while (!model.state.done) model.step();
+      return model;
+    }
+
+    test('a calm day holds above the limit; a windy night breaks it', () => {
+      assert(!run({ wind: 'calm' }).breached, 'calm holds');
+      assert(run({ wind: 'windy' }).breached, 'windy breaks the limit');
+    });
+
+    test('booking extra response holds a windy night above the limit', () => {
+      assert(!run({ wind: 'windy', extraBooked: true }).breached, 'booked holds');
+    });
+
+    test('every item rests only on items the model has', () => {
+      const ids = new Set(ITEMS.map((item) => item.id));
+      const unknown = ITEMS.flatMap((item) => (item.restsOn ?? []).filter((id) => !ids.has(id)));
+      assertEqual(unknown, []);
+    });
+
+    test('the page starts with its screen and controls, and tracing says it needs the server', async () => {
+      const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
+      await waitFor(() => frame.contentDocument?.querySelector('.sb-wireframe__primary') && frame.contentDocument.querySelector('sb-controls button'));
+      const page = frame.contentDocument;
+      assertEqual(page.getElementById('frequency').textContent, '50.00 Hz');
+      assert(page.querySelector('sb-chart'), 'the chart is there');
+      page.getElementById('trace-button').click();
+      assert(page.getElementById('serve-modal').open, 'says it needs the server');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+Interview with a control room engineer
+Recorded 14 September 2026. Interviewer: the sandbox team. Engineer: Dana Okafor, shift lead.
+
+Q: Thanks for making the time. How long have you worked in the control room?
+
+A: Eleven years now, the last four as a shift lead. Before that I was in protection engineering, setting up the relays at substations.
+
+Q: What does a normal shift look like?
+
+A: Mostly watching and nudging. We balance supply and demand minute by minute, buy a bit more here, ask a station to back off there. The forecasts are good, so most of the work is small corrections.
+
+Q: Walk me through the first minute after a big unit trips.
+
+A: The frequency drops straight away. Inertia from everything still spinning slows the fall, which buys us a few seconds. Within two seconds the fast frequency response kicks in from batteries. Then primary response from the other generators, inside ten seconds.
+
+Q: Has that changed over your time here?
+
+A: A lot. When I started there were far more big coal and gas units, so far more spinning mass. Now with more wind and solar there's less inertia, so the drop is faster, and the batteries matter much more than they did.
+
+Q: What do you look at on the screen when it happens?
+
+A: Honestly, the number I want is how fast it's falling. The frequency itself tells me where we are, but the rate tells me where we'll be in five seconds. The current screen only shows the frequency, so you're doing sums in your head.
+
+Q: And if the response isn't enough?
+
+A: If the frequency still falls below 48.8 Hz, low frequency demand disconnection takes blocks of demand off automatically. Nobody presses a button for that. It's set in the relays. It's planned region by region, years ahead, not on the day.
+
+Q: How often does it get that far?
+
+A: Rarely. Once in my career. Most days you'd never know a unit had tripped.

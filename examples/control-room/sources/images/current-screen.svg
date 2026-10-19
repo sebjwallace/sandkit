@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" font-family="Helvetica, Arial, sans-serif">
+  <rect width="640" height="400" fill="#f4f4f0"/>
+  <text x="24" y="34" font-size="16" font-weight="bold" fill="#333">Sketch of the current frequency screen (photographed 14 Sept)</text>
+  <rect x="24" y="56" width="592" height="320" rx="6" fill="#fff" stroke="#888" stroke-width="2"/>
+  <rect x="24" y="56" width="592" height="34" rx="6" fill="#ddd"/>
+  <text x="40" y="79" font-size="14" fill="#333">SYSTEM FREQUENCY</text>
+  <rect x="60" y="116" width="250" height="110" fill="none" stroke="#333" stroke-width="2"/>
+  <text x="84" y="190" font-size="48" font-weight="bold" fill="#222">50.01 Hz</text>
+  <rect x="350" y="116" width="230" height="110" fill="none" stroke="#999" stroke-dasharray="6 4"/>
+  <text x="372" y="160" font-size="13" fill="#777">Trend (last 30 min)</text>
+  <path d="M370 200 L410 196 L450 202 L490 194 L530 199 L560 197" stroke="#777" stroke-width="2" fill="none"/>
+  <rect x="60" y="256" width="520" height="90" fill="none" stroke="#999"/>
+  <text x="80" y="290" font-size="13" fill="#555">Alarms</text>
+  <text x="80" y="318" font-size="13" fill="#999">No active alarms</text>
+</svg>

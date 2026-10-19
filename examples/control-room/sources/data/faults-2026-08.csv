@@ -1,0 +1,7 @@
+date,unit,loss_mw,wind,lowest_hz,seconds_to_lowest
+2026-08-02,Unit 4 North,640,light,49.71,6.5
+2026-08-07,Unit 1 Estuary,1100,strong,49.52,4.0
+2026-08-11,Interconnector East,1000,light,49.66,7.0
+2026-08-16,Unit 2 Valley,820,strong,49.58,3.5
+2026-08-23,Unit 1 Estuary,1210,light,49.61,8.0
+2026-08-29,Unit 3 Harbour,900,strong,49.55,3.0
