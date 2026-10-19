@@ -47,7 +47,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 
 1. **Copy the template.** Copy the contents of `templates/sandbox/` into the sandbox folder.
 2. **Copy what the sandbox uses into `lib/sandkit/`, keeping Sandkit's own paths.** Links between manifests and practices then still work.
-   - Always: `CATALOG.md`, `CHANGELOG.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`.
+   - Always: `CATALOG.md`, `CHANGELOG.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`, and `sb-comments` (below), which the template uses.
    - For each component used: `components/<name>/<name>.js`, `components/<name>/manifest.md` and `components/<name>/CHANGELOG.md`.
    - Every practice the sandbox follows, from `practices/`.
    - Not tests or demos. They stay in Sandkit.
@@ -128,6 +128,7 @@ Run them after changing the model. They are the cheapest tests there are; keep t
 Each chapter introduces one idea, much as a well-designed game introduces one mechanic before the next. It has a short explanation, something to try, and the interactive model.
 
 - **Reveal, don't merely display.** Show why things happen: highlight the rule that fired, the stock that ran out, the cause behind the effect.
+- **Modes come with the shell.** Every sandbox has comment mode from the template, wired once in `sandbox.js`. Once the model cites its sources, add trace mode, so people can ask why anything is there. See the [modes practice](modes.md).
 - **Choose components from the catalog,** and combine them in the page. Each manifest's "Works well with" section suggests pairings and how to wire them. Components never go inside one another unless a component offers a slot for exactly that.
 - **Write what the sandbox needs itself** in the page or in `model.js`. Not everything needs a component. Make hand-built parts point, light up and be found like components: see "Your own parts" in the [highlighting practice](highlighting.md#your-own-parts).
 - **Move reused parts out of the page.** When a piece of the surface is used by more than one chapter, make it the sandbox's own component in `components/`, with a short manifest like Sandkit's.

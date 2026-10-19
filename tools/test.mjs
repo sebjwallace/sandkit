@@ -56,6 +56,15 @@ test('a new sandbox starts from the template, with the shell, catalog and practi
   }
 });
 
+test('a new sandbox has comment mode: sb-comments copied, loaded once and in the shell\'s modes', (sandbox) => {
+  setup(sandbox, 'sb-comments');
+  assert(existsSync(join(sandbox, 'lib/sandkit/components/sb-comments/manifest.md')), 'sb-comments copied');
+  const html = read(sandbox, 'index.html');
+  assert(scriptTags(html, 'sb-comments') === 1, 'one tag, even when named');
+  assert(html.includes('<sb-comments slot="modes">'), 'offered in the mode picker');
+  assert(read(sandbox, 'lib/sandkit/SOURCE.md').includes('sb-comments'), 'its version recorded');
+});
+
 test('named components are copied, with a script tag each', (sandbox) => {
   setup(sandbox, 'sb-log', 'sb-id');
   assert(existsSync(join(sandbox, 'lib/sandkit/components/sb-log/manifest.md')), 'sb-log manifest copied');

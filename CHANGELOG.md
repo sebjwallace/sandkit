@@ -4,6 +4,12 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.37 · 2026-10-19
+- Modes: commenting and tracing are modes, offered one at a time in the shell's new mode picker (shell 0.1.4), and sharing one amber look. A new practice, `practices/modes.md`, and a Modes section in the catalog, apart from the components that show a subject.
+- Forty-seven components: added `sb-trace-mode`, Trace in the mode picker: click any part to see why it's there. `sb-comments` 0.2.0 is now a mode too (breaking: move it to `slot="modes"`).
+- Every new sandbox has comment mode: the template puts `sb-comments` in the shell, wired once in `sandbox.js`, and `tools/setup.mjs` always copies it. The sources practice's "Tracing" uses `sb-trace-mode`; the building guide and feedback practice say where modes come from.
+- The control-room and checkout examples use the mode picker.
+
 ## 0.2.36 · 2026-10-19
 - Serving is documented where people and agents start: the README's Getting started says to ask the assistant to serve a sandbox that shows its source material, and "Showing the working" describes the sources practice and tracing, now they exist. The building guide says to serve such a sandbox, in step 1 and in the handover's Open.
 

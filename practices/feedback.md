@@ -8,11 +8,11 @@ Everything else in a sandbox carries understanding one way: from the model to th
 
 ## Setting up comments
 
-Put `sb-comments` in the shell's header, give it the sandbox's title, version and goal, and answer its picks with `refsAt` from the [locating practice](locating.md):
+Every sandbox starts with comment mode: the template puts `sb-comments` in the shell's mode picker and wires it once, in `sandbox.js`. It gives the sandbox's title, version and goal, and answers picks with `refsAt` from the [locating practice](locating.md), which the template's `sandbox.js` has without views. To set it up by hand:
 
 ```html
 <sb-shell heading="Checkout architecture">
-  <sb-comments slot="actions"></sb-comments>
+  <sb-comments slot="modes"></sb-comments>
 </sb-shell>
 ```
 
