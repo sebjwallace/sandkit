@@ -1,4 +1,4 @@
-// Sandkit sb-source-trace 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-source-trace 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Why something in the model is there, as one graph flowing left to right: the sources and items
 // it rests on to its left, what rests on it to its right. Sources are sheets of paper to open;
 // items are boxes to trace from. Unknown ids, loops and items resting on nothing cited are drawn.

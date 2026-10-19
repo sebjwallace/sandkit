@@ -60,6 +60,68 @@
       assert(!el.querySelector('.sb-shell__content').textContent.includes('Share'));
     });
 
+    // ---- Modes ----
+
+    // Two plain elements as modes: a heading and an active property are all a mode needs.
+    function withModes() {
+      const el = shell('<span slot="modes" heading="Comment"></span><span slot="modes" heading="Trace"></span>');
+      const modes = [...el.querySelectorAll('.sb-shell__modes span')];
+      modes.forEach((mode) => { mode.active = false; });
+      const picker = el.querySelector('.sb-shell__mode');
+      const choose = (text) => {
+        picker.value = [...picker.options].find((o) => o.text === text).value;
+        picker.dispatchEvent(new Event('change'));
+      };
+      return { el, modes, picker, choose };
+    }
+
+    test('without modes there is no mode picker', () => {
+      assert(shell().querySelector('.sb-shell__modes').hidden);
+    });
+
+    test('the mode picker offers Explore, then each mode by its heading, marked for every mode to let through', () => {
+      const { picker } = withModes();
+      assertEqual([...picker.options].map((o) => o.text), ['Explore', 'Comment', 'Trace']);
+      assertEqual(picker.selectedOptions[0].text, 'Explore');
+      assert(picker.closest('[data-modes]'));
+    });
+
+    test('choosing a mode turns it on and the others off, and says so', () => {
+      const { el, modes, choose } = withModes();
+      const heard = recordEvents(el, 'sb-mode');
+      choose('Comment');
+      choose('Trace');
+      assertEqual(modes.map((m) => m.active), [false, true]);
+      choose('Explore');
+      assertEqual(modes.map((m) => m.active), [false, false]);
+      assertEqual(heard.map((e) => e.detail), [{ mode: 'Comment', active: true }, { mode: 'Trace', active: true }, { mode: 'Trace', active: false }]);
+    });
+
+    test('a mode that ends itself puts the picker back to Explore', () => {
+      const { modes, picker, choose } = withModes();
+      choose('Trace');
+      modes[1].active = false;
+      modes[1].dispatchEvent(new CustomEvent('sb-mode', { bubbles: true, detail: { mode: 'Trace', active: false } }));
+      assertEqual(picker.selectedOptions[0].text, 'Explore');
+    });
+
+    test('a mode that starts itself turns the others off, and the picker follows', () => {
+      const { modes, picker, choose } = withModes();
+      choose('Trace');
+      modes[0].active = true;
+      modes[0].dispatchEvent(new CustomEvent('sb-mode', { bubbles: true, detail: { mode: 'Comment', active: true } }));
+      assertEqual([modes[1].active, picker.selectedOptions[0].text], [false, 'Comment']);
+    });
+
+    test('a mode that refuses to start leaves the picker on Explore', () => {
+      const { el, modes, picker } = withModes();
+      const heard = recordEvents(el, 'sb-mode');
+      Object.defineProperty(modes[0], 'active', { get: () => false, set: () => {} });
+      picker.value = '0';
+      picker.dispatchEvent(new Event('change'));
+      assertEqual([picker.selectedOptions[0].text, heard.length], ['Explore', 0]);
+    });
+
     test('shows the controls named in the controls attribute, in that order', () => {
       const el = shell('', 'controls="collapse settings"');
       const actions = [...el.querySelectorAll('.sb-shell__controls [data-action]')].map((b) => b.dataset.action);

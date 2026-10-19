@@ -27,7 +27,7 @@
     <sb-theme-settings slot="settings"></sb-theme-settings>
     <p><strong>Goal:</strong> see how a shop’s checkout is built: the parts behind the Pay button, how they talk when someone pays, and where each part shows up in the code and the data.</p>
     <button type="button" slot="actions" id="tour-start" class="tour-start">Take the tour</button>
-    <sb-comments slot="actions" id="comments"></sb-comments>
+    <sb-comments slot="modes" id="comments"></sb-comments>
   </sb-shell>
 
   <main>
@@ -449,7 +449,7 @@
     tour.addEventListener('sb-step', (e) => { tour.anchor = placeForStep(e.detail); });
 
     comments.addEventListener('sb-pick', (e) => comments.pick(refsAt(e.detail.x, e.detail.y)));
-    comments.addEventListener('sb-mode', (e) => { if (e.detail.active) tour.close(); });
+    document.addEventListener('sb-mode', (e) => { if (e.detail.active) tour.close(); }); // any mode starting
     $('tour-start').addEventListener('click', () => tour.start());
     xref.addEventListener('sb-go', (e) => goTo(e.detail.ref, e.detail.index));
     xref.addEventListener('sb-follow', (e) => showXref(e.detail.ref));

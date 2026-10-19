@@ -267,7 +267,9 @@
       };
 
       page.getElementById('outline').expanded = ['SYS-1'];
-      comments.querySelector('[data-action="start"]').click();
+      const picker = page.querySelector('.sb-shell__mode');
+      picker.value = [...picker.options].find((o) => o.text === 'Comment').value;
+      picker.dispatchEvent(new Event('change'));
       clickOn(page.querySelector('#diagram [data-ref="SYS-2"]'));
       write('Is the provider really outside the shop?');
       clickOn(page.querySelector('#outline [data-ref="CON-1"] .sb-tree__row'));

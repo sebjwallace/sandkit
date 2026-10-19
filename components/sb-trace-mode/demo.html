@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-trace-mode demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-trace-mode.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 1000px); margin: 0 auto; padding: 16px 16px 72px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+
+    .scene { max-width: 520px; font-size: 14px; }
+    .scene h3 { margin: 0 0 6px; font-size: 13px; color: var(--sb-muted); }
+    .board { display: grid; gap: 6px; }
+    .row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
+    .row button, .stage button { font: inherit; font-size: 13px; padding: 2px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); color: var(--sb-text); cursor: pointer; }
+    .stages { display: grid; gap: 6px; }
+    .stage { padding: 8px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
+    .stage strong { display: block; }
+    .reading { font-variant-numeric: tabular-nums; }
+    .trace { width: min(720px, calc(100vw - 32px)); padding: 16px 18px; border: 1px solid var(--sb-border); border-radius: calc(var(--sb-radius) * 1.5); background: var(--sb-surface); color: var(--sb-text); font-size: 13px; }
+    .trace::backdrop { background: rgba(0, 0, 0, 0.45); }
+    .trace h2 { margin: 0 0 12px; font-size: 16px; }
+    .chain { display: flex; align-items: center; gap: 8px; }
+    .chain .arrow { flex: none; color: var(--sb-muted); }
+    .link { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); }
+    .link small { display: block; color: var(--sb-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .link.paper { background: #fbf8f1; color: #2b2b2b; border-color: #d9d2c3; font-family: Georgia, serif; font-style: italic; }
+    .link.paper small { color: #7a7363; font-style: normal; font-family: var(--sb-font); }
+    .link.subject { border-color: var(--sb-warn); }
+    .link.none { color: var(--sb-muted); font-style: italic; }
+    .trace form { display: flex; justify-content: flex-end; margin-top: 14px; }
+    .trace button { font: inherit; padding: 5px 14px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); color: var(--sb-text); cursor: pointer; }
+    .acted { margin-top: 8px; font-size: 12px; color: var(--sb-muted); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-trace-mode">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Trace mode: click any part of a sandbox to see why it's there.</p>
+    <sb-trace-mode slot="modes" id="trace"></sb-trace-mode>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Everything in a good sandbox is there for a reason: a rule someone stated, a figure from a report, a design choice made after an interview. Trace mode lets anyone ask. Choose Trace in the header's mode picker, and every part that can be traced is outlined as you point at it; click one, and instead of doing what it normally does, the sandbox shows why it's there. Leave with Stop, Escape, or by choosing Explore again.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Sandboxes for decisions.</strong> When people will act on what a sandbox shows, they need to check what it rests on, part by part.</li>
+        <li><strong>Reviewing a design.</strong> Click a button on a screen and see the requirement, and the conversation, behind it.</li>
+        <li><strong>Spotting guesswork.</strong> A part resting on nothing cited shows up the moment someone asks.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Showing the trace itself.</strong> This only picks the part. Draw the trace itself in a modal, as the <a href="../../practices/sources.md">sources practice</a> shows.</li>
+        <li><strong>Commenting on a part.</strong> That's comment mode, the other mode in the picker.</li>
+        <li><strong>Explaining one thing everyone should see.</strong> Write it beside the part; tracing is for whoever asks.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-trace-mode/sb-trace-mode.js"&gt;&lt;/script&gt;
+
+&lt;sb-shell&gt;
+  &lt;sb-trace-mode slot="modes"&gt;&lt;/sb-trace-mode&gt;
+&lt;/sb-shell&gt;
+
+&lt;script&gt;
+  const items = new Set(model.items.map((item) =&gt; item.id));
+  trace.traceable = (ref) =&gt; items.has(ref);
+  trace.addEventListener('sb-pick', (e) =&gt; openTrace(e.detail.ref));
+&lt;/script&gt;</pre>
+      <p>Give every part worth asking about a <code>data-ref</code> with its code, and keep the codes in the model's items, each citing what it rests on, as the <a href="../../practices/sources.md">sources practice</a> describes. It's a mode, so it shares the picker with commenting, one at a time: see the <a href="../../practices/modes.md">modes practice</a>.</p>
+
+      <h3>Making it reveal</h3>
+      <ul>
+        <li><strong>Make everything that matters traceable,</strong> not just the obvious parts: a threshold, a label, a default.</li>
+        <li><strong>Trace to the words.</strong> A trace that ends at a quote from a source is worth far more than one that ends at a document's name.</li>
+        <li><strong>Let the gaps show.</strong> Leave parts that rest on nothing visibly so, rather than leaving them out of tracing.</li>
+      </ul>
+
+      <p>The full contract, including every property, event and styling hook, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A railway departure board</h2>
+      <p>Choose <strong>Trace</strong> in the header, then point at the board: each part with a reason is outlined. Click one, Hold included, and instead of acting it opens why it's there, from the source's own words to the part. Outside trace mode, Hold works as usual.</p>
+      <div class="scene">
+        <div>
+          <h3>Departures</h3>
+          <div class="board">
+            <div class="row" data-ref="DEP-1"><span>08:12 Leeds</span><span data-ref="RUL-1">Platform 4</span></div>
+            <div class="row" data-ref="DEP-2"><span>08:20 York</span><span>Delayed 6 min <button type="button" data-ref="BTN-1" id="hold">Hold</button></span></div>
+          </div>
+          <p class="acted" id="rail-acted">Hold hasn't been pressed.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="example">
+      <h2>A water treatment works</h2>
+      <p>The same mode traces a different subject. Readings sit inside stages, so pointing at a reading outlines the reading, and pointing elsewhere in a stage outlines the stage.</p>
+      <div class="scene">
+        <div>
+          <h3>Treatment stages</h3>
+          <div class="stages">
+            <div class="stage" data-ref="STG-1"><strong>Coagulation</strong> Dose <span class="reading" data-ref="PAR-1">32 mg/l</span></div>
+            <div class="stage" data-ref="STG-2"><strong>Chlorination</strong> Residual <span class="reading" data-ref="LIM-1">0.5 mg/l minimum</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="trace" id="trace-window" aria-labelledby="trace-title">
+    <h2 id="trace-title">Why it's there</h2>
+    <div class="chain" id="chain"></div>
+    <form method="dialog"><button>Close</button></form>
+  </dialog>
+
+  <script>
+    // Declare everything first; the demo starts at the bottom.
+
+    const $ = (id) => document.getElementById(id);
+
+    // A sandbox's model keeps these as its items, citing sources, and draws the trace with a
+    // component of its own; here, just enough to show a part's reason and the words behind it.
+    const ITEMS = {
+      'DEP-1': { what: 'The 08:12 to Leeds', why: 'Runs every day at 08:12.', source: 'Timetable, winter 2026', quote: 'Leeds, 08:12, all days' },
+      'RUL-1': { what: 'Platform 4', why: 'Trains over eight coaches use platform 4, the only one long enough.', source: 'Station survey', quote: 'Platform 4 is 240 m; the rest are 180 m.' },
+      'BTN-1': { what: 'The Hold button', why: 'Hold a connecting train when one arriving is under ten minutes late.', source: 'Interview with a controller', quote: 'We lose more people missing the York connection than anything else.' },
+      'STG-1': { what: 'Coagulation', why: 'The first stage: clumping fine particles so they settle.' },
+      'PAR-1': { what: 'A dose of 32 mg/l', why: 'Set by jar tests on this river\u2019s water in winter.', source: 'Jar test report', quote: 'Optimum dose 30\u201335 mg/l at 4 \u00b0C.' },
+      'LIM-1': { what: 'A 0.5 mg/l minimum', why: 'Enough chlorine left to keep water safe to the furthest tap.', source: 'Drinking water regulations', quote: 'not less than 0.5 mg/l free chlorine' }
+    };
+
+    // One box in the chain, its text set as text, never markup.
+    function link(label, text, kind) {
+      const box = Object.assign(document.createElement('div'), { className: `link ${kind}` });
+      box.append(Object.assign(document.createElement('small'), { textContent: label }), text);
+      return box;
+    }
+
+    const arrow = () => Object.assign(document.createElement('span'), { className: 'arrow', textContent: '\u2192' });
+
+    // From the source's words, through the reason, to the part picked; a part resting on nothing cited says so.
+    function showTrace(ref) {
+      const item = ITEMS[ref];
+      const source = item.source ? link(item.source, `\u201c${item.quote}\u201d`, 'paper') : link('Source', 'Nothing cited', 'none');
+      $('chain').replaceChildren(source, arrow(), link('Because', item.why, 'reason'), arrow(), link(ref, item.what, 'subject'));
+      $('trace-window').showModal();
+    }
+
+    // ---- Wiring ----
+
+    const trace = $('trace');
+    trace.traceable = (ref) => ref in ITEMS;
+    trace.addEventListener('sb-pick', (e) => showTrace(e.detail.ref));
+
+    let holds = 0;
+    $('hold').addEventListener('click', () => { $('rail-acted').textContent = `Hold pressed ${++holds} time${holds === 1 ? '' : 's'}.`; });
+  </script>
+</body>
+</html>

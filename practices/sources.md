@@ -154,6 +154,28 @@ Show a source with [`sb-source`](../components/sb-source/manifest.md): the paper
 
 Anything in the model can be asked "why is that there?". [`sb-source-trace`](../components/sb-source-trace/manifest.md) answers with one graph flowing left to right: the sources and what was derived from them, the items resting on them, the thing asked about, and what rests on it. It reads `model.items` and the catalogue, so tracing needs nothing more than citing well.
 
-Make it reachable from anywhere with a **trace mode**: a Trace button in the shell's header turns it on, with a banner saying so; pointing outlines any part whose `data-ref` is in `model.items`; a click opens the trace in an [`sb-modal`](../components/sb-modal/manifest.md) instead of acting; and a source clicked in the trace opens in `sb-source`, in a second modal over it. Escape, or the banner's button, ends trace mode. Sandkit's `examples/control-room/` has the whole of this wiring, about forty lines.
+Make it reachable from anywhere with [`sb-trace-mode`](../components/sb-trace-mode/manifest.md), Trace in the shell's mode picker (see the [modes practice](modes.md)). While it's on, pointing outlines any part whose `data-ref` is in `model.items`, and a click opens the trace instead of acting:
+
+```html
+<sb-shell>
+  <sb-comments slot="modes"></sb-comments>
+  <sb-trace-mode slot="modes"></sb-trace-mode>
+</sb-shell>
+
+<sb-modal id="trace-modal" heading="Why it's there"><sb-source-trace id="trace"></sb-source-trace></sb-modal>
+```
+
+```js
+const items = new Set(model.items.map((item) => item.id));
+traceMode.traceable = (ref) => items.has(ref);
+traceMode.addEventListener('sb-pick', (e) => {
+  traceModal.show();          // first, so the trace has its room when it lays out
+  trace.subject = e.detail.ref;
+  trace.clearTrail();
+});
+trace.addEventListener('sb-open', (e) => openSource(e.detail.id));   // in sb-source, in a second modal
+```
+
+Sandkit's `examples/control-room/` has the whole of this wiring.
 
 From Node, trace without a page: write the items to a file and run `node <sandkit>/tools/analyse.mjs trace items.json sources/catalogue.json --ref SCR-3 --md`.

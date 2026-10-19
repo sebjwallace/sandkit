@@ -1,9 +1,10 @@
-// Sandkit sb-shell 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-shell 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The sandbox shell: the header and the settings dialog around a sandbox.
 //
 //   <sb-shell heading="My sandbox" controls="fullscreen settings collapse">
 //     <p>Header content, such as the goal. Long content shows one line, with More / Less.</p>
 //     <button slot="actions">Share</button>                     beside the header controls
+//     <sb-comments slot="modes"></sb-comments>                  a mode, chosen in the mode picker
 //     <sb-theme-settings slot="settings"></sb-theme-settings>   a section in settings
 //   </sb-shell>
 //
@@ -17,6 +18,10 @@
 // also has `settingsKey`, `exportSettings()` and `importSettings(data)` is included when
 // settings are exported to, or imported from, a file. The shell knows no section by name:
 // the sandbox chooses which ones to include.
+//
+// Modes: any element with `heading` and `active` can be a mode. The picker lists them after
+// Explore and turns on the one chosen, the rest off; a mode that ends or starts itself fires
+// sb-mode, and the picker follows. The shell knows no mode by name.
 (function () {
   // One definition per tag name. The same script loaded twice is skipped quietly; a different
   // component already using the name is reported, because only one of them can run.
@@ -53,7 +58,10 @@
     .sb-shell__page--excluded { color: var(--sb-muted, #616e7c); text-decoration: line-through; cursor: help; }
     .sb-shell__exported { margin: 6px 0 0; font-size: 12px; color: var(--sb-muted, #616e7c); }
     .sb-shell__exported[hidden] { display: none; }
-    .sb-shell__actions, .sb-shell__controls { flex: none; display: flex; align-items: center; gap: 6px; }
+    .sb-shell__actions, .sb-shell__controls, .sb-shell__modes { flex: none; display: flex; align-items: center; gap: 6px; }
+    .sb-shell__modes[hidden] { display: none; }
+    .sb-shell__mode { padding: 7px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: inherit; font-size: 13px; cursor: pointer; }
+    .sb-shell__mode[data-on] { border-color: var(--sb-warn, #d69e2e); background: color-mix(in srgb, var(--sb-warn, #d69e2e) 22%, var(--sb-surface, #fff)); font-weight: 600; }
     .sb-shell__actions:empty { display: none; }
 
     .sb-shell__icon-button { flex: none; display: inline-flex; padding: 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); cursor: pointer; }
@@ -210,7 +218,7 @@
     _build() {
       if (this._built) return; // a shell moved while the page loads is asked twice
       this._built = true;
-      const { content, actions, sections } = this._takeChildren();
+      const { content, actions, sections, modes } = this._takeChildren();
       this._restoreCollapsed();
 
       this.innerHTML = `
@@ -220,6 +228,7 @@
             <nav class="sb-shell__pages" aria-label="Pages" hidden></nav>
             <p class="sb-shell__exported" hidden></p>
           </div>
+          <div class="sb-shell__modes" data-modes hidden><select class="sb-shell__mode" aria-label="Mode"></select></div>
           <div class="sb-shell__actions"></div>
           <div class="sb-shell__controls">${this._controlButtons()}</div>
         </header>
@@ -251,8 +260,10 @@
       this._showPages();
       this._showExported();
       sections.forEach((section) => this._addSection(section));
+      this._addModes(modes);
 
       this.addEventListener('click', (e) => this._onClick(e));
+      this.addEventListener('sb-mode', (e) => this._followMode(e));
       this._fileInput.addEventListener('change', () => this._importFile(this._fileInput.files[0]));
       this._showFullscreenState();
     }
@@ -262,9 +273,11 @@
       const slotted = (name) => [...this.querySelectorAll(`:scope > [slot="${name}"]`)];
       const actions = slotted('actions');
       const sections = slotted('settings');
-      [...actions, ...sections].forEach((el) => el.removeAttribute('slot'));
-      const rest = [...this.childNodes].filter((node) => !actions.includes(node) && !sections.includes(node));
-      return { content: hasContent(rest) ? rest : [], actions, sections };
+      const modes = slotted('modes');
+      const placed = [...actions, ...sections, ...modes];
+      placed.forEach((el) => el.removeAttribute('slot'));
+      const rest = [...this.childNodes].filter((node) => !placed.includes(node));
+      return { content: hasContent(rest) ? rest : [], actions, sections, modes };
     }
 
     _restoreCollapsed() {
@@ -366,6 +379,51 @@
       this.collapsed = false;
       this.querySelector('[data-action="collapse"]')?.focus();
     }
+
+    // ---- Modes ----
+
+    // Explore, then each mode by its heading. The modes sit beside the picker, drawing their own banners.
+    _addModes(modes) {
+      this._modes = modes;
+      const picker = this.querySelector('.sb-shell__modes');
+      const select = picker.querySelector('select');
+      modes.forEach((mode) => customElements.upgrade(mode)); // their heading and active are needed now
+      select.innerHTML = `<option value="">Explore</option>` + modes.map((mode, i) => `<option value="${i}">${esc(this._modeName(mode))}</option>`).join('');
+      select.addEventListener('change', () => this._pickMode(this._modes[select.value] ?? null));
+      picker.append(...modes);
+      picker.hidden = modes.length === 0;
+    }
+
+    // The viewer chose a mode, or Explore: one mode at a time. Listeners hear which mode started,
+    // or which ended for Explore; a mode that refused to start changes nothing.
+    _pickMode(chosen) {
+      const was = this._activeMode();
+      for (const mode of this._modes) if (mode !== chosen && mode.active) mode.active = false;
+      if (chosen) chosen.active = true;
+      this._showMode();
+      const now = this._activeMode();
+      if (now === was) return;
+      const detail = now ? { mode: this._modeName(now), active: true } : { mode: this._modeName(was), active: false };
+      this.dispatchEvent(new CustomEvent('sb-mode', { bubbles: true, detail }));
+    }
+
+    // A mode ended itself, from its own banner, or started itself again: the picker follows.
+    _followMode(e) {
+      if (!this._modes.includes(e.target)) return;
+      if (e.detail.active) for (const mode of this._modes) if (mode !== e.target && mode.active) mode.active = false;
+      this._showMode();
+    }
+
+    _showMode() {
+      const select = this.querySelector('.sb-shell__mode');
+      const on = this._modes.findIndex((mode) => mode.active);
+      select.value = on < 0 ? '' : String(on);
+      select.toggleAttribute('data-on', on >= 0);
+    }
+
+    _activeMode() { return this._modes.find((mode) => mode.active) ?? null; }
+
+    _modeName(mode) { return mode.getAttribute('heading') || mode.heading; }
 
     // ---- Settings ----
 

@@ -1,6 +1,6 @@
 # Sandbox shell
 
-The environment around a sandbox: a header with its title, goal and pages, controls for full screen and hiding the header, a settings dialog with theming, and an Export button. Three elements, packaged together: `sb-shell`, `sb-theme-settings` and `sb-export`.
+The environment around a sandbox: a header with its title, goal and pages, a mode picker, controls for full screen and hiding the header, a settings dialog with theming, and an Export button. Three elements, packaged together: `sb-shell`, `sb-theme-settings` and `sb-export`.
 
 Use them through this interface. You don't need to read their source.
 
@@ -18,6 +18,7 @@ Use them through this interface. You don't need to read their source.
   <sb-shell>
     <sb-theme-settings slot="settings"></sb-theme-settings>
     <sb-export slot="actions"></sb-export>
+    <sb-comments slot="modes"></sb-comments>
   </sb-shell>
   …
 </body>
@@ -48,6 +49,7 @@ Style the page with the theme tokens, for example `body { background: var(--sb-b
 | children | Header content for this page, shown instead of the goal. Long content shows one line, with More / Less. |
 | `slot="actions"` | Buttons or links shown beside the header controls. |
 | `slot="settings"` | A section in the settings dialog. Titled by its `heading` attribute or property. |
+| `slot="modes"` | A mode, offered in the header's mode picker by its `heading` attribute or property. |
 
 | Property or method | Meaning |
 |---|---|
@@ -63,6 +65,9 @@ Style the page with the theme tokens, for example `body { background: var(--sb-b
 | Event | Detail | When |
 |---|---|---|
 | `sb-collapse` | `{ collapsed }` | The header is hidden or shown. Useful for resizing canvases. |
+| `sb-mode` | `{ mode, active }` | The viewer chose a mode in the picker (`active: true`, with its heading), or Explore (`active: false`, with the mode that ended). Bubbles to `document`, where modes started or ended from their own banners are heard too. |
+
+**Modes.** A mode changes what a click does until the viewer leaves it, such as commenting or tracing (see the [modes practice](../practices/modes.md)). Any element with a `heading` and an `active` property can be one. The picker offers Explore, then each mode; choosing one sets its `active` and turns the others off, so only one is ever on. A mode ended or started from its own banner fires `sb-mode` from itself, and the picker follows. The picker is marked `data-modes`, which every mode lets clicks through, so it's always in reach. The shell knows no mode by name, and without modes shows no picker.
 
 **Settings sections.** Any element can be a section. If it also has `settingsKey`, `exportSettings()` and `importSettings(data)`, it is included when viewers export or import their settings as a file. The shell knows no section by name; the sandbox declares the ones it wants.
 

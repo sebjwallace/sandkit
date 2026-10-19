@@ -30,14 +30,25 @@
       assertEqual(unknown, []);
     });
 
-    test('the page starts with its screen and controls, and tracing says it needs the server', async () => {
+    test('the page starts with its screen and controls; tracing a part says it needs the server, and one mode is on at a time', async () => {
       const frame = mount('<iframe src="index.html" style="width: 1100px; height: 800px"></iframe>');
       await waitFor(() => frame.contentDocument?.querySelector('.sb-wireframe__primary') && frame.contentDocument.querySelector('sb-controls button'));
       const page = frame.contentDocument;
       assertEqual(page.getElementById('frequency').textContent, '50.00 Hz');
       assert(page.querySelector('sb-chart'), 'the chart is there');
-      page.getElementById('trace-button').click();
+
+      const picker = page.querySelector('.sb-shell__mode');
+      const choose = (text) => {
+        picker.value = [...picker.options].find((o) => o.text === text).value;
+        picker.dispatchEvent(new Event('change'));
+      };
+      choose('Comment');
+      choose('Trace');
+      assertEqual([page.getElementById('comments').active, page.getElementById('trace-mode').active], [false, true]);
+
+      page.getElementById('book').click();
       assert(page.getElementById('serve-modal').open, 'says it needs the server');
+      assertEqual(frame.contentWindow.eval('model.options.extraBooked'), false, 'the click traced instead of acting');
     });
   </script>
 </body>

@@ -27,6 +27,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [Identifiers](practices/identifiers.md) | Short, stable codes for the things in a sandbox, and citing them everywhere. Supported by `sb-id`. |
 | [Pages](practices/pages.md) | Splitting a sandbox into pages that share one model, `sandbox.js` listing them once, data as scripts, and exporting any page as one file that runs anywhere. Supported by the shell and `tools/export.mjs`. |
 | [Sources](practices/sources.md) | The material a sandbox was built from: `sources/` with one catalogue, an inbox to process, citations of passages from the model's `ITEMS`, and checking them. Supported by `tools/sources.mjs` and `tools/serve.mjs`. |
+| [Modes](practices/modes.md) | Other ways of using a sandbox for a while, such as commenting or tracing: one shape for every mode, and one at a time through the page-wide `sb-mode` event. Supported by the modes below. |
 | [Feedback](practices/feedback.md) | Collecting comments with `sb-comments`, and what the agent does on receiving them: saved as sources, `FB-` codes, answered in the journal. Supported by `sb-comments`. |
 
 ## Shell
@@ -34,6 +35,15 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | Part | What it does |
 |---|---|
 | [Sandbox shell](shell/manifest.md) | The environment around a sandbox: header, goal, pages, full screen, settings and theming, and an Export button giving the prompt to export the page. |
+
+## Modes
+
+Part of the environment around a sandbox, like the shell, rather than views of its subject. Each is offered in the shell's mode picker and changes what a click does until the viewer leaves it, one at a time; see the [modes practice](practices/modes.md).
+
+| Mode | What it does |
+|---|---|
+| [`sb-comments`](components/sb-comments/manifest.md) | Comments from the people exploring a sandbox: choose Comment, click any part and say what you think; each comment cites its refs, view, version and state, and all are copied as one prompt or downloaded. |
+| [`sb-trace-mode`](components/sb-trace-mode/manifest.md) | Why something is there: choose Trace, and pointing outlines every part the model can trace; a click asks the sandbox to show its trace instead of acting. |
 
 ## Components
 
@@ -46,7 +56,6 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-callout`](components/sb-callout/manifest.md) | A stand-out block for definitions, notes, tips, questions, answers and warnings; optionally collapsible. |
 | [`sb-chart`](components/sb-chart/manifest.md) | Values over time as lines, with reference lines, the latest values marked, and a legend. |
 | [`sb-code`](components/sb-code/manifest.md) | Code or pseudocode stepped through a trace the model records: the running line marked, variables beside it with changes shown. |
-| [`sb-comments`](components/sb-comments/manifest.md) | Comments from the people exploring a sandbox: in a session, click any part and say what you think; each comment cites its refs, view, version and state, and all are copied as one prompt or downloaded. |
 | [`sb-controls`](components/sb-controls/manifest.md) | Play, pause, step, reset and speed. Keeps the clock and tells the sandbox how many steps to take. |
 | [`sb-decision-tree`](components/sb-decision-tree/manifest.md) | Questions branching on their answers down to outcomes: one case traced with its value at each question, the answers that would have changed its outcome marked, branches thickened by how many cases took them. |
 | [`sb-dependencies`](components/sb-dependencies/manifest.md) | What goes with what in a data set: fields that determine others, change together or are present together, near-misses listed first with the samples that break them, and what changed when the samples did. Also runs from Node: `tools/analyse.mjs dependencies`. |

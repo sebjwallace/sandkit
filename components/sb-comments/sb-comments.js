@@ -1,10 +1,10 @@
-// Sandkit sb-comments 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-comments 0.2.0 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Comments from the people exploring a sandbox, each citing what it's about, sent back as one
 // markdown text. In comment mode, a click picks rather than acts: the component reports where,
 // the sandbox answers with the refs there, and the viewer writes what they think. Saved comments
 // gather in a tray, to copy as a prompt or download as a file.
 //
-//   <sb-comments id="feedback" slot="actions"></sb-comments>
+//   <sb-comments id="feedback" slot="modes"></sb-comments>      chosen in the shell's mode picker
 //   comments.context = { title: 'Checkout', version: '0.4.0', goal: 'See how a checkout is built.' };
 //   comments.addEventListener('sb-pick', (e) => comments.pick(refsAt(e.detail.x, e.detail.y)));
 //
@@ -28,7 +28,7 @@
   // Everything about commenting wears its own colour, the theme's warning amber, like a reviewer's
   // notes, so it never blends with the sandbox it comments on.
   const CSS = `
-    .sb-comments { --sb-comments-tone: var(--sb-warn, #d69e2e); --sb-comments-tint: color-mix(in srgb, var(--sb-comments-tone) 12%, var(--sb-surface, #fff)); display: inline-flex; gap: 6px; align-items: center; }
+    .sb-comments { --sb-comments-tone: var(--sb-warn, #d69e2e); --sb-comments-tint: color-mix(in srgb, var(--sb-comments-tone) 12%, var(--sb-surface, #fff)); display: contents; }
     .sb-comments__button { padding: 5px 12px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: inherit; font-size: 13px; cursor: pointer; }
     .sb-comments__button[aria-pressed="true"], .sb-comments__button--primary { border-color: var(--sb-comments-tone); background: color-mix(in srgb, var(--sb-comments-tone) 22%, var(--sb-surface, #fff)); font-weight: 600; }
     .sb-comments__button:disabled { opacity: 0.45; cursor: default; }
@@ -36,7 +36,7 @@
     .sb-comments__count { color: var(--sb-muted, #616e7c); font-weight: normal; }
     .sb-comments__count:empty { display: none; }
     .sb-comments__dim { position: fixed; inset: 0; margin: 0; padding: 0; border: 0; width: auto; height: auto; background: var(--sb-comments-dim, rgba(0, 0, 0, 0.12)); box-shadow: inset 0 0 0 4px var(--sb-comments-tone); pointer-events: none; }
-    .sb-comments__banner { position: fixed; inset: 10px auto auto 50%; transform: translateX(-50%); margin: 0; display: none; align-items: center; gap: 10px; padding: 6px 8px 6px 14px; border: 2px solid var(--sb-comments-tone); border-radius: 999px; background: var(--sb-comments-tint); color: var(--sb-text, #1f2933); font: 600 13px var(--sb-font, system-ui, sans-serif); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+    .sb-comments__banner { position: fixed; inset: auto auto 16px 50%; transform: translateX(-50%); margin: 0; display: none; align-items: center; gap: 10px; padding: 6px 8px 6px 14px; border: 2px solid var(--sb-comments-tone); border-radius: 999px; background: var(--sb-comments-tint); color: var(--sb-text, #1f2933); font: 600 13px var(--sb-font, system-ui, sans-serif); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
     .sb-comments__banner:popover-open { display: inline-flex; }
     .sb-comments__outlines { position: fixed; inset: 0; margin: 0; padding: 0; border: 0; width: auto; height: auto; background: none; pointer-events: none; overflow: visible; }
     .sb-comments__outline { position: fixed; border: 2px dashed var(--sb-comments-tone); border-radius: 4px; background: color-mix(in srgb, var(--sb-comments-tone) 10%, transparent); }
@@ -121,16 +121,22 @@
 
     // ---- Public API ----
 
+    // The mode's name, in the shell's mode picker.
+    get heading() { return this.getAttribute('heading') || 'Comment'; }
+
     // Whether comment mode is on. Setting it fires no event: sb-mode reports the viewer's choices.
+    // However a session ends, its comments are put in front of the viewer to send.
     get active() { return this._active; }
     set active(on) {
+      const ending = this._active && !on;
       this._active = Boolean(on);
       if (!this._built) return;
+      if (ending) this._closeBox();
       this._listen(this._active || this._boxOpen);
-      this._start.disabled = this._active;
       this._dim.togglePopover(this._active);
       this._banner.togglePopover(this._active);
       if (!this._active && !this._boxOpen) this._clearOutlines();
+      if (ending && this._comments.length) this._openTray();
     }
 
     // Answers an sb-pick: { refs, view, element }, or null for nothing there.
@@ -185,7 +191,6 @@
 
     _render() {
       this.innerHTML = `
-        <button type="button" class="sb-comments__button" data-action="start" title="Click parts of the page to comment on them">Comment</button>
         <div class="sb-comments__dim" popover="manual"></div>
         <div class="sb-comments__banner" popover="manual">
           <span>Commenting: click anything to comment on it</span>
@@ -195,8 +200,7 @@
         </div>
         <div class="sb-comments__outlines" popover="manual"></div>
         <div class="sb-comments__box" popover="manual" role="dialog" aria-labelledby="${this._id}-box-title"></div>
-        <div class="sb-comments__tray" popover="manual" role="dialog" aria-labelledby="${this._id}-tray-title"></div>`;
-      this._start = this.querySelector('[data-action="start"]');
+        <div class="sb-comments__tray" popover="manual" data-modes role="dialog" aria-labelledby="${this._id}-tray-title"></div>`;
       this._dim = this.querySelector('.sb-comments__dim');
       this._banner = this.querySelector('.sb-comments__banner');
       this._outlines = this.querySelector('.sb-comments__outlines');
@@ -221,9 +225,10 @@
       else removeEventListener('keydown', this._escape, true);
     }
 
-    // In comment mode, a click anywhere but the component's own parts picks instead of acting.
+    // In comment mode, a click anywhere but the component's own parts, or what every mode lets
+    // through (data-modes, such as the shell's mode picker), picks instead of acting.
     _intercept(e) {
-      if (!this._active || this.contains(e.target)) return;
+      if (!this._active || this.contains(e.target) || e.target.closest?.('[data-modes]')) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       if (e.type !== 'click') return;
@@ -233,7 +238,7 @@
 
     _setMode(on) {
       this.active = on;
-      this._fire('sb-mode', { active: this._active });
+      this._fire('sb-mode', { mode: this.heading, active: this._active });
     }
 
     // Escape only closes the comment box, so a stray key never ends a session or loses comments.
@@ -252,7 +257,6 @@
 
     // Done: commenting ends, and what's been written is ready to send.
     _finish() {
-      this._closeBox();
       this._setMode(false);
       this._openTray();
     }
@@ -411,7 +415,6 @@
       if (!button) return;
       const n = Number(button.dataset.n);
       const actions = {
-        start: () => this._setMode(true),
         discard: () => this._discard(),
         done: () => this._finish(),
         resume: () => { this._tray.hidePopover(); this._setMode(true); },

@@ -34,14 +34,47 @@
 
     // ---- Comment mode ----
 
-    test('Comment starts a session: the page dims, and a banner offers Cancel and Done', () => {
+    test('is a mode named Comment, or by its heading', () => {
+      assertEqual(setup().el.heading, 'Comment');
+      assertEqual(setup('heading="Feedback"').el.heading, 'Feedback');
+    });
+
+    test('active starts a session: the page dims, and a banner offers Cancel and Done', () => {
       const { el } = setup();
-      const modes = recordEvents(el, 'sb-mode');
-      button(el, 'start').click();
-      assert(el.active && el.querySelector('.sb-comments__dim').matches(':popover-open'));
+      el.active = true;
+      assert(el.querySelector('.sb-comments__dim').matches(':popover-open'));
       assert(el.querySelector('.sb-comments__banner').matches(':popover-open'));
-      assert(button(el, 'start').disabled, 'one session at a time');
-      assertEqual(modes.map((e) => e.detail.active), [true]);
+      el.active = false;
+    });
+
+    test('a session ended from outside, with comments written, opens the list to send them', () => {
+      const { el } = setup();
+      el.active = true;
+      el.pick(null);
+      write(el, 'keep me');
+      el.pick(null); // a comment half-written
+      el.active = false;
+      assertEqual([el.comments.length, box(el).matches(':popover-open')], [1, false]);
+      assert(el.querySelector('.sb-comments__tray').matches(':popover-open'), 'the list opens, ready to send');
+      button(el, 'close').click();
+    });
+
+    test('a session ended with nothing written simply ends', () => {
+      const { el } = setup();
+      el.active = true;
+      el.active = false;
+      assert(!el.querySelector('.sb-comments__tray').matches(':popover-open'));
+    });
+
+    test('in comment mode, clicks on what every mode lets through (data-modes) still act', () => {
+      const area = mount('<div><sb-comments></sb-comments><button data-modes>Mode</button></div>');
+      const el = area.querySelector('sb-comments'), picker = area.querySelector('button');
+      const picks = recordEvents(el, 'sb-pick');
+      let pressed = 0;
+      picker.addEventListener('click', () => pressed++);
+      el.active = true;
+      clickAt(picker);
+      assertEqual([pressed, picks.length], [1, 0]);
       el.active = false;
     });
 
@@ -258,18 +291,20 @@
     test('Cancel ends the session and forgets its comments, as if nothing happened', () => {
       const { el } = setup();
       const modes = recordEvents(el, 'sb-mode');
-      button(el, 'start').click();
+      el.active = true;
       el.pick(null);
       write(el, 'never mind');
       el.pick(null); // a comment half-written
       button(el, 'discard').click();
       assertEqual([el.active, el.comments, box(el).matches(':popover-open')], [false, [], false]);
-      assertEqual(modes.map((e) => e.detail.active), [true, false]);
+      assert(!el.querySelector('.sb-comments__tray').matches(':popover-open'), 'nothing to send');
+      assertEqual(modes.map((e) => e.detail), [{ mode: 'Comment', active: false }]);
     });
 
     test('Done ends commenting and opens the list, ready to copy or download', () => {
       const { el } = setup();
-      button(el, 'start').click();
+      const modes = recordEvents(document, 'sb-mode');
+      el.active = true;
       el.pick(null);
       write(el, 'one');
       button(el, 'done').click();
@@ -277,16 +312,19 @@
       assert(el.querySelector('.sb-comments__tray').matches(':popover-open'));
       assert(!button(el, 'copy').disabled && !button(el, 'download').disabled);
       assertEqual(el.comments.length, 1, 'kept until sent');
+      assertEqual(modes.map((e) => e.detail), [{ mode: 'Comment', active: false }], 'heard page-wide, so the mode picker follows');
     });
 
     test('Keep commenting goes back to the session, comments and all', () => {
       const { el } = setup();
-      button(el, 'start').click();
+      el.active = true;
       el.pick(null);
       write(el, 'one');
       button(el, 'done').click();
+      const modes = recordEvents(el, 'sb-mode');
       button(el, 'resume').click();
       assertEqual([el.active, el.comments.length], [true, 1]);
+      assertEqual(modes.map((e) => e.detail.active), [true]);
       assert(!el.querySelector('.sb-comments__tray').matches(':popover-open'));
       el.active = false;
     });

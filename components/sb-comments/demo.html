@@ -24,7 +24,6 @@
     .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
     .guide a { color: var(--sb-accent); }
 
-    .bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
     .side-by-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; font-size: 14px; }
     .side-by-side h3 { margin: 0 0 4px; font-size: 13px; color: var(--sb-muted); }
     .recipe ol, .recipe ul { margin: 0 0 10px; padding-left: 20px; }
@@ -38,13 +37,15 @@
 <body>
   <sb-shell heading="sb-comments">
     <sb-theme-settings slot="settings"></sb-theme-settings>
+    <sb-comments slot="modes" id="recipe-comments" heading="Comment on the recipe"></sb-comments>
+    <sb-comments slot="modes" id="garden-comments" heading="Comment on the garden"></sb-comments>
     <p>Comments from the people exploring a sandbox, each citing what it's about.</p>
   </sb-shell>
 
   <main>
     <h2 class="part">About</h2>
     <article class="guide">
-      <p>A sandbox carries understanding from a model to the people exploring it. Comments carry it back. Press Comment, click whatever you have something to say about, and write it down; the comment remembers exactly what it was about, so no one has to describe "the third row of the second table". When you're done, copy your comments as a prompt for the agent building the sandbox, or download them as a file to send to whoever asked for your thoughts, and the page is left as it was.</p>
+      <p>A sandbox carries understanding from a model to the people exploring it. Comments carry it back. Choose Comment in the header's mode picker, click whatever you have something to say about, and write it down; the comment remembers exactly what it was about, so no one has to describe "the third row of the second table". When you're done, copy your comments as a prompt for the agent building the sandbox, or download them as a file to send to whoever asked for your thoughts, and the page is left as it was.</p>
 
       <h3>Where it helps</h3>
       <ul>
@@ -64,7 +65,7 @@
       <pre>&lt;script src="components/sb-comments/sb-comments.js"&gt;&lt;/script&gt;
 
 &lt;sb-shell heading="My sandbox"&gt;
-  &lt;sb-comments id="feedback" slot="actions"&gt;&lt;/sb-comments&gt;
+  &lt;sb-comments id="feedback" slot="modes"&gt;&lt;/sb-comments&gt;
 &lt;/sb-shell&gt;
 
 &lt;script&gt;
@@ -72,7 +73,7 @@
   comments.snapshot = () =&gt; ({ chapter: tabs.selected, step: model.state.time });
   comments.addEventListener('sb-pick', (e) =&gt; comments.pick(refsAt(e.detail.x, e.detail.y)));
 &lt;/script&gt;</pre>
-      <p>The component never searches the page. In comment mode it says where the viewer clicked, and the sandbox answers with what's there, using <code>refsAt</code> from the <a href="../../practices/locating.md">locating practice</a>. What the agent does with the comments it receives is in the <a href="../../practices/feedback.md">feedback practice</a>.</p>
+      <p>Commenting is a mode, so it lives in the shell's mode picker, never on at once with another mode such as tracing; see the <a href="../../practices/modes.md">modes practice</a>. The component never searches the page. In comment mode it says where the viewer clicked, and the sandbox answers with what's there, using <code>refsAt</code> from the <a href="../../practices/locating.md">locating practice</a>. What the agent does with the comments it receives is in the <a href="../../practices/feedback.md">feedback practice</a>.</p>
 
       <h3>Making it reveal, not just collect</h3>
       <ul>
@@ -87,8 +88,7 @@
     <h2 class="part">Examples</h2>
     <section class="example" id="recipe-example">
       <h2>Comments on a recipe</h2>
-      <p>Press Comment, click an ingredient or a step, and write what you think. Shift-click to add another part to the same comment. Press Done to copy or download them, or Cancel to forget them. What you'd send shows on the right.</p>
-      <div class="bar"><sb-comments id="recipe-comments"></sb-comments></div>
+      <p>Choose <strong>Comment on the recipe</strong> in the header's mode picker, click an ingredient or a step, and write what you think. Shift-click to add another part to the same comment. Press Done to copy or download them, or Cancel to forget them. What you'd send shows on the right.</p>
       <div class="side-by-side">
         <div class="recipe">
           <div data-view="Ingredients">
@@ -117,8 +117,7 @@
 
     <section class="example" id="garden-example">
       <h2>Comments on a garden plan</h2>
-      <p>Plants sit inside beds, so a comment on a plant cites the bed too: the innermost first, then what holds it. Each comment also records the season being planned.</p>
-      <div class="bar"><sb-comments id="garden-comments"></sb-comments></div>
+      <p>Choose <strong>Comment on the garden</strong> in the mode picker. Plants sit inside beds, so a comment on a plant cites the bed too: the innermost first, then what holds it. Each comment also records the season being planned. Choosing the other example's mode ends this one, with what you've written ready to send.</p>
       <div class="side-by-side">
         <div data-view="Plan">
           <h3>Spring plan</h3>
@@ -168,10 +167,6 @@
       comments.addEventListener('sb-pick', (e) => comments.pick(refsAt(e.detail.x, e.detail.y)));
       comments.addEventListener('sb-comment', () => showOutput(comments, output));
       comments.addEventListener('click', () => setTimeout(() => showOutput(comments, output))); // after a delete or a send
-      // One in comment mode at a time.
-      comments.addEventListener('sb-mode', (e) => {
-        if (e.detail.active) examples.forEach((other) => { if (other.comments !== comments) other.comments.active = false; });
-      });
     }
 
     // ---- Start ----

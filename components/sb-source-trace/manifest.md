@@ -84,7 +84,7 @@ Suggestions only: nothing here is wired in. The sandbox composes these itself.
 
 - **[`sb-modal`](../sb-modal/manifest.md)** to open the trace over the page when someone asks why a thing is there, and a second modal over it for the source.
 - **[`sb-source`](../sb-source/manifest.md)** to open a source on `sb-open`: set its `source`, the file's `content` or `url`, and as `passages` every citation of that source in `model.items`, so all the words the model rests on are marked.
-- **A trace mode,** wired in the page: while it's on, pointing outlines anything whose `data-ref` is in `model.items`, and a click opens the trace for it instead of acting. `examples/control-room/` shows one.
+- **[`sb-trace-mode`](../sb-trace-mode/manifest.md),** Trace in the shell's mode picker: while it's on, pointing outlines anything whose `data-ref` is in `model.items`, and a click asks for the trace instead of acting. Open this in an `sb-modal` on its `sb-pick`. `examples/control-room/` shows it.
 - **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce `sb-point` ids, so pointing at a node lights the same thing elsewhere on the page.
 
 ## Notes

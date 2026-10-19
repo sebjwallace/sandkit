@@ -27,14 +27,8 @@ main { max-width: var(--sb-page-width, 1100px); margin: 0 auto; padding: 16px 16
 /* The header's own buttons, beside the shell's controls. */
 .header-button { padding: 5px 12px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); font: inherit; font-size: 13px; cursor: pointer; }
 .header-button:hover { border-color: var(--sb-muted); }
-.header-button[aria-pressed="true"] { border-color: var(--sb-accent); background: var(--sb-accent); color: var(--sb-accent-text, #fff); }
 
 /* Trace mode: a banner says so, and what can be traced is outlined as the pointer reaches it. */
-.trace-bar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 16px; background: var(--sb-accent); color: var(--sb-accent-text, #fff); font-size: 14px; }
-.trace-bar[hidden] { display: none; }
-.trace-bar button { padding: 3px 12px; border: 1px solid currentColor; border-radius: 999px; background: none; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
-.is-tracing main { cursor: help; }
-.is-tracing .is-traceable { outline: 2px dashed var(--sb-accent); outline-offset: 3px; cursor: pointer; }
 
 /* The modals: the trace wide enough for its graph, a source tall enough to read. */
 #sources-modal { --sb-modal-width: 960px; }

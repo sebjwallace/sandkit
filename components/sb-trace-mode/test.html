@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-trace-mode tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-trace-mode.js"></script>
+</head>
+<body>
+  <script>
+    let presses = 0; // clicks that reached the page's own buttons
+
+    // A mode, and a part with a code inside another; RUL-1 and BOX-1 can be traced, OTHER can't.
+    function setup(attrs = '') {
+      const area = mount(`<div>
+        <sb-trace-mode ${attrs}></sb-trace-mode>
+        <div data-ref="BOX-1"><button class="target" data-ref="RUL-1">Rule 1</button><button class="other" data-ref="OTHER">Other</button></div>
+      </div>`);
+      area.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => presses++));
+      const el = area.querySelector('sb-trace-mode');
+      el.traceable = (ref) => ref === 'RUL-1' || ref === 'BOX-1';
+      return { el, area, target: area.querySelector('.target'), other: area.querySelector('.other') };
+    }
+
+    const banner = (el) => el.querySelector('.sb-trace-mode__banner');
+    const outline = (el) => el.querySelector('.sb-trace-mode__outline');
+    const point = (node) => node.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+    const click = (node) => node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    const escape = () => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    // ---- The mode ----
+
+    test('is a mode named Trace, or by its heading', () => {
+      assertEqual(setup().el.heading, 'Trace');
+      assertEqual(setup('heading="Why"').el.heading, 'Why');
+    });
+
+    test('active starts tracing: the page dims, and a banner says what clicking does, with Stop', () => {
+      const { el } = setup();
+      el.active = true;
+      assert(el.querySelector('.sb-trace-mode__dim').matches(':popover-open'));
+      assert(banner(el).matches(':popover-open'));
+      assert(banner(el).textContent.includes('click anything outlined'));
+      el.active = false;
+      assert(!banner(el).matches(':popover-open'));
+    });
+
+    test('setting active fires no event', () => {
+      const { el } = setup();
+      const modes = recordEvents(el, 'sb-mode');
+      el.active = true;
+      el.active = false;
+      assertEqual(modes.length, 0);
+    });
+
+    // ---- Pointing and picking ----
+
+    test('pointing outlines the innermost part that can be traced', () => {
+      const { el, target, other } = setup();
+      el.active = true;
+      point(target);
+      assert(outline(el).matches(':popover-open'));
+      const r = target.getBoundingClientRect(), box = outline(el).getBoundingClientRect();
+      assert(box.left < r.left && box.right > r.right && box.top < r.top && box.bottom > r.bottom, 'drawn round the part');
+      point(other); // OTHER can't be traced, so its traceable parent is outlined
+      const parent = other.parentElement.getBoundingClientRect();
+      assert(outline(el).getBoundingClientRect().width > parent.width, 'the part around it');
+      el.active = false;
+      assert(!outline(el).matches(':popover-open'), 'cleared when tracing ends');
+    });
+
+    test('pointing adds nothing to the parts themselves', () => {
+      const { el, target } = setup();
+      el.active = true;
+      point(target);
+      assertEqual(target.getAttribute('class'), 'target');
+      el.active = false;
+    });
+
+    test('a click on a part traces it instead of acting', () => {
+      const { el, target } = setup();
+      const picks = recordEvents(el, 'sb-pick');
+      presses = 0;
+      el.active = true;
+      click(target);
+      assertEqual([presses, picks.map((e) => e.detail)], [0, [{ ref: 'RUL-1' }]]);
+      el.active = false;
+    });
+
+    test('a click on nothing traceable is stopped, and picks nothing', () => {
+      const { el, area } = setup();
+      const picks = recordEvents(el, 'sb-pick');
+      el.traceable = () => false;
+      presses = 0;
+      el.active = true;
+      click(area.querySelector('.other'));
+      assertEqual([presses, picks.length], [0, 0]);
+      el.active = false;
+    });
+
+    test('outside trace mode, clicks pass through', () => {
+      const { el, target } = setup();
+      const picks = recordEvents(el, 'sb-pick');
+      presses = 0;
+      click(target);
+      assertEqual([presses, picks.length], [1, 0]);
+    });
+
+    test('clicks on what every mode lets through (data-modes) and in an open dialog still act', () => {
+      const area = mount('<div><sb-trace-mode></sb-trace-mode><button data-modes>Mode</button><dialog><button data-ref="RUL-1">In a dialog</button></dialog></div>');
+      const el = area.querySelector('sb-trace-mode');
+      el.traceable = () => true;
+      const picks = recordEvents(el, 'sb-pick');
+      let pressed = 0;
+      area.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => pressed++));
+      area.querySelector('dialog').show();
+      el.active = true;
+      click(area.querySelector('[data-modes]'));
+      click(area.querySelector('dialog button'));
+      assertEqual([pressed, picks.length], [2, 0]);
+      el.active = false;
+    });
+
+    // ---- Ending ----
+
+    test('Stop ends tracing and says so', () => {
+      const { el } = setup();
+      const modes = recordEvents(document, 'sb-mode');
+      el.active = true;
+      el.querySelector('.sb-trace-mode__button').click();
+      assertEqual([el.active, modes.map((e) => e.detail)], [false, [{ mode: 'Trace', active: false }]]);
+    });
+
+    test('Escape ends tracing, unless a dialog is open, which it leaves to close first', () => {
+      const area = mount('<div><sb-trace-mode></sb-trace-mode><dialog>A trace</dialog></div>');
+      const el = area.querySelector('sb-trace-mode'), dialog = area.querySelector('dialog');
+      el.active = true;
+      dialog.show();
+      escape();
+      assert(el.active, 'the dialog closes first');
+      dialog.close();
+      escape();
+      assertEqual(el.active, false);
+    });
+
+    test('two on one page keep their own modes and refs', () => {
+      const area = mount('<div><sb-trace-mode></sb-trace-mode><sb-trace-mode></sb-trace-mode><button data-ref="A-1">A</button></div>');
+      const [a, b] = area.querySelectorAll('sb-trace-mode');
+      a.traceable = (ref) => ref === 'A-1';
+      const picks = recordEvents(area, 'sb-pick');
+      a.active = true;
+      click(area.querySelector('[data-ref="A-1"]'));
+      assertEqual([b.active, picks.map((e) => [e.target === a, e.detail.ref])], [false, [[true, 'A-1']]]);
+      a.active = false;
+    });
+  </script>
+</body>
+</html>

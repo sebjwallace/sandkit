@@ -1,4 +1,4 @@
-// Sandkit sb-theme-settings 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-theme-settings 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Theming for a sandbox: the theme tokens, the viewer's chosen theme and saved presets,
 // and a Theme section for the shell's settings:
 //

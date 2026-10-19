@@ -14,6 +14,8 @@
   <script src="../../components/sb-sources/sb-sources.js"></script>
   <script src="../../components/sb-source/sb-source.js"></script>
   <script src="../../components/sb-source-trace/sb-source-trace.js"></script>
+  <script src="../../components/sb-comments/sb-comments.js"></script>
+  <script src="../../components/sb-trace-mode/sb-trace-mode.js"></script>
   <script src="model.js"></script>
 </head>
 <body>
@@ -21,19 +23,15 @@
     <sb-theme-settings slot="settings"></sb-theme-settings>
     <p><strong>Goal:</strong> see how the grid holds its frequency in the first seconds after its largest unit trips, and why the control room's new screen is designed the way it is, traced back to what operators and the standard said.</p>
     <button type="button" slot="actions" class="header-button" id="sources-button">Sources</button>
-    <button type="button" slot="actions" class="header-button" id="trace-button" aria-pressed="false">Trace</button>
+    <sb-comments slot="modes" id="comments"></sb-comments>
+    <sb-trace-mode slot="modes" id="trace-mode"></sb-trace-mode>
   </sb-shell>
-
-  <div class="trace-bar" id="trace-bar" hidden>
-    <span><strong>Tracing.</strong> Click anything outlined to see why it's there.</span>
-    <button type="button" id="trace-stop">Stop tracing</button>
-  </div>
 
   <main>
     <section class="chapter">
       <h2>Chapter 1 · The first seconds after a trip</h2>
       <p>When the largest unit on the grid trips, 1,320 MW vanish at once and the frequency starts to fall. Everything still spinning slows the fall; batteries answer within two seconds, generators within ten. On windy nights there's less spinning, so the fall is faster, and the frequency can break its 49.5 Hz limit before help arrives. The operators' new screen is built for those nights.</p>
-      <p class="try"><strong>Try:</strong> choose a windy night and press play to trip the unit: the frequency breaks the limit. Reset, press <em>Book extra response</em> on the screen, and play again. Then press <strong>Trace</strong> in the header and click that button to see why it's there.</p>
+      <p class="try"><strong>Try:</strong> choose a windy night and press play to trip the unit: the frequency breaks the limit. Reset, press <em>Book extra response</em> on the screen, and play again. Then choose <strong>Trace</strong> in the header's mode picker and click that button to see why it's there.</p>
     </section>
 
     <section class="stage">
@@ -159,40 +157,28 @@
       $('source-modal').show();
     }
 
-    // ---- Trace mode: point at anything with a code to see why it's there ----
-
-    function setTracing(on) {
-      if (on && !served) { $('serve-modal').show(); return; }
-      document.body.classList.toggle('is-tracing', on);
-      $('trace-button').setAttribute('aria-pressed', String(on));
-      $('trace-bar').hidden = !on;
-      if (!on) outline(null);
-    }
-
-    const tracing = () => document.body.classList.contains('is-tracing');
-
-    // What a click or the pointer would trace: the innermost part whose code the model knows.
-    function traceableAt(target) {
-      if (target.closest('sb-modal, sb-shell, .trace-bar')) return null;
-      for (let part = target.closest('[data-ref]'); part; part = part.parentElement?.closest('[data-ref]')) {
-        if (traceable.has(part.dataset.ref)) return part;
-      }
-      return null;
-    }
-
-    let outlined = null;
-    function outline(part) {
-      outlined?.classList.remove('is-traceable');
-      outlined = part;
-      part?.classList.add('is-traceable');
-    }
+    // ---- Tracing ----
 
     // Shown first, so the trace has its room when it lays out and can bring its subject into view.
+    // Its sources are read from the sandbox's files, so it needs serving.
     function openTrace(id) {
+      if (!served) return $('serve-modal').show();
       const trace = $('trace');
       $('trace-modal').show();
       trace.subject = id;
       trace.clearTrail();
+    }
+
+    // ---- Comments ----
+
+    // What a comment at this point is about: the codes there, innermost first, and the panel.
+    function refsAt(x, y) {
+      const top = document.elementsFromPoint(x, y).find((el) => !el.closest('sb-comments'));
+      if (!top) return null;
+      const refs = [];
+      for (let el = top.closest('[data-ref]'); el; el = el.parentElement?.closest('[data-ref]')) refs.push(el.dataset.ref);
+      const view = top.closest('.panel')?.querySelector('h3')?.textContent ?? null;
+      return { refs, view, element: top.closest('[data-ref]') ?? top };
     }
 
     // ---- Wiring ----
@@ -213,23 +199,14 @@
     });
 
     $('sources-button').addEventListener('click', () => (served ? $('sources-modal').show() : $('serve-modal').show()));
-    $('trace-button').addEventListener('click', () => setTracing(!tracing()));
-    $('trace-stop').addEventListener('click', () => setTracing(false));
+    $('trace-mode').traceable = (ref) => traceable.has(ref);
+    $('trace-mode').addEventListener('sb-pick', (e) => openTrace(e.detail.ref));
     $('sources').addEventListener('sb-open', (e) => openSource(e.detail.id));
     $('trace').addEventListener('sb-open', (e) => openSource(e.detail.id));
 
-    // In trace mode, pointing outlines what can be traced, and a click traces it instead of acting.
-    document.addEventListener('pointerover', (e) => { if (tracing()) outline(traceableAt(e.target)); }, true);
-    document.addEventListener('click', (e) => {
-      if (!tracing() || e.target.closest('sb-modal, sb-shell, .trace-bar')) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const part = traceableAt(e.target);
-      if (part) openTrace(part.dataset.ref);
-    }, true);
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && tracing() && !document.querySelector('sb-modal[open]')) setTracing(false);
-    });
+    $('comments').context = { title: 'Control Room Sandbox', version: '0.1.0', goal: 'See how the grid holds its frequency after its largest unit trips, and why the new screen is designed as it is.' };
+    $('comments').snapshot = () => ({ wind: model.options.wind, extraBooked: model.options.extraBooked });
+    $('comments').addEventListener('sb-pick', (e) => $('comments').pick(refsAt(e.detail.x, e.detail.y)));
 
     // ---- Start ----
 
