@@ -48,7 +48,7 @@ You don't need to be a programmer to build a sandbox. You need curiosity about a
 2. **Make a new folder** for your sandbox, and open the assistant there.
 3. **Ask for the sandbox you want,** and point it to Sandkit:
    > Using Sandkit (https://github.com/sebjwallace/sandkit), build me a sandbox to explore how a city's water supply works, from reservoir to tap.
-4. **Open `index.html`** in your web browser when it is ready. The first version is deliberately small: the model and a first chapter, with a few suggestions for where it could go next.
+4. **Open `index.html`** in your web browser when it is ready. The first version is deliberately small: the model and a first chapter, with a few suggestions for where it could go next. If the sandbox shows its source material, ask the assistant to serve it, and open the address it gives instead: a page opened straight from your computer can't read the sandbox's own files.
 5. **Steer it from there.** Play with it, and keep talking to the assistant: ask why something happens, say where it seems wrong, choose what to explore next. The sandbox grows one step at a time, in the direction your understanding takes it.
 
 Some starting points, to show the range:
@@ -94,7 +94,7 @@ That depends on the sandbox's purpose.
 
 A trustworthy sandbox makes clear where everything came from. Any behaviour in the model should lead back to the evidence behind it, so that anyone can judge whether it rests on solid ground or on guesswork. Short identifying codes make this practical, letting people and AI refer to exactly the same claim, question or source without ambiguity.
 
-Sandkit will include practices for keeping this record of knowledge, and a log of each working session, so that whoever takes up a sandbox later knows what is understood, what is still open, and where to begin.
+Sandkit's [sources practice](practices/sources.md) keeps this record. The material a sandbox is built from is kept beside it and catalogued, every rule, figure and assumption in the model cites the passages it rests on, and anything on the page can be traced back to them: click a button, ask why it's there, and follow the reasoning to the very words of an interview or a standard. Gaps show too: something resting on nothing cited is marked as such. A journal of every change, and why, means whoever takes up a sandbox later knows what is understood, what is still open, and where to begin.
 
 ## What is in this repository
 

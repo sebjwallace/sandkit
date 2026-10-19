@@ -27,7 +27,7 @@ Before building anything, be clear on:
 - **The subject.** What domain is being explored?
 - **The goal.** What should someone understand, decide or discover by the end? If the request doesn't say, ask. The goal shapes everything else.
 - **The kind of sandbox.** For intuition (a believable feel for how something works), for decisions (grounded in sources people can check), or for exploring possibilities (pushing beyond what is known, clearly marked as such).
-- **The sources.** What material is the model to be built from? Documents, data, articles, or the person's own knowledge. A sandbox is only as good as what is behind it. Keep the material in `sources/`, catalogued, and cite it from the model, following the [sources practice](sources.md).
+- **The sources.** What material is the model to be built from? Documents, data, articles, or the person's own knowledge. A sandbox is only as good as what is behind it. Keep the material in `sources/`, catalogued, and cite it from the model, following the [sources practice](sources.md). A sandbox that shows its sources must be served to read them (`node lib/sandkit/tools/serve.mjs .`), so say so whenever you tell the person how to open it.
 
   When the sources include data (JSON or JSON Lines), profile it first, where Node is available: `node <sandkit>/tools/analyse.mjs profile <files or folder> --md`. Read the findings (fields that never change, keys, gaps, mixed types, rare values) before designing the model, rather than reading the samples themselves. Then find what goes with what: `node <sandkit>/tools/analyse.mjs dependencies <files or folder> --md`. Treat its rules as candidate rules for the model, inferences until the person confirms them, and its exceptions as questions to ask. The same analyses can go in the sandbox as [`sb-profile`](../components/sb-profile/manifest.md) and [`sb-dependencies`](../components/sb-dependencies/manifest.md), so the person sees what you saw.
 
@@ -157,7 +157,9 @@ Add an entry to `JOURNAL.md` saying what changed and why, which raises the sandb
 End every iteration with a short handover:
 
 ```
-Open:           how to open the sandbox
+Open:           how to open the sandbox: double-click index.html, or, if it reads
+                its own files, such as its sources, serve it with
+                node lib/sandkit/tools/serve.mjs . and open the address it prints
 Version:        the new version, and whether it was breaking
 Try first:      the one thing to do first
 What it shows:  one line per chapter built

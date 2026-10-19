@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.36 · 2026-10-19
+- Serving is documented where people and agents start: the README's Getting started says to ask the assistant to serve a sandbox that shows its source material, and "Showing the working" describes the sources practice and tracing, now they exist. The building guide says to serve such a sandbox, in step 1 and in the handover's Open.
+
 ## 0.2.35 · 2026-10-19
 - Forty-six components: added `sb-source-trace`, why something in the model is there as one graph flowing left to right, from the sources to what rests on it. `tools/analyse.mjs trace` runs it from Node. The sources practice gains "Tracing", with trace mode; the locating practice lists it.
 - A fourth example, `examples/control-room/`: a power grid control room's frequency screen, every part traceable to invented but realistic sources, with Sources and Trace in the header. Served from Sandkit's root.
