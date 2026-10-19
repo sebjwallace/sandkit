@@ -47,6 +47,7 @@ Each entry of `trace` is one step:
 |---|---|---|
 | `controls` | off | Shows buttons (first, back, forward, last), a slider and the step count. |
 | `empty-text` | `No code yet.` | Shown when there's no code. |
+| `variables` | `open` | The variables beside the code: `open`, `closed` to just their heading (viewers can open it), or `none` to leave them out. A viewer opening or closing them updates it, and with an `id` their choice is remembered and wins over this. |
 
 ## Properties
 
@@ -58,7 +59,7 @@ Each entry of `trace` is one step:
 | `step` | Which step to show, counting from 0. Kept within the trace. Setting it doesn't fire `sb-step`. |
 | `highlight` | `{ lines: [numbers], names: [variable names] }`: what to point at. A name lights every mention of it in the code, and its row beside it. |
 
-Variables that changed since the step before, or are new, are marked, and hovering one shows what it was. Pointing at a variable, in the code or beside it, lights every mention of it while the pointer is there. Names in the code count as variables when they're in the current step's `variables`.
+Variables that changed since the step before, or are new, are marked. Each value keeps to one line, cut short with "…" when long; hovering shows it in full, and what it was, and clicking opens it in full until clicked again, across steps. Pointing at a variable, in the code or beside it, lights every mention of it while the pointer is there. Names in the code count as variables when they're in the current step's `variables`.
 
 ## Syntax
 
@@ -88,6 +89,7 @@ Keywords and literals aren't variables, so they can't be pointed at as one.
 |---|---|---|
 | `sb-step` | `{ step, entry }` | A viewer moves to another step with the controls. Bubbles. |
 | `sb-select` | `{ line }` | A line is clicked. Bubbles. |
+| `sb-point` | `{ line }`, or `null` | The pointer moves onto another line, or off the lines. Bubbles. |
 
 ## Styling
 
@@ -95,7 +97,7 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-surface-2`, `--sb-accent`, `--sb-
 
 Its own custom property: `--sb-code-height`, the code's greatest height before it scrolls (for example `260px`). The current line is kept in view.
 
-Classes: `sb-code__bar`, `sb-code__button`, `sb-code__slider`, `sb-code__count`, `sb-code__note`, `sb-code__body`, `sb-code__code`, `sb-code__line` (`--current`, `--highlighted`), `sb-code__number`, `sb-code__text`, `sb-code__comment`, `sb-code__string`, `sb-code__number-literal`, `sb-code__keyword`, `sb-code__literal`, `sb-code__name` (`--variable`, `--highlighted`), `sb-code__variables`, `sb-code__variable` (`--changed`, `--highlighted`), `sb-code__empty`.
+Classes: `sb-code__bar`, `sb-code__button`, `sb-code__slider`, `sb-code__count`, `sb-code__note`, `sb-code__body`, `sb-code__code`, `sb-code__line` (`--current`, `--highlighted`), `sb-code__number`, `sb-code__text`, `sb-code__comment`, `sb-code__string`, `sb-code__number-literal`, `sb-code__keyword`, `sb-code__literal`, `sb-code__name` (`--variable`, `--highlighted`), `sb-code__pane` (the variables, a `<details>`), `sb-code__toggle` (its heading), `sb-code__variables`, `sb-code__variable` (`--changed`, `--highlighted`, `--open`), `sb-code__empty`.
 
 ## Works well with
 
@@ -103,7 +105,7 @@ Suggestions only: nothing here is wired in. The sandbox composes these itself.
 
 - **[`sb-scrubber`](../sb-scrubber/manifest.md),** to play the trace at a steady pace: a range from 0 to the last step, setting `step` on `sb-change`.
 - **A picture of the data,** such as [`sb-table`](../sb-table/manifest.md) or [`sb-matrix`](../sb-matrix/manifest.md): on `sb-step`, show `e.detail.entry.variables` there too, so the code and the data move together.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so the prose can point at lines and variables.
+- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so the prose can point at lines and variables, and announce the ref a line stands for from `sb-point`, so pointing at the code lights up what it concerns.
 
 ## Notes
 

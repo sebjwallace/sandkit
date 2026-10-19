@@ -102,7 +102,7 @@
       assertEqual(changed(el), ['n'], 'new');
       el.step = 2;
       assertEqual(changed(el), ['total']);
-      assertEqual(variable(el, 'total').title, 'was 0');
+      assertEqual(variable(el, 'total').title, '4\nwas 0', 'hovering shows the value and what it was');
       el.step = 3;
       assertEqual(changed(el), [], 'nothing changed');
       el.trace = [{ line: 1, variables: {} }, { line: 1, variables: { later: undefined } }];
@@ -188,6 +188,80 @@
       assertEqual(el.querySelector('.sb-code__count').textContent, 'No steps');
     });
 
+    // ---- The variables pane ----
+
+    const pane = (el) => el.querySelector('.sb-code__pane');
+
+    test('the variables pane is open unless asked otherwise', () => {
+      assert(isShown(pane(viewer())) && pane(viewer()).open, 'open by default');
+      const closed = viewer('variables="closed"');
+      assert(isShown(pane(closed)) && !pane(closed).open, 'closed to its heading');
+      assertEqual(variables(closed), { total: '0' }, 'still filled in while closed');
+      assert(!isShown(pane(viewer('variables="none"'))), 'not there at all');
+    });
+
+    test('the sandbox can open, close or remove the pane at any time', () => {
+      const el = viewer();
+      el.setAttribute('variables', 'closed');
+      assert(!pane(el).open, 'closed');
+      el.setAttribute('variables', 'none');
+      assert(!isShown(pane(el)), 'removed');
+      el.setAttribute('variables', 'open');
+      assert(isShown(pane(el)) && pane(el).open, 'back and open');
+    });
+
+    test('a viewer opening or closing the pane is kept in the attribute', async () => {
+      const el = viewer('variables="closed"');
+      el.querySelector('.sb-code__toggle').click();
+      await waitFor(() => el.getAttribute('variables') === 'open');
+      el.querySelector('.sb-code__toggle').click();
+      await waitFor(() => el.getAttribute('variables') === 'closed');
+    });
+
+    test('the pane stays beside the code when narrow, so opening it never shifts the page', () => {
+      const el = viewer('style="width: 360px"');
+      assertEqual(pane(el).offsetTop, el.querySelector('.sb-code__code').offsetTop);
+    });
+
+    test('with an id, the viewer\'s choice is remembered over the sandbox\'s', async () => {
+      localStorage.removeItem('sb-code:remembered');
+      const first = viewer('id="remembered" variables="closed"');
+      first.querySelector('.sb-code__toggle').click();
+      await waitFor(() => first.getAttribute('variables') === 'open');
+      first.remove();
+      assertEqual(viewer('id="remembered" variables="closed"').getAttribute('variables'), 'open');
+      localStorage.removeItem('sb-code:remembered');
+    });
+
+    test('the sandbox opening or closing the pane isn\'t remembered as the viewer\'s choice', async () => {
+      localStorage.removeItem('sb-code:sandbox');
+      const el = viewer('id="sandbox"');
+      el.setAttribute('variables', 'closed');
+      await nextFrame();
+      assertEqual(localStorage.getItem('sb-code:sandbox'), null);
+    });
+
+    test('removing a closed pane stays removed', async () => {
+      const el = viewer('variables="closed"');
+      el.setAttribute('variables', 'none');
+      await nextFrame();
+      assertEqual(el.getAttribute('variables'), 'none');
+    });
+
+    // ---- Values ----
+
+    test('each value keeps to one line until a viewer opens it, and stays open across steps', () => {
+      const el = viewer();
+      const total = () => variable(el, 'total');
+      assertEqual(getComputedStyle(total().querySelector('td')).whiteSpace, 'nowrap', 'one line');
+      total().querySelector('td').click();
+      assert(total().classList.contains('sb-code__variable--open'), 'opened by a click');
+      el.step = 2;
+      assert(total().classList.contains('sb-code__variable--open'), 'still open on another step');
+      total().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      assert(!total().classList.contains('sb-code__variable--open'), 'closed from the keyboard');
+    });
+
     // ---- Pointing ----
 
     test('highlights lines, and every mention of a variable', () => {
@@ -213,6 +287,19 @@
       over(variable(el, 'n'));
       el.dispatchEvent(new PointerEvent('pointerleave'));
       assertEqual(litNames(el), [], 'cleared when the pointer leaves');
+    });
+
+    test('pointing at a line fires sb-point with its number, and null on leaving', () => {
+      const el = viewer();
+      const events = recordEvents(el, 'sb-point');
+      const over = (node) => node.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      over(line(el, 2).querySelector('.sb-code__number'));
+      over(line(el, 2).querySelector('.sb-code__text'));
+      over(line(el, 3));
+      over(variable(el, 'total'));
+      over(line(el, 1));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(events.map((e) => e.detail), [{ line: 2 }, { line: 3 }, null, { line: 1 }, null], 'once per line');
     });
 
     test('clicking a line fires sb-select with its number', () => {

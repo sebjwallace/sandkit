@@ -24,8 +24,10 @@
     .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
     .guide a { color: var(--sb-accent); }
     .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; }
+    .actions button { padding: 2px 10px; font: inherit; color: inherit; background: var(--sb-surface-2); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); cursor: pointer; }
     .actions input { width: 70px; padding: 2px 6px; font: inherit; color: inherit; background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
     .point { border-bottom: 1px dashed var(--sb-accent); color: var(--sb-text); cursor: default; }
+    .point.is-lit { background: var(--sb-accent-soft); }
   </style>
 </head>
 <body>
@@ -74,6 +76,7 @@
 &lt;/script&gt;</pre>
       <p>Keywords common to pseudocode, JavaScript and Python are coloured for you. For your own language, add its words: <code>code.syntax = { ...code.syntax, keywords: [...code.syntax.keywords, 'reorder'] }</code>.</p>
       <p>The <code>controls</code> attribute adds buttons and a slider to step through; without it, the sandbox moves things along by setting <code>step</code>. Either way, <code>sb-step</code> tells the sandbox when a viewer moves.</p>
+      <p>The variables sit beside the code, and viewers can close them to their heading. Where the code tells the story on its own, start them closed with <code>variables="closed"</code>, or leave them out with <code>variables="none"</code>. Give it an <code>id</code> and each viewer's choice is remembered. Long values keep to one line; hover to read one, or click to open it.</p>
 
       <h3>Making it reveal, not just display</h3>
       <ul>
@@ -89,14 +92,17 @@
     <h2 class="part">Examples</h2>
     <section class="example">
       <h2>Giving change, in pseudocode</h2>
-      <p>The fewest coins for an amount: take the biggest coin that fits, as often as it fits, then the next. Change the amount and the model runs again.</p>
-      <div class="actions"><label>Change for <input type="number" id="amount" value="87" min="0" max="500"> p</label></div>
-      <sb-code id="change" controls></sb-code>
+      <p>The fewest coins for an amount: take the biggest coin that fits, as often as it fits, then the next. Change the amount and the model runs again. The variables start closed; open them beside the code, or try the buttons.</p>
+      <div class="actions">
+        <label>Change for <input type="number" id="amount" value="87" min="0" max="500"> p</label>
+        <span>Variables: <button data-variables="open">Open</button> <button data-variables="closed">Closed</button> <button data-variables="none">None</button></span>
+      </div>
+      <sb-code id="change" controls variables="closed"></sb-code>
     </section>
 
     <section class="example">
       <h2>Sorting a list, in JavaScript</h2>
-      <p>Bubble sort walks through the list, swapping neighbours that are the wrong way round. Point at <span class="point" data-lines="4">the comparison</span>, <span class="point" data-lines="5 6 7">the swap</span>, or <span class="point" data-names="list">the list</span>; or point at a variable, beside the code or in it.</p>
+      <p>Bubble sort walks through the list, swapping neighbours that are the wrong way round. Point at <span class="point" data-lines="4">the comparison</span>, <span class="point" data-lines="5 6 7">the swap</span>, or <span class="point" data-names="list">the list</span>; or point at a variable, beside the code or in it. Pointing at a line of the comparison or the swap lights its words here too.</p>
       <sb-code id="sort" controls style="--sb-code-height: 260px"></sb-code>
     </section>
   </main>
@@ -150,6 +156,10 @@
     };
     amount.addEventListener('input', showChange);
 
+    for (const button of document.querySelectorAll('[data-variables]')) {
+      button.addEventListener('click', () => change.setAttribute('variables', button.dataset.variables));
+    }
+
     // ---- Sorting a list ----
 
     const sort = document.getElementById('sort');
@@ -195,6 +205,13 @@
     }
 
     sort.trace = bubbleSort([5, 2, 4, 1]);
+
+    // Pointing at a line lights the words in the prose about it.
+    sort.addEventListener('sb-point', (e) => {
+      for (const point of document.querySelectorAll('.point[data-lines]')) {
+        point.classList.toggle('is-lit', point.dataset.lines.split(' ').map(Number).includes(e.detail?.line));
+      }
+    });
 
     for (const point of document.querySelectorAll('.point')) {
       point.addEventListener('pointerenter', () => {

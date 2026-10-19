@@ -1,4 +1,4 @@
-// Sandkit sb-code 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-code 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Code, or pseudocode, walked through a step at a time: the line running now is marked, and the
 // variables beside it show what changed. The steps are a trace that the sandbox's model records
 // as it runs, so the model stays the source of truth.
@@ -32,7 +32,7 @@
     .sb-code__count { color: var(--sb-muted, #616e7c); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .sb-code__note { min-height: 1.5em; margin-bottom: 8px; color: var(--sb-text, #1f2933); }
     .sb-code__note[hidden] { display: none; }
-    .sb-code__body { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+    .sb-code__body { display: flex; gap: 12px; align-items: flex-start; }
     .sb-code__code { flex: 3 1 300px; min-width: 0; max-height: var(--sb-code-height, none); overflow: auto; margin: 0; padding: 6px 0; border-radius: var(--sb-radius, 8px); background: var(--sb-surface-2, #eef0f3); font: 12.5px/1.6 ui-monospace, Menlo, Consolas, monospace; }
     .sb-code__line { display: flex; padding-right: 12px; }
     .sb-code__number { flex: none; width: 3.5em; padding-right: 1em; text-align: right; color: var(--sb-muted, #616e7c); user-select: none; cursor: pointer; }
@@ -46,11 +46,17 @@
     .sb-code__keyword { color: var(--sb-accent, #2563eb); font-weight: 600; }
     .sb-code__name--variable { cursor: pointer; }
     .sb-code__name--highlighted { border-radius: 3px; background: var(--sb-accent, #2563eb); color: var(--sb-accent-text, #fff); }
-    .sb-code__variables { flex: 1 1 180px; margin: 0; border-collapse: collapse; font: 12.5px ui-monospace, Menlo, Consolas, monospace; }
-    .sb-code__variables caption { padding-bottom: 4px; text-align: left; color: var(--sb-muted, #616e7c); font: 600 11px var(--sb-font, system-ui); text-transform: uppercase; letter-spacing: 0.04em; }
+    .sb-code__pane { flex: 1 1 180px; }
+    .sb-code__pane:not([open]) { flex: none; }
+    .sb-code__toggle { padding-bottom: 4px; color: var(--sb-muted, #616e7c); font: 600 11px var(--sb-font, system-ui); text-transform: uppercase; letter-spacing: 0.04em; cursor: pointer; }
+    .sb-code__toggle:focus-visible { outline: 2px solid var(--sb-accent, #2563eb); outline-offset: 1px; }
+    .sb-code__variables { width: 100%; margin: 0; border-collapse: collapse; font: 12.5px ui-monospace, Menlo, Consolas, monospace; }
     .sb-code__variables th, .sb-code__variables td { padding: 3px 8px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--sb-surface-2, #eef0f3); }
-    .sb-code__variables th { font-weight: 600; white-space: nowrap; cursor: pointer; }
-    .sb-code__variables td { overflow-wrap: anywhere; }
+    .sb-code__variable { cursor: pointer; }
+    .sb-code__variable:focus-visible { outline: 2px solid var(--sb-accent, #2563eb); outline-offset: -2px; }
+    .sb-code__variables th { font-weight: 600; white-space: nowrap; }
+    .sb-code__variables td { width: 100%; max-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sb-code__variable--open td { white-space: normal; overflow-wrap: anywhere; }
     .sb-code__variable--changed td { background: color-mix(in srgb, var(--sb-warn, #d69e2e) 20%, transparent); }
     .sb-code__variable--highlighted th { color: var(--sb-accent, #2563eb); }
     .sb-code__variable--highlighted { box-shadow: inset 3px 0 0 var(--sb-accent, #2563eb); }
@@ -64,6 +70,16 @@
     const style = Object.assign(document.createElement('style'), { id: 'sb-code-style', textContent: CSS });
     document.head.prepend(style); // first, so the sandbox's own stylesheet wins
   }
+
+  // Elements with an id remember whether each viewer opened or closed the variables.
+  const storage = {
+    read(key) {
+      try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+    },
+    write(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* kept for this visit only */ }
+    }
+  };
 
   // ---- Showing code ----
 
@@ -115,7 +131,7 @@
 
   class SbCode extends HTMLElement {
     static origin = ORIGIN;
-    static observedAttributes = ['controls', 'empty-text'];
+    static observedAttributes = ['controls', 'empty-text', 'variables'];
 
     constructor() {
       super();
@@ -125,18 +141,38 @@
       this._highlight = {};
       this._syntax = DEFAULT_SYNTAX;
       this._pointedAt = null; // the variable name under the pointer
+      this._pointedLine = null; // the line under the pointer
+      this._openValues = new Set(); // variables a viewer opened to their full value, kept across steps
       this.addEventListener('click', (e) => this._click(e));
+      this.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.sb-code__variable')) {
+          e.preventDefault();
+          this._openValue(e.target);
+        }
+      });
       this.addEventListener('input', (e) => {
         if (e.target.matches('.sb-code__slider')) this._moveTo(Number(e.target.value));
       });
-      this.addEventListener('pointerover', (e) => this._pointAt(e.target.closest('[data-name].sb-code__name--variable, [data-variable]')));
-      this.addEventListener('pointerleave', () => this._pointAt(null));
+      this.addEventListener('pointerover', (e) => {
+        this._pointAt(e.target.closest('[data-name].sb-code__name--variable, [data-variable]'));
+        this._pointAtLine(e.target.closest('.sb-code__line'));
+      });
+      this.addEventListener('pointerleave', () => {
+        this._pointAt(null);
+        this._pointAtLine(null);
+      });
+      // toggle doesn't bubble, so it's heard on the way down.
+      this.addEventListener('toggle', (e) => {
+        if (e.target.matches('.sb-code__pane')) this._toggled(e.target);
+      }, true);
     }
 
     connectedCallback() {
       addStyle();
       this.classList.add('sb-code');
       if (!this.querySelector('.sb-code__body')) {
+        const saved = this.id && this._variables !== 'none' ? storage.read(`sb-code:${this.id}`) : null;
+        if (saved) this.setAttribute('variables', saved); // a viewer's choice wins over the sandbox's
         this.innerHTML = `
           <div class="sb-code__bar">
             <button type="button" class="sb-code__button" data-move="first" aria-label="First step">⏮</button>
@@ -149,7 +185,10 @@
           <div class="sb-code__note" aria-live="polite"></div>
           <div class="sb-code__body">
             <pre class="sb-code__code"></pre>
-            <table class="sb-code__variables"><caption>Variables</caption><tbody></tbody></table>
+            <details class="sb-code__pane" open>
+              <summary class="sb-code__toggle">Variables</summary>
+              <table class="sb-code__variables"><tbody></tbody></table>
+            </details>
           </div>`;
       }
       this.render();
@@ -196,6 +235,8 @@
       this._showHighlight();
     }
 
+    get _variables() { return this.getAttribute('variables') || 'open'; }
+
     // ---- Rendering ----
 
     render() {
@@ -206,7 +247,15 @@
         ? this._code.split('\n').map((line, i) => `<div class="sb-code__line" data-line="${i + 1}"><span class="sb-code__number">${i + 1}</span><span class="sb-code__text">${colour(line)}</span></div>`).join('')
         : `<div class="sb-code__empty">${esc(this.getAttribute('empty-text') || 'No code yet.')}</div>`;
       this.querySelector('.sb-code__bar').hidden = !this.hasAttribute('controls');
+      this._showPane();
       this._showStep();
+    }
+
+    // The variables pane: open, closed to its heading, or not there at all.
+    _showPane() {
+      const pane = this.querySelector('.sb-code__pane');
+      pane.hidden = this._variables === 'none';
+      pane.open = this._variables !== 'closed';
     }
 
     // Marks the current line, shows this step's variables and note, and brings the line into view.
@@ -227,12 +276,14 @@
       this._scrollTo(this.querySelector('.sb-code__line--current'));
     }
 
-    // A variable is marked as changed when it differs from the step before, or is new.
+    // A variable is marked as changed when it differs from the step before, or is new. Each value
+    // keeps to one line unless a viewer opened it; hovering shows it in full, and what it was.
     _showVariables(variables, before) {
       this.querySelector('.sb-code__variables tbody').innerHTML = Object.entries(variables).map(([name, value]) => {
         const changed = before && (!(name in before) || show(before[name]) !== show(value));
-        const was = changed && name in before ? ` title="was ${esc(show(before[name]))}"` : '';
-        return `<tr class="sb-code__variable${changed ? ' sb-code__variable--changed' : ''}" data-variable="${esc(name)}"${was}><th scope="row">${esc(name)}</th><td>${esc(show(value))}</td></tr>`;
+        const title = show(value) + (changed && name in before ? `\nwas ${show(before[name])}` : '');
+        const classes = ['sb-code__variable', changed && 'sb-code__variable--changed', this._openValues.has(name) && 'sb-code__variable--open'].filter(Boolean).join(' ');
+        return `<tr class="${classes}" data-variable="${esc(name)}" title="${esc(title)}" tabindex="0" aria-expanded="${this._openValues.has(name)}"><th scope="row">${esc(name)}</th><td>${esc(show(value))}</td></tr>`;
       }).join('');
       // Names in the code that are variables at this step can be pointed at.
       const names = new Set(Object.keys(variables));
@@ -285,8 +336,35 @@
         const moves = { first: 0, back: this._step - 1, forward: this._step + 1, last: this._trace.length - 1 };
         return this._moveTo(moves[button.dataset.move]);
       }
+      const variable = e.target.closest('.sb-code__variable');
+      if (variable) return this._openValue(variable);
       const line = e.target.closest('.sb-code__line');
       if (line) this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { line: Number(line.dataset.line) } }));
+    }
+
+    // A viewer opening or closing the variables: kept in the attribute, so it always says how they
+    // are, and remembered with an id. Toggles the sandbox caused already agree with the attribute.
+    _toggled(pane) {
+      const state = pane.open ? 'open' : 'closed';
+      if (pane.hidden || state === this._variables) return;
+      this.setAttribute('variables', state);
+      if (this.id) storage.write(`sb-code:${this.id}`, state);
+    }
+
+    // A viewer opening a value to read it in full, or closing it back to one line.
+    _openValue(row) {
+      const name = row.dataset.variable;
+      if (!this._openValues.delete(name)) this._openValues.add(name);
+      row.classList.toggle('sb-code__variable--open', this._openValues.has(name));
+      row.setAttribute('aria-expanded', this._openValues.has(name));
+    }
+
+    // Tells the page which line is pointed at, so it can light what the line concerns.
+    _pointAtLine(el) {
+      const line = el ? Number(el.dataset.line) : null;
+      if (line === this._pointedLine) return;
+      this._pointedLine = line;
+      this.dispatchEvent(new CustomEvent('sb-point', { bubbles: true, detail: line == null ? null : { line } }));
     }
 
     _pointAt(el) {
