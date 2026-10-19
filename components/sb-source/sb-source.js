@@ -1,4 +1,4 @@
-// Sandkit sb-source 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-source 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // One source, with the passages the model cites marked where they are. Quotes it can't find are
 // listed as not found, never hidden. A source's text is never rendered as markup.
 //
@@ -158,20 +158,28 @@
     return ranges;
   }
 
-  // The runs of lines to fold away: every line except those holding a passage and the nearest
-  // written line before one, so an answer keeps its question. A single line is never folded.
+  // The runs of lines to fold away: every line except those holding a passage, the nearest written
+  // line before one, so an answer keeps its question, and each less indented line above it, so a
+  // field in JSON or YAML keeps the structure it sits in. A single line is never folded.
   function folds(text, places) {
     const starts = [0];
     for (let i = 0; i < text.length; i++) if (text[i] === '\n') starts.push(i + 1);
     const endOf = (line) => (line + 1 < starts.length ? starts[line + 1] : text.length);
     const isBlank = (line) => !text.slice(starts[line], endOf(line)).trim();
     const lineAt = (offset) => starts.findLastIndex((start) => start <= offset);
+    const indentOf = (line) => text.slice(starts[line], endOf(line)).match(/^[ \t]*/)[0].length;
 
     const kept = new Set();
     for (const { start, end } of places) {
       let first = lineAt(start) - 1;
       while (first > 0 && isBlank(first)) first--;
       for (let line = Math.max(first, 0); line <= lineAt(end - 1); line++) kept.add(line);
+      let indent = indentOf(lineAt(start));
+      for (let line = lineAt(start) - 1; line >= 0 && indent > 0; line--) {
+        if (isBlank(line) || indentOf(line) >= indent) continue;
+        kept.add(line);
+        indent = indentOf(line);
+      }
     }
 
     const runs = [];
@@ -233,7 +241,7 @@
   const isMarkdown = (source) => source.format === 'markdown' || /\.(md|markdown)$/i.test(source.path ?? '');
 
   // Data and code read best in fixed-width type; everything else is set like a document.
-  const CODE_FILE = /\.(json|jsonl|ndjson|csv|tsv|ya?ml|xml|toml|ini|log|js|mjs|ts|py|rb|go|rs|java|c|h|cpp|cs|sql|sh)$/i;
+  const CODE_FILE = /\.(json|jsonl|ndjson|csv|tsv|ya?ml|xml|html?|toml|ini|log|js|mjs|ts|py|rb|go|rs|java|c|h|cpp|cs|sql|sh)$/i;
   const isCode = (source) => /^(data|code)$/.test(source.format ?? '') || CODE_FILE.test(source.path ?? '');
 
   const FULL_SCREEN_ICON = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>';
@@ -263,12 +271,6 @@
     if (text.length <= MAX_QUOTE) return text;
     const cut = text.slice(0, MAX_QUOTE);
     return cut.slice(0, Math.max(cut.lastIndexOf(' '), 1)).trim();
-  }
-
-  // JSON is easier to read, and quote, pretty-printed.
-  function readable(content, source) {
-    if (!/\.json$/i.test(source?.path ?? '')) return content;
-    try { return JSON.stringify(JSON.parse(content), null, 2); } catch { return content; }
   }
 
   class SbSource extends HTMLElement {
@@ -317,7 +319,7 @@
       this._render();
     }
 
-    // The source's text, loaded by the page. Always shown as text, never as markup.
+    // The source's text, loaded by the page. Always shown as text, never as markup, and exactly as the file is.
     get content() { return this._content; }
     set content(content) {
       this._content = content == null ? null : String(content);
@@ -485,7 +487,7 @@
     // The text, with each passage marked and labelled where it starts. Every piece of the source
     // goes through esc, so its markup shows as text.
     _textHtml(source) {
-      const text = readable(this._content, source);
+      const text = this._content;
       const places = this._locate(text);
       const runs = places.length ? folds(text, places) : [];
       const styles = isMarkdown(source) ? markdown(text) : [];

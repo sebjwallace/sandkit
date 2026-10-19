@@ -110,9 +110,10 @@
       assertEqual(view.querySelector('.sb-source__path').textContent, 'sources/interviews/depot.txt');
     });
 
-    test('pretty-prints JSON, and sets data and code in fixed-width type', () => {
-      const view = show([{ id: 'P', quote: '"limit": 40' }], { source: { id: 'SRC-6', path: 'data/stock.json' }, content: '{"limit":40,"site":"North"}' });
-      assertEqual(sourceText(view), '{\n  "limit": 40,\n  "site": "North"\n}');
+    test('shows JSON exactly as the file is, in fixed-width type, as it does data and code', () => {
+      const json = '{"limit":40,\n "site":"North"}';
+      const view = show([{ id: 'P', quote: '"limit":40' }], { source: { id: 'SRC-6', path: 'data/stock.json' }, content: json });
+      assertEqual(sourceText(view), json);
       assert(view.querySelector('.sb-source__text--code'), 'fixed-width');
       assertEqual(view.found.map((p) => p.id), ['P']);
       view.source = { id: 'SRC-7', path: 'data/stock.csv' };
@@ -208,6 +209,15 @@
       assertEqual(gaps(view).map((g) => g.textContent), ['⋯ 5 lines', '⋯ 6 lines']);
       const shown = [...view.querySelector('.sb-source__text').childNodes].filter((n) => n.nodeType === 3 || visible(n)).map((n) => n.textContent).join('');
       assertEqual(shown, '⋯ 5 linesQ: And deliveries?\n\nA: Twice a week.\n⋯ 6 lines');
+    });
+
+    test('keeps every less indented line above a passage, so nested data keeps its structure', () => {
+      const json = ['{', '  "station": "MB-04",', '  "name": "Old Bridge",', '  "thresholds": {', '    "low": 0.4,', '    "typical": 1.9,',
+        '    "warning": 3.2,', '    "severe": 3.9', '  },', '  "interval": 15', '}'].join('\n');
+      const view = show([{ id: 'PAR-4', quote: '"severe": 3.9' }], { source: { id: 'SRC-21', path: 'gauge.json' }, content: json, expanded: false });
+      const kept = [...view.querySelector('.sb-source__text').childNodes].filter((n) => n.nodeType === 3 || visible(n))
+        .map((n) => n.textContent).join('').split('\n').filter((line) => line.trim());
+      assertEqual(kept, ['{', '⋯ 2 lines  "thresholds": {', '⋯ 2 lines    "warning": 3.2,', '    "severe": 3.9', '⋯ 3 lines']);
     });
 
     test('never folds a single line, and folds nothing when there are no passages', () => {

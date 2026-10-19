@@ -53,14 +53,14 @@ The page loads the file and hands it over; the component never fetches. Reading 
 
 | Attribute | Default | Meaning |
 |---|---|---|
-| `expanded` | off | Shows all the text, with the passages still marked. Otherwise only the cited lines show, each with the written line before it, and other runs of lines fold into gaps (`⋯ 12 lines`) a viewer can open. Viewers switch it with Show all in the paper's top line. |
+| `expanded` | off | Shows all the text, with the passages still marked. Otherwise only the cited lines show, each with the written line before it and every less indented line above it (so a field in JSON or YAML keeps the structure it sits in), and other runs of lines fold into gaps (`⋯ 12 lines`) a viewer can open. Viewers switch it with Show all in the paper's top line. |
 
 ## Properties and methods
 
 | Member | Meaning |
 |---|---|
 | `source` | The catalogue entry. Without one, the component says "Choose a source to see it here." |
-| `content` | The source's text. Always shown as text, never as markup. JSON is pretty-printed. Setting it folds any gaps a viewer opened. |
+| `content` | The source's text, shown exactly as the file is: never as markup, never re-laid out, so a quote copied from it is in the file. Setting it folds any gaps a viewer opened. |
 | `url` | Where an image, PDF or other file opens, when there is no `content`. |
 | `passages` | The passages to mark. Setting them folds any opened gaps again. |
 | `current` | The id of the passage to go to: scrolled to and outlined, or the PDF opened at its page. `null` for none. |

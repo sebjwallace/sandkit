@@ -34,6 +34,7 @@
     .items code { font: 600 11px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); }
     sb-source { height: 600px; }
     #plan, #notes { height: auto; }
+    #feed, #page { height: 520px; }
     .named { margin: 8px 0 0; font-size: 12px; color: var(--sb-muted); }
     .named code { font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-text); }
   </style>
@@ -136,6 +137,32 @@
         <sb-source id="notes"></sb-source>
       </div>
       <p class="named" id="notes-named">Select some words in the notes to name a passage.</p>
+    </section>
+
+    <section class="example">
+      <h2>A river catchment: a gauge’s readings</h2>
+      <p>The flood model’s levels and timing cite the JSON a river gauge sends. It shows exactly as the file is, in fixed-width type, folded to the cited lines and the structure each sits in.</p>
+      <div class="side-by-side">
+        <div class="side">
+          <h3>Cited by the model</h3>
+          <ul class="items" id="feed-items"></ul>
+        </div>
+        <sb-source id="feed"></sb-source>
+      </div>
+      <p class="named" id="feed-named">Select some of the JSON to name a passage.</p>
+    </section>
+
+    <section class="example">
+      <h2>A river catchment: the agency’s web page</h2>
+      <p>A rule cites a flood agency’s page, saved as HTML. Its tags are shown as text, never run, so the page reads as the code it is; a readable copy beside it is easier on people.</p>
+      <div class="side-by-side">
+        <div class="side">
+          <h3>Cited by the model</h3>
+          <ul class="items" id="page-items"></ul>
+        </div>
+        <sb-source id="page"></sb-source>
+      </div>
+      <p class="named" id="page-named">Select some words to name a passage.</p>
     </section>
   </main>
 
@@ -283,12 +310,89 @@ Written by the night signaller for the morning shift.
       { id: 'QST-2', title: 'Is J2 visible enough?', quote: 'J2 is hard to see in low sun' }
     ];
 
+    // ---- A river catchment: a gauge's JSON and the agency's page ----
+
+    const FEED_SOURCE = {
+      id: 'SRC-21', title: 'Readings from the Millbrook gauge', path: 'sources/gauges/millbrook-2026-10-14.json', format: 'data',
+      author: 'River monitoring network', authored: '2026-10-14', captured: '2026-10-14', status: 'catalogued', stance: 'assertive', sensitivity: 'public',
+      summary: 'One morning of river levels at Millbrook, as the gauge reports them.'
+    };
+
+    const FEED = `{
+  "station": {
+    "id": "MB-04",
+    "name": "Millbrook at Old Bridge",
+    "river": "Mill Brook",
+    "datum": "local, metres above gauge zero"
+  },
+  "thresholds": {
+    "typicalHigh": 1.9,
+    "warningLevel": 3.2,
+    "severeLevel": 3.9
+  },
+  "intervalMinutes": 15,
+  "readings": [
+    { "time": "2026-10-14T06:00:00Z", "level": 2.41, "trend": "rising" },
+    { "time": "2026-10-14T06:15:00Z", "level": 2.58, "trend": "rising" },
+    { "time": "2026-10-14T06:30:00Z", "level": 2.77, "trend": "rising" },
+    { "time": "2026-10-14T06:45:00Z", "level": 2.93, "trend": "rising" },
+    { "time": "2026-10-14T07:00:00Z", "level": 3.08, "trend": "rising" },
+    { "time": "2026-10-14T07:15:00Z", "level": 3.21, "trend": "rising" },
+    { "time": "2026-10-14T07:30:00Z", "level": 3.30, "trend": "steady" }
+  ],
+  "quality": "provisional"
+}`;
+
+    const FEED_ITEMS = [
+      { id: 'PAR-4', title: 'Warning level: 3.2 m', quote: '"warningLevel": 3.2' },
+      { id: 'PAR-5', title: 'A reading every 15 minutes', quote: '"intervalMinutes": 15' },
+      { id: 'OBS-1', title: 'Crossed the warning level at 07:15', quote: '"time": "2026-10-14T07:15:00Z", "level": 3.21' },
+      { id: 'ASM-3', title: 'Readings may still change', quote: '"quality": "provisional"' }
+    ];
+
+    const PAGE_SOURCE = {
+      id: 'SRC-22', title: 'Flood warnings explained', path: 'sources/web/flood-warnings-explained.html', format: 'web',
+      author: 'Regional flood agency', authored: '2025-06-02', captured: '2026-10-13', origin: 'https://example.org/flood-warnings',
+      status: 'catalogued', stance: 'assertive', sensitivity: 'public',
+      summary: 'What each kind of warning means, and when it is issued.'
+    };
+
+    const PAGE = `<!doctype html>
+<html lang="en">
+<head>
+  <title>Flood warnings explained</title>
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+  <nav><a href="/">Home</a> › <a href="/floods">Floods</a></nav>
+  <main>
+    <h1>Flood warnings explained</h1>
+    <p>We issue three kinds of message for rivers.</p>
+    <h2>Flood alert</h2>
+    <p>Flooding is <em>possible</em>. Be prepared.</p>
+    <h2>Flood warning</h2>
+    <p>Flooding is expected. A warning is issued when a river is forecast to reach its warning level within six hours.</p>
+    <h2>Severe flood warning</h2>
+    <p>Danger to life. Issued only when lives are at risk.</p>
+  </main>
+  <footer>Last reviewed June 2025.</footer>
+  <script src="/assets/analytics.js"><\/script>
+</body>
+</html>`;
+
+    const PAGE_ITEMS = [
+      { id: 'RUL-12', title: 'Warn six hours ahead', quote: 'A warning is issued when a river is forecast to reach its warning level within six hours' },
+      { id: 'RUL-13', title: 'Severe only when lives are at risk', quote: 'Issued only when lives are at risk' }
+    ];
+
     // ---- Start ----
 
     showExample('grid', { source: GRID_SOURCE, content: GRID_TEXT, items: GRID_ITEMS }).current = 'RUL-3';
     showExample('plan', { source: PLAN_SOURCE, url: `data:image/svg+xml,${encodeURIComponent(TRACK_PLAN)}`, items: PLAN_ITEMS });
     showExample('rules', { source: RULES_SOURCE, url: RULE_BOOK, items: RULES_ITEMS }).current = 'RUL-8';
     showExample('notes', { source: NOTES_SOURCE, content: HANDOVER_NOTES, items: NOTES_ITEMS });
+    showExample('feed', { source: FEED_SOURCE, content: FEED, items: FEED_ITEMS });
+    showExample('page', { source: PAGE_SOURCE, content: PAGE, items: PAGE_ITEMS });
   </script>
 </body>
 </html>
