@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-source-trace demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-source-trace.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 1040px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+
+    .pick { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; font-size: 13px; }
+    .pick button { padding: 3px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); font: inherit; cursor: pointer; }
+    .pick button:hover, .pick button.is-lit { border-color: var(--sb-accent); background: var(--sb-accent-soft); }
+    .pick code { font: 600 11px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); }
+    .opened { margin: 8px 0 0; font-size: 12px; color: var(--sb-muted); }
+    .opened code { font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-text); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-source-trace">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Where something in the model comes from, and what a source shaped.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Every rule, figure and assumption in a model, and every button on a screen designed from it, should lead back to the words it rests on. This component draws that chain as one graph flowing left to right: the sources and what was derived from them, the items resting on them, the thing being traced in the middle, and everything resting on it to the right. Sources are paper, so ground truth always looks like ground truth.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>"Why is that there?"</strong> Trace a button, a rule or a number and see the reasoning behind it, all the way to the interview or the standard.</li>
+        <li><strong>"What would this change?"</strong> Trace a source and see everything it shaped: if it turns out wrong, this is what needs another look.</li>
+        <li><strong>Finding weak spots.</strong> An item resting on nothing cited, an id the model doesn't have, a loop in the reasoning: each is drawn where it is, so gaps in the evidence show up rather than hide.</li>
+        <li><strong>Separating evidence from interpretation.</strong> An analysis derived from two sources sits between them and what cites it, so people see what was said and what was made of it.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Reading a source.</strong> Open it in a component that shows the source itself, with the passages marked.</li>
+        <li><strong>Browsing all the material.</strong> A list of the catalogue suits that; a trace is for one thing at a time.</li>
+        <li><strong>Where something appears on the page.</strong> A cross-reference lists every place a code shows up; a trace shows what it rests on.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-source-trace/sb-source-trace.js"&gt;&lt;/script&gt;
+&lt;sb-source-trace&gt;&lt;/sb-source-trace&gt;
+
+&lt;script&gt;
+  const trace = document.querySelector('sb-source-trace');
+  trace.items = model.items;
+  trace.catalogue = catalogue.sources;
+  trace.subject = 'SCR-3';
+  trace.addEventListener('sb-open', (e) =&gt; openSource(e.detail.id));
+&lt;/script&gt;</pre>
+      <p>Items cite passages and rest on other items, as the <a href="../../practices/sources.md">sources practice</a> describes. The page loads the catalogue, which needs the sandbox served. The <a href="manifest.md">manifest</a> has the full contract.</p>
+
+      <h3>Making it reveal</h3>
+      <ul>
+        <li><strong>Open it from anywhere.</strong> A trace mode, where clicking any part with a code opens its trace in a modal, turns the whole sandbox into something people can question.</li>
+        <li><strong>Open sources with every passage marked,</strong> so a click on a sheet of paper lands on the very words.</li>
+        <li><strong>Leave the gaps in.</strong> Cite nothing rather than cite loosely: an item marked "Nothing cited" is an honest finding, and a question to take back to the people who know.</li>
+        <li><strong>Keep items small.</strong> Many small items, each resting on a few others, make traces people can follow.</li>
+      </ul>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A power grid: why an assumption is there</h2>
+      <p>Traced from an assumption in the middle of the model: what it rests on to the left, what rests on it to the right. Click a source to open it, or an item to trace from it instead. The assumption rests on an open question, and names a parameter the model doesn't have.</p>
+      <div class="pick" id="grid-pick"></div>
+      <sb-source-trace id="grid"></sb-source-trace>
+      <p class="opened" id="grid-opened">Click a source to open it. A sandbox would show the source itself, in a modal.</p>
+    </section>
+
+    <section class="example">
+      <h2>A river catchment: what a source shaped</h2>
+      <p>Traced from the residents' accounts: the analysis derived from them, the items citing either, and everything resting on those.</p>
+      <sb-source-trace id="river"></sb-source-trace>
+      <p class="opened" id="river-opened">Click a source to open it.</p>
+    </section>
+  </main>
+
+  <script>
+    // ---- A power grid ----
+
+    const GRID_SOURCES = [
+      { id: 'SRC-4', title: 'Interview with a control room engineer', path: 'sources/interviews/control-room.txt', format: 'transcript',
+        author: 'Dana Okafor', authored: '2026-09-14', stance: 'assertive', role: 'answer' },
+      { id: 'SRC-5', title: 'Interview with a planning engineer', path: 'sources/interviews/planning.txt', format: 'transcript',
+        author: 'Tom Reyes', authored: '2026-09-18', stance: 'assertive', role: 'answer' },
+      { id: 'SRC-6', title: 'Fault log, August', path: 'sources/data/faults-2026-08.csv', format: 'data', author: 'Control room', authored: '2026-09-01', stance: 'assertive' },
+      { id: 'SRC-7', title: 'Frequency planning standard, 2025 edition', path: 'sources/standards/frequency-2025.pdf', format: 'document',
+        author: 'System operator', authored: '2025-04-01', stance: 'assertive' },
+      { id: 'SRC-8', title: 'How low inertia changes the first seconds', path: 'sources/analyses/low-inertia.md', format: 'notes',
+        author: 'Claude', authored: '2026-09-24', stance: 'speculative', derivedFrom: ['SRC-4', 'SRC-6'] }
+    ];
+
+    const GRID_ITEMS = [
+      { id: 'RUL-3', title: 'Demand is disconnected below the floor', kind: 'Rule',
+        sources: [{ source: 'SRC-4', quote: 'low frequency demand disconnection takes blocks of demand off automatically' }],
+        restsOn: ['PAR-2', 'ASM-1'] },
+      { id: 'PAR-2', title: 'Frequency floor: 48.8 Hz', kind: 'Parameter',
+        sources: [{ source: 'SRC-7', page: 12, quote: 'demand disconnection begins at 48.8 Hz' }, { source: 'SRC-4', quote: 'falls below 48.8 Hz' }] },
+      { id: 'ASM-1', title: 'Falls are faster on windy nights', kind: 'Assumption',
+        sources: [{ source: 'SRC-8', quote: 'falls are faster on windy nights', note: 'Taken as the worst case for the scenarios.' }],
+        restsOn: ['QST-1', 'PAR-9'] },
+      { id: 'QST-1', title: 'How much inertia do batteries add?', kind: 'Question' },
+      { id: 'RUL-5', title: 'Hold response for the largest loss', kind: 'Rule',
+        sources: [{ source: 'SRC-5', quote: 'based on the biggest single loss we could suffer' }, { source: 'SRC-7', page: 4, quote: 'cover the largest single infeed loss' }],
+        restsOn: ['PAR-2'] }
+    ];
+
+    const grid = document.getElementById('grid');
+    const pick = document.getElementById('grid-pick');
+    grid.items = GRID_ITEMS;
+    grid.catalogue = GRID_SOURCES;
+    pick.innerHTML = GRID_ITEMS.map(({ id, title }) => `<button data-ref="${id}"><code>${id}</code> ${title}</button>`).join('');
+    pick.addEventListener('click', (e) => { const ref = e.target.closest('button')?.dataset.ref; if (ref) grid.subject = ref; });
+    grid.addEventListener('sb-point', (e) => {
+      for (const button of pick.querySelectorAll('button')) button.classList.toggle('is-lit', button.dataset.ref === e.detail.id);
+    });
+    const showOpened = (name, sources) => document.getElementById(name).addEventListener('sb-open', (e) => {
+      const source = sources.find((s) => s.id === e.detail.id);
+      document.getElementById(`${name}-opened`).innerHTML = `Opened <code>${source.id}</code> ${source.title}`;
+    });
+    showOpened('grid', GRID_SOURCES);
+
+    // ---- A river catchment ----
+
+    const RIVER_SOURCES = [
+      { id: 'SRC-21', title: 'Readings from the Millbrook gauge', path: 'sources/gauges/millbrook.json', format: 'data', author: 'River monitoring network', authored: '2026-10-14' },
+      { id: 'SRC-23', title: 'Residents\' accounts of the 2024 flood', path: 'sources/interviews/residents-2024.txt', format: 'transcript',
+        author: 'Mill Lane residents\' group', authored: '2026-10-05', stance: 'assertive' },
+      { id: 'SRC-26', title: 'What the accounts say about the culvert', path: 'sources/analyses/culvert.md', format: 'notes',
+        author: 'Claude', authored: '2026-10-09', stance: 'speculative', derivedFrom: ['SRC-23'] }
+    ];
+
+    const RIVER_ITEMS = [
+      { id: 'OBS-2', title: 'Water reached Mill Lane first', kind: 'Observation', sources: [{ source: 'SRC-23', quote: 'it came up the lane before the bridge' }] },
+      { id: 'PAR-7', title: 'Warning lead time: 40 minutes', kind: 'Parameter', sources: [{ source: 'SRC-23', quote: 'we had about forty minutes' }] },
+      { id: 'ASM-4', title: 'The culvert blocks with debris', kind: 'Assumption', sources: [{ source: 'SRC-26', quote: 'debris at the culvert' }], restsOn: ['OBS-2'] },
+      { id: 'RUL-12', title: 'Warn Mill Lane first', kind: 'Rule', sources: [{ source: 'SRC-21', quote: '"warningLevel": 3.2' }], restsOn: ['ASM-4', 'PAR-7'] }
+    ];
+
+    const river = document.getElementById('river');
+    river.items = RIVER_ITEMS;
+    river.catalogue = RIVER_SOURCES;
+    showOpened('river', RIVER_SOURCES);
+
+    // ---- Start ----
+
+    grid.subject = 'ASM-1';
+    river.subject = 'SRC-23';
+  </script>
+</body>
+</html>

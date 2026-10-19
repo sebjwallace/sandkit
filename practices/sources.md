@@ -149,3 +149,11 @@ const catalogue = served ? await (await fetch('sources/catalogue.json')).json() 
 Everything else in the sandbox works either way. Components never load files themselves: the page loads them and hands components the data.
 
 Show a source with [`sb-source`](../components/sb-source/manifest.md): the paper, its details, and the passages the model cites marked where they are, with any it can't find listed. Its manifest shows how to turn `model.items` into its passages. Show the whole catalogue with [`sb-sources`](../components/sb-sources/manifest.md): cards to search, filter and sort, with replaced sources marked and files waiting in the folder listed apart. Open a source in `sb-source` when one is chosen.
+
+## Tracing
+
+Anything in the model can be asked "why is that there?". [`sb-source-trace`](../components/sb-source-trace/manifest.md) answers with one graph flowing left to right: the sources and what was derived from them, the items resting on them, the thing asked about, and what rests on it. It reads `model.items` and the catalogue, so tracing needs nothing more than citing well.
+
+Make it reachable from anywhere with a **trace mode**: a Trace button in the shell's header turns it on, with a banner saying so; pointing outlines any part whose `data-ref` is in `model.items`; a click opens the trace in an [`sb-modal`](../components/sb-modal/manifest.md) instead of acting; and a source clicked in the trace opens in `sb-source`, in a second modal over it. Escape, or the banner's button, ends trace mode. Sandkit's `examples/control-room/` has the whole of this wiring, about forty lines.
+
+From Node, trace without a page: write the items to a file and run `node <sandkit>/tools/analyse.mjs trace items.json sources/catalogue.json --ref SCR-3 --md`.

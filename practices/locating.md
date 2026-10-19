@@ -44,6 +44,7 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | [`sb-panel`](../components/sb-panel/manifest.md) | — | expands the panel if it holds the place or the ref, and brings it to the front |
 | [`sb-image`](../components/sb-image/manifest.md) | each mark | glides to the mark |
 | [`sb-source`](../components/sb-source/manifest.md) | the source, with its code, and each passage with the id of what cites it | — |
+| [`sb-source-trace`](../components/sb-source-trace/manifest.md) | each node in the trace, source or item | — |
 | [`sb-sources`](../components/sb-sources/manifest.md) | each source's card, with its code (not cards a viewer's search or filters hide) | — |
 | [`sb-timeline`](../components/sb-timeline/manifest.md) | each event, and each lane's label | — |
 | [`sb-board`](../components/sb-board/manifest.md) | each card and column | — |

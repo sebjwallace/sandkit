@@ -253,6 +253,19 @@ test('analyse list names sb-dependencies\' analysis too', () => {
   assert(/^dependencies +sb-dependencies +What goes with what/m.test(analyse('list').output), 'listed');
 });
 
+test('analyse traces an item through files holding the model\'s items and the catalogue', (folder) => {
+  write(folder, 'items.json', JSON.stringify({ items: [
+    { id: 'PAR-1', sources: [{ source: 'SRC-1', quote: 'forty' }] },
+    { id: 'RUL-1', restsOn: ['PAR-1', 'PAR-9'] }
+  ] }));
+  write(folder, 'catalogue.json', JSON.stringify({ format: 'sandkit-sources', version: 1, sources: [{ id: 'SRC-1', title: 'Interview' }] }));
+  const result = JSON.parse(analyse('trace', join(folder, 'items.json'), join(folder, 'catalogue.json'), '--ref', 'RUL-1').output);
+  assert(JSON.stringify(result.edges.map((e) => `${e.from}>${e.to}`)) === '["PAR-1>RUL-1","SRC-1>PAR-1","PAR-9>RUL-1"]', `flows: ${JSON.stringify(result.edges)}`);
+  assert(result.missing[0].id === 'PAR-9', 'the unknown id');
+  assert(analyse('trace', join(folder, 'items.json'), '--ref', 'RUL-1', '--md').output.includes('## Unknown'), 'a summary');
+  assert(!analyse('trace', join(folder, 'items.json')).ok, 'needs --ref');
+});
+
 // Forty samples where kind decides half, and group but for one.
 const related = (i) => ({ id: `S${i}`, kind: ['a', 'b', 'c', 'd'][i % 4], half: i % 4 < 2 ? 'first' : 'second', group: i === 7 ? 'odd' : i % 2 ? 'x' : 'y' });
 

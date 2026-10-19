@@ -12,7 +12,7 @@ Run from a Sandkit clone with Node. Not copied into sandboxes.
 | `tools/export.mjs` | Exports one page of a sandbox as a single HTML file that still runs, listing every file that went in. Copied into sandboxes, for the agent to run when someone presses Export. |
 | `tools/serve.mjs` | Serves a sandbox on this computer, so the features that read and write its files work: lists a folder's files and saves into `sources/inbox/`. Copied into sandboxes; opening pages by double-clicking still works for everything else. |
 | `tools/sources.mjs` | Checks a sandbox's sources against its catalogue and its model: missing and uncatalogued files, unknown sources, quotes that aren't there. Copied into sandboxes. |
-| `tools/analyse.mjs` | Runs a component's analysis on data files, without a page: `profile` and `dependencies`. `list` shows them all. |
+| `tools/analyse.mjs` | Runs a component's analysis on data files, without a page: `profile`, `dependencies` and `trace`. `list` shows them all. |
 
 ## Practices
 
@@ -72,6 +72,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-scrubber`](components/sb-scrubber/manifest.md) | A bounded stretch of progress to scrub or play, with named moments: transformations, cycles, stages. |
 | [`sb-sequence`](components/sb-sequence/manifest.md) | Who says what to whom, in order: lifelines, calls, replies and notes, played a message at a time. |
 | [`sb-source`](components/sb-source/manifest.md) | One source as a sheet of paper beside a card of what's known about it, with the passages the model cites marked where they are, quotes it can't find listed, and the rest of the text folded away: text, Markdown, data, images and PDFs. |
+| [`sb-source-trace`](components/sb-source-trace/manifest.md) | Why something in the model is there, as one graph flowing left to right: the sources, what was derived from them and the items resting on them, up to the thing traced, and what rests on it; sources open, items retrace, and unknown ids, loops and items resting on nothing cited are drawn. Also runs from Node: `tools/analyse.mjs trace`. |
 | [`sb-sources`](components/sb-sources/manifest.md) | A sandbox's source material as cards of paper: search, filters with how many sources each value would show, a slider for the dates written, primary only and sorting; replaced sources marked with what replaced them, and files not yet catalogued listed apart. |
 | [`sb-stat`](components/sb-stat/manifest.md) | Headline figures: each change since the last update, coloured as good or bad news, with targets and bars. |
 | [`sb-statechart`](components/sb-statechart/manifest.md) | States inside states, parallel regions and history: every active state marked, what can happen now and what a guard holds back, and the last step's exits, transitions and entries numbered in order. |
