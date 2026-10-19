@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.34 · 2026-10-19
+- Forty-five components: added `sb-sources`, a sandbox's source material as cards of paper to search, filter and sort, with how many sources each filter value would show, a slider for the dates written, replaced sources marked and files not yet catalogued listed apart. The sources and locating practices list it.
+
 ## 0.2.33 · 2026-10-19
 - Forty-four components: added `sb-source`, one source as a sheet of paper with the passages the model cites marked where they are and quotes it can't find listed. The sources practice shows sources with it; the locating practice lists it.
 

@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-sources tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-sources.js"></script>
+  <script src="sb-sources.js"></script>
+</head>
+<body>
+  <script>
+    const SOURCES = [
+      { id: 'SRC-1', title: 'Depot policy, 2024', path: 'sources/policy-2024.pdf', format: 'document', author: 'Head office',
+        authored: '2024-01-10', status: 'superseded', stance: 'assertive', summary: 'When to reorder.', tags: ['reorder'] },
+      { id: 'SRC-2', title: 'Interview with the depot manager', path: 'sources/depot.txt', format: 'transcript', author: 'Priya Shah',
+        authored: '2026-10-02', status: 'reviewed', stance: 'assertive', summary: 'How the depot really works.' },
+      { id: 'SRC-3', title: 'Depot policy, 2026', path: 'sources/policy-2026.pdf', format: 'document', author: 'Head office',
+        authored: '2026-01-15', status: 'reviewed', stance: 'assertive', supersedes: 'SRC-1', summary: 'When to reorder, revised.', tags: ['reorder'] },
+      { id: 'SRC-4', title: 'What the interview suggests', path: 'sources/analysis.md', format: 'notes', author: 'Claude',
+        authored: '2026-10-04', status: 'catalogued', stance: 'speculative', derivedFrom: ['SRC-2', 'SRC-3'], summary: 'Reordering runs late.' },
+      { id: 'SRC-5', title: 'Notes from the yard', path: 'sources/yard.md', format: 'notes', author: 'Priya Shah',
+        status: 'inbox', stance: 'idea', summary: 'Undated jottings.' }
+    ];
+
+    const show = (extra = {}) => {
+      const list = mount('<sb-sources></sb-sources>');
+      Object.assign(list, { catalogue: SOURCES, ...extra });
+      return list;
+    };
+    const ids = (list) => [...list.querySelectorAll('.sb-sources__card')].map((card) => card.dataset.ref);
+    const card = (list, id) => list.querySelector(`.sb-sources__card[data-ref="${id}"]`);
+    const count = (list) => list.querySelector('.sb-sources__count').textContent;
+    const field = (list, id, label) => [...card(list, id).querySelectorAll('.sb-sources__fields dt')].find((dt) => dt.textContent === label)?.nextElementSibling.textContent;
+    const chip = (list, facet, value) => [...list.querySelectorAll('.sb-sources__value')].find((c) => c.dataset.facet === facet && c.dataset.value === value);
+    const tally = (list, facet, value) => Number(chip(list, facet, value).querySelector('.sb-sources__tally').textContent);
+    const handles = (list) => [...list.querySelectorAll('.sb-sources__handle')];
+    const DAY = 24 * 60 * 60 * 1000;
+    const dayOf = (date) => Math.floor(Date.parse(date) / DAY);
+
+    // Moving a slider handle as a viewer would.
+    function slide(handle, date) {
+      handle.value = dayOf(date);
+      handle.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    // ---- Cards ----
+
+    test('with no catalogue, it says so', () => {
+      const list = mount('<sb-sources></sb-sources>');
+      assertEqual(list.querySelector('.sb-sources__empty').textContent, 'No sources catalogued yet.');
+      assertEqual(count(list), '0 sources');
+    });
+
+    test('each source is a card in catalogue order, carrying its id as data-ref', () => {
+      const list = show();
+      assertEqual(ids(list), ['SRC-1', 'SRC-2', 'SRC-3', 'SRC-4', 'SRC-5']);
+      assertEqual(count(list), '5 sources');
+      assertEqual(card(list, 'SRC-2').querySelector('.sb-sources__name').textContent, 'Interview with the depot manager');
+      assertEqual(card(list, 'SRC-2').querySelector('.sb-sources__summary').textContent, 'How the depot really works.');
+    });
+
+    test('the format shows the kind of material and the file type, once when they agree', () => {
+      const list = show({ catalogue: [...SOURCES, { id: 'SRC-9', title: 'Rules', path: 'rules.pdf', format: 'pdf' }] });
+      assertEqual(card(list, 'SRC-2').querySelector('.sb-sources__format').textContent, 'transcript · txt');
+      assertEqual(card(list, 'SRC-9').querySelector('.sb-sources__format').textContent, 'pdf');
+    });
+
+    test('details are labelled, the status marked by its kind, and missing ones left out', () => {
+      const list = show();
+      assertEqual(field(list, 'SRC-2', 'Author'), 'Priya Shah');
+      assertEqual(field(list, 'SRC-2', 'Written'), '2026-10-02');
+      assertEqual(field(list, 'SRC-2', 'Status'), 'reviewed');
+      assert(card(list, 'SRC-2').querySelector('.sb-sources__status--reviewed'), 'status kind');
+      assertEqual(field(list, 'SRC-5', 'Written'), undefined);
+    });
+
+    test('a superseded source is marked, with what replaced it; the newer says what it replaced', () => {
+      const list = show();
+      assert(card(list, 'SRC-1').classList.contains('sb-sources__card--superseded'), 'old faded');
+      assert(!card(list, 'SRC-3').classList.contains('sb-sources__card--superseded'), 'new not faded');
+      assertEqual(card(list, 'SRC-1').querySelector('.sb-sources__links').textContent, 'Superseded by SRC-3');
+      assertEqual(card(list, 'SRC-3').querySelector('.sb-sources__links').textContent, 'Supersedes SRC-1');
+    });
+
+    test('being replaced marks a source even when its status hasn\'t caught up', () => {
+      const list = show({ catalogue: SOURCES.map((s) => (s.id === 'SRC-1' ? { ...s, status: 'reviewed' } : s)) });
+      assert(card(list, 'SRC-1').classList.contains('sb-sources__card--superseded'));
+    });
+
+    test('a derived source names what it came from', () => {
+      assertEqual(card(show(), 'SRC-4').querySelector('.sb-sources__links').textContent, 'Derived from SRC-2, SRC-3');
+    });
+
+    test('a catalogue\'s text is never rendered as markup', () => {
+      const list = show({ catalogue: [{ id: 'SRC-<i>1</i>', title: '<b>Bold</b>', summary: '<img src=x onerror="window.ran=1">', author: '<em>A</em>', status: '<u>x</u>', path: 'a.txt' }],
+        files: [{ path: 'sources/<b>b</b>.txt', size: 3 }] });
+      assertEqual(list.querySelectorAll('.sb-sources__list b, .sb-sources__list i, .sb-sources__list img, .sb-sources__list em, .sb-sources__list u, .sb-sources__filters em').length, 0);
+      assertEqual(list.querySelector('.sb-sources__name').textContent, '<b>Bold</b>');
+      assertEqual(list.querySelector('.sb-sources__path').textContent, 'sources/<b>b</b>.txt');
+      assertEqual(list.querySelector('.sb-sources__card').dataset.ref, 'SRC-<i>1</i>');
+      assert(!window.ran, 'nothing ran');
+    });
+
+    test('setting the catalogue copies it, so changing the list given changes nothing', () => {
+      const given = [{ ...SOURCES[0] }];
+      const list = show({ catalogue: given });
+      given[0].title = 'Changed';
+      given.push(SOURCES[1]);
+      assertEqual(list.catalogue.length, 1);
+      assertEqual(list.catalogue[0].title, 'Depot policy, 2024');
+    });
+
+    // ---- Files not yet catalogued ----
+
+    test('files no source names are listed apart, the catalogue itself aside, and counted', () => {
+      const list = show({ files: [
+        { path: 'sources/depot.txt', size: 10 }, { path: 'sources/catalogue.json', size: 10 }, { path: 'sources/inbox/.gitkeep', size: 0 },
+        { path: 'sources/inbox/photo.jpg', size: 2400000 }, { path: 'sources/inbox/notes.txt', size: 900 }
+      ] });
+      assertEqual([...list.querySelectorAll('.sb-sources__file .sb-sources__path')].map((p) => p.textContent), ['sources/inbox/photo.jpg', 'sources/inbox/notes.txt']);
+      assertEqual([...list.querySelectorAll('.sb-sources__size')].map((s) => s.textContent), ['2.3 MB', '900 B']);
+      assertEqual(list.querySelector('.sb-sources__group').textContent, 'Not yet catalogued');
+      assertEqual(count(list), '5 sources · 2 not yet catalogued');
+    });
+
+    test('with every file catalogued there is no group', () => {
+      const list = show({ files: [{ path: 'sources/depot.txt', size: 10 }] });
+      assertEqual(list.querySelector('.sb-sources__group'), null);
+      assertEqual(count(list), '5 sources');
+    });
+
+    // ---- Searching ----
+
+    test('a search looks through ids, titles, summaries, authors and tags, every word counting', () => {
+      const list = show();
+      list.query = 'reorder';
+      assertEqual(ids(list), ['SRC-1', 'SRC-3', 'SRC-4']);
+      list.query = 'PRIYA depot';
+      assertEqual(ids(list), ['SRC-2']);
+      list.query = 'src-5';
+      assertEqual(ids(list), ['SRC-5']);
+      assertEqual(count(list), '1 of 5 sources');
+    });
+
+    test('typing in the box searches, and setting query fills the box', () => {
+      const list = show();
+      const box = list.querySelector('.sb-sources__search');
+      box.value = 'claude';
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+      assertEqual(list.query, 'claude');
+      assertEqual(ids(list), ['SRC-4']);
+      list.query = 'yard';
+      assertEqual(box.value, 'yard');
+    });
+
+    test('when nothing matches it says so, and files waiting still show', () => {
+      const list = show({ files: [{ path: 'sources/inbox/new.txt', size: 1 }], query: 'zebra' });
+      assertEqual(list.querySelector('.sb-sources__empty').textContent, 'No sources match.');
+      assert(list.querySelector('.sb-sources__file'), 'file still listed');
+    });
+
+    // ---- Filtering ----
+
+    test('each detail offers its values, statuses in the order a source moves through them', () => {
+      const list = show();
+      const values = (facet) => [...list.querySelectorAll(`.sb-sources__value[data-facet="${facet}"]`)].map((c) => c.dataset.value);
+      assertEqual(values('author'), ['Head office', 'Priya Shah', 'Claude']);
+      assertEqual(values('status'), ['inbox', 'catalogued', 'reviewed', 'superseded']);
+      assertEqual(tally(list, 'author', 'Head office'), 2);
+      assert(chip(list, 'status', 'reviewed').querySelector('.sb-sources__status--reviewed'), 'status dot');
+    });
+
+    test('choosing a value shows only its sources; a second in the same detail widens', () => {
+      const list = show();
+      chip(list, 'author', 'Priya Shah').click();
+      assertEqual(list.filter, { author: ['Priya Shah'] });
+      assertEqual(ids(list), ['SRC-2', 'SRC-5']);
+      assertEqual(chip(list, 'author', 'Priya Shah').getAttribute('aria-pressed'), 'true');
+      chip(list, 'author', 'Claude').click();
+      assertEqual(ids(list), ['SRC-2', 'SRC-4', 'SRC-5']);
+      chip(list, 'author', 'Claude').click();
+      assertEqual(ids(list), ['SRC-2', 'SRC-5']);
+    });
+
+    test('values in different details must all hold', () => {
+      const list = show({ filter: { author: ['Priya Shah'], stance: ['assertive'] } });
+      assertEqual(ids(list), ['SRC-2']);
+    });
+
+    test('counts say what each value would show alongside the other filters, and none are hidden', () => {
+      const list = show({ filter: { status: ['reviewed'] } });
+      assertEqual(tally(list, 'author', 'Head office'), 1);
+      assertEqual(tally(list, 'author', 'Claude'), 0);
+      assert(chip(list, 'author', 'Claude').classList.contains('sb-sources__value--none'), 'faded');
+      assertEqual(tally(list, 'status', 'catalogued'), 1, 'a detail\'s own values ignore its own choice');
+      list.query = 'interview';
+      assertEqual(tally(list, 'author', 'Head office'), 0);
+    });
+
+    test('primary only leaves out sources derived from others', () => {
+      const list = show();
+      const primary = list.querySelector('.sb-sources__value[data-facet="primary"]');
+      assertEqual(Number(primary.querySelector('.sb-sources__tally').textContent), 4);
+      primary.click();
+      assertEqual(list.filter, { primary: true });
+      assertEqual(ids(list), ['SRC-1', 'SRC-2', 'SRC-3', 'SRC-5']);
+    });
+
+    test('the filter can be set, keeping only what it knows, and Clear empties it', () => {
+      const list = show({ filter: { author: ['Head office'], colour: ['red'], primary: 1 } });
+      assertEqual(list.filter, { author: ['Head office'], primary: true });
+      assertEqual(ids(list), ['SRC-1', 'SRC-3']);
+      list.querySelector('.sb-sources__clear').click();
+      assertEqual(list.filter, {});
+      assertEqual(ids(list).length, 5);
+      assertEqual(list.querySelector('.sb-sources__clear'), null);
+    });
+
+    test('a chip keeps focus when the chips are drawn again', () => {
+      const list = show();
+      chip(list, 'stance', 'idea').click();
+      assertEqual(document.activeElement, chip(list, 'stance', 'idea'));
+    });
+
+    // ---- Dates written ----
+
+    test('the slider spans every date written, with a tick for each, its handles at the ends', () => {
+      const list = show();
+      const [from, to] = handles(list);
+      assertEqual(Number(from.min), dayOf('2024-01-10'));
+      assertEqual(Number(from.max), dayOf('2026-10-04'));
+      assertEqual([Number(from.value), Number(to.value)], [dayOf('2024-01-10'), dayOf('2026-10-04')]);
+      assertEqual(list.querySelectorAll('.sb-sources__tick').length, 4);
+      assertEqual(list.querySelector('.sb-sources__between').textContent, '2024-01-10 – 2026-10-04');
+    });
+
+    test('a stretch of dates shows only sources written in it, leaving out undated ones', () => {
+      const list = show({ filter: { written: ['2026-01-01', '2026-10-02'] } });
+      assertEqual(ids(list), ['SRC-2', 'SRC-3']);
+      assertEqual(list.querySelector('.sb-sources__between').textContent, '2026-01-01 – 2026-10-02');
+      assertEqual(list.querySelectorAll('.sb-sources__tick--out').length, 2);
+    });
+
+    test('moving a handle chooses a stretch; one can\'t pass the other', () => {
+      const list = show();
+      const [from, to] = handles(list);
+      slide(from, '2026-01-01');
+      assertEqual(list.filter, { written: ['2026-01-01', '2026-10-04'] });
+      assertEqual(ids(list), ['SRC-2', 'SRC-3', 'SRC-4']);
+      slide(to, '2025-06-01');
+      assertEqual(to.value, from.value);
+      assertEqual(list.filter.written, ['2026-01-01', '2026-01-01']);
+      assert(handles(list)[0] === from, 'the handles weren\'t replaced while moving');
+    });
+
+    test('both handles back at the ends chooses no stretch, so undated sources return', () => {
+      const list = show();
+      const [from] = handles(list);
+      slide(from, '2026-01-01');
+      slide(from, '2024-01-10');
+      assertEqual(list.filter, {});
+      assertEqual(ids(list).length, 5);
+    });
+
+    test('with fewer than two dates there is no slider', () => {
+      const list = show({ catalogue: [SOURCES[1], SOURCES[4]] });
+      assertEqual(handles(list).length, 0);
+    });
+
+    // ---- Sorting ----
+
+    test('sorting by date runs either way, undated sources last', () => {
+      const undatedFirst = [SOURCES[4], ...SOURCES.slice(0, 4)];
+      const list = show({ catalogue: undatedFirst, sort: 'newest' });
+      assertEqual(ids(list), ['SRC-4', 'SRC-2', 'SRC-3', 'SRC-1', 'SRC-5']);
+      list.sort = 'oldest';
+      assertEqual(ids(list), ['SRC-1', 'SRC-3', 'SRC-2', 'SRC-4', 'SRC-5']);
+    });
+
+    test('sorting by title is natural, and by author groups them', () => {
+      const list = show({ sort: 'title' });
+      assertEqual(ids(list), ['SRC-1', 'SRC-3', 'SRC-2', 'SRC-5', 'SRC-4']);
+      list.sort = 'author';
+      assertEqual(ids(list).slice(0, 3), ['SRC-4', 'SRC-1', 'SRC-3']);
+    });
+
+    test('the menu sorts, and setting sort chooses it in the menu; anything else is catalogue order', () => {
+      const list = show();
+      const menu = list.querySelector('.sb-sources__sort');
+      menu.value = 'newest';
+      menu.dispatchEvent(new Event('change', { bubbles: true }));
+      assertEqual(list.sort, 'newest');
+      list.sort = 'title';
+      assertEqual(menu.value, 'title');
+      list.sort = 'colour';
+      assertEqual(list.sort, null);
+      assertEqual(menu.value, '');
+      assertEqual(ids(list), ['SRC-1', 'SRC-2', 'SRC-3', 'SRC-4', 'SRC-5']);
+    });
+
+    // ---- Opening, pointing and highlighting ----
+
+    test('clicking a card selects it and fires sb-open', () => {
+      const list = show();
+      const events = recordEvents(document, 'sb-open');
+      card(list, 'SRC-2').querySelector('.sb-sources__summary').click();
+      assertEqual(events.map((e) => e.detail), [{ id: 'SRC-2' }]);
+      assertEqual(list.selected, 'SRC-2');
+      assert(card(list, 'SRC-2').classList.contains('sb-sources__card--selected'), 'marked');
+      assert(card(list, 'SRC-2').hasAttribute('aria-current'), 'announced');
+    });
+
+    test('Enter on a focused card opens it; clicking a chip opens nothing', () => {
+      const list = show();
+      const events = recordEvents(list, 'sb-open');
+      card(list, 'SRC-3').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      chip(list, 'author', 'Claude').click();
+      assertEqual(events.map((e) => e.detail.id), ['SRC-3']);
+    });
+
+    test('setting selected marks a card and fires nothing, and survives redrawing', () => {
+      const list = show();
+      const events = recordEvents(list, 'sb-open');
+      list.selected = 'SRC-4';
+      list.query = 'claude';
+      assert(card(list, 'SRC-4').classList.contains('sb-sources__card--selected'));
+      assertEqual(events.length, 0);
+    });
+
+    test('pointing at a card fires sb-point with its id, and null on leaving', () => {
+      const list = show();
+      const events = recordEvents(list, 'sb-point');
+      card(list, 'SRC-2').querySelector('.sb-sources__name').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assert(card(list, 'SRC-2').classList.contains('sb-sources__card--lit'), 'lit');
+      list.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(events.map((e) => e.detail.id), ['SRC-2', null]);
+      assert(!card(list, 'SRC-2').classList.contains('sb-sources__card--lit'), 'unlit');
+    });
+
+    test('highlight lights cards, and survives redrawing', () => {
+      const list = show({ highlight: ['SRC-1', 'SRC-3'] });
+      list.sort = 'newest';
+      assertEqual([...list.querySelectorAll('.sb-sources__card--lit')].map((c) => c.dataset.ref), ['SRC-3', 'SRC-1']);
+      list.highlight = [];
+      assertEqual(list.querySelectorAll('.sb-sources__card--lit').length, 0);
+    });
+
+    // ---- Instances and loading ----
+
+    test('two instances side by side keep their own catalogue, filters and state', () => {
+      const a = mount('<sb-sources></sb-sources><sb-sources></sb-sources>');
+      const b = a.nextElementSibling;
+      a.catalogue = SOURCES;
+      b.catalogue = SOURCES.slice(0, 2);
+      chip(a, 'author', 'Claude').click();
+      slide(handles(b)[0], '2025-01-01');
+      a.selected = 'SRC-4';
+      assertEqual(ids(a), ['SRC-4']);
+      assertEqual(ids(b), ['SRC-2']);
+      assertEqual(b.filter, { written: ['2025-01-01', '2026-10-02'] });
+      assertEqual(b.querySelectorAll('.sb-sources__card--selected').length, 0);
+    });
+
+    test('loading the script twice is skipped quietly', () => {
+      assertEqual(consoleErrors.length, 0);
+      assertEqual(customElements.get('sb-sources').origin, 'sandkit/sb-sources');
+    });
+  </script>
+</body>
+</html>

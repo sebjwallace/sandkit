@@ -72,6 +72,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [`sb-scrubber`](components/sb-scrubber/manifest.md) | A bounded stretch of progress to scrub or play, with named moments: transformations, cycles, stages. |
 | [`sb-sequence`](components/sb-sequence/manifest.md) | Who says what to whom, in order: lifelines, calls, replies and notes, played a message at a time. |
 | [`sb-source`](components/sb-source/manifest.md) | One source as a sheet of paper beside a card of what's known about it, with the passages the model cites marked where they are, quotes it can't find listed, and the rest of the text folded away: text, Markdown, data, images and PDFs. |
+| [`sb-sources`](components/sb-sources/manifest.md) | A sandbox's source material as cards of paper: search, filters with how many sources each value would show, a slider for the dates written, primary only and sorting; replaced sources marked with what replaced them, and files not yet catalogued listed apart. |
 | [`sb-stat`](components/sb-stat/manifest.md) | Headline figures: each change since the last update, coloured as good or bad news, with targets and bars. |
 | [`sb-statechart`](components/sb-statechart/manifest.md) | States inside states, parallel regions and history: every active state marked, what can happen now and what a guard holds back, and the last step's exits, transitions and entries numbered in order. |
 | [`sb-table`](components/sb-table/manifest.md) | Rows and columns to sort, search and filter, with the cells that just changed marked. |

@@ -148,4 +148,4 @@ const catalogue = served ? await (await fetch('sources/catalogue.json')).json() 
 
 Everything else in the sandbox works either way. Components never load files themselves: the page loads them and hands components the data.
 
-Show a source with [`sb-source`](../components/sb-source/manifest.md): the paper, its details, and the passages the model cites marked where they are, with any it can't find listed. Its manifest shows how to turn `model.items` into its passages.
+Show a source with [`sb-source`](../components/sb-source/manifest.md): the paper, its details, and the passages the model cites marked where they are, with any it can't find listed. Its manifest shows how to turn `model.items` into its passages. Show the whole catalogue with [`sb-sources`](../components/sb-sources/manifest.md): cards to search, filter and sort, with replaced sources marked and files waiting in the folder listed apart. Open a source in `sb-source` when one is chosen.
