@@ -18,6 +18,8 @@ A sandbox changes a little at a time, steered by the people exploring it. Withou
 
 After every meaningful change, which in practice means every iteration (see [building a sandbox](building-a-sandbox.md)). Not for exploratory edits that were thrown away: the journal records what the sandbox became, not how you got there.
 
+Sources count: cataloguing new ones ("Catalogued SRC-14 to SRC-17") and citing them from the model are changes like any other, recorded as **Added** (see the [sources practice](sources.md)).
+
 ## Every entry is a version
 
 Each entry raises the sandbox's version, by semantic versioning, as Sandkit's own versions do. A new sandbox starts at `0.1.0`.

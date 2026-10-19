@@ -27,7 +27,7 @@ Before building anything, be clear on:
 - **The subject.** What domain is being explored?
 - **The goal.** What should someone understand, decide or discover by the end? If the request doesn't say, ask. The goal shapes everything else.
 - **The kind of sandbox.** For intuition (a believable feel for how something works), for decisions (grounded in sources people can check), or for exploring possibilities (pushing beyond what is known, clearly marked as such).
-- **The sources.** What material is the model to be built from? Documents, data, articles, or the person's own knowledge. A sandbox is only as good as what is behind it.
+- **The sources.** What material is the model to be built from? Documents, data, articles, or the person's own knowledge. A sandbox is only as good as what is behind it. Keep the material in `sources/`, catalogued, and cite it from the model, following the [sources practice](sources.md).
 
   When the sources include data (JSON or JSON Lines), profile it first, where Node is available: `node <sandkit>/tools/analyse.mjs profile <files or folder> --md`. Read the findings (fields that never change, keys, gaps, mixed types, rare values) before designing the model, rather than reading the samples themselves. Then find what goes with what: `node <sandkit>/tools/analyse.mjs dependencies <files or folder> --md`. Treat its rules as candidate rules for the model, inferences until the person confirms them, and its exceptions as questions to ask. The same analyses can go in the sandbox as [`sb-profile`](../components/sb-profile/manifest.md) and [`sb-dependencies`](../components/sb-dependencies/manifest.md), so the person sees what you saw.
 
@@ -142,6 +142,7 @@ Declare everything first (state, functions, wiring), then start the sandbox in o
 A sandbox aims to be built with as little testing as possible. Testing is overhead, and the person exploring the sandbox is the best check there is: they will find what is wrong, and that is part of the loop.
 
 - **If the model has tests** (step 4), run them after changing it.
+- **If the sandbox has sources,** check them after cataloguing or citing, where Node is available: `node lib/sandkit/tools/sources.mjs check .` (see the [sources practice](sources.md)).
 - **Don't write automated tests for the interface.** Driving the page in a browser is expensive, and depends on tools the agent may not have. Add such tests only if the person asks, or if something truly can't be trusted without them, and say why.
 - **Check the interface by hand only when it's really needed,** for example after a risky change. Many iterations need no checking at all.
 - **Make no assumptions about the environment.** You may have no browser, no automation and no Node, or different ones from what Sandkit uses. If you can't check something, say so in the handover, and ask the person to try it.

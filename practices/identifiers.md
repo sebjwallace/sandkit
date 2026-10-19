@@ -30,6 +30,8 @@ Example prefixes for different kinds of sandbox:
 | Discovery of an unfamiliar domain | `CLM` claim, `QST` question, `ANS` answer, `SRC` source, `ASM` assumption, `FB` feedback received |
 | Physics or chemistry | `EQN` equation, `PAR` parameter, `RXN` reaction |
 
+Whatever the subject, a sandbox built from source material gives each source an `SRC` code (see the [sources practice](sources.md)).
+
 ## Rules
 
 - **Codes are stable.** Once issued, a code always refers to the same thing. Never renumber, and never reuse a code for something else, even after the original is removed. Retired codes stay retired.

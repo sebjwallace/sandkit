@@ -6,6 +6,11 @@ const RULES = [
   // { id: 'RUL-001', title: '{{Rule name}}', description: '{{What the rule says, in a sentence.}}' }
 ];
 
+// Everything a person might trace, citing the passages it rests on (see lib/sandkit/practices/sources.md).
+const ITEMS = [
+  // { id: 'RUL-001', title: '{{Rule name}}', kind: 'Rule', sources: [{ source: 'SRC-1', quote: '{{the words it rests on}}' }], restsOn: [] }
+];
+
 function createModel(options) {
   const opts = { ...options };
   let state;
@@ -25,6 +30,7 @@ function createModel(options) {
     get state() { return state; },
     get options() { return opts; },
     rules: RULES,
+    items: ITEMS,
     step,
     reset,
     setOption(key, value) { opts[key] = value; }
@@ -32,4 +38,4 @@ function createModel(options) {
 }
 
 // Lets Node load the model too, for model tests once the sandbox needs them (see the guide, step 4).
-if (typeof module !== 'undefined') module.exports = { createModel, RULES };
+if (typeof module !== 'undefined') module.exports = { createModel, RULES, ITEMS };

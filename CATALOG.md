@@ -10,6 +10,8 @@ Run from a Sandkit clone with Node. Not copied into sandboxes.
 |---|---|
 | `tools/setup.mjs` | Sets up a sandbox with Sandkit's files, or updates them. |
 | `tools/export.mjs` | Exports one page of a sandbox as a single HTML file that still runs, listing every file that went in. Copied into sandboxes, for the agent to run when someone presses Export. |
+| `tools/serve.mjs` | Serves a sandbox on this computer, so the features that read and write its files work: lists a folder's files and saves into `sources/inbox/`. Copied into sandboxes; opening pages by double-clicking still works for everything else. |
+| `tools/sources.mjs` | Checks a sandbox's sources against its catalogue and its model: missing and uncatalogued files, unknown sources, quotes that aren't there. Copied into sandboxes. |
 | `tools/analyse.mjs` | Runs a component's analysis on data files, without a page: `profile` and `dependencies`. `list` shows them all. |
 
 ## Practices
@@ -24,6 +26,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [Journal](practices/journal.md) | What changed in a sandbox and why, one entry per version, and where it stands now: for audit and handover. Retired codes recorded in the model. |
 | [Identifiers](practices/identifiers.md) | Short, stable codes for the things in a sandbox, and citing them everywhere. Supported by `sb-id`. |
 | [Pages](practices/pages.md) | Splitting a sandbox into pages that share one model, `sandbox.js` listing them once, data as scripts, and exporting any page as one file that runs anywhere. Supported by the shell and `tools/export.mjs`. |
+| [Sources](practices/sources.md) | The material a sandbox was built from: `sources/` with one catalogue, an inbox to process, citations of passages from the model's `ITEMS`, and checking them. Supported by `tools/sources.mjs` and `tools/serve.mjs`. |
 | [Feedback](practices/feedback.md) | Collecting comments with `sb-comments`, and what the agent does on receiving them: saved as sources, `FB-` codes, answered in the journal. Supported by `sb-comments`. |
 
 ## Shell

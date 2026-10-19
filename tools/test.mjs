@@ -1,30 +1,38 @@
 // Tests for the tools. Plain assertions, no libraries; run with `node tools/test.mjs`.
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { createServer, request } from 'node:http';
+import { networkInterfaces, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SETUP = resolve(fileURLToPath(import.meta.url), '../setup.mjs');
 const COMPONENTS = resolve(fileURLToPath(import.meta.url), '../../components');
 
+// Tests run one after another, each waiting for the last, so a test can be async.
+let queue = Promise.resolve();
 function test(name, fn) {
-  const sandbox = mkdtempSync(join(tmpdir(), 'sandkit-sandbox-'));
-  try {
-    fn(sandbox);
-    console.log(`✓ ${name}`);
-  } catch (err) {
-    console.log(`✗ ${name} — ${err.message}`);
-    process.exitCode = 1;
-  } finally {
-    rmSync(sandbox, { recursive: true, force: true });
-  }
+  queue = queue.then(async () => {
+    const sandbox = mkdtempSync(join(tmpdir(), 'sandkit-sandbox-'));
+    try {
+      await fn(sandbox);
+      console.log(`✓ ${name}`);
+    } catch (err) {
+      console.log(`✗ ${name} — ${err.message}`);
+      process.exitCode = 1;
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  });
 }
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
+
+const assertEqual = (actual, expected) =>
+  assert(JSON.stringify(actual) === JSON.stringify(expected), `expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
 
 // Runs setup, returning its output and whether it succeeded.
 function setup(...args) {
@@ -66,9 +74,9 @@ test('running again adds components, keeps existing ones, and never duplicates t
   assert(read(sandbox, 'lib/sandkit/SOURCE.md').includes('components/sb-log/sb-log.js'), 'sb-log still recorded');
 });
 
-test('a new sandbox gets sandbox.js, the page template and the export tool', (sandbox) => {
+test('a new sandbox gets sandbox.js, the page template, the sources folder, and the export, serve and sources tools', (sandbox) => {
   setup(sandbox);
-  for (const file of ['sandbox.js', 'lib/sandkit/templates/page.html', 'lib/sandkit/tools/export.mjs', 'lib/sandkit/shell/sb-export.js']) {
+  for (const file of ['sandbox.js', 'lib/sandkit/templates/page.html', 'lib/sandkit/tools/export.mjs', 'lib/sandkit/tools/serve.mjs', 'lib/sandkit/tools/sources.mjs', 'sources/catalogue.json', 'sources/inbox/.gitkeep', 'lib/sandkit/shell/sb-export.js']) {
     assert(existsSync(join(sandbox, file)), `missing ${file}`);
   }
   assert(read(sandbox, 'index.html').includes('<script src="sandbox.js"></script>'), 'index.html includes sandbox.js');
@@ -371,4 +379,187 @@ test('export --all exports every page to its own file', (folder) => {
   write(folder, 'two.html', '<p>two</p>');
   assert(exportTool(folder, '--all').ok, 'exported');
   assert(['index.html', 'two.html'].every((page) => existsSync(join(folder, 'export', page))), 'both written');
+});
+
+// ---- serve ----
+
+const SERVE = resolve(fileURLToPath(import.meta.url), '../serve.mjs');
+let nextPort = 18300 + Math.floor(Math.random() * 500);
+
+// Starts the server on a folder, resolving once it says where it's listening.
+function startServer(folder, port = nextPort += 10) {
+  const child = spawn('node', [SERVE, folder, '--port', String(port)], { stdio: ['ignore', 'pipe', 'pipe'] });
+  return new Promise((done, failed) => {
+    child.stdout.on('data', (data) => {
+      const url = String(data).match(/http:\/\/\S+/)?.[0];
+      if (url) done({ url, stop: () => child.kill() });
+    });
+    child.stderr.on('data', (data) => failed(new Error(String(data))));
+  });
+}
+
+async function served(folder, fn) {
+  const server = await startServer(folder);
+  try {
+    await fn(server.url);
+  } finally {
+    server.stop();
+  }
+}
+
+// A request sent exactly as written, since fetch would tidy away the dots in a path.
+function rawGet(url, path) {
+  return new Promise((done, failed) => {
+    const { hostname, port } = new URL(url);
+    request({ hostname, port, path }, (res) => { res.resume(); done(res.statusCode); }).on('error', failed).end();
+  });
+}
+
+const postInbox = (url, body) => fetch(`${url}/_sandkit/inbox`, { method: 'POST', body: JSON.stringify(body) });
+
+test('serve serves the folder\'s files with their types, and index.html for a folder', (folder) => served(folder, async (url) => {
+  write(folder, 'index.html', '<p>home</p>');
+  write(folder, 'model.js', 'const x = 1;');
+  const page = await fetch(`${url}/`);
+  assert(page.headers.get('content-type').startsWith('text/html') && (await page.text()) === '<p>home</p>', 'index.html');
+  const script = await fetch(`${url}/model.js`);
+  assert(script.headers.get('content-type').startsWith('text/javascript'), script.headers.get('content-type'));
+  assert((await fetch(`${url}/missing.js`)).status === 404, 'missing is 404');
+}));
+
+test('serve refuses paths outside the folder', (folder) => served(folder, async (url) => {
+  for (const path of ['/../secret.txt', '/..%2fsecret.txt', '/%2e%2e/secret.txt']) {
+    const status = await rawGet(url, path);
+    assert(status === 403 || status === 404, `${path} gave ${status}`);
+  }
+  assert((await fetch(`${url}/_sandkit/files?dir=..`)).status === 403, 'listing outside refused');
+}));
+
+test('serve lists the files under a folder, with size and time', (folder) => served(folder, async (url) => {
+  mkdirSync(join(folder, 'sources/notes'), { recursive: true });
+  write(folder, 'sources/catalogue.json', '{}');
+  write(folder, 'sources/notes/a.txt', 'hello');
+  const files = await (await fetch(`${url}/_sandkit/files?dir=sources`)).json();
+  assertEqual(files.map((f) => f.path).sort(), ['sources/catalogue.json', 'sources/notes/a.txt']);
+  const note = files.find((f) => f.path.endsWith('a.txt'));
+  assert(note.size === 5 && !isNaN(Date.parse(note.modified)), JSON.stringify(note));
+  assertEqual(await (await fetch(`${url}/_sandkit/files?dir=nothing-here`)).json(), []);
+}));
+
+test('serve writes to the inbox with a safe name, never overwriting', (folder) => served(folder, async (url) => {
+  const first = await (await postInbox(url, { name: '../My notes!.json', content: 'one' })).json();
+  const second = await (await postInbox(url, { name: 'My notes!.json', content: 'two' })).json();
+  assertEqual([first.path, second.path], ['sources/inbox/My-notes-.json', 'sources/inbox/My-notes--2.json']);
+  assert(read(folder, first.path) === 'one' && read(folder, second.path) === 'two', 'contents kept');
+  assert((await postInbox(url, { name: 'x.txt' })).status === 400, 'content required');
+}));
+
+test('serve refuses a body over 5 MB, writing nothing', (folder) => served(folder, async (url) => {
+  const res = await postInbox(url, { name: 'big.txt', content: 'x'.repeat(5 * 1024 * 1024 + 1) }).catch(() => null);
+  assert(!res || res.status === 413, `status ${res?.status}`);
+  assert(!existsSync(join(folder, 'sources/inbox/big.txt')), 'nothing written');
+}));
+
+test('serve tries the next port when one is taken, and says which', async (folder) => {
+  const port = nextPort += 10;
+  const blocker = createServer().listen(port, '127.0.0.1');
+  await new Promise((done) => blocker.once('listening', done));
+  try {
+    const server = await startServer(folder, port);
+    server.stop();
+    assert(server.url === `http://127.0.0.1:${port + 1}`, server.url);
+  } finally {
+    blocker.close();
+  }
+});
+
+test('serve listens on this computer only', (folder) => served(folder, async (url) => {
+  assert(url.startsWith('http://127.0.0.1:'), url);
+  const address = Object.values(networkInterfaces()).flat().find((a) => a.family === 'IPv4' && !a.internal)?.address;
+  if (!address) return; // no network to try from
+  const reached = await fetch(url.replace('127.0.0.1', address)).then(() => true, () => false);
+  assert(!reached, `reachable at ${address}`);
+}));
+
+// ---- sources.mjs ----
+
+const SOURCES = resolve(fileURLToPath(import.meta.url), '../sources.mjs');
+
+function checkSources(folder) {
+  try {
+    return { ok: true, output: execFileSync('node', [SOURCES, 'check', folder], { encoding: 'utf8', stdio: 'pipe' }) };
+  } catch (err) {
+    return { ok: false, output: err.stdout + err.stderr };
+  }
+}
+
+// A small sandbox whose sources all check out: a transcript, a PDF and a session of comments.
+function sourcedSandbox(folder, items) {
+  mkdirSync(join(folder, 'sources/interviews'), { recursive: true });
+  mkdirSync(join(folder, 'sources/inbox'), { recursive: true });
+  write(folder, 'sources/interviews/floor.txt', 'We reorder as soon as we\n   drop under forty.');
+  write(folder, 'sources/policy.pdf', '%PDF-1.4');
+  write(folder, 'sources/session.json', JSON.stringify({ format: 'sandkit-annotations', annotations: [{ n: 1, text: 'Yes.' }] }));
+  write(folder, 'sources/inbox/.gitkeep', '');
+  write(folder, 'sources/catalogue.json', JSON.stringify({ format: 'sandkit-sources', version: 1, sources: [
+    { id: 'SRC-1', title: 'Floor interview', path: 'sources/interviews/floor.txt' },
+    { id: 'SRC-2', title: 'Policy', path: 'sources/policy.pdf', respondsTo: 'SRC-1' },
+    { id: 'SRC-3', title: 'Review', path: 'sources/session.json', derivedFrom: ['SRC-1'], supersedes: 'SRC-2' }
+  ] }));
+  write(folder, 'model.js', `const ITEMS = ${JSON.stringify(items ?? [
+    { id: 'RUL-1', sources: [{ source: 'SRC-1', quote: 'we reorder as soon as we drop under forty' }], restsOn: ['PAR-1'] },
+    { id: 'PAR-1', sources: [{ source: 'SRC-2', page: 3, quote: 'forty' }, { source: 'SRC-3', annotation: 1 }] }
+  ])};\nif (typeof module !== 'undefined') module.exports = { ITEMS };`);
+}
+
+test('sources check passes sources that agree with the catalogue and the model', (folder) => {
+  sourcedSandbox(folder);
+  const { ok, output } = checkSources(folder);
+  assert(ok && output.includes('The sources check out.'), output);
+});
+
+test('sources check notes what it can\'t check, citing nothing, and the inbox, without failing', (folder) => {
+  sourcedSandbox(folder);
+  write(folder, 'sources/inbox/new.txt', 'later');
+  write(folder, 'model.js', `const ITEMS = [{ id: 'PAR-1', sources: [{ source: 'SRC-2', page: 3, quote: 'forty' }] }, { id: 'ASM-1' }];
+module.exports = { ITEMS };`);
+  const { ok, output } = checkSources(folder);
+  assert(ok, output);
+  for (const note of ['PAR-1\'s quote in SRC-2 is not checked (pdf).', 'ASM-1 cites no source.', '1 file waits in the inbox']) {
+    assert(output.includes(note), `notes: ${note}\n${output}`);
+  }
+});
+
+test('sources check fails a broken catalogue: missing files, repeated ids, uncatalogued files and bad links', (folder) => {
+  sourcedSandbox(folder);
+  const catalogue = JSON.parse(read(folder, 'sources/catalogue.json'));
+  catalogue.sources.push({ id: 'SRC-1', title: 'Again', path: 'sources/gone.txt', derivedFrom: ['SRC-9'] });
+  write(folder, 'sources/catalogue.json', JSON.stringify(catalogue));
+  write(folder, 'sources/stray.md', 'not catalogued');
+  const { ok, output } = checkSources(folder);
+  assert(!ok, 'fails');
+  for (const error of ['SRC-1 is used by more than one source.', 'SRC-1\'s file is missing: sources/gone.txt',
+    'SRC-1\'s derivedFrom names SRC-9', 'sources/stray.md isn\'t in the catalogue.']) {
+    assert(output.includes(error), `reports: ${error}\n${output}`);
+  }
+});
+
+test('sources check fails citations of unknown sources, quotes not found, missing annotations and unknown items', (folder) => {
+  sourcedSandbox(folder, [
+    { id: 'RUL-1', sources: [{ source: 'SRC-1', quote: 'we reorder at thirty' }, { source: 'SRC-7', quote: 'x' }], restsOn: ['PAR-9'] },
+    { id: 'RUL-2', sources: [{ source: 'SRC-3', annotation: 4 }] }
+  ]);
+  const { ok, output } = checkSources(folder);
+  assert(!ok, 'fails');
+  for (const error of ['RUL-1 quotes SRC-1, but the quote isn\'t in it: "we reorder at thirty"', 'RUL-1 cites SRC-7, which isn\'t in the catalogue.',
+    'RUL-1 rests on PAR-9, which isn\'t in ITEMS.', 'RUL-2 cites annotation 4 of SRC-3, which has none by that number.']) {
+    assert(output.includes(error), `reports: ${error}\n${output}`);
+  }
+});
+
+test('sources check explains a missing catalogue, and a model without items', (folder) => {
+  write(folder, 'model.js', 'module.exports = {};');
+  const { ok, output } = checkSources(folder);
+  assert(!ok && output.includes('There\'s no sources/catalogue.json.'), output);
+  assert(output.includes('model.js exports no ITEMS'), output);
 });

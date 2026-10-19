@@ -26,7 +26,7 @@ my-sandbox/
 
 - **One model, shared.** Every page includes `model.js`. A page may add a small model of its own, but the main model is common.
 - **Each page includes what it uses, and only that:** the shell, the components on that page, `sandbox.js`, `model.js`, and the data files it needs. That's what makes a page exportable alone.
-- **Data as scripts, never fetched.** Browsers block `fetch` from a page opened by double-clicking it, so data the pages use lives in `.js` files that set it for the model (`window.prices = [...]`), included with a script tag. Raw material in `sources/` is never loaded by pages.
+- **Data as scripts, never fetched.** Browsers block `fetch` from a page opened by double-clicking it, so data the pages use lives in `.js` files that set it for the model (`window.prices = [...]`), included with a script tag. Raw material in `sources/` is loaded only by the features that show sources, and only when the sandbox is served (see the [sources practice](sources.md)); an exported page leaves them out.
 
 ## sandbox.js
 
