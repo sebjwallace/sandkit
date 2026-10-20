@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-poll tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-poll.js"></script>
+</head>
+<body>
+  <script>
+    const OPTIONS = [{ id: 'none', label: 'No homes flood' }, { id: 'some', label: 'Some homes', ref: 'OUT-2' }, { id: 'many', label: 'Most homes' }];
+    const PEOPLE = [{ id: 'priya', name: 'Priya Shah', role: 'Engineer' }, { id: 'tom', name: 'Tom Hale' }, { id: 'dan', name: 'Dan Pryce' }];
+    const ALL_IN = { priya: { option: 'some', why: 'We open late.' }, tom: { option: 'many', why: '' }, dan: { option: 'none', why: '' } };
+
+    function poll({ answers = {}, revealed = false, outcome, attributes = 'question="How many homes flood?" reasons', content = '' } = {}) {
+      const el = mount(`<sb-poll ${attributes}>${content}</sb-poll>`);
+      el.options = OPTIONS;
+      el.people = PEOPLE;
+      el.answers = answers;
+      if (outcome) el.outcome = outcome;
+      el.revealed = revealed;
+      return el;
+    }
+
+    const option = (el, id) => el.querySelector(`.sb-poll__option[data-option="${id}"]`);
+    const group = (el, id) => el.querySelector(`.sb-poll__group[data-option="${id}"]`);
+    const statuses = (el) => [...el.querySelectorAll('.sb-poll__status')].map((s) => s.textContent);
+    const reveal = (el) => el.querySelector('[data-action="reveal"]');
+    const submit = (el) => el.querySelector('.sb-poll__form [type="submit"]');
+    const whoIn = (el, id) => [...group(el, id).querySelectorAll('.sb-poll__answer')].map((a) => a.dataset.person);
+
+    // ---- Asking ----
+
+    test('shows the question, an option per choice, and who is answering', () => {
+      const el = poll();
+      assertEqual(el.querySelector('.sb-poll__question').textContent, 'How many homes flood?');
+      assertEqual([...el.querySelectorAll('.sb-poll__option')].map((o) => o.textContent.trim()), ['No homes flood', 'Some homes', 'Most homes']);
+      assertEqual(statuses(el), ['Not answered yet', 'Not answered yet', 'Not answered yet']);
+    });
+
+    test('says who has answered, but never what', () => {
+      const el = poll({ answers: { priya: { option: 'some', why: 'secret reason' } } });
+      assertEqual(statuses(el), ['Answered · hidden', 'Not answered yet', 'Not answered yet']);
+      assert(!el.textContent.includes('secret reason'), 'the reason stays hidden');
+      assertEqual([...el.querySelectorAll('select[name="person"] option')].map((o) => o.value), ['tom', 'dan'], 'only those yet to answer');
+    });
+
+    test('choosing an option and submitting asks the sandbox to record it, and changes nothing itself', () => {
+      const el = poll();
+      const events = recordEvents(el, 'sb-answer');
+      assert(submit(el).disabled, 'nothing chosen yet');
+      option(el, 'many').click();
+      el.querySelector('textarea[name="why"]').value = '  The fields fill first. ';
+      el.querySelector('textarea[name="why"]').dispatchEvent(new Event('input', { bubbles: true }));
+      submit(el).click();
+      assertEqual(events.map((e) => e.detail), [{ person: 'priya', option: 'many', why: 'The fields fill first.' }]);
+      assertEqual(el.answers, {}, 'the sandbox sets answers');
+    });
+
+    test('the person answering can be chosen', () => {
+      const el = poll();
+      const events = recordEvents(el, 'sb-answer');
+      const select = el.querySelector('select[name="person"]');
+      select.value = 'dan';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      option(el, 'none').click();
+      submit(el).click();
+      assertEqual(events[0].detail.person, 'dan');
+    });
+
+    test('without reasons, there is no why field', () => {
+      assertEqual(poll({ attributes: 'question="Q"' }).querySelector('textarea'), null);
+    });
+
+    test('Reveal waits for everyone, and asks the sandbox with sb-reveal', () => {
+      const el = poll({ answers: { priya: ALL_IN.priya } });
+      assert(reveal(el).disabled, 'two still to answer');
+      el.answers = ALL_IN;
+      assertEqual(el.querySelector('.sb-poll__form'), null, 'nobody left to ask');
+      const events = recordEvents(el, 'sb-reveal');
+      reveal(el).click();
+      assertEqual(events.length, 1);
+      assert(!el.revealed, 'the sandbox sets revealed');
+    });
+
+    // ---- Revealing ----
+
+    test('revealed, each option shows who chose it and why, with a count', () => {
+      const el = poll({ answers: ALL_IN, revealed: true });
+      assertEqual([whoIn(el, 'none'), whoIn(el, 'some'), whoIn(el, 'many')], [['dan'], ['priya'], ['tom']]);
+      assertEqual(group(el, 'some').querySelector('.sb-poll__count').textContent, '1 person');
+      assertEqual(group(el, 'some').querySelector('.sb-poll__why').textContent, 'We open late.');
+    });
+
+    test('an option nobody chose says so', () => {
+      const el = poll({ answers: { priya: { option: 'many' }, tom: { option: 'many' }, dan: { option: 'many' } }, revealed: true });
+      assertEqual(group(el, 'none').querySelector('.sb-poll__nobody').textContent, 'Nobody chose this.');
+      assertEqual(group(el, 'many').querySelector('.sb-poll__count').textContent, '3 people');
+    });
+
+    test('a plain poll marks no answer right or wrong', () => {
+      const el = poll({ answers: ALL_IN, revealed: true });
+      assertEqual(el.querySelectorAll('.sb-poll__mark, .sb-poll__held, .sb-poll__summary').length, 0);
+    });
+
+    test('with an outcome, it is a prediction: what happened is marked, and who expected it', () => {
+      const el = poll({ answers: ALL_IN, revealed: true, outcome: 'many' });
+      assert(group(el, 'many').classList.contains('sb-poll__group--outcome'));
+      assertEqual(group(el, 'many').querySelector('.sb-poll__held').textContent, 'What happened');
+      assertEqual(group(el, 'many').querySelector('.sb-poll__mark').textContent, '✓');
+      assertEqual(group(el, 'none').querySelector('.sb-poll__mark').textContent, '✗');
+      assertEqual(el.querySelector('.sb-poll__summary').textContent, '1 of 3 expected what happened.');
+    });
+
+    test('the outcome stays hidden until the reveal', () => {
+      const el = poll({ answers: ALL_IN, outcome: 'many' });
+      assertEqual(el.querySelectorAll('.sb-poll__held, .sb-poll__mark').length, 0);
+    });
+
+    test('notes show under each answer once revealed', () => {
+      const el = poll({ answers: ALL_IN, revealed: true, outcome: 'many' });
+      el.notes = { dan: 'The 2019 storm was smaller.' };
+      assertEqual(group(el, 'none').querySelector('.sb-poll__note').textContent, 'The 2019 storm was smaller.');
+    });
+
+    // ---- Slots ----
+
+    test('slotted content takes the place of an option\'s label and a person\'s name, and moves with the reveal', () => {
+      const el = poll({ content: '<img slot="option:some" alt="a sketch"><b slot="person:tom">Tom\'s badge</b>' });
+      assert(option(el, 'some').contains(el.querySelector('img[alt="a sketch"]')), 'in its option');
+      assert(el.querySelector('.sb-poll__people').contains(el.querySelector('b[slot="person:tom"]')), 'among who is answering');
+      el.answers = ALL_IN;
+      el.revealed = true;
+      const tom = group(el, 'many').querySelector('[data-person="tom"]');
+      assert(tom.contains(el.querySelector('b[slot="person:tom"]')), 'beside Tom\'s answer');
+      assert(group(el, 'some').contains(el.querySelector('img[alt="a sketch"]')), 'heading its group');
+      assertEqual(el.querySelectorAll('img[alt="a sketch"]').length, 1, 'moved, never copied');
+    });
+
+    test('content slotted later is placed too', async () => {
+      const el = poll();
+      el.append(Object.assign(document.createElement('i'), { slot: 'option:none', textContent: 'late' }));
+      await waitFor(() => option(el, 'none').querySelector('i'));
+      assertEqual(option(el, 'none').textContent.trim(), 'late');
+    });
+
+    // ---- Highlighting and prompts ----
+
+    test('an option with a ref carries it, lights up when announced, and announces when pointed at', () => {
+      const el = poll();
+      assertEqual(option(el, 'some').dataset.ref, 'OUT-2');
+      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: 'OUT-2' } }));
+      assert(option(el, 'some').classList.contains('sb-poll__option--highlighted'));
+      const events = recordEvents(document, 'sb-highlight');
+      option(el, 'some').querySelector('.sb-poll__option-label').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assertEqual(events.map((e) => e.detail.ref), ['OUT-2']);
+      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: null } }));
+    });
+
+    test('describe() gives the poll as text: hidden answers before the reveal, every answer after', () => {
+      const el = poll({ answers: { priya: ALL_IN.priya } });
+      assert(el.describe().includes('1 of 3 have answered; answers are hidden'), 'hidden before');
+      assert(!el.describe().includes('We open late.'), 'no reasons before the reveal');
+      el.answers = ALL_IN;
+      el.outcome = 'many';
+      el.revealed = true;
+      const text = el.describe();
+      assert(text.includes('- Most homes (what happened)'), text);
+      assert(text.includes('- Priya Shah, Engineer: Some homes ✗\n  Why: "We open late."'), text);
+      assert(text.includes('- Tom Hale: Most homes ✓'), text);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two polls side by side keep their own answers and drafts', () => {
+      mount('<div><sb-poll question="A"></sb-poll><sb-poll question="B"></sb-poll></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-poll');
+      for (const el of [a, b]) { el.options = OPTIONS; el.people = PEOPLE; }
+      a.answers = { priya: { option: 'none' } };
+      option(b, 'many').click();
+      assertEqual([statuses(a)[0], statuses(b)[0]], ['Answered · hidden', 'Not answered yet']);
+      assertEqual([option(a, 'many').getAttribute('aria-pressed'), option(b, 'many').getAttribute('aria-pressed')], ['false', 'true']);
+    });
+
+    test('shows questions, options, names and reasons as text, never as markup', () => {
+      const el = mount('<sb-poll question="<b>q</b>" reasons></sb-poll>');
+      el.options = [{ id: 'x', label: '<i>o</i>' }];
+      el.people = [{ id: 'p', name: '<b>n</b>' }];
+      el.answers = { p: { option: 'x', why: '<i>w</i>' } };
+      el.notes = { p: '<b>note</b>' };
+      el.revealed = true;
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+    });
+  </script>
+</body>
+</html>

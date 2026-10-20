@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-poll demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-poll.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0 0; }
+    .actions button { font: inherit; font-size: 13px; padding: 4px 12px; color: var(--sb-text); background: var(--sb-surface-2); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); cursor: pointer; }
+    #demand { --sb-poll-option-width: 190px; }
+    .curve { display: grid; gap: 4px; }
+    .curve svg { width: 100%; height: 70px; }
+    .curve path { fill: none; stroke: var(--sb-accent); stroke-width: 2.5; }
+    .curve line { stroke: var(--sb-border); }
+    .curve text { fill: var(--sb-muted); font-size: 9px; }
+    .why-it-held { margin: 10px 0 0; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-poll">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A question put to a group, every answer hidden until everyone has answered. With an outcome, a prediction.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Asking someone to commit to an answer before they see the result changes how they look at it. A poll asks a question, keeps every answer hidden until everyone has given theirs, then shows them all at once, grouped by option, with who chose what and why.</p>
+      <p>Asked before a model shows what happens, a poll becomes a prediction: say what you expect, then watch it play out. A wrong guess is the most memorable way to learn something, and a surprise in a group shows exactly where people's understanding differs.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Predict, then run it.</strong> Before a simulation plays, readers say what they expect. One reader on their own works too: the poll then simply asks before it shows.</li>
+        <li><strong>Checking understanding.</strong> A quick question at the end of a chapter, with the answer revealed after.</li>
+        <li><strong>Gauging a group.</strong> How sure is everyone that a figure is right, which design do they prefer, what do they think will happen. Hidden answers mean nobody's steers anyone else's.</li>
+        <li><strong>Choosing between pictures.</strong> Slot a sketch, an image, a chart or a small prototype into each option.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Recording what was decided, and why.</strong> A poll gauges where people stand; a decision card records the outcome.</li>
+        <li><strong>Many questions at once.</strong> That's a survey; keep a poll to one question, and use several polls.</li>
+        <li><strong>Open-ended views.</strong> If answers can't be options, collect comments instead.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-poll/sb-poll.js"&gt;&lt;/script&gt;
+&lt;sb-poll question="Which shape will demand take this evening?" reasons&gt;&lt;/sb-poll&gt;
+
+&lt;script&gt;
+  poll.options = [{ id: 'flat', label: 'Steady' }, { id: 'peak', label: 'A peak at six' }];
+  poll.people = [{ id: 'you', name: 'You' }];
+  const answers = {};
+  poll.addEventListener('sb-answer', (e) =&gt; { answers[e.detail.person] = e.detail; poll.answers = answers; });
+  poll.addEventListener('sb-reveal', () =&gt; { poll.outcome = model.shape(); poll.revealed = true; });
+&lt;/script&gt;</pre>
+      <p>The sandbox keeps the answers, and works out the outcome from the model. Leave <code>outcome</code> out for a plain poll.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Ask before showing.</strong> A prediction asked after the model has run tests memory, not understanding.</li>
+        <li><strong>Ask why.</strong> With <code>reasons</code>, a wrong answer comes with the thinking behind it, which is what's worth looking at.</li>
+        <li><strong>Show why it went that way,</strong> right after the reveal: the model's chart or trace, so a surprise turns into understanding.</li>
+        <li><strong>Read the spread, not the middle.</strong> When a group answers, the one person who disagrees may know something the rest don't.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>How sure are we about the new signal timings?</h2>
+      <p>A rail safety review. Two people have answered; answer for the other two, then reveal. The spread shows who is unsure.</p>
+      <sb-poll id="confidence" question="How confident are you that trains can clear the junction in 90 seconds?" reasons></sb-poll>
+      <div class="actions"><button type="button" id="confidence-again">Start again</button></div>
+    </section>
+
+    <section class="example">
+      <h2>A cold, still evening on the grid</h2>
+      <p>Before the model runs, everyone predicts which demand curve the grid will see. The options are sketches, not words.</p>
+      <sb-poll id="demand" question="Which shape will electricity demand take from noon to midnight?" reasons></sb-poll>
+      <p class="why-it-held" id="demand-why" hidden></p>
+      <div class="actions"><button type="button" id="demand-again">Start again</button></div>
+    </section>
+  </main>
+
+  <script>
+    // Each example keeps its own answers, as a sandbox would, and sets them on the poll.
+    function wire(poll, start, onReveal) {
+      let answers;
+      const restart = () => { answers = { ...start }; poll.answers = answers; poll.revealed = false; poll.outcome = null; };
+      poll.addEventListener('sb-answer', (e) => {
+        answers[e.detail.person] = { option: e.detail.option, why: e.detail.why };
+        poll.answers = answers;
+      });
+      poll.addEventListener('sb-reveal', () => { onReveal?.(); poll.revealed = true; });
+      restart();
+      return restart;
+    }
+
+    // ---- How sure are we? A classic rating ----
+
+    const confidence = document.getElementById('confidence');
+    const LEVELS = ['Not at all', 'Slightly', 'Fairly', 'Very', 'Completely'];
+    confidence.options = LEVELS.map((words, i) => ({ id: String(i + 1), label: `${i + 1} · ${words}` }));
+    confidence.people = [
+      { id: 'ines', name: 'Ines Duarte', role: 'Signalling engineer' },
+      { id: 'kwame', name: 'Kwame Osei', role: 'Driver' },
+      { id: 'lin', name: 'Lin Zhao', role: 'Timetable planner' },
+      { id: 'omar', name: 'Omar Haddad', role: 'Safety assessor' }
+    ];
+    const restartConfidence = wire(confidence, {
+      ines: { option: '2', why: 'Freight trains take longer to clear than the timings assume.' },
+      lin: { option: '5', why: '' }
+    });
+    document.getElementById('confidence-again').addEventListener('click', restartConfidence);
+
+    // ---- A cold, still evening: a prediction whose options are sketches ----
+
+    const demand = document.getElementById('demand');
+    const CURVES = [
+      { id: 'flat', label: 'Steady all day', path: 'M5,40 C40,38 80,42 115,40 S175,38 195,40' },
+      { id: 'evening', label: 'A sharp peak at six', path: 'M5,48 C50,46 80,40 100,14 C112,4 125,20 150,34 S185,48 195,52' },
+      { id: 'late', label: 'Climbing to midnight', path: 'M5,56 C60,52 110,40 150,28 S185,16 195,10' }
+    ];
+
+    // Each option's content: a small chart, slotted into the poll.
+    function sketch(curve) {
+      const figure = document.createElement('div');
+      figure.className = 'curve';
+      figure.slot = `option:${curve.id}`;
+      figure.innerHTML = `<svg viewBox="0 0 200 72" role="img" aria-label="${curve.label}">
+          <line x1="5" y1="58" x2="195" y2="58"></line><path d="${curve.path}"></path>
+          <text x="5" y="70">noon</text><text x="92" y="70">6 pm</text><text x="160" y="70">midnight</text></svg>
+        <strong>${curve.label}</strong>`;
+      return figure;
+    }
+
+    demand.append(...CURVES.map(sketch));
+    demand.options = CURVES.map(({ id, label }) => ({ id, label }));
+    demand.people = [
+      { id: 'ada', name: 'Ada Brown', role: 'Control engineer' },
+      { id: 'raj', name: 'Raj Patel', role: 'Demand forecaster' },
+      { id: 'eve', name: 'Eve Martin', role: 'Trader' }
+    ];
+
+    // The model: lighting and cooking come on together as the cold evening falls.
+    const why = document.getElementById('demand-why');
+    const restartDemand = wire(demand, { raj: { option: 'evening', why: 'Lights and ovens at the same time, every winter.' } }, () => {
+      demand.outcome = 'evening';
+      why.hidden = false;
+      why.textContent = 'Why: as it gets dark around half past four, lights, heating and cooking all come on within an hour, and with no wind, nothing offsets it.';
+    });
+    document.getElementById('demand-again').addEventListener('click', () => { why.hidden = true; restartDemand(); });
+  </script>
+</body>
+</html>
