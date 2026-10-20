@@ -182,6 +182,48 @@
       assertEqual(el.seen, false);
     });
 
+    // ---- Scrolling to the part ----
+
+    // A part placed below the window, recording how it's asked to scroll.
+    function offscreenPart(el) {
+      const part = el.parentElement.querySelector('.rule');
+      part.style.cssText = `position: absolute; top: ${innerHeight + 500}px`;
+      part.scrolls = [];
+      part.scrollIntoView = (options) => part.scrolls.push(options.block);
+      return part;
+    }
+
+    test('a step scrolls to its part when the part is out of view', () => {
+      const el = tour();
+      const part = offscreenPart(el);
+      el.start(2);
+      el.anchor = part;
+      assertEqual(part.scrolls, ['center']);
+      el.close();
+    });
+
+    test('a part already in full view isn\'t scrolled to', () => {
+      const el = tour();
+      const part = el.parentElement.querySelector('.play');
+      part.style.cssText = 'position: fixed; top: 10px';
+      let scrolled = false;
+      part.scrollIntoView = () => { scrolled = true; };
+      el.start(1);
+      el.anchor = part;
+      assert(!scrolled);
+      el.close();
+    });
+
+    test('handing a step a redrawn part never scrolls again', () => {
+      const el = tour();
+      const part = offscreenPart(el);
+      el.start(2);
+      el.anchor = part;
+      el.anchor = part;
+      assertEqual(part.scrolls.length, 1);
+      el.close();
+    });
+
     // ---- The contract ----
 
     test('setting anchor and ready fires no events', () => {

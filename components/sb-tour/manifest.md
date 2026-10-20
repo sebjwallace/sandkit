@@ -53,7 +53,7 @@ A step names its target with `data-at`, not `data-ref`: it's a way to a place, n
 | `start(index)` | Open the tour at a step (the first by default), firing `sb-step`. |
 | `next()`, `back()` | Move a step, as the buttons do, firing `sb-step`. Next on the last step finishes the tour; on a waiting step that isn't `ready`, it does nothing. |
 | `close()` | Close the tour, firing `sb-close` with `reason: 'close'`. |
-| `anchor` | The element the step points at, handed over by the sandbox on `sb-step`, or `null`. A step with `data-at` and no anchor says "Can't find … on this page", so a broken tour shows it rather than pointing at nothing. |
+| `anchor` | The element the step points at, handed over by the sandbox on `sb-step`, or `null`. The first one a step gets is scrolled into view if it isn't already. A step with `data-at` and no anchor says "Can't find … on this page", so a broken tour shows it rather than pointing at nothing. |
 | `ready` | For a `data-wait` step: `true` lets the viewer move on. Every step starts not ready. |
 | `current` | `{ index, ref, element }` for the step showing, or `null` while closed. |
 | `open` | Whether it's showing. |
@@ -72,7 +72,9 @@ Setting `anchor` and `ready` never fires events.
 ## Viewing
 
 - **The spotlight** outlines the part pointed at and dims the rest of the page. The dimming only dims: clicks pass through, so the part, and the page around it, stay usable, and a waiting step can ask the viewer to press something.
-- **The tooltip** sits below the part, or above it if there's no room, kept on screen. It follows the part as the page scrolls or resizes.
+- **Scrolling:** when a step's part isn't in full view, the page scrolls to bring it to the middle of the window, or its top for a part taller than the window.
+- **The tooltip** sits below the part, or above it if there's no room, kept on screen. The spotlight and the tooltip follow the part as the page scrolls or resizes, and as the part itself moves or changes size while the viewer works with it.
+- **A part redrawn** as a new element: set `anchor` to the new one. Within a step, that never scrolls the page again.
 - **Keyboard:** the tooltip takes focus when a step starts. Arrow keys move, Enter moves on, Escape closes, and focus returns where it was.
 
 ## Styling

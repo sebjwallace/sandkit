@@ -1,4 +1,4 @@
-// Sandkit sb-tour 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-tour 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A guided tour of the page as it stands: a tooltip beside one thing at a time, with the rest of
 // the page dimmed, and Next moving on. Steps are HTML children naming what they point at; the
 // sandbox goes there and hands the tour the element, so the tour never searches the page.
@@ -65,6 +65,15 @@
     }
   };
 
+  // A step's part is scrolled to only when it isn't already in full view, so a part the viewer
+  // is working with stays put. A part taller than the window shows from its top.
+  function bringIntoView(part) {
+    const box = part.getBoundingClientRect();
+    if (box.top >= 0 && box.bottom <= innerHeight) return;
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    part.scrollIntoView({ block: box.height > innerHeight ? 'start' : 'center', behavior: still ? 'auto' : 'smooth' });
+  }
+
   let instanceCount = 0; // gives each tour unique ids for its tooltip's labels
 
   class SbTour extends HTMLElement {
@@ -78,7 +87,11 @@
       this._anchor = null;
       this._ready = false;
       this._returnFocus = null;
-      this._follow = () => this._place();
+      this._frame = 0;
+      this._follow = () => {
+        this._place();
+        this._frame = requestAnimationFrame(this._follow);
+      };
     }
 
     connectedCallback() {
@@ -118,6 +131,8 @@
     get anchor() { return this._anchor; }
     set anchor(element) {
       this._anchor = element || null;
+      if (this._anchor && this._toBringIntoView) bringIntoView(this._anchor);
+      this._toBringIntoView = false;
       this._showStep();
     }
 
@@ -139,8 +154,7 @@
         this._returnFocus = document.activeElement;
         this._spotlight.showPopover();
         this._tip.showPopover();
-        addEventListener('scroll', this._follow, true);
-        addEventListener('resize', this._follow);
+        this._follow();
       }
       this._go(clamp(index, 0, this.steps.length - 1));
     }
@@ -201,6 +215,7 @@
       this._index = index;
       this._anchor = null;
       this._ready = false;
+      this._toBringIntoView = true;
       this._showStep();
       const { ref, element } = this.current;
       this.dispatchEvent(new CustomEvent('sb-step', { bubbles: true, detail: { index, ref, element } }));
@@ -224,9 +239,10 @@
       this.dispatchEvent(new CustomEvent('sb-close', { bubbles: true, detail: { index, reason } }));
     }
 
+    // Placed again on every frame while open, so the spotlight keeps to the part however it moves:
+    // scrolling, resizing, or the part itself changing as the viewer works with it.
     _unfollow() {
-      removeEventListener('scroll', this._follow, true);
-      removeEventListener('resize', this._follow);
+      cancelAnimationFrame(this._frame);
     }
 
     // The current step's text, a note if what it points at can't be found, and the controls.
