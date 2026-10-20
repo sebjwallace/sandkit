@@ -57,7 +57,7 @@ sources/
 | `id` | A code with the prefix `SRC`, never reused (see [identifiers](identifiers.md)). |
 | `title`, `path`, `summary`, `tags` | What it is and where it lives. `path` is from the sandbox's folder. |
 | `format` | What kind of material, which says how to read it: `document`, `transcript`, `notes`, `data`, `image`, `pdf`, `code`, `web`, `annotations` and so on. |
-| `author` | Who wrote or said it: a person, an organisation, or `Claude` for your own analyses. |
+| `author` | Who wrote or said it: a person, an organisation, or `Agent` for your own analyses, whichever agent you are. |
 | `authored`, `captured` | When it was written, and when it was added. They often differ. |
 | `origin` | Where it came from, such as a web address, when there is one. |
 | `status` | `inbox`, `catalogued` (you've processed it), `reviewed` (a person has checked its details) or `superseded`. |
@@ -86,7 +86,7 @@ Plain text, Markdown, data, code, PDFs and images can be shown and quoted as the
 
 ```json
 { "id": "SRC-9", "title": "Depot handbook (text)", "path": "sources/handbook/depot-handbook.md",
-  "format": "document", "author": "Claude", "derivedFrom": ["SRC-8"], "summary": "The text of SRC-8, converted from Word." }
+  "format": "document", "author": "Agent", "derivedFrom": ["SRC-8"], "summary": "The text of SRC-8, converted from Word." }
 ```
 
 ## Citing sources from the model

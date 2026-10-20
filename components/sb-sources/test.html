@@ -21,7 +21,7 @@
         authored: '2026-10-02', status: 'reviewed', stance: 'assertive', summary: 'How the depot really works.' },
       { id: 'SRC-3', title: 'Depot policy, 2026', path: 'sources/policy-2026.pdf', format: 'document', author: 'Head office',
         authored: '2026-01-15', status: 'reviewed', stance: 'assertive', supersedes: 'SRC-1', summary: 'When to reorder, revised.', tags: ['reorder'] },
-      { id: 'SRC-4', title: 'What the interview suggests', path: 'sources/analysis.md', format: 'notes', author: 'Claude',
+      { id: 'SRC-4', title: 'What the interview suggests', path: 'sources/analysis.md', format: 'notes', author: 'Agent',
         authored: '2026-10-04', status: 'catalogued', stance: 'speculative', derivedFrom: ['SRC-2', 'SRC-3'], summary: 'Reordering runs late.' },
       { id: 'SRC-5', title: 'Notes from the yard', path: 'sources/yard.md', format: 'notes', author: 'Priya Shah',
         status: 'inbox', stance: 'idea', summary: 'Undated jottings.' }
@@ -150,9 +150,9 @@
     test('typing in the box searches, and setting query fills the box', () => {
       const list = show();
       const box = list.querySelector('.sb-sources__search');
-      box.value = 'claude';
+      box.value = 'agent';
       box.dispatchEvent(new Event('input', { bubbles: true }));
-      assertEqual(list.query, 'claude');
+      assertEqual(list.query, 'agent');
       assertEqual(ids(list), ['SRC-4']);
       list.query = 'yard';
       assertEqual(box.value, 'yard');
@@ -169,7 +169,7 @@
     test('each detail offers its values, statuses in the order a source moves through them', () => {
       const list = show();
       const values = (facet) => [...list.querySelectorAll(`.sb-sources__value[data-facet="${facet}"]`)].map((c) => c.dataset.value);
-      assertEqual(values('author'), ['Head office', 'Priya Shah', 'Claude']);
+      assertEqual(values('author'), ['Head office', 'Priya Shah', 'Agent']);
       assertEqual(values('status'), ['inbox', 'catalogued', 'reviewed', 'superseded']);
       assertEqual(tally(list, 'author', 'Head office'), 2);
       assert(chip(list, 'status', 'reviewed').querySelector('.sb-sources__status--reviewed'), 'status dot');
@@ -181,9 +181,9 @@
       assertEqual(list.filter, { author: ['Priya Shah'] });
       assertEqual(ids(list), ['SRC-2', 'SRC-5']);
       assertEqual(chip(list, 'author', 'Priya Shah').getAttribute('aria-pressed'), 'true');
-      chip(list, 'author', 'Claude').click();
+      chip(list, 'author', 'Agent').click();
       assertEqual(ids(list), ['SRC-2', 'SRC-4', 'SRC-5']);
-      chip(list, 'author', 'Claude').click();
+      chip(list, 'author', 'Agent').click();
       assertEqual(ids(list), ['SRC-2', 'SRC-5']);
     });
 
@@ -195,8 +195,8 @@
     test('counts say what each value would show alongside the other filters, and none are hidden', () => {
       const list = show({ filter: { status: ['reviewed'] } });
       assertEqual(tally(list, 'author', 'Head office'), 1);
-      assertEqual(tally(list, 'author', 'Claude'), 0);
-      assert(chip(list, 'author', 'Claude').classList.contains('sb-sources__value--none'), 'faded');
+      assertEqual(tally(list, 'author', 'Agent'), 0);
+      assert(chip(list, 'author', 'Agent').classList.contains('sb-sources__value--none'), 'faded');
       assertEqual(tally(list, 'status', 'catalogued'), 1, 'a detail\'s own values ignore its own choice');
       list.query = 'interview';
       assertEqual(tally(list, 'author', 'Head office'), 0);
@@ -319,7 +319,7 @@
       const list = show();
       const events = recordEvents(list, 'sb-open');
       card(list, 'SRC-3').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      chip(list, 'author', 'Claude').click();
+      chip(list, 'author', 'Agent').click();
       assertEqual(events.map((e) => e.detail.id), ['SRC-3']);
     });
 
@@ -327,7 +327,7 @@
       const list = show();
       const events = recordEvents(list, 'sb-open');
       list.selected = 'SRC-4';
-      list.query = 'claude';
+      list.query = 'agent';
       assert(card(list, 'SRC-4').classList.contains('sb-sources__card--selected'));
       assertEqual(events.length, 0);
     });
@@ -357,7 +357,7 @@
       const b = a.nextElementSibling;
       a.catalogue = SOURCES;
       b.catalogue = SOURCES.slice(0, 2);
-      chip(a, 'author', 'Claude').click();
+      chip(a, 'author', 'Agent').click();
       slide(handles(b)[0], '2025-01-01');
       a.selected = 'SRC-4';
       assertEqual(ids(a), ['SRC-4']);

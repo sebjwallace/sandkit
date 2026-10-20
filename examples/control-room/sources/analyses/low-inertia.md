@@ -1,6 +1,6 @@
 # How low inertia changes the first seconds
 
-An analysis by Claude, 24 September 2026, of the control room interview and the August fault log.
+An analysis by the agent, 24 September 2026, of the control room interview and the August fault log.
 
 ## What the fault log shows
 
