@@ -9,7 +9,7 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
+    window.TAGS = ['sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-choice', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
@@ -58,6 +58,7 @@
   <script src="../../components/sb-parameters/sb-parameters.js"></script>
   <script src="../../components/sb-log/sb-log.js"></script>
   <script src="../../components/sb-chart/sb-chart.js"></script>
+  <script src="../../components/sb-choice/sb-choice.js"></script>
   <script src="../../components/sb-controls/sb-controls.js"></script>
   <script src="../../components/sb-graph/sb-graph.js"></script>
   <script src="../../shell/sb-theme-settings.js"></script>

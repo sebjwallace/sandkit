@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-choice tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-choice.js"></script>
+  <script src="sb-choice.js"></script>
+</head>
+<body>
+  <script>
+    const FLOOD = {
+      id: 'DEC-3',
+      title: 'Imagery for the flood map',
+      status: 'accepted',
+      when: '2026-10-20T07:45',
+      deciders: ['Mateo Ruiz', 'Hana Kobayashi'],
+      context: 'The valley is under cloud.',
+      options: [
+        { id: 'a', title: 'Optical', pros: ['Sharp'], cons: ['Blocked by cloud'] },
+        { id: 'b', title: 'Radar', pros: ['Sees through cloud'], cons: ['Coarser'] }
+      ],
+      chosen: 'b',
+      reason: 'Cloud stays all day.',
+      consequences: ['Drones check the towns'],
+      about: ['LYR-2'],
+      sources: [{ source: 'SRC-12', quote: 'cloud above 80%' }],
+      replaces: 'DEC-1'
+    };
+
+    const card = (decision = FLOOD, attributes = '') => {
+      const element = mount(`<sb-choice ${attributes}></sb-choice>`);
+      element.decision = decision;
+      return element;
+    };
+    const text = (element, part) => element.querySelector(`.sb-choice__${part}`)?.textContent.trim() ?? null;
+    const all = (element, part) => [...element.querySelectorAll(`.sb-choice__${part}`)].map((el) => el.textContent.trim());
+    const press = (element, action) => element.querySelector(`[data-action="${action}"]`).click();
+    const has = (element, action) => Boolean(element.querySelector(`[data-action="${action}"]`));
+    const listen = (element, name) => {
+      const heard = [];
+      element.addEventListener(name, (e) => heard.push(e.detail));
+      return heard;
+    };
+    const type = (element, selector, value) => { element.querySelector(selector).value = value; };
+
+    // ---- Showing a decision ----
+
+    test('says so when there is no decision yet', () => {
+      assertEqual(mount('<sb-choice></sb-choice>').textContent.trim(), 'No decision yet.');
+    });
+
+    test('shows the code, title, status in words, when and who', () => {
+      const element = card();
+      assertEqual(text(element, 'code'), 'DEC-3');
+      assertEqual(text(element, 'title'), 'Imagery for the flood map');
+      assertEqual(text(element, 'status'), 'Accepted');
+      assertEqual(text(element, 'who'), '20 Oct 2026, 07:45 · Mateo Ruiz, Hana Kobayashi');
+    });
+
+    test('shows a when without a time, or in another form, as given', () => {
+      assertEqual(text(card({ ...FLOOD, when: '2026-03-14' }), 'who').split(' · ')[0], '14 Mar 2026');
+      assertEqual(text(card({ ...FLOOD, when: 'last spring' }), 'who').split(' · ')[0], 'last spring');
+    });
+
+    test('shows every option with its pros and cons, the chosen one marked in words', () => {
+      const element = card();
+      const options = [...element.querySelectorAll('.sb-choice__option')];
+      assertEqual(options.length, 2);
+      assertEqual(options.map((option) => option.classList.contains('sb-choice__option--chosen')), [false, true]);
+      assertEqual(text(options[1], 'chosen'), '✓ Chosen');
+      assertEqual(all(options[0], 'point--pro'), ['Sharp']);
+      assertEqual(all(options[0], 'point--con'), ['Blocked by cloud']);
+      assertEqual(element.dataset.hasChosen, '');
+    });
+
+    test('shows the context, reason and consequences', () => {
+      const element = card();
+      assertEqual(all(element, 'label').slice(0, 3), ['Context', 'Options', 'Reason']);
+      assertEqual(text(element, 'reason .sb-choice__text'), 'Cloud stays all day.');
+      assertEqual(all(element, 'list li'), ['Drones check the towns']);
+    });
+
+    test('says which decision it replaces, and which replaced it', () => {
+      assertEqual(text(card(), 'lineage'), 'Replaces DEC-1');
+      const old = card({ ...FLOOD, id: 'DEC-1', status: 'replaced', replaces: null, replacedBy: 'DEC-3' });
+      assertEqual(text(old, 'lineage'), 'Replaced by DEC-3');
+      assertEqual(old.dataset.status, 'replaced');
+    });
+
+    test('displays text as text, never as markup', () => {
+      const x = '<b>x</b>';
+      const element = card({ id: x, title: x, status: x, when: x, deciders: [x], context: x, options: [{ id: x, title: x, pros: [x], cons: [x] }],
+        chosen: x, reason: x, consequences: [x], about: [x], sources: [{ source: x, quote: x }], replaces: x });
+      assertEqual(element.querySelectorAll('b').length, 0);
+      assertEqual(text(element, 'title'), x);
+      element.editable = true;
+      element.decision = { ...element.decision, status: 'proposed' };
+      press(element, 'edit');
+      assertEqual(element.querySelectorAll('b').length, 0);
+      assertEqual(element.querySelector('[data-field="title"]').value, x);
+    });
+
+    // ---- What's missing ----
+
+    test('an accepted decision without a reason, deciders or a chosen option says so', () => {
+      const element = card({ ...FLOOD, reason: '', deciders: [], chosen: null });
+      assertEqual(all(element, 'gap'), ['No option chosen', 'No reason recorded', 'Nobody named']);
+      assertEqual(element.querySelector('.sb-choice__gaps').dataset.tone, 'warn');
+    });
+
+    test('a complete accepted decision shows no gaps', () => {
+      assertEqual(card().querySelector('.sb-choice__gaps'), null);
+    });
+
+    test("a proposal's gaps read as what's still to do, not as warnings", () => {
+      const element = card({ id: 'DEC-7', title: 'Survey', status: 'proposed', options: [{ id: 'a', title: 'Cameras' }] });
+      assertEqual(all(element, 'gap'), ['Only one option so far', 'To choose', 'No reason yet']);
+      assertEqual(element.querySelector('.sb-choice__gaps').dataset.tone, 'todo');
+    });
+
+    // ---- Compact ----
+
+    test('compact shows only the chosen option and the reason until unfolded', () => {
+      const element = card(FLOOD, 'compact');
+      assertEqual(all(element, 'option-head span:first-child'), ['Radar']);
+      assertEqual(all(element, 'label').includes('Context'), false);
+      press(element, 'fold');
+      assertEqual(element.querySelectorAll('.sb-choice__option').length, 2);
+      assertEqual(text(element, 'button--quiet'), 'Show less');
+    });
+
+    // ---- Highlighting and locating ----
+
+    test('lights up the card, one option or a code by ref', () => {
+      const element = card();
+      element.highlight = ['DEC-3'];
+      assert(element.classList.contains('sb-choice--highlighted'));
+      element.highlight = ['DEC-3.a', 'LYR-2'];
+      assert(!element.classList.contains('sb-choice--highlighted'));
+      assertEqual([...element.querySelectorAll('.sb-choice__option')].map((o) => o.classList.contains('sb-choice__option--highlighted')), [true, false]);
+      assertEqual(all(element, 'ref--highlighted'), ['LYR-2']);
+    });
+
+    test('the card carries its id and each option its own ref as data-ref', () => {
+      const element = card();
+      assertEqual(element.dataset.ref, 'DEC-3');
+      assertEqual([...element.querySelectorAll('.sb-choice__option')].map((o) => o.dataset.ref), ['DEC-3.a', 'DEC-3.b']);
+    });
+
+    test('codes are ways to places: data-go, not data-ref', () => {
+      const code = card().querySelector('.sb-choice__ref[data-go="LYR-2"]');
+      assert(code);
+      assertEqual(code.dataset.ref, undefined);
+    });
+
+    // ---- Viewers ----
+
+    test('clicking a code it is about, a source or a lineage code fires sb-go', () => {
+      const element = card();
+      const heard = listen(element, 'sb-go');
+      ['LYR-2', 'SRC-12', 'DEC-1'].forEach((ref) => element.querySelector(`[data-go="${ref}"]`).click());
+      assertEqual(heard, [{ ref: 'LYR-2' }, { ref: 'SRC-12' }, { ref: 'DEC-1' }]);
+    });
+
+    test('pointing fires sb-point with the ref, and null on leaving', () => {
+      const element = card();
+      const heard = listen(element, 'sb-point');
+      const over = (el) => el.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      over(element.querySelector('.sb-choice__option[data-ref="DEC-3.a"] .sb-choice__points'));
+      over(element.querySelector('[data-go="LYR-2"]'));
+      over(element.querySelector('.sb-choice__title'));
+      element.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(heard.map((d) => d.ref), ['DEC-3.a', 'LYR-2', 'DEC-3', null]);
+    });
+
+    test('without editable there is nothing to edit or reopen', () => {
+      assertEqual([has(card(), 'reopen'), has(card({ ...FLOOD, status: 'proposed' }), 'edit')], [false, false]);
+    });
+
+    test('editable offers Edit on a proposal and Reopen on an accepted decision, nothing on others', () => {
+      const actions = (status) => [has(card({ ...FLOOD, status }, 'editable'), 'edit'), has(card({ ...FLOOD, status }, 'editable'), 'reopen')];
+      assertEqual(actions('proposed'), [true, false]);
+      assertEqual(actions('accepted'), [false, true]);
+      assertEqual(actions('replaced'), [false, false]);
+    });
+
+    test('Reopen fires sb-reopen with the id', () => {
+      const element = card(FLOOD, 'editable');
+      const heard = listen(element, 'sb-reopen');
+      press(element, 'reopen');
+      assertEqual(heard, [{ id: 'DEC-3' }]);
+    });
+
+    // ---- Recording a decision ----
+
+    const PROPOSAL = { id: 'DEC-7', title: 'Survey', status: 'proposed', options: [{ id: 'a', title: 'Cameras', pros: ['Day and night'], cons: [] }] };
+
+    const form = (decision = PROPOSAL) => {
+      const element = card(decision, 'editable');
+      element.people = ['Amara Osei', 'Tom Reyes'];
+      press(element, 'edit');
+      return element;
+    };
+
+    test('edit() opens the form only when editable', () => {
+      const element = card(PROPOSAL);
+      element.edit();
+      assertEqual(element.querySelector('[data-field]'), null);
+      element.editable = true;
+      element.edit();
+      assertEqual(element.querySelector('[data-field="title"]').value, 'Survey');
+    });
+
+    test('Propose fires sb-save with the whole decision as typed, stamped with the time', () => {
+      const element = form();
+      const heard = listen(element, 'sb-save');
+      type(element, '[data-field="reason"]', 'Cheapest to run');
+      type(element, '[data-field="consequences"]', 'Buy cameras\n\nPlace by May');
+      type(element, '[data-part="cons"]', 'Twelve to buy');
+      element.querySelector('[data-person="Tom Reyes"]').checked = true;
+      type(element, '[data-field="others"]', 'Ines Duarte, ');
+      press(element, 'propose');
+      assertEqual(heard.length, 1);
+      const { when, ...rest } = heard[0].decision;
+      assert(/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(when), `when is ${when}`);
+      assertEqual(rest, { id: 'DEC-7', title: 'Survey', status: 'proposed',
+        options: [{ id: 'a', title: 'Cameras', pros: ['Day and night'], cons: ['Twelve to buy'] }], context: '',
+        chosen: null, reason: 'Cheapest to run', consequences: ['Buy cameras', 'Place by May'], deciders: ['Tom Reyes', 'Ines Duarte'] });
+    });
+
+    test('the card keeps nothing: its decision is unchanged until the sandbox sets it', () => {
+      const element = form();
+      type(element, '[data-field="title"]', 'Changed');
+      press(element, 'propose');
+      assertEqual(element.decision, PROPOSAL);
+      assertEqual(text(element, 'title'), 'Survey');
+    });
+
+    test('Accept without a chosen option is refused, with the reason', () => {
+      const element = form();
+      const heard = listen(element, 'sb-save');
+      press(element, 'accept');
+      assertEqual(heard, []);
+      assertEqual(text(element, 'message'), 'Choose an option before accepting.');
+    });
+
+    test('Accept without a reason asks once, then goes through', () => {
+      const element = form();
+      const heard = listen(element, 'sb-save');
+      element.querySelector('input[type="radio"][value="a"]').checked = true;
+      press(element, 'accept');
+      assertEqual(heard, []);
+      assert(text(element, 'message').startsWith('No reason given.'));
+      press(element, 'accept');
+      assertEqual(heard.map((d) => [d.decision.status, d.decision.chosen]), [['accepted', 'a']]);
+    });
+
+    test('Cancel fires nothing and shows the decision again', () => {
+      const element = form();
+      const heard = listen(element, 'sb-save');
+      press(element, 'cancel');
+      assertEqual(heard, []);
+      assertEqual(element.querySelector('[data-field]'), null);
+      assertEqual(text(element, 'title'), 'Survey');
+    });
+
+    test('adding and removing options keeps what has been typed', () => {
+      const element = form();
+      type(element, '[data-field="reason"]', 'Still thinking');
+      press(element, 'add-option');
+      type(element, '[data-option="b"] [data-part="title"]', 'Spraint counts');
+      press(element, 'add-option');
+      element.querySelector('[data-option="a"] [data-action="remove-option"]').click();
+      assertEqual([...element.querySelectorAll('[data-option]')].map((o) => [o.dataset.option, o.querySelector('[data-part="title"]').value]), [['b', 'Spraint counts'], ['c', '']]);
+      assertEqual(element.querySelector('[data-field="reason"]').value, 'Still thinking');
+    });
+
+    test('highlighting an open form keeps what has been typed', () => {
+      const element = form();
+      type(element, '[data-field="title"]', 'Typed');
+      element.highlight = ['DEC-7'];
+      assertEqual(element.querySelector('[data-field="title"]').value, 'Typed');
+      assert(element.classList.contains('sb-choice--highlighted'));
+    });
+
+    test('setting a new decision closes the form', () => {
+      const element = form();
+      element.decision = FLOOD;
+      assertEqual(element.querySelector('[data-field]'), null);
+      assertEqual(text(element, 'title'), 'Imagery for the flood map');
+    });
+
+    // ---- Instances ----
+
+    test('two cards on one page keep their own decision, highlight, form and chosen option', () => {
+      mount('<div><sb-choice editable></sb-choice><sb-choice editable></sb-choice></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-choice');
+      a.decision = { ...PROPOSAL, chosen: 'a' };
+      b.decision = { ...PROPOSAL, id: 'DEC-8', title: 'Other', chosen: 'a' };
+      a.highlight = ['DEC-7'];
+      press(a, 'edit');
+      press(b, 'edit');
+      const radios = [a, b].map((el) => el.querySelector('input[type="radio"]'));
+      assertEqual(radios.map((radio) => radio.checked), [true, true]);
+      assert(radios[0].name !== radios[1].name, 'radio groups are named per card');
+      const heard = listen(b, 'sb-save');
+      press(b, 'propose');
+      assertEqual(heard.map((d) => d.decision.id), ['DEC-8']);
+      assert(a.querySelector('[data-field]'), "a's form stays open");
+      assertEqual([a.classList.contains('sb-choice--highlighted'), b.classList.contains('sb-choice--highlighted')], [true, false]);
+    });
+
+    test('loading the same script twice is harmless and quiet', () => {
+      assertEqual(consoleErrors, []);
+    });
+  </script>
+</body>
+</html>

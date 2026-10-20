@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-choice demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-choice.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .stack { display: grid; gap: 12px; }
+    .prose { margin: 12px 0 0; font-size: 14px; }
+    .point { border-bottom: 1px dashed var(--sb-accent); cursor: default; }
+    .said { margin: 12px 0 0; padding: 8px 12px; border-radius: var(--sb-radius); background: var(--sb-surface-2); font-size: 13px; }
+    .said pre { margin: 6px 0 0; max-height: 220px; overflow: auto; font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-choice">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A decision as a card: the options weighed, the one chosen, the reason, who decided and when.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <section class="guide">
+      <p>A decision is the moment a group settles something: what they weighed, what they chose, why, and who was there. This card shows one, with the options turned down kept in view, because what was rejected and why is half of a decision's value. When people's names are on the choices that shaped a model, they can see why it is the way it is, and own it.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Workshops with the people who know the domain.</strong> Record a decision as the group makes it, with their names on it, and save it as source material.</li>
+        <li><strong>Explaining why a model is the way it is.</strong> A decision about a rule or a setting, cited by it, answers "why this?" months later.</li>
+        <li><strong>Seeing how thinking changed.</strong> A decision that replaces an earlier one says so, and the earlier one stays, faded, with what replaced it.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li>A rule the model follows, and whether it holds: a rule card. A decision is how a rule came to be.</li>
+        <li>A question still open, or a short note: a callout.</li>
+        <li>Choices that branch on answers down to an outcome: a decision tree.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <p>Give the card a decision. Only <code>id</code>, <code>title</code> and <code>status</code> are needed, so a proposal can start with just its options. See the <a href="manifest.md">manifest</a> for the full contract.</p>
+      <pre>card.decision = {
+  id: 'DEC-3',
+  title: 'Which imagery should map the flood?',
+  status: 'accepted',
+  when: '2026-10-20T07:45',
+  deciders: ['Mateo Ruiz', 'Hana Kobayashi'],
+  options: [
+    { id: 'a', title: 'Optical', pros: ['Sharp'], cons: ['Blocked by cloud'] },
+    { id: 'b', title: 'Radar', pros: ['Sees through cloud'], cons: ['Coarser'] }
+  ],
+  chosen: 'b',
+  reason: 'We map the flood with radar. Cloud stays all day.'
+};</pre>
+      <p>Set <code>editable</code> to let a group record decisions. The card never keeps what's typed: Propose and Accept fire <code>sb-save</code> with the whole decision, and the sandbox saves it and sets it back.</p>
+
+      <h3>Making it reveal, not just record</h3>
+      <ul>
+        <li><strong>Ask, then answer.</strong> Write the title as the question the group faced and open the reason with the answer, so the card can be read in two lines.</li>
+        <li><strong>Keep the options turned down.</strong> Their cons are often the real reason for the choice.</li>
+        <li><strong>Name the people.</strong> A decision with names and a time is evidence; the card says so when they're missing.</li>
+        <li><strong>Tie it to the model.</strong> List what it's about, and have those items cite it, so pointing at one finds the other.</li>
+        <li><strong>Replace, don't edit.</strong> Reopen an accepted decision to start a new one, so the story of how it changed is kept.</li>
+      </ul>
+    </section>
+
+    <h2 class="part">Examples</h2>
+
+    <section class="example">
+      <h2>Mapping a flood from space</h2>
+      <p>An emergency response team chose which satellite imagery maps the flood, replacing an earlier decision. Point at the underlined words; click a code to go there; press Reopen to start a new decision that would replace this one.</p>
+      <div class="stack" id="flood">
+        <sb-choice id="dec-3" editable></sb-choice>
+        <sb-choice id="dec-1" compact></sb-choice>
+      </div>
+      <p class="prose">
+        The team weighed <span class="point" data-point="DEC-3.a">optical imagery</span> against
+        <span class="point" data-point="DEC-3.b">radar</span>, and kept
+        <span class="point" data-point="DEC-3.c">drone flights</span> for checking. The choice shapes
+        <span class="point" data-point="LYR-2">the flood extent layer</span>, and replaced
+        <span class="point" data-point="DEC-1">the plan written before the storm</span>.
+      </p>
+      <div class="said" id="flood-said">Click a code or press Reopen.</div>
+    </section>
+
+    <section class="example">
+      <h2>Surveying river otters</h2>
+      <p>Still a proposal, with only one option and no reason yet, so the card says what's left to do. Press Edit to record the decision as a workshop would: add options, tick who decided, then Propose or Accept.</p>
+      <sb-choice id="survey" editable></sb-choice>
+      <div class="said" id="survey-said">Nothing saved yet.</div>
+    </section>
+  </main>
+
+  <script>
+    // Shows what a card fired, as the sandbox would receive it.
+    function show(place, words, decision) {
+      place.innerHTML = `<b>${words}</b>${decision ? '<pre></pre>' : ''}`;
+      if (decision) place.querySelector('pre').textContent = JSON.stringify(decision, null, 2);
+    }
+
+    // ---- Flood mapping ----
+
+    const dec3 = document.getElementById('dec-3');
+    const dec1 = document.getElementById('dec-1');
+    const flood = document.getElementById('flood');
+    const floodSaid = document.getElementById('flood-said');
+
+    dec3.decision = {
+      id: 'DEC-3',
+      title: 'Which imagery should map the flood extent?',
+      status: 'accepted',
+      when: '2026-10-20T07:45',
+      deciders: ['Mateo Ruiz', 'Hana Kobayashi', 'Yusuf Demir'],
+      context: 'Rivers broke their banks overnight. Crews need a map of where the water is by 10:00, and the valley is under thick cloud.',
+      options: [
+        { id: 'a', title: 'Optical satellite imagery', pros: ['Sharp, easy to read'], cons: ['Blocked by cloud', 'Next clear pass unknown'] },
+        { id: 'b', title: 'Radar satellite imagery', pros: ['Sees through cloud and at night', 'Pass due at 06:10'], cons: ['Coarser', 'Misreads streets as water'] },
+        { id: 'c', title: 'Drone flights', pros: ['Very detailed'], cons: ['Hours to cover the valley', 'Grounded in high wind'] }
+      ],
+      chosen: 'b',
+      reason: 'We map the flood with radar, and check the towns by drone. Cloud is forecast to stay all day, and radar is the only view that arrives before crews move.',
+      consequences: ['Drone team checks the three towns by noon', 'Switch to optical when the sky clears'],
+      about: ['LYR-2', 'RUL-7'],
+      sources: [{ source: 'SRC-12', quote: 'cloud cover above 80% through Thursday' }],
+      replaces: 'DEC-1'
+    };
+
+    dec1.decision = {
+      id: 'DEC-1',
+      title: 'Which imagery should we use for flood maps?',
+      status: 'replaced',
+      when: '2026-03-14T10:00',
+      deciders: ['Hana Kobayashi'],
+      options: [
+        { id: 'a', title: 'Optical satellite imagery', pros: ['Familiar to every analyst'], cons: [] },
+        { id: 'b', title: 'Aerial survey on request', pros: ['Detailed'], cons: ['Slow to arrange'] }
+      ],
+      chosen: 'a',
+      reason: 'We use optical imagery. Most floods in the last ten years came after the rain had cleared.',
+      about: ['LYR-2'],
+      replacedBy: 'DEC-3'
+    };
+
+    let nextCode = 4;
+
+    flood.addEventListener('sb-go', (e) => show(floodSaid, `sb-go: the sandbox would go to ${e.detail.ref}.`));
+
+    // Reopening makes a new proposal that would replace the old decision, with its options copied.
+    flood.addEventListener('sb-reopen', (e) => {
+      const old = [dec3, dec1].find((card) => card.decision.id === e.detail.id).decision;
+      const card = document.createElement('sb-choice');
+      card.editable = true;
+      card.people = ['Mateo Ruiz', 'Hana Kobayashi', 'Yusuf Demir', 'Elif Sahin'];
+      flood.prepend(card);
+      card.decision = { id: `DEC-${nextCode++}`, title: old.title, status: 'proposed', replaces: old.id,
+        context: old.context, options: structuredClone(old.options), about: old.about };
+      card.edit();
+      show(floodSaid, `sb-reopen: the sandbox made ${card.decision.id}, replacing ${old.id}.`);
+    });
+
+    flood.addEventListener('sb-save', (e) => {
+      e.target.decision = e.detail.decision;
+      show(floodSaid, 'sb-save: the sandbox would save this to the workshop folder.', e.detail.decision);
+    });
+
+    // ---- Otter survey ----
+
+    const survey = document.getElementById('survey');
+    const surveySaid = document.getElementById('survey-said');
+
+    survey.people = ['Amara Osei', 'Tom Reyes', 'Ines Duarte', 'Kofi Mensah'];
+    survey.decision = {
+      id: 'DEC-7',
+      title: 'How do we count the river otters by spring?',
+      status: 'proposed',
+      when: '2026-10-18T14:30',
+      deciders: ['Amara Osei'],
+      context: 'We need a count by spring. Sightings are rare and the banks are hard to reach.',
+      options: [
+        { id: 'a', title: 'Camera traps at crossings', pros: ['Runs day and night'], cons: ['Twelve cameras to buy'] }
+      ],
+      about: ['SPC-3']
+    };
+
+    survey.addEventListener('sb-save', (e) => {
+      survey.decision = e.detail.decision;
+      show(surveySaid, 'sb-save: the sandbox would save this to the workshop folder.', e.detail.decision);
+    });
+
+    // ---- Pointing from the prose ----
+
+    const cards = () => [...document.querySelectorAll('sb-choice')];
+    document.querySelectorAll('.point').forEach((word) => {
+      word.addEventListener('pointerenter', () => cards().forEach((card) => { card.highlight = [word.dataset.point]; }));
+      word.addEventListener('pointerleave', () => cards().forEach((card) => { card.highlight = []; }));
+    });
+  </script>
+</body>
+</html>

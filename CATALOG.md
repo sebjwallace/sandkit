@@ -55,6 +55,7 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 | [`sb-c4`](components/sb-c4/manifest.md) | A C4 software architecture walked into level by level, with a path back out; relationships deep inside roll up to every view. |
 | [`sb-callout`](components/sb-callout/manifest.md) | A stand-out block for definitions, notes, tips, questions, answers and warnings; optionally collapsible. |
 | [`sb-chart`](components/sb-chart/manifest.md) | Values over time as lines, with reference lines, the latest values marked, and a legend. |
+| [`sb-choice`](components/sb-choice/manifest.md) | A decision as a card: the question, the options weighed with pros and cons, the one chosen and why, who decided and when, what it replaces, and what the record is missing; a group can record one in a workshop. |
 | [`sb-code`](components/sb-code/manifest.md) | Code or pseudocode stepped through a trace the model records: the running line marked, variables beside it with changes shown. |
 | [`sb-controls`](components/sb-controls/manifest.md) | Play, pause, step, reset and speed. Keeps the clock and tells the sandbox how many steps to take. |
 | [`sb-decision-tree`](components/sb-decision-tree/manifest.md) | Questions branching on their answers down to outcomes: one case traced with its value at each question, the answers that would have changed its outcome marked, branches thickened by how many cases took them. |

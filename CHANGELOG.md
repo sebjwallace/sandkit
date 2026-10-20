@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.38 · 2026-10-20
+- Forty-eight components: added `sb-choice`, a decision as a card: the options weighed with their pros and cons, the one chosen and why, who decided and when, what it replaces, and what the record is missing. With `editable`, a group records decisions in a workshop, and the sandbox saves each one.
+
 ## 0.2.37 · 2026-10-19
 - Modes: commenting and tracing are modes, offered one at a time in the shell's new mode picker (shell 0.1.4), and sharing one amber look. A new practice, `practices/modes.md`, and a Modes section in the catalog, apart from the components that show a subject.
 - Forty-seven components: added `sb-trace-mode`, Trace in the mode picker: click any part to see why it's there. `sb-comments` 0.2.0 is now a mode too (breaking: move it to `slot="modes"`).
