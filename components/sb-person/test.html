@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-person tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-person.js"></script>
+</head>
+<body>
+  <script>
+    const person = (attributes) => mount(`<sb-person ${attributes}></sb-person>`);
+    const text = (el, part) => el.querySelector(`.sb-person__${part}`)?.textContent ?? null;
+    const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+
+    // ---- Showing a person ----
+
+    test('shows the name and role, with both in the title', () => {
+      const el = person('name="Priya Shah" role="Environment agency engineer"');
+      assertEqual([text(el, 'name'), text(el, 'role')], ['Priya Shah', 'Environment agency engineer']);
+      assertEqual(el.querySelector('.sb-person__badge').title, 'Priya Shah, Environment agency engineer');
+    });
+
+    test('a role is optional', () => {
+      const el = person('name="Tom Hale"');
+      assertEqual(text(el, 'role'), null);
+      assertEqual(el.querySelector('.sb-person__badge').title, 'Tom Hale');
+    });
+
+    test('an agent is marked, and properties set the attributes', () => {
+      const el = person('name="Agent"');
+      el.agent = true;
+      el.role = 'AI assistant';
+      assert(el.classList.contains('sb-person--agent'));
+      assertEqual([el.getAttribute('role'), text(el, 'role')], ['AI assistant', 'AI assistant']);
+      el.agent = false;
+      assert(!el.classList.contains('sb-person--agent'));
+    });
+
+    test('a ref is carried as data-ref, and removed with it', () => {
+      const el = person('name="Grace" ref="grace"');
+      assertEqual(el.dataset.ref, 'grace');
+      el.ref = null;
+      assertEqual(el.dataset.ref, undefined);
+    });
+
+    // ---- Highlighting ----
+
+    test('pointing at a badge announces its ref, and leaving announces null', () => {
+      const el = person('name="Dan" ref="dan"');
+      const events = recordEvents(document, 'sb-highlight');
+      el.dispatchEvent(new PointerEvent('pointerenter'));
+      el.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(events.map((e) => e.detail.ref), ['dan', null]);
+    });
+
+    test('a badge without a ref announces nothing', () => {
+      const el = person('name="Someone"');
+      const events = recordEvents(document, 'sb-highlight');
+      el.dispatchEvent(new PointerEvent('pointerenter'));
+      assertEqual(events.length, 0);
+    });
+
+    test('every badge with the announced ref lights up, and clears on another ref', () => {
+      mount('<div><sb-person name="Mo" ref="mo"></sb-person><sb-person name="Mo" ref="mo"></sb-person><sb-person name="Tom" ref="tom"></sb-person></div>');
+      const lit = () => [...document.querySelectorAll('#test-fixture sb-person')].map((el) => el.classList.contains('sb-person--highlighted'));
+      announce('mo');
+      assertEqual(lit(), [true, true, false]);
+      announce('tom');
+      assertEqual(lit(), [false, false, true]);
+      announce(null);
+      assertEqual(lit(), [false, false, false]);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two badges side by side keep their own people', () => {
+      mount('<div><sb-person name="A" role="one"></sb-person><sb-person name="B" role="two" agent></sb-person></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-person');
+      assertEqual([text(a, 'name'), text(b, 'name')], ['A', 'B']);
+      assertEqual([a.agent, b.agent], [false, true]);
+    });
+
+    test('shows names and roles as text, never as markup', () => {
+      const el = person('name="<b>x</b>" role="<i>y</i>"');
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(text(el, 'name'), '<b>x</b>');
+    });
+  </script>
+</body>
+</html>

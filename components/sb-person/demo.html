@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-person demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-person.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .people { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .label { margin: 12px 0 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .items { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .items li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); font-size: 14px; }
+    .items li > span:first-child { flex: 1 1 260px; }
+    .code { padding: 1px 6px; border-radius: 4px; background: var(--sb-surface-2); font: 600 12px ui-monospace, Menlo, Consolas, monospace; }
+    .unowned { color: var(--sb-warn); font-size: 13px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-person">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Who took part, as a badge you recognise wherever it appears.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Sandboxes are full of people: who wrote a source, who owns a rule, who is on call, who answered a question, who takes part in a process. A badge makes each of them recognisable at a glance, the same everywhere on the page, and an AI agent taking part looks different from the people around it.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Names on things.</strong> Who owns a part, wrote a document, is responsible for a site or assigned to a task.</li>
+        <li><strong>The roles in a process.</strong> The dispatcher, the driver and the depot manager, shown beside the steps each one takes.</li>
+        <li><strong>Who did what.</strong> Beside a change, an answer or a decision, so the record says who.</li>
+        <li><strong>Following one person.</strong> Point at a badge and every badge for that person lights up, through a long page.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Many people at once.</strong> Fifty names in badges is a wall; a table of people, or counts, reads better.</li>
+        <li><strong>Crowds in the model,</strong> such as passengers or patients by the thousand. Show them as numbers, a grid or a chart.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-person/sb-person.js"&gt;&lt;/script&gt;
+&lt;sb-person ref="lena" name="Lena Novak" role="Protection engineer"&gt;&lt;/sb-person&gt;
+&lt;sb-person ref="agent" name="Agent" role="AI assistant" agent&gt;&lt;/sb-person&gt;</pre>
+      <p>Keep one list of the sandbox's people and draw every badge from it, so each person has one <code>ref</code> wherever they appear.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Always give a <code>ref</code>,</strong> so pointing at someone shows everything they're connected to.</li>
+        <li><strong>Mark the agent,</strong> so it's clear what came from people and what from an AI.</li>
+        <li><strong>Make missing people visible too.</strong> Where something needs an owner and has none, say so in its place, rather than leaving a gap.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A rail timetable review</h2>
+      <p>Four people and an agent reviewed the winter timetable. Point at anyone to see the changes they agreed.</p>
+      <div class="people" id="rail-people"></div>
+      <div class="label">Changes agreed</div>
+      <ul class="items" id="rail-changes"></ul>
+    </section>
+
+    <section class="example">
+      <h2>Who looks after which substation</h2>
+      <p>A grid operator's substations, each with the engineer responsible. One has nobody, and says so.</p>
+      <div class="people" id="grid-people"></div>
+      <ul class="items" id="substations"></ul>
+    </section>
+  </main>
+
+  <script>
+    // One list of people per example, and every badge drawn from it.
+    function badge(person) {
+      return Object.assign(document.createElement('sb-person'), { ref: person.id, name: person.name, role: person.role, agent: Boolean(person.agent) });
+    }
+
+    function item(text, people, code) {
+      const row = document.createElement('li');
+      const label = document.createElement('span');
+      if (code) label.append(Object.assign(document.createElement('span'), { className: 'code', textContent: code }), ' ');
+      label.append(text);
+      row.append(label, ...people.map(badge));
+      return row;
+    }
+
+    // ---- A rail timetable review ----
+
+    const RAIL = {
+      ana: { id: 'ana', name: 'Ana Lima', role: 'Timetable planner' },
+      joe: { id: 'joe', name: 'Joe Tanaka', role: 'Driver rostering' },
+      ruth: { id: 'ruth', name: 'Ruth Mbeki', role: 'Passenger panel' },
+      sam: { id: 'sam', name: 'Sam Okoye', role: 'Track maintenance' },
+      agent: { id: 'agent', name: 'Agent', role: 'AI assistant', agent: true }
+    };
+    const CHANGES = [
+      ['The 07:12 runs every day, not weekdays only', ['ana', 'ruth']],
+      ['Sunday engineering works start at 23:00, not 21:00', ['sam', 'ana']],
+      ['Two more drivers rostered on Saturday evenings', ['joe']],
+      ['The 18:40 waits four minutes for the connecting bus', ['ruth', 'agent']]
+    ];
+    document.getElementById('rail-people').append(...Object.values(RAIL).map(badge));
+    document.getElementById('rail-changes').append(...CHANGES.map(([text, who]) => item(text, who.map((id) => RAIL[id]))));
+
+    // ---- Substations ----
+
+    const GRID = {
+      lena: { id: 'lena', name: 'Lena Novak', role: 'Protection engineer' },
+      kofi: { id: 'kofi', name: 'Kofi Mensah', role: 'Field engineer' }
+    };
+    const SUBSTATIONS = [
+      ['SUB-1', 'North Quay', 'lena'],
+      ['SUB-2', 'Hill Top', 'kofi'],
+      ['SUB-3', 'Mill Lane', null],
+      ['SUB-4', 'Riverside', 'lena']
+    ];
+    document.getElementById('grid-people').append(...Object.values(GRID).map(badge));
+    document.getElementById('substations').append(...SUBSTATIONS.map(([code, name, owner]) => {
+      const row = item(name, owner ? [GRID[owner]] : [], code);
+      if (!owner) row.append(Object.assign(document.createElement('span'), { className: 'unowned', textContent: 'Nobody responsible' }));
+      return row;
+    }));
+  </script>
+</body>
+</html>

@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.42 · 2026-10-20
+- Fifty components: added `sb-person`, a person as a badge: name and role, an agent marked with a dashed circle, and every badge for a person lit up when one is pointed at.
+
 ## 0.2.41 · 2026-10-20
 - Sandkit names no particular AI: the sources practice has an agent sign its own analyses as `Agent`, and the examples, demos and tests say "the agent".
 
