@@ -1,4 +1,4 @@
-// Sandkit sb-notebook 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-notebook 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A workshop's sections in one page, in order. Each direct child is a section, given a header bar
 // with its kind, who and when, and the codes inside it counted from data-ref. Sections open and
 // collapse; key ones are marked, asides start collapsed. An outline and up and down controls move
@@ -30,6 +30,9 @@
     .sb-notebook__nav { display: flex; align-items: center; gap: 4px; font-size: 13px; }
     .sb-notebook__nav button { padding: 2px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: inherit; cursor: pointer; }
     .sb-notebook__nav button:disabled { opacity: 0.4; cursor: default; }
+    .sb-notebook__all { display: flex; gap: 4px; }
+    .sb-notebook__all button { padding: 2px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: inherit; font-size: 12px; cursor: pointer; }
+    .sb-notebook__all button:disabled { opacity: 0.4; cursor: default; }
     .sb-notebook__position { margin: 0 auto 0 6px; color: var(--sb-muted, #616e7c); font-variant-numeric: tabular-nums; }
     .sb-notebook__clear { padding: 0; border: 0; background: none; color: var(--sb-accent, #2563eb); font: inherit; text-decoration: underline; cursor: pointer; }
     .sb-notebook__facets { display: grid; gap: 6px; font-size: 12px; }
@@ -160,7 +163,7 @@
       this._filter = tidyFilter();
       this._prefixes = {};
       this._current = 0;
-      this._panels = {}; // filter and outline opened or closed by the viewer; otherwise open when wide
+      this._panels = {}; // filter and outline opened by the viewer; closed until then
       // Sections added or removed later get their bars too.
       this._observer = new MutationObserver(() => this._render());
       this._resizeObserver = new ResizeObserver(() => {
@@ -288,7 +291,7 @@
       const bars = new Set(sections.map((section) => this._bars.get(section)));
       this.querySelectorAll(':scope > .sb-notebook__bar').forEach((bar) => { if (!bars.has(bar)) bar.remove(); });
       this._renderHead(sections);
-      if (focused) this.querySelector(`[data-focus="${CSS.escape(focused)}"]`)?.focus();
+      if (focused) [...this.querySelectorAll('[data-focus]')].find((el) => el.dataset.focus === focused)?.focus();
       this._observer.takeRecords(); // our own changes aren't sections arriving
     }
 
@@ -321,6 +324,10 @@
           <button type="button" data-action="next" data-focus="next" aria-label="Next section">▼</button>
           <span class="sb-notebook__position"></span>
         </div>
+        <div class="sb-notebook__all">
+          <button type="button" data-action="expand-all" data-focus="expand-all"${collapsed ? '' : ' disabled'}>Expand all</button>
+          <button type="button" data-action="collapse-all" data-focus="collapse-all"${collapsed === sections.length ? ' disabled' : ''}>Collapse all</button>
+        </div>
         ${facets ? this._panelToggle('filter', chosen ? `Filter · ${chosen}` : 'Filter') : ''}
         ${facets ? `<div class="sb-notebook__facets" id="${this._id}-filter"${this._panelOpen('filter') ? '' : ' hidden'}>${facets}</div>` : ''}
         ${this._panelToggle('outline', 'Sections')}
@@ -330,8 +337,8 @@
 
     get _wide() { return this.hasAttribute('data-wide'); }
 
-    // The filters and the outline open and close; until a viewer chooses, they're open when wide.
-    _panelOpen(panel) { return this._panels[panel] ?? this._wide; }
+    // The filters and the outline stay closed until a viewer opens them.
+    _panelOpen(panel) { return Boolean(this._panels[panel]); }
 
     _panelToggle(panel, label) {
       return `<button type="button" class="sb-notebook__panel-toggle" data-action="${panel}" data-focus="${panel}" aria-expanded="${this._panelOpen(panel)}" aria-controls="${this._id}-${panel}">${esc(label)}</button>`;
@@ -467,6 +474,8 @@
       if (action === 'previous') this.previous();
       if (action === 'next') this.next();
       if (action === 'clear') this._changeFilter({});
+      if (action === 'expand-all') this.expandAll();
+      if (action === 'collapse-all') this.collapseAll();
       if (action === 'filter' || action === 'outline') {
         this._panels[action] = !this._panelOpen(action);
         this._render();

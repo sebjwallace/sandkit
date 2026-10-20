@@ -10,7 +10,7 @@
 <body>
   <script>
     const WORKSHOP = `
-      <section heading="Forecast" kind="source" by="Claude" time="2026-08-14T13:05"><span data-ref="SRC-4"></span><span data-ref="RUL-3"></span></section>
+      <section heading="Forecast" kind="source" by="Agent" time="2026-08-14T13:05"><span data-ref="SRC-4"></span><span data-ref="RUL-3"></span></section>
       <section heading="Wind" kind="question" by="Ana Lima" time="2026-08-14" relevance="key"><span data-ref="QST-2"></span></section>
       <section heading="Hold the road" kind="decision" by="Ana Lima, Joe Tanaka" relevance="key" ref="SEC-5"><span data-ref="DEC-5.a"></span><span data-ref="DEC-5"></span><span data-ref="RUL-8"></span></section>
       <section heading="Radio" kind="discussion" by="Ruth Mbeki" time="after lunch" relevance="aside"><span data-ref="radio-note"></span></section>`;
@@ -50,7 +50,7 @@
     test('a bar shows the kind, who and when, and the codes inside by prefix', () => {
       const [forecast, wind, road, radio] = bars(notebook());
       assertEqual(part(forecast, 'kind'), 'source');
-      assertEqual(part(forecast, 'who'), 'Claude · 14 Aug 2026, 13:05');
+      assertEqual(part(forecast, 'who'), 'Agent · 14 Aug 2026, 13:05');
       assertEqual(part(wind, 'who'), 'Ana Lima · 14 Aug 2026');
       assertEqual(part(radio, 'who'), 'Ruth Mbeki · after lunch');
       assertEqual(part(forecast, 'codes'), '1 SRC · 1 RUL');
@@ -174,15 +174,36 @@
       assertEqual(el.current.index, 2);
     });
 
-    test('the filter and the outline open and close from their headings', () => {
+    test('a focused control still moves, as a real click leaves it focused', () => {
+      const el = notebook();
+      const moves = recordEvents(el, 'sb-section');
+      const next = el.querySelector('[data-action="next"]');
+      next.focus();
+      next.click();
+      assertEqual(moves.map((e) => e.detail.index), [1]);
+      assertEqual(document.activeElement.dataset.focus, 'next', 'focus stays on the redrawn control');
+    });
+
+    test('the filter and the outline start closed, and open and close from their headings', () => {
       const el = notebook();
       const toggle = (panel) => el.querySelector(`[data-action="${panel}"]`);
       const shown = () => [!el.querySelector('.sb-notebook__facets').hidden, !el.querySelector('.sb-notebook__outline').hidden];
-      const before = shown();
+      assertEqual(shown(), [false, false]);
       toggle('filter').click();
       toggle('outline').click();
-      assertEqual(shown(), before.map((value) => !value));
-      assertEqual(toggle('filter').getAttribute('aria-expanded'), String(!before[0]));
+      assertEqual(shown(), [true, true]);
+      assertEqual(toggle('filter').getAttribute('aria-expanded'), 'true');
+    });
+
+    test('Expand all and Collapse all open and close every section, each disabled when there\'s nothing to do', () => {
+      const el = notebook();
+      const button = (action) => el.querySelector(`[data-action="${action}"]`);
+      button('collapse-all').click();
+      assertEqual(open(el), []);
+      assert(button('collapse-all').disabled, 'nothing left to collapse');
+      button('expand-all').click();
+      assertEqual(open(el).length, 4);
+      assert(button('expand-all').disabled, 'nothing left to expand');
     });
 
     // ---- Filtering ----
@@ -192,7 +213,7 @@
         '★ Key only 2',
         'SRC 1', 'RUL 2', 'QST 1', 'DEC 1',
         'source 1', 'question 1', 'decision 1', 'discussion 1',
-        'Claude 1', 'Ana Lima 2', 'Joe Tanaka 1', 'Ruth Mbeki 1'
+        'Agent 1', 'Ana Lima 2', 'Joe Tanaka 1', 'Ruth Mbeki 1'
       ]);
     });
 
@@ -226,7 +247,7 @@
       const el = notebook();
       el.filter = { people: ['Ana Lima'] };
       assertEqual(facets(el).slice(0, 5), ['★ Key only 2', 'SRC 0', 'RUL 1', 'QST 1', 'DEC 1']);
-      assertEqual(facets(el).slice(-4), ['Claude 1', 'Ana Lima 2', 'Joe Tanaka 1', 'Ruth Mbeki 1'], 'people widen among themselves');
+      assertEqual(facets(el).slice(-4), ['Agent 1', 'Ana Lima 2', 'Joe Tanaka 1', 'Ruth Mbeki 1'], 'people widen among themselves');
       assert(facet(el, 'codes', 'SRC').disabled, 'a choice that would show nothing is disabled');
     });
 

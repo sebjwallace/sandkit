@@ -45,8 +45,8 @@ Every direct child is a section, in order, and any element can be one. The noteb
 
 ## What it shows
 
-- **A head** with the notebook's title and a summary: "6 sections · 1 collapsed · 4 people", or while filtering "Showing 2 of 6 · Clear". Below it, ▲ and ▼ with the position ("3 of 6"), the filters, and an outline of every section, the current one marked, key ones starred and collapsed ones dimmed. The filters and the outline each open and close from their heading.
-- **On a notebook at least 760px wide** the head is a boxed column beside the sections, following the page as it scrolls, with the filters and outline open. Narrower, it's a bar across the top, sticking as the page scrolls, with both closed.
+- **A head** with the notebook's title and a summary: "6 sections · 1 collapsed · 4 people", or while filtering "Showing 2 of 6 · Clear". Below it, ▲ and ▼ with the position ("3 of 6"), **Expand all** and **Collapse all**, the filters, and an outline of every section, the current one marked, key ones starred and collapsed ones dimmed. The filters and the outline start closed, and each opens and closes from its heading.
+- **On a notebook at least 760px wide** the head is a boxed column beside the sections, following the page as it scrolls. Narrower, it's a bar across the top, sticking as the page scrolls.
 - **A bar for each section:** its title, ★ Key, kind, who and when, and its code counts. Clicking it collapses or opens the section. A collapsed section shows only its bar, so nothing leaves the order.
 
 ## Filters
@@ -73,7 +73,7 @@ Choosing opens the sections that match and collapses the rest, keeping every bar
 | `sections` | The section elements, in order. |
 | `current` | `{ index, element }`: the section in view, or last gone to. |
 | `goTo(index)`, `next()`, `previous()` | Move as a viewer would: open the section if collapsed, scroll to it, fire `sb-section`. Moving past either end does nothing. |
-| `expand(index)`, `collapse(index)`, `expandAll()`, `collapseAll()` | Open or collapse sections, quietly. |
+| `expand(index)`, `collapse(index)`, `expandAll()`, `collapseAll()` | Open or collapse sections, quietly. **Expand all** and **Collapse all** in the head do the same, and fire nothing either. |
 | `filter` | `{ codes, kinds, people, key }`: lists of prefixes, kinds and people, and key only. Setting it applies it without firing `sb-filter`; `{}` clears it. |
 | `prefixes` | Names for code prefixes in the filters, such as `{ DEC: 'Decisions' }`. Without a name, the prefix is shown. |
 | `refresh()` | Count the codes in each section again. |

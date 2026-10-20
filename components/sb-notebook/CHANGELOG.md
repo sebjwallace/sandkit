@@ -1,4 +1,9 @@
 # sb-notebook changelog
 
+## 0.1.1 · 2026-10-20
+- Fixed: ▲ ▼ and the outline didn't scroll to the section when clicked with a mouse. The click left the control focused, and putting focus back after redrawing threw, because the component's own stylesheet constant hid the browser's `CSS.escape`.
+- **Expand all** and **Collapse all** in the head, each disabled when there's nothing to do.
+- The filters and the outline start closed, however wide the notebook.
+
 ## 0.1.0 · 2026-10-20
 - First release. A workshop's sections in one page: every direct child is a section with a bar showing its kind, who and when, and the codes inside it counted from `data-ref`. Key sections are open and marked, asides start collapsed, and clicking a bar collapses or opens a section. A head with ▲ ▼, the position, an outline, and filters by key, code prefix, kind and person, each with a count; filtering opens what matches and collapses the rest, and clearing brings back what was open. `reveal` opens the section holding a ref.
