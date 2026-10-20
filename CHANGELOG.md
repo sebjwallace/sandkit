@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.45 · 2026-10-20
+- A new practice, `practices/workshops.md`: working through a sandbox's model with the people who know the subject, until they understand it, have corrected it and own it. Principles, roles, preparing, the workshop page, the activities and the components for each, the round trip with the agent, driving attention, and closing. Linked from the README, the building guide, the catalog and the template's `AGENTS.md`.
+
 ## 0.2.44 · 2026-10-20
 - Fifty-two components: added `sb-handoff`, handing something to the agent as one precise prompt, shown on the page, with whether it's been sent and the agent's reply once it's in.
 

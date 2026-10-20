@@ -8,7 +8,8 @@ This folder is a domain sandbox: a small, self-contained application that houses
 2. **Where it stands,** below.
 3. **`JOURNAL.md`,** what changed and why, newest first. Read only as far back as you need.
 4. **`lib/sandkit/practices/building-a-sandbox.md`,** the method this sandbox follows.
-5. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
+5. **`lib/sandkit/practices/workshops.md`,** when asked to workshop the sandbox: to review, correct or hand over its model with the people who know the subject.
+6. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
 
 ## Where it stands
 

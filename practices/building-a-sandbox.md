@@ -185,6 +185,10 @@ When the person responds, record the direction they chose, and the chapter plan 
 
 That loop, explore, question, correct, extend, is the point of a sandbox.
 
+## Workshops
+
+When the people who know the subject are to work through the model with you, to test it, correct it and take ownership of it, follow the [workshops practice](workshops.md). Each workshop is a page of its own, sharing the model.
+
 ## Pages and sharing
 
 A sandbox starts as one page, and many stay that way. When it grows heavy, or a part is worth sharing on its own, split it into pages that share one model, following the [pages practice](pages.md). Any page can be exported as one HTML file that runs anywhere: people ask through the page's Export button, which gives them a prompt for you, and you run `node lib/sandkit/tools/export.mjs <page>.html`.
