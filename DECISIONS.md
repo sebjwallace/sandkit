@@ -91,6 +91,7 @@ Settled decisions for Sandkit, newest last. One line each, with the reason.
 - **Components never fetch; the page loads files and hands them over,** so components stay export-safe and testable, and only the page needs serving.
 - **A component built when the page has loaded builds once,** even if something moves it while the page loads and it's asked twice.
 - **A prediction is a poll with an outcome, not a component of its own.** Both ask a group one question with every answer hidden until all are in; the outcome only adds what held and who expected it. Options and people are slots (`option:<id>`, `person:<id>`), so an option can be a sketch or a prototype and a person a badge. The sandbox keeps the answers and decides the outcome from its model; the poll asks with `sb-answer` and `sb-reveal`.
+- **One hand-off for every round trip with the agent.** `sb-handoff` copies a prompt the sandbox writes and shows the reply the sandbox loads, so polls, questions and checks share one shape people learn once. Replies are data the agent writes, never page code.
 - **`sb-person` draws people; other components leave a slot for them,** so a badge looks the same everywhere without components referencing each other.
 - **Interaction outranks tone.** A selected or active element shows as such even when it also carries a warning tone.
 

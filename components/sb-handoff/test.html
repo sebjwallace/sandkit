@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-handoff tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-handoff.js"></script>
+</head>
+<body>
+  <script>
+    const handoff = (attributes = 'heading="Ask the agent"', content = '') => mount(`<sb-handoff ${attributes}>${content}</sb-handoff>`);
+    const part = (el, name) => el.querySelector(`.sb-handoff__${name}`);
+    const button = (el, action) => el.querySelector(`[data-action="${action}"]`);
+
+    // ---- Sending ----
+
+    test('starts ready, saying nothing has been sent', () => {
+      const el = handoff();
+      assertEqual(el.status, 'ready');
+      assertEqual(part(el, 'heading').textContent, 'Ask the agent');
+      assertEqual(part(el, 'status').textContent, 'Not yet sent to the agent.');
+      assertEqual(button(el, 'copy').textContent, 'Copy as prompt');
+      assertEqual(part(el, 'prompt'), null, 'the prompt shows once copied');
+    });
+
+    test('copying shows the prompt, fires sb-copy with it, and waits for a reply', () => {
+      const el = handoff();
+      el.prompt = 'Question one';
+      const events = recordEvents(el, 'sb-copy');
+      button(el, 'copy').click();
+      assertEqual(events.map((e) => e.detail.text), ['Question one']);
+      assertEqual(part(el, 'prompt').textContent, 'Question one');
+      assertEqual([el.status, part(el, 'status').textContent], ['sent', 'Sent to the agent. Waiting for its reply.']);
+      assertEqual(button(el, 'copy').textContent, 'Copy again');
+    });
+
+    test('a prompt given as a function is asked for when copied, so it is always current', () => {
+      const el = handoff();
+      let round = 1;
+      el.prompt = () => `Round ${round}`;
+      round = 2;
+      const events = recordEvents(el, 'sb-copy');
+      button(el, 'copy').click();
+      assertEqual(events[0].detail.text, 'Round 2');
+    });
+
+    test('the prompt can be hidden and shown again', () => {
+      const el = handoff();
+      el.prompt = 'P';
+      button(el, 'copy').click();
+      button(el, 'show').click();
+      assertEqual(part(el, 'prompt'), null);
+      button(el, 'show').click();
+      assertEqual(part(el, 'prompt').textContent, 'P');
+    });
+
+    test('says whether the clipboard took it, without waiting for it first', async () => {
+      const el = handoff();
+      el.prompt = 'P';
+      button(el, 'copy').click();
+      assertEqual(el.status, 'sent', 'sent at once');
+      await waitFor(() => part(el, 'copied'));
+      assert(['Copied. Paste it to the agent.', 'Copy it from below.'].includes(part(el, 'copied').textContent));
+    });
+
+    // ---- The reply ----
+
+    test('a reply shows with its time, and the status says it is in', () => {
+      const el = handoff();
+      el.reply = { time: '2026-10-20T10:35', text: 'Two misses, one each way.' };
+      assertEqual(el.status, 'answered');
+      assertEqual(part(el, 'status').textContent, 'Replied at 10:35.');
+      assertEqual(part(el, 'reply').textContent, 'Two misses, one each way.');
+      el.reply = null;
+      assertEqual(el.status, 'ready');
+    });
+
+    test('reset starts a new round, keeping the reply until the sandbox clears it', () => {
+      const el = handoff();
+      el.prompt = 'P';
+      button(el, 'copy').click();
+      el.reset();
+      assertEqual([el.status, part(el, 'prompt')], ['ready', null]);
+    });
+
+    // ---- Waiting, and the agent ----
+
+    test('disabled, it can\'t be copied and says why', () => {
+      const el = handoff('disabled waiting-text="Reveal the answers first."');
+      const events = recordEvents(el, 'sb-copy');
+      assert(button(el, 'copy').disabled);
+      button(el, 'copy').click();
+      assertEqual(events.length, 0);
+      assertEqual(part(el, 'status').textContent, 'Reveal the answers first.');
+      el.disabled = false;
+      assertEqual(part(el, 'status').textContent, 'Not yet sent to the agent.');
+    });
+
+    test('content slotted as agent shows who replies, and stays through redraws', () => {
+      const el = handoff('', '<b slot="agent">Agent badge</b>');
+      el.reply = { text: 'R' };
+      assertEqual(part(el, 'who').textContent, 'Agent badge');
+      assertEqual(el.querySelectorAll('b').length, 1);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two side by side keep their own prompt and status', () => {
+      mount('<div><sb-handoff></sb-handoff><sb-handoff></sb-handoff></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-handoff');
+      a.prompt = 'A';
+      b.prompt = 'B';
+      button(a, 'copy').click();
+      assertEqual([a.status, b.status], ['sent', 'ready']);
+    });
+
+    test('shows the heading, prompt and reply as text, never as markup', () => {
+      const el = handoff('heading="<b>h</b>" waiting-text="<i>w</i>"');
+      el.prompt = '<b>p</b>';
+      button(el, 'copy').click();
+      el.reply = { text: '<i>r</i>' };
+      assertEqual(el.querySelectorAll('b, i').length, 0);
+      assertEqual(part(el, 'prompt').textContent, '<b>p</b>');
+    });
+  </script>
+</body>
+</html>

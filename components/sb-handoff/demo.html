@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-handoff demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-handoff.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ol, .guide ul { margin: 0 0 8px; }
+    .guide ol, .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .ask { display: grid; gap: 6px; margin-bottom: 10px; font-size: 14px; }
+    .ask textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); }
+    .readings { display: grid; gap: 6px; margin: 0 0 10px; padding: 0; list-style: none; font-size: 14px; }
+    .readings label { display: flex; gap: 8px; align-items: baseline; }
+    .stand-in { margin: 10px 0 0; font-size: 13px; color: var(--sb-muted); }
+    .stand-in button { font: inherit; padding: 3px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); color: var(--sb-text); cursor: pointer; }
+    .agent { font-size: 12px; font-weight: 700; color: var(--sb-accent); text-transform: uppercase; letter-spacing: 0.05em; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-handoff">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Handing something to the agent as one precise prompt, and showing what comes back.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Sandboxes are built and changed by an AI agent, and people exploring one often want to ask it something from the page itself: why a figure is what it is, to try a new scenario, to check a reading, to add what they've just learned. The hand-off turns what's on the page into one precise prompt, shows it, says when it's been sent, and shows the reply when it comes back. Every round trip with the agent looks the same, so people learn it once.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>A question the model can't answer,</strong> sent with the codes and state it's about.</li>
+        <li><strong>Asking for a change:</strong> a new scenario, a rule corrected, a figure updated, with what prompted it.</li>
+        <li><strong>Checking something doubtful,</strong> such as readings or citations people have marked.</li>
+        <li><strong>Sending results on,</strong> such as answers to a poll, for the agent to make sense of.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Comments on anything on the page.</strong> Comment mode gathers many comments into one prompt.</li>
+        <li><strong>A conversation.</strong> The hand-off is one round trip; talk to the agent directly for a discussion.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-handoff/sb-handoff.js"&gt;&lt;/script&gt;
+&lt;sb-handoff heading="Ask the agent"&gt;&lt;/sb-handoff&gt;
+
+&lt;script&gt;
+  handoff.prompt = () =&gt; `# Question\n\n${question.value}\n\nWrite your reply into replies.js under QST-1.`;
+  if (REPLIES['QST-1']) handoff.reply = REPLIES['QST-1'];   // the agent's reply, loaded as a script
+&lt;/script&gt;</pre>
+      <ol>
+        <li>People press <strong>Copy as prompt</strong>; the prompt shows on the page and goes to the clipboard.</li>
+        <li>They paste it to the agent, which writes its reply as data, where the prompt says.</li>
+        <li>The page loads the reply and sets <code>reply</code>.</li>
+      </ol>
+      <p>In the examples below, a button stands in for the agent writing its reply.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Make the prompt precise:</strong> codes, the model's version, what's on screen, and where the reply goes.</li>
+        <li><strong>Disable it until there's something to send,</strong> with <code>waiting-text</code> saying what's missing.</li>
+        <li><strong>Show the reply where it belongs,</strong> beside what it answers, as well as in the hand-off.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A question about a bus timetable</h2>
+      <p>A planning group wants to know something the timetable model can't tell them. Write a question, copy it as a prompt, and see the reply arrive.</p>
+      <label class="ask">A question for the agent
+        <textarea id="question" rows="2">Would running the 7:12 every day mean another driver on Sundays?</textarea>
+      </label>
+      <sb-handoff id="bus" heading="Ask the agent"><span slot="agent" class="agent">Agent</span></sb-handoff>
+      <p class="stand-in">Stand-in for the agent writing back: <button type="button" id="bus-reply">Load the reply</button></p>
+    </section>
+
+    <section class="example">
+      <h2>Readings that look wrong</h2>
+      <p>A substation's overnight readings. Tick the ones you doubt; the hand-off waits until there's something to send.</p>
+      <ul class="readings" id="readings"></ul>
+      <sb-handoff id="grid" heading="Check these readings" disabled waiting-text="Tick at least one reading first."><span slot="agent" class="agent">Agent</span></sb-handoff>
+      <p class="stand-in">Stand-in for the agent writing back: <button type="button" id="grid-reply">Load the reply</button></p>
+    </section>
+  </main>
+
+  <script>
+    // ---- A question about a bus timetable ----
+
+    const bus = document.getElementById('bus');
+    bus.prompt = () => [
+      '# Question QST-1 · Bus timetable review · model 0.3.0',
+      '',
+      document.getElementById('question').value.trim(),
+      '',
+      'Answer from the roster rules (RUL-4, RUL-7). Write your reply into replies.js under QST-1.'
+    ].join('\n');
+    document.getElementById('bus-reply').addEventListener('click', () => {
+      bus.reply = { time: '2026-10-20T14:05', text: 'Yes, one more driver for four hours: RUL-7 gives every driver Sunday off in alternate weeks, so the current Sunday crew is already at its limit.' };
+    });
+
+    // ---- Readings that look wrong ----
+
+    const READINGS = [
+      ['01:00', 'Feeder 3 load', '412 A'],
+      ['02:00', 'Feeder 3 load', '0 A'],
+      ['03:00', 'Transformer 1 temperature', '61 °C'],
+      ['04:00', 'Feeder 3 load', '405 A']
+    ];
+    const grid = document.getElementById('grid');
+    const ticked = () => [...document.querySelectorAll('#readings input:checked')].map((box) => READINGS[box.value]);
+
+    document.getElementById('readings').innerHTML = READINGS.map(([time, what, value], i) =>
+      `<li><label><input type="checkbox" value="${i}"> <span>${time} · ${what}: <strong>${value}</strong></span></label></li>`).join('');
+    document.getElementById('readings').addEventListener('change', () => {
+      grid.disabled = !ticked().length;
+      grid.reset();
+    });
+    grid.prompt = () => [
+      '# Readings in doubt · North Quay substation (SUB-1)',
+      '',
+      ...ticked().map(([time, what, value]) => `- ${time}, ${what}: ${value}`),
+      '',
+      'Say whether each is a fault in the reading or something that happened on the network, with the evidence. Write your reply into replies.js under SUB-1.'
+    ].join('\n');
+    document.getElementById('grid-reply').addEventListener('click', () => {
+      grid.reply = { time: '2026-10-20T08:20', text: 'The 02:00 zero on feeder 3 is a lost reading, not an outage: the feeder\'s customers logged no interruption, and the load either side is normal.' };
+    });
+  </script>
+</body>
+</html>

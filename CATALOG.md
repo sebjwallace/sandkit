@@ -64,6 +64,7 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 | [`sb-flowchart`](components/sb-flowchart/manifest.md) | A process laid out from its structure, optionally in swim lanes running down or across; the current step and the way it came marked. |
 | [`sb-graph`](components/sb-graph/manifest.md) | State machines, workflows and networks: active nodes, edges and rule lines lit up; things moving along edges. |
 | [`sb-grid`](components/sb-grid/manifest.md) | Cells across space coloured by state or value: a legend counting each state, painting reported to the model, changes marked. |
+| [`sb-handoff`](components/sb-handoff/manifest.md) | Handing something to the agent: one precise prompt to copy, shown on the page, whether it's been sent, and the agent's reply once the sandbox has it. The same round trip for polls, questions and checks. |
 | [`sb-id`](components/sb-id/manifest.md) | An identifying code as a pill: hover explains it, click highlights every mention. |
 | [`sb-image`](components/sb-image/manifest.md) | An image to zoom and pan, starting on the part that matters, with boxes and pins that prose can glide to and light up. |
 | [`sb-json`](components/sb-json/manifest.md) | JSON shown cleanly, with the paths that matter spotlit and the rest folded away; a clicked line shows its path and the note written for it. |
