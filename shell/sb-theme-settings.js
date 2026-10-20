@@ -1,4 +1,4 @@
-// Sandkit sb-theme-settings 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-theme-settings 0.1.5 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Theming for a sandbox: the theme tokens, the viewer's chosen theme and saved presets,
 // and a Theme section for the shell's settings:
 //
@@ -30,6 +30,7 @@
       --sb-accent: #2563eb; --sb-accent-text: #ffffff; --sb-accent-soft: #eaf0ff;
       --sb-good: #3f9142; --sb-warn: #d69e2e; --sb-bad: #c53030;
       --sb-font: system-ui, -apple-system, "Segoe UI", sans-serif; --sb-radius: 8px;
+      --sb-lift: rgba(255, 255, 255, 0.7); --sb-lift-shadow: 0 1px 2px rgba(16, 24, 40, 0.07);
     }
     [data-theme="dark"] {
       color-scheme: dark;
@@ -37,6 +38,7 @@
       --sb-text: #e6e9ef; --sb-muted: #9aa5b4; --sb-border: #334050;
       --sb-accent: #5b9cff; --sb-accent-text: #0b1220; --sb-accent-soft: #1c2a44;
       --sb-good: #4fb36b; --sb-warn: #e0a83a; --sb-bad: #ef5b5b;
+      --sb-lift: rgba(255, 255, 255, 0.05); --sb-lift-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
     }`;
 
   const BUILT_IN_THEMES = [

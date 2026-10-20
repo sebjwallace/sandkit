@@ -57,6 +57,7 @@ Style the page with the theme tokens, for example `body { background: var(--sb-b
 | `goal` | The sandbox's goal, shown as header content when the page has none of its own. |
 | `pages` | `[{ href, title }]`: the sandbox's pages, shown as navigation (when there are two or more), the current page marked with `aria-current="page"` and matched by file name. |
 | `collapsed` | Get or set whether the header is hidden. |
+| `compact` | Read only. Whether the header is showing compact at the top of the window, the page having scrolled past it. |
 | `toggleFullscreen()` | Enter or leave full screen. |
 | `openSettings()`, `closeSettings()` | Show or hide the settings dialog. |
 | `settings` | Every saveable section's settings, as written to a settings file. |
@@ -66,6 +67,8 @@ Style the page with the theme tokens, for example `body { background: var(--sb-b
 |---|---|---|
 | `sb-collapse` | `{ collapsed }` | The header is hidden or shown. Useful for resizing canvases. |
 | `sb-mode` | `{ mode, active }` | The viewer chose a mode in the picker (`active: true`, with its heading), or Explore (`active: false`, with the mode that ended). Bubbles to `document`, where modes started or ended from their own banners are heard too. |
+
+**Compact while scrolled.** Once the page has scrolled past the header, a compact one stays at the top of the window: the title, the mode picker, actions and controls, without the goal or pages. Scrolling back up shows the full header again. The full header keeps its place on the page meanwhile, so nothing below it moves. The shell sets `--sb-header-height` on `<html>` to the compact header's height while it shows, and `0px` otherwise, so anything else sticking to the top of the window can sit below it: `top: var(--sb-header-height, 0px)`. It also sets the page's scroll padding to that height, so going to any part of the page lands below the header. A hidden (collapsed) header stays hidden.
 
 **Modes.** A mode changes what a click does until the viewer leaves it, such as commenting or tracing (see the [modes practice](../practices/modes.md)). Any element with a `heading` and an `active` property can be one. The picker offers Explore, then each mode; choosing one sets its `active` and turns the others off, so only one is ever on. A mode ended or started from its own banner fires `sb-mode` from itself, and the picker follows. The picker is marked `data-modes`, which every mode lets clicks through, so it's always in reach. The shell knows no mode by name, and without modes shows no picker.
 
@@ -97,6 +100,14 @@ The Export button, placed with `slot="actions"`. A page opened from the computer
 ## Theme tokens
 
 `--sb-bg`, `--sb-surface`, `--sb-surface-2`, `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-accent`, `--sb-accent-text`, `--sb-accent-soft`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-font`, `--sb-radius`. `--sb-page-width` is set only by the viewer's page width choice; themes don't define it.
+
+**Lift,** for a part that sits on something, such as a card in a panel or a badge in a card: `--sb-lift` is a see-through tint laid over whatever is beneath (a few percent white in dark themes, where lighter reads as nearer; mostly transparent in light ones), and `--sb-lift-shadow` a soft shadow that does most of the work in light themes. Because the tint is see-through, it lifts a part off any layer, and lifts inside lifts stack:
+
+```css
+.card { background-image: linear-gradient(var(--sb-lift), var(--sb-lift)); box-shadow: var(--sb-lift-shadow); }
+```
+
+Use it for parts that sit on something, not for every component, or the page becomes a stack of floating boxes. A sandbox's own theme sets both in its CSS; the settings' token editor doesn't offer them.
 
 ## Notes
 

@@ -139,6 +139,48 @@
       assert(!el.collapsed, 'expanded again');
     });
 
+    // ---- Compact while scrolled ----
+
+    // A shell above a tall page, scrolled so the shell is fully out of view (or not), as a viewer would.
+    function scrolledShell(attrs = '') {
+      const el = shell('', attrs);
+      el.after(Object.assign(document.createElement('div'), { style: 'height: 3000px' }));
+      return el;
+    }
+    function scrollPage(y) {
+      window.scrollTo(0, y);
+      window.dispatchEvent(new Event('scroll'));
+    }
+
+    test('scrolled past, the header goes compact, keeping its place so nothing moves', () => {
+      const el = scrolledShell();
+      const height = el.offsetHeight;
+      scrollPage(height + 200);
+      assert(el.compact && el.hasAttribute('compact'), 'compact');
+      assertEqual(el.offsetHeight, height, 'its place on the page');
+      assert(getComputedStyle(el.querySelector('.sb-shell__bar')).position === 'fixed', 'at the top of the window');
+      assert(parseFloat(root.style.getPropertyValue('--sb-header-height')) > 0, 'its height published');
+      scrollPage(0);
+      assert(!el.compact, 'full again at the top');
+      assertEqual(root.style.getPropertyValue('--sb-header-height'), '0px');
+    });
+
+    test('jumps land below the compact header, wherever the page is', () => {
+      scrolledShell();
+      scrollPage(0);
+      assert(parseFloat(root.style.scrollPaddingTop) > 0, root.style.scrollPaddingTop);
+    });
+
+    test('a hidden header stays hidden when scrolled, and becomes compact when shown', () => {
+      const el = scrolledShell();
+      el.collapsed = true;
+      scrollPage(2000);
+      assert(!el.compact, 'stays hidden');
+      el.collapsed = false;
+      assert(el.compact, 'compact once shown, the page being scrolled');
+      scrollPage(0);
+    });
+
     test('focus moves to the restore button on collapse, and back on expand', () => {
       const el = shell();
       el.querySelector('[data-action="collapse"]').click();
@@ -344,6 +386,19 @@
       themes.querySelector('[value="dark"]').click();
       assertEqual(root.dataset.theme, 'dark');
       assertEqual(events.at(-1).detail.theme, 'dark');
+    });
+
+    test('both built-in themes define a lift: a see-through tint and a shadow', () => {
+      const themes = shell().querySelector('sb-theme-settings');
+      const lift = {};
+      for (const theme of ['light', 'dark']) {
+        themes.querySelector(`[value="${theme}"]`).click();
+        lift[theme] = [token('lift'), token('lift-shadow')];
+      }
+      themes.querySelector('[value="auto"]').click();
+      assert(lift.light.every(Boolean) && lift.dark.every(Boolean), JSON.stringify(lift));
+      assert(lift.light[0] !== lift.dark[0], 'each theme lifts its own way');
+      assert(lift.dark[0].startsWith('rgba('), 'see-through, so it works on any layer');
     });
 
     test('editing a token previews it live, and Discard reverts it', () => {

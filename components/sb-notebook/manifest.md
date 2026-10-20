@@ -46,7 +46,7 @@ Every direct child is a section, in order, and any element can be one. The noteb
 ## What it shows
 
 - **A head** with the notebook's title and a summary: "6 sections · 1 collapsed · 4 people", or while filtering "Showing 2 of 6 · Clear". Below it, ▲ and ▼ with the position ("3 of 6"), **Expand all** and **Collapse all**, the filters, and an outline of every section, the current one marked, key ones starred and collapsed ones dimmed. The filters and the outline start closed, and each opens and closes from its heading.
-- **On a notebook at least 760px wide** the head is a boxed column beside the sections, following the page as it scrolls. Narrower, it's a bar across the top, sticking as the page scrolls.
+- **On a notebook at least 760px wide** the head is a boxed column beside the sections, following the page as it scrolls. It sticks below the shell's compact header, if there is one (`--sb-header-height`). Narrower, it's a bar across the top, sticking as the page scrolls.
 - **A bar for each section:** its title, ★ Key, kind, who and when, and its code counts. Clicking it collapses or opens the section. A collapsed section shows only its bar, so nothing leaves the order.
 
 ## Filters

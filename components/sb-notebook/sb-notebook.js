@@ -1,4 +1,4 @@
-// Sandkit sb-notebook 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-notebook 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A workshop's sections in one page, in order. Each direct child is a section, given a header bar
 // with its kind, who and when, and the codes inside it counted from data-ref. Sections open and
 // collapse; key ones are marked, asides start collapsed. An outline and up and down controls move
@@ -24,7 +24,7 @@
 
   const CSS = `
     .sb-notebook { display: block; }
-    .sb-notebook__head { position: sticky; top: 0; z-index: 1; display: grid; gap: 6px; padding: 8px 0; background: var(--sb-surface, #fff); border-bottom: 1px solid var(--sb-border, #d5d9e0); }
+    .sb-notebook__head { position: sticky; top: var(--sb-header-height, 0px); z-index: 1; display: grid; gap: 6px; padding: 8px 0; background: var(--sb-surface, #fff); border-bottom: 1px solid var(--sb-border, #d5d9e0); }
     .sb-notebook__heading { margin: 0; font-size: 16px; font-weight: 700; }
     .sb-notebook__summary { color: var(--sb-muted, #616e7c); font-size: 13px; }
     .sb-notebook__nav { display: flex; align-items: center; gap: 4px; font-size: 13px; }
@@ -59,7 +59,7 @@
     /* Wide: the head is a column beside the sections. */
     .sb-notebook[data-wide] { display: grid; grid-template-columns: minmax(0, 1fr) 230px; column-gap: 20px; align-items: start; }
     .sb-notebook[data-wide] > * { grid-column: 1; }
-    .sb-notebook[data-wide] > .sb-notebook__head { grid-column: 2; grid-row: 1 / span 999; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; padding: 12px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); }
+    .sb-notebook[data-wide] > .sb-notebook__head { grid-column: 2; grid-row: 1 / span 999; top: calc(var(--sb-header-height, 0px) + 12px); max-height: calc(100vh - 24px - var(--sb-header-height, 0px)); overflow-y: auto; padding: 12px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); }
     .sb-notebook[data-wide] .sb-notebook__outline { max-height: none; }
     .sb-notebook[data-wide] .sb-notebook__facets { padding-bottom: 8px; border-bottom: 1px solid var(--sb-border, #d5d9e0); }
     .sb-notebook[data-wide] > .sb-notebook__head + .sb-notebook__bar { margin-top: 0; }

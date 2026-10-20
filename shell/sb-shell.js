@@ -1,4 +1,4 @@
-// Sandkit sb-shell 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-shell 0.1.5 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The sandbox shell: the header and the settings dialog around a sandbox.
 //
 //   <sb-shell heading="My sandbox" controls="fullscreen settings collapse">
@@ -70,6 +70,13 @@
     .sb-shell__restore:hover, .sb-shell__restore:focus-visible { opacity: 1; }
     .sb-shell:not([collapsed]) .sb-shell__restore { display: none; }
 
+    .sb-shell[compact] .sb-shell__bar { position: fixed; top: 0; left: 0; right: 0; z-index: 50; align-items: center; padding: 8px 24px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15); animation: sb-shell-arrive 0.18s ease-out; }
+    .sb-shell[compact] .sb-shell__heading { font-size: 16px; }
+    .sb-shell[compact] :is(.sb-shell__content, .sb-shell__more, .sb-shell__pages, .sb-shell__exported) { display: none; }
+    .sb-shell[compact] .sb-shell__icon-button { padding: 6px; }
+    @keyframes sb-shell-arrive { from { transform: translateY(-100%); } }
+    @media (prefers-reduced-motion: reduce) { .sb-shell[compact] .sb-shell__bar { animation: none; } }
+
     .sb-shell__dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; padding: 0; border: 1px solid var(--sb-border, #d5d9e0); border-radius: calc(var(--sb-radius, 8px) * 1.5); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font-family: var(--sb-font, system-ui, sans-serif); }
     .sb-shell__dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
     .sb-shell__dialog-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: inherit; border-bottom: 1px solid var(--sb-border, #d5d9e0); }
@@ -139,12 +146,16 @@
       super();
       this._id = `sb-shell-${++instanceCount}`;
       this._onFullscreenChange = () => this._showFullscreenState();
+      this._onScroll = () => this._followScroll();
+      this._onResize = () => { this._measureCompact(); this._followScroll(); };
     }
 
     connectedCallback() {
       addStyle('sb-shell-style', CSS);
       this.classList.add('sb-shell');
       document.addEventListener('fullscreenchange', this._onFullscreenChange);
+      addEventListener('scroll', this._onScroll, { passive: true });
+      addEventListener('resize', this._onResize);
       if (this._built) return;
       // The shell takes its children as header content, so wait until they have been parsed.
       if (document.readyState === 'loading') {
@@ -156,6 +167,10 @@
 
     disconnectedCallback() {
       document.removeEventListener('fullscreenchange', this._onFullscreenChange);
+      removeEventListener('scroll', this._onScroll);
+      removeEventListener('resize', this._onResize);
+      this._setCompact(false);
+      document.documentElement.style.scrollPaddingTop = '';
     }
 
     // ---- Public API ----
@@ -186,8 +201,13 @@
     set collapsed(value) {
       this.toggleAttribute('collapsed', Boolean(value));
       storage.write('sb-shell-collapsed', this.collapsed);
+      this._measureCompact();
+      this._followScroll();
       this.dispatchEvent(new CustomEvent('sb-collapse', { bubbles: true, detail: { collapsed: this.collapsed } }));
     }
+
+    // Whether the header is showing compact at the top of the window, the page having scrolled past it.
+    get compact() { return this.hasAttribute('compact'); }
 
     toggleFullscreen() {
       // Browsers may refuse full screen (e.g. in some embedded previews); the page simply stays as it is.
@@ -266,6 +286,8 @@
       this.addEventListener('sb-mode', (e) => this._followMode(e));
       this._fileInput.addEventListener('change', () => this._importFile(this._fileInput.files[0]));
       this._showFullscreenState();
+      this._measureCompact();
+      this._followScroll();
     }
 
     // Sorts the shell's children by slot: actions, settings sections, and header content.
@@ -293,6 +315,36 @@
       };
       const wanted = this.getAttribute('controls')?.split(/\s+/) ?? DEFAULT_CONTROLS;
       return wanted.map((name) => buttons[name] ?? '').join('');
+    }
+
+    // ---- Compact while scrolled ----
+
+    // Once the full header has scrolled out of view, a compact one stays at the top of the window.
+    // The full one keeps its place on the page meanwhile, so nothing below it moves.
+    _followScroll() {
+      if (!this._built) return;
+      this._setCompact(!this.collapsed && this.getBoundingClientRect().bottom <= 0);
+    }
+
+    _setCompact(on) {
+      if (on === this.compact) return;
+      if (on) this.style.minHeight = `${this.offsetHeight}px`;
+      this.toggleAttribute('compact', on);
+      if (!on) this.style.minHeight = '';
+      // For whatever else sticks to the top of the window, such as a notebook's outline.
+      document.documentElement.style.setProperty('--sb-header-height', on ? `${this._compactHeight}px` : '0px');
+    }
+
+    // The compact header's height, measured without showing it, so a jump to any part of the page
+    // lands below it, wherever the page was.
+    _measureCompact() {
+      if (!this._built) return;
+      if (this.collapsed) { document.documentElement.style.scrollPaddingTop = ''; return; }
+      const was = this.compact;
+      this.toggleAttribute('compact', true);
+      this._compactHeight = this.querySelector('.sb-shell__bar').offsetHeight;
+      this.toggleAttribute('compact', was);
+      document.documentElement.style.scrollPaddingTop = `${this._compactHeight}px`;
     }
 
     // ---- Header content ----

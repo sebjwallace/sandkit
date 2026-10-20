@@ -104,6 +104,7 @@ Settled decisions for Sandkit, newest last. One line each, with the reason.
 - **Header controls: full screen, settings, collapse.** Collapse hides the header behind a small restore button and is remembered per viewer. A sandbox chooses which controls appear with the `controls` attribute.
 - **Components are configurable.** Generic but not always applicable features are opt-in or opt-out through attributes or properties at setup.
 - **Theming uses CSS custom properties (`--sb-*` tokens).** A theme is a set of token values under `[data-theme="..."]`; switching is one attribute on `<html>`, and everything updates with no re-rendering. Plain CSS, no JavaScript per component.
+- **Lift is see-through, so it works on any layer.** `--sb-lift` tints whatever is beneath rather than naming a colour, so a lifted part stands off any background and lifts inside lifts stack; `--sb-lift-shadow` carries it in light themes. It's for parts that sit on something, not every component.
 - **Components always use tokens with a fallback** (`var(--sb-text, #1f2933)`), so they still work without the shell.
 - **Standard themes: light and dark,** plus "match system". Sandboxes add their own by defining tokens in their stylesheet and adding them to the `themes` property of `<sb-theme-settings>`.
 - **Viewers can customise tokens and save presets** in settings. A preset is a base theme plus only the tokens that differ, stored per viewer in browser storage.

@@ -1,5 +1,8 @@
 # sb-notebook changelog
 
+## 0.1.2 · 2026-10-20
+- The head sticks below the shell's compact header while the page is scrolled, using `--sb-header-height`, rather than under it.
+
 ## 0.1.1 · 2026-10-20
 - Fixed: ▲ ▼ and the outline didn't scroll to the section when clicked with a mouse. The click left the control focused, and putting focus back after redrawing threw, because the component's own stylesheet constant hid the browser's `CSS.escape`.
 - **Expand all** and **Collapse all** in the head, each disabled when there's nothing to do.

@@ -1,4 +1,4 @@
-// Sandkit sb-export 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-export 0.1.5 · MIT Licence · https://github.com/sebjwallace/sandkit
 // An Export button for the shell's header. Pages can't read their own files when opened from the
 // computer, so exporting is the agent's job: the button says what exporting gives, offers the
 // options, and writes the prompt asking the agent for it, ready to copy.
