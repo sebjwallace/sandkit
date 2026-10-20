@@ -25,6 +25,17 @@
     // Matches a whole tag name, so 'sb-id' doesn't match inside 'sb-identity'.
     const mentions = (source, tag) => new RegExp(`(^|[^a-z-])${tag}(?![a-z-])`).test(source);
 
+    // A component's stylesheet constant is called CSS, which hides the browser's CSS object inside
+    // it: CSS.escape there throws, and whatever comes after it never runs. Find elements another way.
+    const usesBrowserCSS = (source) => /\bCSS\.[a-z]/.test(source);
+
+    for (const component of COMPONENTS) {
+      test(`${component}/${component}.js uses nothing of the browser's CSS, which its own CSS hides`, async () => {
+        const source = await read(`../../components/${component}/${component}.js`);
+        assert(!usesBrowserCSS(source), 'CSS.escape, CSS.supports and the like aren\'t available inside a component: its stylesheet constant is called CSS. Find the element without them, or rename the constant in this component.');
+      });
+    }
+
     for (const component of COMPONENTS) {
       const others = COMPONENTS.filter((c) => c !== component);
       for (const file of [`${component}.js`, 'demo.html']) {
