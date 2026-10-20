@@ -71,6 +71,7 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 | [`sb-math`](components/sb-math/manifest.md) | Equations in native MathML whose marked parts light up, and are lit by, what they stand for. |
 | [`sb-matrix`](components/sb-matrix/manifest.md) | A matrix or vector in brackets, inline or on its own: editable, with coloured and highlighted rows, columns and cells. |
 | [`sb-modal`](components/sb-modal/manifest.md) | A window over the page for the one thing that deserves attention now: a heading, content and actions, reporting how the viewer closed it. |
+| [`sb-notebook`](components/sb-notebook/manifest.md) | A workshop's sections in one page: each with its kind, who and when, and the codes it cites counted; key sections open and asides tucked away, an outline and up and down to move around, and filters by code, kind and person that open what matches. |
 | [`sb-panel`](components/sb-panel/manifest.md) | A frame viewers can pop out into a floating window, drag, resize, collapse, make full screen and dock back. |
 | [`sb-ontology`](components/sb-ontology/manifest.md) | Kinds of things and how they relate, a few at a time: classes, individuals and their links, what each kind inherits and from where, kinds to light up, and the model's problems marked where they are. |
 | [`sb-parameters`](components/sb-parameters/manifest.md) | The knobs people turn: labelled sliders with live values, changes from defaults marked, reset. |

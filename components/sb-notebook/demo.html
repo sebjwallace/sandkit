@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-notebook demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-notebook.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    main > * { min-width: 0; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example > h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+
+    /* The sandbox's own content inside the sections. */
+    sb-notebook p { margin: 0 0 8px; font-size: 14px; }
+    sb-notebook p:last-child { margin-bottom: 0; }
+    .code { padding: 0 6px; border-radius: 999px; background: var(--sb-accent-soft); color: var(--sb-accent); font: 600 11px ui-monospace, Menlo, Consolas, monospace; white-space: nowrap; }
+    .quote { margin: 0 0 8px; padding: 6px 12px; border-left: 3px solid var(--sb-border); color: var(--sb-muted); font-size: 13px; font-style: italic; }
+    .figures { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .figures th, .figures td { padding: 4px 8px; border-bottom: 1px solid var(--sb-surface-2); text-align: left; }
+    .figures td.bar span { display: block; height: 10px; border-radius: 3px; background: var(--sb-accent); }
+    .figures tr.over td { color: var(--sb-bad); font-weight: 600; }
+    .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 0 0 8px; }
+    .option { padding: 8px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); font-size: 13px; }
+    .option.chosen { border-color: var(--sb-good); }
+    .option b { display: block; }
+    .was { text-decoration: line-through; color: var(--sb-muted); }
+
+    .controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .controls button { padding: 4px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); font: inherit; font-size: 13px; cursor: pointer; }
+    .said { margin: 10px 0 0; padding: 8px 12px; border-radius: var(--sb-radius); background: var(--sb-surface-2); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-notebook">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A workshop's sections in one page: who said what and when, the key parts open, the asides tucked away.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <section class="guide">
+      <p>A workshop is where the people who know a subject work through a model together: they look at the evidence, ask questions, try things and decide. A notebook keeps that as one page, a section at a time, each with its kind, who it came from and when. A week later it reads as the story of how the model came to be trusted, with people's names on every part.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Running a workshop.</strong> Add a section as each thing comes up: a source to look at, a question, a quick simulation, a decision.</li>
+        <li><strong>Coming back to one later.</strong> The key sections are open and marked, the asides tucked away, and every section says who and when.</li>
+        <li><strong>An audit trail.</strong> The codes inside each section are counted on its bar, so you can see where the decisions and questions are without opening anything.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li>Chapters of a sandbox, read one at a time: tabs.</li>
+        <li>A story told across several views of a model: a walkthrough.</li>
+        <li>A guided path through a page as it stands: a tour.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <p>Every direct child is a section. Describe each with attributes; the notebook never changes what's inside. See the <a href="manifest.md">manifest</a> for the full contract.</p>
+      <pre>&lt;sb-notebook id="ridge-fire" heading="Ridge fire · afternoon planning"&gt;
+  &lt;section heading="Will the wind turn before 16:00?" kind="question"
+           by="Ana Lima" time="2026-08-14T13:20" relevance="key"&gt;
+    &lt;p&gt;… &lt;span data-ref="QST-2"&gt;QST-2&lt;/span&gt; …&lt;/p&gt;
+  &lt;/section&gt;
+  &lt;section heading="Radio channels" kind="discussion" relevance="aside"&gt;…&lt;/section&gt;
+&lt;/sb-notebook&gt;</pre>
+      <p>Sections can hold anything. Here they hold plain HTML; in a sandbox they'd hold decision cards, sources, charts and small simulations.</p>
+
+      <h3>Making it reveal, not just record</h3>
+      <ul>
+        <li><strong>Put names and times on every section.</strong> That's what turns a page of notes into evidence.</li>
+        <li><strong>Mark what matters as key, and the rest as aside.</strong> Someone arriving later should see the decisions first.</li>
+        <li><strong>Cite codes inside sections.</strong> Mark them with <code>data-ref</code>, and each section's bar counts them, so "where did we decide that?" has an answer at a glance.</li>
+        <li><strong>Name the code prefixes.</strong> Set <code>prefixes</code>, such as <code>{ DEC: 'Decisions' }</code>, and the filters read in words: choosing Decisions opens just the sections holding one.</li>
+      </ul>
+    </section>
+
+    <h2 class="part">Examples</h2>
+
+    <section class="example">
+      <h2>Holding a wildfire at the ridge</h2>
+      <p>An incident team's afternoon planning session on a fire moving uphill. Click a bar to collapse or open it, or choose Decisions to open only the sections with decisions in them. The buttons below go to a code, opening the section that holds it.</p>
+      <sb-notebook id="ridge-fire" heading="Ridge fire · afternoon planning, 14 August">
+        <section heading="The afternoon spread forecast" kind="source" by="Claude" time="2026-08-14T13:05">
+          <p>The fire behaviour analyst's forecast (<span class="code" data-ref="SRC-4">SRC-4</span>), as the model reads it:</p>
+          <p class="quote">"Expect rates of spread of 1.5 to 2 km/h upslope once relative humidity drops below 20%, likely after 14:30."</p>
+          <p>The model's spread rule <span class="code" data-ref="RUL-3">RUL-3</span> rests on this passage.</p>
+        </section>
+
+        <section heading="Will the wind turn before 16:00?" kind="question" by="Ana Lima" time="2026-08-14T13:20" relevance="key">
+          <p>The forecast has a westerly all afternoon, but the crews on the ridge felt it backing to the south an hour ago (<span class="code" data-ref="QST-2">QST-2</span>). A southerly pushes the head of the fire straight at the ridge road.</p>
+        </section>
+
+        <section heading="What a southerly does to the run" kind="demonstration" by="Claude, Ana Lima" time="2026-08-14T13:34">
+          <p>The model's spread (<span class="code" data-ref="RUL-3">RUL-3</span>) under each wind, minutes for the head to reach the ridge road:</p>
+          <table class="figures">
+            <tr><th>Wind</th><th>Minutes</th><th style="width: 50%"></th></tr>
+            <tr><td>Westerly 15 km/h</td><td>140</td><td class="bar"><span style="width: 100%"></span></td></tr>
+            <tr><td>South-westerly 20 km/h</td><td>85</td><td class="bar"><span style="width: 61%"></span></td></tr>
+            <tr class="over"><td>Southerly 25 km/h</td><td>50</td><td class="bar"><span style="width: 36%"></span></td></tr>
+          </table>
+        </section>
+
+        <section heading="Water point 3 is dry" kind="correction" by="Joe Tanaka" time="2026-08-14T13:41">
+          <p>The model had the dam at <span class="code" data-ref="WP-3">WP-3</span> as a refill point for the tankers. Joe drove past at noon: it's empty. Tankers now refill at <span class="code" data-ref="WP-5">WP-5</span>, twenty minutes further.</p>
+        </section>
+
+        <section heading="Hold the ridge road, burn out below it" kind="decision" by="Ana Lima, Joe Tanaka, Ruth Mbeki" time="2026-08-14T13:55" relevance="key">
+          <div class="options">
+            <div class="option chosen" data-ref="DEC-5.a"><b>✓ Hold at the ridge road</b>Burn out below it before 15:00, while the wind is still westerly.</div>
+            <div class="option" data-ref="DEC-5.b"><b>Fall back to the fire trail</b>Safer, but gives up the valley's two farms.</div>
+          </div>
+          <p>Decided as <span class="code" data-ref="DEC-5">DEC-5</span>: with a southerly possible, the burn-out has to be done while there's still time. If the wind turns before then, the crews fall back (<span class="code" data-ref="RUL-8">RUL-8</span>).</p>
+        </section>
+
+        <section heading="Radio channels for the night shift" kind="discussion" by="Ruth Mbeki" time="2026-08-14T14:02" relevance="aside">
+          <p>Night crews stay on channel 4 for command and 6 for tankers. Nothing in the model changes.</p>
+        </section>
+      </sb-notebook>
+      <div class="controls" id="fire-controls">
+        <button type="button" data-go="DEC-5">Go to DEC-5</button>
+        <button type="button" data-go="WP-3">Go to WP-3</button>
+        <button type="button" data-collapse>Collapse all</button>
+        <button type="button" data-expand>Open all</button>
+      </div>
+      <div class="said" id="fire-said">Click a bar or a button.</div>
+    </section>
+
+    <section class="example">
+      <h2>Building a rainwater store for a school</h2>
+      <p>A site meeting during the construction of a roof catchment, gutters and a storage tank. Still mid-way: one decision is only proposed, and a measurement was corrected. Choose a person to see what they brought.</p>
+      <sb-notebook id="school-tank" heading="Hillside school water store · site meeting, 3 March">
+        <section heading="How much the roof can catch" kind="demonstration" by="Claude" time="2026-03-03T10:00" relevance="key">
+          <p>Roof area × monthly rainfall × 0.8 runoff (<span class="code" data-ref="RUL-1">RUL-1</span>), against the school's use of 30,000 litres a month (<span class="code" data-ref="DEM-1">DEM-1</span>):</p>
+          <table class="figures">
+            <tr><th>Month</th><th>Litres caught</th><th style="width: 50%"></th></tr>
+            <tr><td>April (long rains)</td><td>36,000</td><td class="bar"><span style="width: 100%"></span></td></tr>
+            <tr><td>July</td><td>4,600</td><td class="bar"><span style="width: 13%"></span></td></tr>
+            <tr class="over"><td>January</td><td>5,800</td><td class="bar"><span style="width: 16%"></span></td></tr>
+          </table>
+        </section>
+
+        <section heading="The roof is smaller than we drew" kind="correction" by="Grace Wanjiru" time="2026-03-03T10:20" relevance="key">
+          <p>The drawings gave <span class="was">240 m²</span> 180 m² of roof: the new classroom block (<span class="code" data-ref="STG-2">STG-2</span>) isn't guttered yet. The figures above use 180 m².</p>
+        </section>
+
+        <section heading="Can the ground take a full tank?" kind="question" by="Peter Otieno" time="2026-03-03T10:35">
+          <p>A full 50,000 litre tank weighs 50 tonnes. The pad (<span class="code" data-ref="STG-3">STG-3</span>) sits on black cotton soil, which swells and shrinks with the rains (<span class="code" data-ref="QST-1">QST-1</span>). Nobody has tested it yet.</p>
+        </section>
+
+        <section heading="Which tank to build" kind="decision" by="Grace Wanjiru, Peter Otieno" time="2026-03-03T11:05">
+          <div class="options">
+            <div class="option" data-ref="DEC-2.a"><b>Ferrocement, built on site</b>Local skills, a third cheaper, eight weeks to cure.</div>
+            <div class="option" data-ref="DEC-2.b"><b>Two plastic tanks</b>Up in a day, lighter on the soil, cost more and fade in the sun.</div>
+          </div>
+          <p>Proposed, not decided (<span class="code" data-ref="DEC-2">DEC-2</span>): it waits on the soil test in <span class="code" data-ref="QST-1">QST-1</span>.</p>
+        </section>
+
+        <section heading="Gutter colour" kind="discussion" by="Mary Achieng" time="2026-03-03T11:20" relevance="aside">
+          <p>Green, to match the classroom doors.</p>
+        </section>
+      </sb-notebook>
+      <div class="said" id="tank-said">Click a bar.</div>
+    </section>
+  </main>
+
+  <script>
+    const fire = document.getElementById('ridge-fire');
+    const fireSaid = document.getElementById('fire-said');
+    const tankSaid = document.getElementById('tank-said');
+
+    fire.prefixes = { SRC: 'Sources', RUL: 'Rules', QST: 'Questions', WP: 'Water points', DEC: 'Decisions' };
+    document.getElementById('school-tank').prefixes = { RUL: 'Rules', DEM: 'Demand', STG: 'Stages', QST: 'Questions', DEC: 'Decisions' };
+
+    const describeFilter = (e) => `sb-filter: ${JSON.stringify(e.detail.filter)}`;
+    fire.addEventListener('sb-filter', (e) => { fireSaid.textContent = describeFilter(e); });
+    document.getElementById('school-tank').addEventListener('sb-filter', (e) => { tankSaid.textContent = describeFilter(e); });
+
+    const describe = (e) => `sb-toggle: a viewer ${e.detail.open ? 'opened' : 'collapsed'} section ${e.detail.index + 1}, "${e.detail.element.getAttribute('heading')}".`;
+    fire.addEventListener('sb-toggle', (e) => { fireSaid.textContent = describe(e); });
+    document.getElementById('school-tank').addEventListener('sb-toggle', (e) => { tankSaid.textContent = describe(e); });
+
+    // The sandbox goes to a code: the notebook opens the section holding it, then the page scrolls there.
+    document.getElementById('fire-controls').addEventListener('click', (e) => {
+      const button = e.target.closest('button');
+      if (!button) return;
+      if (button.dataset.go) {
+        const ref = button.dataset.go;
+        fire.reveal(ref);
+        fire.querySelector(`[data-ref="${ref}"]`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        fireSaid.textContent = `reveal("${ref}"): opened the section holding it, quietly.`;
+      }
+      if (button.hasAttribute('data-collapse')) fire.collapseAll();
+      if (button.hasAttribute('data-expand')) fire.expandAll();
+    });
+  </script>
+</body>
+</html>

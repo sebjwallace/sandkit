@@ -9,7 +9,7 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-choice', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
+    window.TAGS = ['sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-choice', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-notebook', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
@@ -47,6 +47,7 @@
   <script src="../../components/sb-math/sb-math.js"></script>
   <script src="../../components/sb-matrix/sb-matrix.js"></script>
   <script src="../../components/sb-modal/sb-modal.js"></script>
+  <script src="../../components/sb-notebook/sb-notebook.js"></script>
   <script src="../../components/sb-tabs/sb-tabs.js"></script>
   <script src="../../components/sb-plane/sb-plane.js"></script>
   <script src="../../components/sb-panel/sb-panel.js"></script>

@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-notebook tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-notebook.js"></script>
+  <script src="sb-notebook.js"></script>
+</head>
+<body>
+  <script>
+    const WORKSHOP = `
+      <section heading="Forecast" kind="source" by="Claude" time="2026-08-14T13:05"><span data-ref="SRC-4"></span><span data-ref="RUL-3"></span></section>
+      <section heading="Wind" kind="question" by="Ana Lima" time="2026-08-14" relevance="key"><span data-ref="QST-2"></span></section>
+      <section heading="Hold the road" kind="decision" by="Ana Lima, Joe Tanaka" relevance="key" ref="SEC-5"><span data-ref="DEC-5.a"></span><span data-ref="DEC-5"></span><span data-ref="RUL-8"></span></section>
+      <section heading="Radio" kind="discussion" by="Ruth Mbeki" time="after lunch" relevance="aside"><span data-ref="radio-note"></span></section>`;
+
+    const notebook = (sections = WORKSHOP, attributes = '') => mount(`<sb-notebook ${attributes}>${sections}</sb-notebook>`);
+    const bars = (el) => [...el.querySelectorAll(':scope > .sb-notebook__bar')];
+    const part = (scope, name) => scope.querySelector(`.sb-notebook__${name}`)?.textContent.trim() ?? null;
+    const open = (el) => el.sections.filter((section) => !section.hidden).map((section) => section.getAttribute('heading'));
+    const facet = (el, name, value = '') => el.querySelector(`[data-facet="${name}"][data-value="${value}"]`);
+    const facets = (el) => [...el.querySelectorAll('.sb-notebook__facet')].map((button) => button.textContent.replace(/\s+/g, ' ').trim());
+    const summary = (el) => part(el, 'summary').replace(/\s+/g, ' ');
+    const sectionArrives = (el, section) => { el.append(section); return waitFor(() => bars(el).length === el.sections.length); };
+
+    // ---- Sections ----
+
+    test('a notebook moved while the page loads is built once', () => {
+      Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
+      let el;
+      try {
+        el = notebook();
+        document.body.append(el); // moved by another element, before the page has loaded
+      } finally {
+        delete document.readyState;
+      }
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      assertEqual(el.querySelectorAll('.sb-notebook__head').length, 1);
+      el.remove();
+    });
+
+    test('every direct child is a section with a bar before it, titled by its heading', () => {
+      const el = notebook(WORKSHOP + '<div>untitled</div>');
+      assertEqual(el.sections.length, 5);
+      assertEqual(bars(el).map((bar) => part(bar, 'title')), ['Forecast', 'Wind', 'Hold the road', 'Radio', 'Section 5']);
+      assert(bars(el).every((bar, i) => bar.nextElementSibling === el.sections[i]), 'each bar sits before its section');
+    });
+
+    test('a bar shows the kind, who and when, and the codes inside by prefix', () => {
+      const [forecast, wind, road, radio] = bars(notebook());
+      assertEqual(part(forecast, 'kind'), 'source');
+      assertEqual(part(forecast, 'who'), 'Claude · 14 Aug 2026, 13:05');
+      assertEqual(part(wind, 'who'), 'Ana Lima · 14 Aug 2026');
+      assertEqual(part(radio, 'who'), 'Ruth Mbeki · after lunch');
+      assertEqual(part(forecast, 'codes'), '1 SRC · 1 RUL');
+      assertEqual(part(road, 'codes'), '1 DEC · 1 RUL', 'DEC-5.a counts as DEC-5');
+      assertEqual(part(radio, 'codes'), null, 'refs that are not codes are left out');
+    });
+
+    test('key sections are open and marked, asides start collapsed', () => {
+      const el = notebook();
+      assertEqual(open(el), ['Forecast', 'Wind', 'Hold the road']);
+      assertEqual(bars(el).map((bar) => part(bar, 'key')), [null, '★ Key', '★ Key', null]);
+      assertEqual(bars(el)[3].querySelector('button').getAttribute('aria-expanded'), 'false');
+    });
+
+    test('a collapsed section stays hidden, even when the sandbox gives it a display of its own', () => {
+      const el = notebook('<section style="display: grid" relevance="aside">a</section>');
+      assertEqual(getComputedStyle(el.sections[0]).display, 'none');
+    });
+
+    test('a section with a ref gives its bar that data-ref', () => {
+      assertEqual(bars(notebook())[2].dataset.ref, 'SEC-5');
+    });
+
+    test('the head shows the heading, and counts sections, collapsed ones and people', () => {
+      const el = notebook(WORKSHOP, 'heading="Ridge fire"');
+      assertEqual(part(el, 'heading'), 'Ridge fire');
+      assertEqual(summary(el), '4 sections · 1 collapsed · 4 people');
+    });
+
+    test('sections added later get a bar and an outline entry', async () => {
+      const el = notebook();
+      await sectionArrives(el, Object.assign(document.createElement('section'), { innerHTML: '<span data-ref="QST-9"></span>' }));
+      assertEqual(part(bars(el)[4], 'codes'), '1 QST');
+      assertEqual(el.querySelectorAll('.sb-notebook__entry').length, 5);
+    });
+
+    test('a removed section takes its bar with it', async () => {
+      const el = notebook();
+      el.sections[0].remove();
+      await waitFor(() => bars(el).length === 3);
+      assertEqual(part(bars(el)[0], 'title'), 'Wind');
+    });
+
+    test('codes drawn later are counted on refresh()', () => {
+      const el = notebook('<section heading="Late"></section>');
+      el.sections[0].innerHTML = '<span data-ref="DEC-1"></span>';
+      assertEqual(part(bars(el)[0], 'codes'), null);
+      el.refresh();
+      assertEqual(part(bars(el)[0], 'codes'), '1 DEC');
+    });
+
+    // ---- Opening and collapsing ----
+
+    test('clicking a bar collapses or opens its section, and fires sb-toggle', () => {
+      const el = notebook();
+      const toggles = recordEvents(el, 'sb-toggle');
+      bars(el)[0].querySelector('button').click();
+      bars(el)[3].querySelector('button').click();
+      assertEqual(open(el), ['Wind', 'Hold the road', 'Radio']);
+      assertEqual(toggles.map((e) => [e.detail.index, e.detail.open]), [[0, false], [3, true]]);
+      assertEqual(toggles[0].detail.element, el.sections[0]);
+    });
+
+    test('expand, collapse, expandAll and collapseAll are quiet', () => {
+      const el = notebook();
+      const toggles = recordEvents(el, 'sb-toggle');
+      el.collapse(0);
+      el.expand(3);
+      assertEqual(open(el), ['Wind', 'Hold the road', 'Radio']);
+      el.collapseAll();
+      assertEqual(open(el), []);
+      el.expandAll();
+      assertEqual(open(el).length, 4);
+      assertEqual(toggles.length, 0);
+    });
+
+    // ---- Moving between sections ----
+
+    test('next, previous and goTo move, open a collapsed section, and fire sb-section', () => {
+      const el = notebook();
+      const moves = recordEvents(el, 'sb-section');
+      el.goTo(3);
+      assertEqual(el.current, { index: 3, element: el.sections[3] });
+      assert(!el.sections[3].hidden, 'the aside was opened');
+      el.previous();
+      assertEqual(el.current.index, 2);
+      el.next();
+      assertEqual(moves.map((e) => e.detail.index), [3, 2, 3]);
+      assertEqual(part(el, 'position'), '4 of 4');
+    });
+
+    test('moving stops at the ends, with the buttons disabled there', () => {
+      const el = notebook();
+      const moves = recordEvents(el, 'sb-section');
+      el.previous();
+      assertEqual(moves.length, 0);
+      assert(el.querySelector('[data-action="previous"]').disabled, 'previous disabled at the start');
+      el.goTo(3);
+      el.next();
+      assertEqual(moves.length, 1);
+      assert(el.querySelector('[data-action="next"]').disabled, 'next disabled at the end');
+    });
+
+    test('the outline lists every section, marks the current one, and goes to one when clicked', () => {
+      const el = notebook();
+      const entries = () => [...el.querySelectorAll('.sb-notebook__entry')];
+      assertEqual(entries().map((entry) => entry.getAttribute('aria-current')), ['true', 'false', 'false', 'false']);
+      assert(entries()[3].hasAttribute('data-collapsed'), 'collapsed sections are marked');
+      entries()[3].click();
+      assertEqual(el.current.index, 3);
+      assertEqual(entries()[3].getAttribute('aria-current'), 'true');
+    });
+
+    test('Alt with the arrow keys moves between sections', () => {
+      const el = notebook();
+      el.sections[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }));
+      assertEqual(el.current.index, 1);
+      el.sections[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      assertEqual(el.current.index, 1, 'arrows alone move only in the outline');
+      el.querySelector('.sb-notebook__entry').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      assertEqual(el.current.index, 2);
+    });
+
+    test('the filter and the outline open and close from their headings', () => {
+      const el = notebook();
+      const toggle = (panel) => el.querySelector(`[data-action="${panel}"]`);
+      const shown = () => [!el.querySelector('.sb-notebook__facets').hidden, !el.querySelector('.sb-notebook__outline').hidden];
+      const before = shown();
+      toggle('filter').click();
+      toggle('outline').click();
+      assertEqual(shown(), before.map((value) => !value));
+      assertEqual(toggle('filter').getAttribute('aria-expanded'), String(!before[0]));
+    });
+
+    // ---- Filtering ----
+
+    test('facets come from code prefixes, kinds and people, each counting its sections', () => {
+      assertEqual(facets(notebook()), [
+        '★ Key only 2',
+        'SRC 1', 'RUL 2', 'QST 1', 'DEC 1',
+        'source 1', 'question 1', 'decision 1', 'discussion 1',
+        'Claude 1', 'Ana Lima 2', 'Joe Tanaka 1', 'Ruth Mbeki 1'
+      ]);
+    });
+
+    test('code prefixes can be named', () => {
+      const el = notebook();
+      el.prefixes = { DEC: 'Decisions' };
+      assertEqual(facet(el, 'codes', 'DEC').textContent.replace(/\s+/g, ' ').trim(), 'Decisions 1');
+    });
+
+    test('choosing opens the sections that match, collapses the rest, and fires sb-filter', () => {
+      const el = notebook();
+      const filters = recordEvents(el, 'sb-filter');
+      facet(el, 'codes', 'RUL').click();
+      assertEqual(open(el), ['Forecast', 'Hold the road']);
+      assertEqual(summary(el), 'Showing 2 of 4 · 4 people · Clear');
+      assert(bars(el)[1].hasAttribute('data-unmatched'), 'sections that do not match are marked');
+      assertEqual(filters[0].detail.filter, { codes: ['RUL'], kinds: [], people: [], key: false });
+    });
+
+    test('choices within a facet widen the match, across facets they narrow it', () => {
+      const el = notebook();
+      el.filter = { kinds: ['source', 'question'] };
+      assertEqual(open(el), ['Forecast', 'Wind']);
+      el.filter = { kinds: ['source', 'question'], people: ['Ana Lima'] };
+      assertEqual(open(el), ['Wind']);
+      el.filter = { key: true, codes: ['RUL'] };
+      assertEqual(open(el), ['Hold the road']);
+    });
+
+    test('counts say how many sections each choice would show alongside the others', () => {
+      const el = notebook();
+      el.filter = { people: ['Ana Lima'] };
+      assertEqual(facets(el).slice(0, 5), ['★ Key only 2', 'SRC 0', 'RUL 1', 'QST 1', 'DEC 1']);
+      assertEqual(facets(el).slice(-4), ['Claude 1', 'Ana Lima 2', 'Joe Tanaka 1', 'Ruth Mbeki 1'], 'people widen among themselves');
+      assert(facet(el, 'codes', 'SRC').disabled, 'a choice that would show nothing is disabled');
+    });
+
+    test('setting the filter is quiet', () => {
+      const el = notebook();
+      const filters = recordEvents(el, 'sb-filter');
+      el.filter = { codes: ['DEC'] };
+      assertEqual(filters.length, 0);
+      assertEqual(el.filter, { codes: ['DEC'], kinds: [], people: [], key: false });
+    });
+
+    test('clearing restores what was open before, forgetting what was toggled while filtered', () => {
+      const el = notebook();
+      el.collapse(0);
+      el.filter = { codes: ['RUL'] };
+      el.collapse(2);
+      el.expand(1);
+      assertEqual(open(el), ['Forecast', 'Wind']);
+      el.querySelector('[data-action="clear"]').click();
+      assertEqual(open(el), ['Wind', 'Hold the road']);
+      assertEqual(el.filter, { codes: [], kinds: [], people: [], key: false });
+    });
+
+    // ---- Locating ----
+
+    test('reveal opens the section holding a ref, quietly, and says whether it found one', () => {
+      const el = notebook();
+      const toggles = recordEvents(el, 'sb-toggle');
+      assertEqual(el.reveal('radio-note'), true);
+      assertEqual(open(el).includes('Radio'), true);
+      assertEqual(el.reveal('DEC-99'), false);
+      assertEqual(toggles.length, 0);
+    });
+
+    test('reveal finds a section by its bar\'s ref, or by a place inside it', () => {
+      const el = notebook();
+      el.collapseAll();
+      el.reveal('SEC-5');
+      el.reveal('ignored', el.sections[3].firstElementChild);
+      assertEqual(open(el), ['Hold the road', 'Radio']);
+    });
+
+    test('reveal and goTo keep the viewer\'s filter', () => {
+      const el = notebook();
+      el.filter = { kinds: ['source'] };
+      el.reveal('QST-2');
+      el.goTo(3);
+      assertEqual(el.filter.kinds, ['source']);
+      assertEqual(open(el), ['Forecast', 'Wind', 'Radio']);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two notebooks on one page keep their own state and ids', () => {
+      mount(`<div><sb-notebook>${WORKSHOP}</sb-notebook><sb-notebook>${WORKSHOP}</sb-notebook></div>`);
+      const [a, b] = document.querySelectorAll('#test-fixture sb-notebook');
+      a.collapseAll();
+      a.filter = { key: true };
+      b.goTo(2);
+      assertEqual([open(a), open(b).length], [['Wind', 'Hold the road'], 3]);
+      assertEqual([a.current.index, b.current.index], [0, 2]);
+      assert(a.sections[0].id !== b.sections[0].id, 'unique section ids');
+    });
+
+    test('shows headings, kinds, people and times as text, never as markup', () => {
+      const el = notebook('<section heading="<b>h</b>" kind="<b>k</b>" by="<b>p</b>" time="<b>t</b>"></section>', 'heading="<b>n</b>"');
+      assertEqual(el.querySelector('.sb-notebook__head b, .sb-notebook__bar b'), null);
+      assertEqual(part(bars(el)[0], 'title'), '<b>h</b>');
+    });
+  </script>
+</body>
+</html>
