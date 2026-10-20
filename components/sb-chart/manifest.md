@@ -43,7 +43,7 @@ Positions count from 0 at the oldest value of the longest series.
 | `data` | The chart's data. Setting it redraws the chart. |
 | `heading` | A title shown above the chart. Attribute. |
 | `height` | The drawing's height in pixels. Attribute. Default `150`. |
-| `highlight` | What to point at, by id or label: series are brought forward and the others fade, in the legend too; reference lines and marks are drawn bolder. |
+| `highlight` | A list of what to point at, each by id or label, such as `['Stock']` or `['Reorder 40', 'price rise']`; `[]` for nothing. Series named are brought forward and the others fade, in the legend too; reference lines and marks named are drawn bolder. |
 | `current` | A position to mark with a cursor, such as the moment a scrubber has reached; `null` for none. The legend then gives each line's value there, rather than its latest. |
 
 Pointing at the chart shows a guide line with each line's value there, and its label from `xLabels`. Pointing at a line, or its name in the legend, brings it forward while the pointer is there.

@@ -1,5 +1,8 @@
 # sb-chart changelog
 
+## 0.1.2 · 2026-10-20
+- Manifest: `highlight` takes a list, which it always has; the manifest read as if it took one name.
+
 ## 0.1.1 · 2026-10-17
 - Pointing at the chart shows a guide line with each line's value there; `sb-point` follows the pointer and `sb-select` reports clicks, by position.
 - `xLabels` label positions along the bottom, as many as fit; `marks` draw labelled events as vertical lines.
