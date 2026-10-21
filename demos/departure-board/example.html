@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Departure Board Sandbox · By example</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-tabs/sb-tabs.js"></script>
+  <script src="../../components/sb-panel/sb-panel.js"></script>
+  <script src="../../components/sb-scenario/sb-scenario.js"></script>
+  <script src="model.js"></script>
+  <script src="board.js"></script>
+</head>
+<body>
+  <sb-shell heading="Departure Board Sandbox">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p><strong>Goal:</strong> design what a station's departure board shows by giving examples of what it should show, and letting the rules follow.</p>
+  </sb-shell>
+
+  <main>
+    <section class="chapter">
+      <h2>Programming by example</h2>
+      <p>Rather than writing rules, say what one part of the board should show for one train. The model finds a rule that makes it so: as wide as it can be without changing anything you haven't asked for, placed just above the rule that decides that train now. Every example is kept, and checked against the rules from then on, here and on the <a href="index.html">rules page</a>.</p>
+      <p>Or don't say it at all: on <b>Choose a line</b>, pick from variations of the train's whole line, as in selective breeding, generation after generation, and use the one you like.</p>
+      <p class="try"><strong>Try:</strong> click Brighton on the board, choose the Expected column, and make it show <em>Boarding</em>. The model proposes "running and due now". Switch off <em>Leave the other trains as they are</em> to see how far one example alone would reach, then switch it back and add the rule.</p>
+    </section>
+
+    <section class="card">
+      <div class="board-bar">
+        <label>Trains <select id="data"></select></label>
+        <button type="button" class="small-button" id="reset">Back to the original rules</button>
+      </div>
+      <p class="summary" id="summary"></p>
+      <div class="board is-choosing" id="board"></div>
+
+      <sb-tabs id="views">
+        <div heading="Examples">
+          <div class="example-builder" id="builder"></div>
+          <h3>Examples so far</h3>
+          <div id="examples"></div>
+        </div>
+        <div heading="Choose a line" id="choosing"></div>
+        <div id="trains" heading="Trains">
+          <p class="tab-intro">The trains as the board receives them. Change anything, add or remove trains, and the board follows.</p>
+          <table class="inputs" id="inputs"></table>
+          <div class="trains-bar">
+            <button type="button" class="small-button" data-train-action="add">+ Train</button>
+            <button type="button" class="small-button" data-train-action="reset">Back to the original trains</button>
+          </div>
+        </div>
+      </sb-tabs>
+    </section>
+
+    <sb-panel id="highlights-panel" heading="Highlights">
+      <div class="highlights-bar">
+        <span>Point to light up · pin ■ □</span>
+        <button type="button" class="small-button glow-toggle" data-glow aria-pressed="false" title="Pinned highlights fade gently in and out">Glow</button>
+        <button type="button" class="small-button" data-unpin-all>Unpin all</button>
+      </div>
+      <div id="highlights"></div>
+    </sb-panel>
+  </main>
+
+  <script>
+    // The example page: choose a train, a part of the board and what it should show; the model proposes the rule.
+    // Examples are kept with the facts they were given for, so they still mean the same on another set of trains.
+
+    const EXAMPLES_KEY = 'departure-board-examples';
+    let examples = remembered(EXAMPLES_KEY) ?? [];
+
+    // What's being asked for now. keep is the facts the proposed rule keeps as conditions, or null to let the model choose.
+    let ask = { train: null, table: 'expected', then: null, keep: null, leaveOthers: true };
+
+    const chosenRow = rows => rows.find(row => row.train.id === ask.train);
+    const describe = row => `${row.train.time} ${row.train.destination}`;
+    const shownText = (then, train) => fill(then.text, train) || '(blank)';
+
+    // The example being asked for, and everything the proposal must keep true.
+    function exampleOf(row) {
+      return { table: ask.table, facts: row.facts, then: ask.then, label: describe(row), train: row.train };
+    }
+
+    function mustHold(rows, row) {
+      const others = ask.leaveOthers
+        ? rows.filter(other => other !== row).map(other => ({ table: ask.table, facts: other.facts, then: decide(config, ask.table, other.facts)?.then ?? { text: '' } }))
+        : [];
+      return [...examples, ...others];
+    }
+
+    function proposal(rows, row) {
+      const example = exampleOf(row);
+      const id = nextId(ask.table);
+      const keep = ask.keep ?? widest(config, example, mustHold(rows, row), id);
+      const next = withRule(config, example, keep, id);
+      const changes = runBoard(next, moment())
+        .map((after, i) => ({ row: after, before: rows[i] }))
+        .filter(({ row: after, before }) => !sameThen(after.shows[ask.table], before.shows[ask.table]));
+      const broken = examples.filter(each => !holds(next, each));
+      const above = config[ask.table].find(rule => matches(rule, row.facts));
+      return { example, id, keep, next, changes, broken, above };
+    }
+
+    // The builder.
+
+    function partChoices(row) {
+      return Object.keys(TABLES).map(table => `
+        <button type="button" class="part-choice" data-choose-table="${table}" aria-pressed="${table === ask.table}">
+          <span>${TABLES[table].label}</span>
+          <span class="board-text tone-${row.shows[table].tone}">${escapeHtml(row.shows[table].text || '(blank)')}</span>
+        </button>`).join('');
+    }
+
+    function outputChoice() {
+      const options = TABLES[ask.table].texts.map(text =>
+        `<option value="${escapeHtml(text)}" ${text === ask.then.text ? 'selected' : ''}>${escapeHtml(text || '(blank)')}</option>`).join('');
+      const tone = TABLES[ask.table].toned
+        ? `<button type="button" class="cell board-text tone-button tone-${ask.then.tone}" data-ask="tone">${ask.then.tone}</button>` : '';
+      return `<select class="board-text tone-${ask.then.tone ?? 'plain'}" data-ask="text">${options}</select>${tone}`;
+    }
+
+    function conditionToggles(row, keep) {
+      return Object.keys(FACTS).map(fact => `
+        <button type="button" class="${classes('condition-toggle', keep.includes(fact) && 'is-on')}" data-ask-fact="${fact}" aria-pressed="${keep.includes(fact)}"
+          title="${keep.includes(fact) ? 'Drop this condition, so the rule reaches further' : 'Add this condition, so the rule reaches less far'}">
+          ${FACTS[fact].label}: ${row.facts[fact]}
+        </button>`).join('');
+    }
+
+    function changeList(changes, row) {
+      const others = changes.filter(change => change.row.train.id !== row.train.id);
+      if (!others.length) return '<p class="verdict is-good">No other train changes.</p>';
+      return `<p class="verdict is-warn">Also changes ${others.length} other train${others.length > 1 ? 's' : ''}:</p>
+        <ul class="change-list">${others.map(({ row: after, before }) => `
+          <li data-train="${after.train.id}">${escapeHtml(describe(after))}: ${escapeHtml(before.shows[ask.table].text || '(blank)')} → <b>${escapeHtml(after.shows[ask.table].text || '(blank)')}</b></li>`).join('')}</ul>`;
+    }
+
+    function brokenList(broken) {
+      if (!examples.length) return '';
+      if (!broken.length) return `<p class="verdict is-good">${examples.length > 1 ? `All ${examples.length} examples still hold.` : 'The example so far still holds.'}</p>`;
+      return `<p class="verdict is-bad">Breaks ${broken.length} example${broken.length > 1 ? 's' : ''}: ${broken.map(each => `${escapeHtml(each.label)} (${TABLES[each.table].label})`).join(', ')}.</p>`;
+    }
+
+    function renderBuilder(rows) {
+      const builder = document.getElementById('builder');
+      const row = chosenRow(rows);
+      if (!row) {
+        builder.innerHTML = '<p class="step-hint">Click a train on the board to give an example for it.</p>';
+        return;
+      }
+      ask.then ??= { ...decide(config, ask.table, row.facts)?.then ?? { text: TABLES[ask.table].texts[0] } };
+      const already = holds(config, exampleOf(row));
+      const rule = already ? null : proposal(rows, row);
+      builder.innerHTML = `
+        <div class="step"><span class="step-label">Train</span><b>${row.train.id} · ${escapeHtml(describe(row))}</b> ${factPills(row.facts)}</div>
+        <div class="step"><span class="step-label">Part</span><div class="part-choices">${partChoices(row)}</div></div>
+        <div class="step"><span class="step-label">Should show</span>${outputChoice()}</div>
+        ${already ? `
+          <div class="proposal">
+            <p class="verdict is-good">The rules already show this.</p>
+            <button type="button" class="small-button" data-ask="save">Keep it as an example</button>
+          </div>` : `
+          <div class="proposal">
+            <div class="proposal-rule">
+              <span class="rule-id">${rule.id}</span>
+              <span>when</span> ${conditionToggles(row, rule.keep)}
+              ${rule.keep.length ? '' : '<span class="otherwise">(anything)</span>'}
+              <span class="arrow">→</span>
+              <span class="board-text tone-${ask.then.tone ?? 'plain'}">${escapeHtml(ask.then.text || '(blank)')}</span>
+              <span class="placed">placed above ${rule.above ? rule.above.id : 'nothing: at the end'}</span>
+            </div>
+            <label class="leave-others"><input type="checkbox" data-ask="leave" ${ask.leaveOthers ? 'checked' : ''}> Leave the other trains as they are</label>
+            ${ask.keep ? '<button type="button" class="small-button" data-ask="auto">Let the model choose the conditions</button>' : '<p class="note">The model chose these conditions: the widest rule that keeps every example, and the other trains if asked. Click a condition to change it.</p>'}
+            ${changeList(rule.changes, row)}
+            ${brokenList(rule.broken)}
+            <button type="button" class="small-button add-example" data-ask="add">Add the rule and the example</button>
+          </div>`}`;
+    }
+
+    // The examples, each checked against the rules as they stand.
+
+    function renderExamples() {
+      const list = document.getElementById('examples');
+      if (!examples.length) {
+        list.innerHTML = '<p class="step-hint">None yet. Each example you add stays here, marked if a later change breaks it.</p>';
+        return;
+      }
+      list.innerHTML = examples.map((example, i) => {
+        const ok = holds(config, example);
+        return `
+          <div class="${classes('example', ok ? 'is-holding' : 'is-broken')}">
+            <span class="example-mark" title="${ok ? 'The rules show this' : 'The rules no longer show this'}">${ok ? '✓' : '✗'}</span>
+            <span><b>${escapeHtml(example.label)}</b> · ${TABLES[example.table].label} should show
+              <span class="board-text tone-${example.then.tone ?? 'plain'}">${escapeHtml(shownText(example.then, example.train))}</span></span>
+            ${factPills(example.facts)}
+            <button type="button" class="rule-actions" data-forget="${i}" title="Forget this example">✕</button>
+          </div>`;
+      }).join('');
+    }
+
+    function renderLogic(rows) {
+      renderBuilder(rows);
+      renderChoosing(rows);
+      renderExamples();
+      document.querySelectorAll('#board .is-chosen').forEach(element => element.classList.remove('is-chosen'));
+      if (ask.train) document.querySelector(`#board [data-train="${ask.train}"]`)?.classList.add('is-chosen');
+    }
+
+    // Asking.
+
+    function saveExamples() {
+      remember(EXAMPLES_KEY, examples);
+    }
+
+    function chooseTrain(event) {
+      const id = event.target.closest('[data-train]')?.dataset.train;
+      if (!id) return;
+      ask = { ...ask, train: id, then: null, keep: null };
+      renderOutputs();
+    }
+
+    function onBuilder(event) {
+      const rows = runBoard(config, moment());
+      const row = chosenRow(rows);
+      const target = event.target;
+      const table = target.closest('[data-choose-table]')?.dataset.chooseTable;
+      const fact = target.closest('[data-ask-fact]')?.dataset.askFact;
+      const action = target.closest('[data-ask]')?.dataset.ask;
+      if (table) ask = { ...ask, table, then: null, keep: null };
+      if (fact) {
+        const keep = proposal(rows, row).keep;
+        ask.keep = keep.includes(fact) ? keep.filter(kept => kept !== fact) : Object.keys(FACTS).filter(each => each === fact || keep.includes(each));
+      }
+      if (action === 'text' && event.type === 'change') ask = { ...ask, then: { ...ask.then, text: target.value }, keep: null };
+      if (action === 'tone') ask = { ...ask, then: { ...ask.then, tone: cycle(TONES, ask.then.tone) ?? TONES[0] }, keep: null };
+      if (action === 'leave' && event.type === 'change') ask = { ...ask, leaveOthers: target.checked, keep: null };
+      if (action === 'auto') ask.keep = null;
+      if (action === 'save' || action === 'add') {
+        if (action === 'add') {
+          config = proposal(rows, row).next;
+          saveConfig();
+        }
+        const { table, facts, then, label, train } = exampleOf(row);
+        examples.push({ table, facts, then, label, train });
+        saveExamples();
+        ask = { ...ask, then: null, keep: null };
+        return render();
+      }
+      const changed = table || fact || ['tone', 'auto'].includes(action) || (event.type === 'change' && ['text', 'leave'].includes(action));
+      if (changed) renderOutputs();
+    }
+
+    function onExamples(event) {
+      const index = event.target.closest('[data-forget]')?.dataset.forget;
+      if (index === undefined) return;
+      examples.splice(Number(index), 1);
+      saveExamples();
+      renderExamples();
+    }
+
+    // Choosing a line, as in selective breeding: for one train, the line it shows now among variations of it.
+    // Picking one makes it the parent of the next generation; using it gives an example for each part that differs.
+
+    let breed = { train: null, parents: [], children: [] };
+
+    const currentThens = facts => Object.fromEntries(Object.keys(TABLES).map(table => [table, { ...(decide(config, table, facts)?.then ?? { text: '' }) }]));
+    const signature = thens => JSON.stringify(Object.keys(TABLES).map(table => [thens[table].text, thens[table].tone ?? 'plain']));
+    const pick = list => list[Math.floor(Math.random() * list.length)];
+
+    // What the rules say for a neighbouring scenario: the same facts with one of them different.
+    function neighbourThen(facts, table) {
+      const fact = pick(Object.keys(FACTS));
+      const value = pick(FACTS[fact].values.filter(other => other !== facts[fact]));
+      return { ...(decide(config, table, { ...facts, [fact]: value })?.then ?? { text: '' }) };
+    }
+
+    // A variation changes one part, sometimes two. Half the time a part is borrowed from a neighbouring scenario,
+    // so most variations are lines the board would plausibly show; otherwise it's a new text or tone.
+    // Hiding the train is a rare variation.
+    function vary(parent, facts) {
+      const child = JSON.parse(JSON.stringify(parent));
+      const parts = Math.random() < 0.7 ? 1 : 2;
+      for (let i = 0; i < parts; i++) {
+        const table = Math.random() < 0.05 ? 'show' : pick(['expected', 'platform', 'note']);
+        if (Math.random() < 0.5) child[table] = neighbourThen(facts, table);
+        else if (TABLES[table].toned && Math.random() < 0.3) child[table].tone = pick(TONES);
+        else child[table].text = pick(TABLES[table].texts);
+      }
+      return child;
+    }
+
+    function generation(parent, facts) {
+      const seen = new Set([signature(parent)]);
+      const children = [];
+      for (let tries = 0; children.length < 8 && tries < 200; tries++) {
+        const child = vary(parent, facts);
+        if (!seen.has(signature(child))) { seen.add(signature(child)); children.push(child); }
+      }
+      return children;
+    }
+
+    function lineOf(train, thens) {
+      const shows = Object.fromEntries(Object.keys(TABLES).map(table => [table, { text: fill(thens[table].text, train), tone: thens[table].tone ?? 'plain' }]));
+      const row = { train, shows };
+      return `<div class="board snippet">${boardRow(row, row)}</div>`;
+    }
+
+    // The scenario being chosen for: given the train's facts, then the chosen line, part by part, with what it says now where that differs.
+    const FACT_WORDS = { state: 'the train is', delay: 'its delay is', platform: 'its platform is', due: 'it is due' };
+    const INPUT_FIELDS = ['time', 'delay', 'platform', 'planned', 'confirmed', 'cancelled', 'departed', 'reason'];
+
+    function scenarioOf(row, thens) {
+      const now = currentThens(row.facts);
+      // Tones are named when not plain, and always when the part differs, so a change of tone alone reads as one.
+      const shown = (then, table, differs) => {
+        const tone = then[table].tone ?? 'plain';
+        return `"${fill(then[table].text, row.train) || '(blank)'}"${TABLES[table].toned && (differs || tone !== 'plain') ? `, ${tone}` : ''}`;
+      };
+      return {
+        title: `${row.train.id} · ${describe(row)}`,
+        steps: [
+          ...Object.keys(FACTS).map((fact, i) => ({ keyword: i ? 'And' : 'Given', text: `${FACT_WORDS[fact]} "${row.facts[fact]}"` })),
+          { keyword: 'When', text: 'the board shows the train' },
+          ...Object.keys(TABLES).map((table, i) => ({
+            keyword: i ? 'And' : 'Then',
+            text: sameThen(thens[table], now[table])
+              ? `${TABLES[table].label} shows ${shown(thens, table)}`
+              : `${TABLES[table].label} shows ${shown(thens, table, true)} (now ${shown(now, table, true)})`,
+          })),
+        ],
+      };
+    }
+
+    const differing = (thens, facts) => Object.keys(TABLES).filter(table => !sameThen(thens[table], currentThens(facts)[table]));
+
+    function renderChoosing(rows) {
+      const element = document.getElementById('choosing');
+      const row = chosenRow(rows);
+      if (!row) {
+        element.innerHTML = '<p class="step-hint">Click a train on the board to choose a line for it.</p>';
+        return;
+      }
+      if (breed.train !== row.train.id) breed = { train: row.train.id, parents: [currentThens(row.facts)], children: [] };
+      const parent = breed.parents.at(-1);
+      if (!breed.children.length) breed.children = generation(parent, row.facts);
+      const changed = differing(parent, row.facts);
+      element.innerHTML = `
+        <p class="tab-intro">Generation ${breed.parents.length} for <b>${escapeHtml(describe(row))}</b>. Click the line you like best: it becomes the parent of the next generation.</p>
+        <div class="choosing">
+        <div class="choosing-scenario">
+          <div class="detail-pairs">${INPUT_FIELDS.map(field => `<span class="detail-pair"><span>${field}</span><b>${escapeHtml(shownValue(row.train[field]))}</b></span>`).join('')}</div>
+          <sb-scenario id="choosing-card"></sb-scenario>
+        </div>
+        <div>
+        <div class="population">
+          <div class="candidate is-parent"><span class="candidate-label">${breed.parents.length === 1 ? 'Now' : 'Chosen'}</span>${lineOf(row.train, parent)}</div>
+          ${breed.children.map((child, i) => `<div class="candidate" data-child="${i}" role="button" tabindex="0">${lineOf(row.train, child)}</div>`).join('')}
+        </div>
+        <div class="choose-bar">
+          <button type="button" class="small-button" data-breed="back" ${breed.parents.length > 1 ? '' : 'disabled'}>Back</button>
+          <button type="button" class="small-button" data-breed="shuffle">New variations</button>
+          <button type="button" class="small-button add-example" data-breed="use" ${changed.length ? '' : 'disabled'}>Use this line</button>
+          <span class="note">${changed.length ? `Gives an example for: ${changed.map(table => TABLES[table].label).join(', ')}.` : 'The same as the board shows now.'}</span>
+        </div>
+        ${spaceMap(row, parent)}
+        </div>
+        </div>`;
+      document.getElementById('choosing-card').scenario = scenarioOf(row, parent);
+      const map = document.getElementById('space');
+      map.addEventListener('mousemove', event => previewAt(event, row, parent));
+      map.addEventListener('mouseleave', () => previewAt(null, row, parent));
+      map.addEventListener('click', event => chooseAt(event, rows, parent));
+    }
+
+    // Each part that differs becomes an example, with the widest rule that leaves the other trains as they are.
+    function useLine(row) {
+      const parent = breed.parents.at(-1);
+      for (const table of differing(parent, row.facts)) {
+        const rows = runBoard(config, moment());
+        const example = { table, facts: row.facts, then: parent[table], label: describe(row), train: row.train };
+        const others = rows.filter(other => other.train.id !== row.train.id)
+          .map(other => ({ table, facts: other.facts, then: decide(config, table, other.facts)?.then ?? { text: '' } }));
+        const id = nextId(table);
+        config = withRule(config, example, widest(config, example, [...examples, ...others], id), id);
+        examples.push(example);
+      }
+      saveConfig();
+      saveExamples();
+      breed = { train: null, parents: [], children: [] };
+      render();
+    }
+
+    // The map: a slice of the space of lines for this train, the Expected column across and the message line down,
+    // each ordered by meaning with its four tones side by side. The platform and whether it shows stay as chosen.
+    // Pointing previews a line; clicking chooses it. Overlaid: now, the population, and the path of choices so far.
+
+    const AXES = {
+      expected: ['On time', 'Boarding', 'Exp {expected}', 'Delayed', 'Cancelled', 'Departed', ''],
+      note: ['', 'Now boarding', 'Please stand back', 'Platform changed to {platform}', 'Delayed by {delay} minutes', 'Delayed due to {reason}', 'Cancelled due to {reason}'],
+    };
+    const SHORT = { 'Exp {expected}': 'Exp hh:mm', '': '(blank)', 'Platform changed to {platform}': 'Platform changed', 'Delayed by {delay} minutes': 'Delayed by…', 'Delayed due to {reason}': 'Delayed due to…', 'Cancelled due to {reason}': 'Cancelled due to…' };
+    const CELL = 14, LEFT = 120, TOP = 8, BOTTOM = 70;
+    const SIDE = AXES.expected.length * TONES.length;   // cells along each axis
+
+    const step = (table, then) => AXES[table].indexOf(then.text) * TONES.length + TONES.indexOf(then.tone ?? 'plain');
+    const centre = index => index * CELL + CELL / 2;
+
+    function thensAt(x, y, parent) {
+      const at = (table, index) => ({ text: AXES[table][Math.floor(index / TONES.length)], tone: TONES[index % TONES.length] });
+      return { ...JSON.parse(JSON.stringify(parent)), expected: at('expected', x), note: at('note', y) };
+    }
+
+    // Whether a line lies in this slice: the same platform and showing as the chosen one.
+    const inSlice = (thens, parent) => sameThen(thens.platform, parent.platform) && sameThen(thens.show, parent.show);
+
+    function marker(thens, parent, className, label = '') {
+      const x = centre(step('expected', thens.expected)), y = centre(step('note', thens.note));
+      return `<circle class="${classes(className, !inSlice(thens, parent) && 'is-elsewhere')}" cx="${x}" cy="${y}" r="5"><title>${label}</title></circle>`;
+    }
+
+    function spaceMap(row, parent) {
+      const size = SIDE * CELL;
+      const blocks = (table, horizontal) => AXES[table].map((text, i) => {
+        const at = i * TONES.length * CELL, span = TONES.length * CELL;
+        const band = i % 2 ? `<rect class="space-band" ${horizontal ? `x="${at}" y="0" width="${span}" height="${size}"` : `x="0" y="${at}" width="${size}" height="${span}"`} />` : '';
+        const label = horizontal
+          ? `<text class="space-label" transform="translate(${at + span / 2}, ${size + 8}) rotate(35)">${escapeHtml(SHORT[text] ?? text)}</text>`
+          : `<text class="space-label" x="-8" y="${at + span / 2}" text-anchor="end" dominant-baseline="middle">${escapeHtml(SHORT[text] ?? text)}</text>`;
+        return band + label;
+      }).join('');
+      const path = breed.parents.map(thens => `${centre(step('expected', thens.expected))},${centre(step('note', thens.note))}`).join(' ');
+      return `
+        <div class="space">
+          <p class="space-head">The space of lines for this train: the Expected column across, the message down, each with its four tones. Platform and showing as chosen. Point to preview, click to choose.</p>
+          <div class="space-preview" id="space-preview">${lineOf(row.train, parent)}</div>
+          <svg id="space" class="space-map" viewBox="0 0 ${LEFT + size + 12} ${TOP + size + BOTTOM}" width="${LEFT + size + 12}">
+            <g transform="translate(${LEFT}, ${TOP})">
+              <rect class="space-frame" width="${size}" height="${size}" />
+              ${blocks('expected', true)}${blocks('note', false)}
+              <polyline class="space-path" points="${path}" />
+              ${breed.children.map((child, i) => marker(child, parent, 'space-child', `Variation ${i + 1}`)).join('')}
+              ${marker(breed.parents[0], parent, 'space-now', 'Now')}
+              ${breed.parents.slice(1).map((thens, i) => marker(thens, parent, 'space-step', `Choice ${i + 1}`)).join('')}
+              <rect id="space-hover" class="space-hover" width="${CELL}" height="${CELL}" visibility="hidden" />
+            </g>
+          </svg>
+        </div>`;
+    }
+
+    // The cell under the pointer, or null outside the grid.
+    function cellAt(event) {
+      const box = event.currentTarget.getBoundingClientRect();
+      const scale = box.width / event.currentTarget.viewBox.baseVal.width;
+      const x = Math.floor(((event.clientX - box.left) / scale - LEFT) / CELL);
+      const y = Math.floor(((event.clientY - box.top) / scale - TOP) / CELL);
+      return x >= 0 && y >= 0 && x < SIDE && y < SIDE ? { x, y } : null;
+    }
+
+    function previewAt(event, row, parent) {
+      const cell = event && cellAt(event);
+      const hover = document.getElementById('space-hover');
+      hover.setAttribute('visibility', cell ? 'visible' : 'hidden');
+      if (cell) { hover.setAttribute('x', cell.x * CELL); hover.setAttribute('y', cell.y * CELL); }
+      // The snippet and the scenario card both follow the pointer, and go back to the chosen line when it leaves.
+      const thens = cell ? thensAt(cell.x, cell.y, parent) : parent;
+      document.getElementById('space-preview').innerHTML = lineOf(row.train, thens);
+      document.getElementById('choosing-card').scenario = scenarioOf(row, thens);
+    }
+
+    function chooseAt(event, rows, parent) {
+      const cell = cellAt(event);
+      if (!cell) return;
+      breed = { ...breed, parents: [...breed.parents, thensAt(cell.x, cell.y, parent)], children: [] };
+      renderChoosing(rows);
+    }
+
+    function onChoosing(event) {
+      const rows = runBoard(config, moment());
+      const child = event.target.closest('[data-child]')?.dataset.child;
+      const action = event.target.closest('[data-breed]')?.dataset.breed;
+      if (child !== undefined) breed = { ...breed, parents: [...breed.parents, breed.children[child]], children: [] };
+      if (action === 'back') breed = { ...breed, parents: breed.parents.slice(0, -1), children: [] };
+      if (action === 'shuffle') breed.children = [];
+      if (action === 'use') return useLine(chosenRow(rows));
+      if (child !== undefined || action) renderChoosing(rows);
+    }
+
+    // Start.
+
+    document.getElementById('board').addEventListener('click', chooseTrain);
+    document.getElementById('builder').addEventListener('click', onBuilder);
+    document.getElementById('builder').addEventListener('change', onBuilder);
+    document.getElementById('examples').addEventListener('click', onExamples);
+    document.getElementById('choosing').addEventListener('click', onChoosing);
+    startBoard();
+  </script>
+</body>
+</html>

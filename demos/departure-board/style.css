@@ -1,0 +1,268 @@
+body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+main { max-width: var(--sb-page-width, 1100px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+
+.chapter, .card { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+.chapter h2 { margin: 0 0 6px; font-size: 18px; }
+.chapter p { margin: 0 0 8px; max-width: 75ch; }
+.caption { font-size: 13px; color: var(--sb-muted); }
+.try { padding: 8px 12px; border-left: 3px solid var(--sb-accent); background: var(--sb-accent-soft); border-radius: 0 var(--sb-radius) var(--sb-radius) 0; }
+.board-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+.board-bar select { font: inherit; margin-left: 6px; background: var(--sb-surface); color: var(--sb-text); border: 1px solid var(--sb-border); border-radius: 4px; }
+.summary { margin: 8px 0 10px; font-size: 14px; }
+
+button { font: inherit; color: inherit; }
+.small-button { padding: 3px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); font-size: 13px; cursor: pointer; }
+.small-button:hover { border-color: var(--sb-muted); }
+.small-button:disabled { opacity: 0.4; cursor: default; }
+
+/* The board: the prototype being designed, so it keeps a station's look in every theme. */
+.board { background: #0b0b0b; color: #ffb000; border-radius: 6px; padding: 10px 14px; font: 15px/1.4 ui-monospace, Menlo, Consolas, monospace; }
+.board-title { display: flex; justify-content: space-between; color: #fff1c2; font-weight: 700; margin-bottom: 6px; }
+.board-head, .board-row { display: grid; grid-template-columns: 6ch 1fr 5ch 16ch; gap: 12px; }
+.board-head { color: #8a6a1f; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #2a2a2a; padding-bottom: 4px; margin-bottom: 4px; }
+.board-train { padding: 3px 6px; margin: 0 -6px; border-radius: 4px; border-left: 3px solid transparent; }
+.board-note { font-size: 13px; padding-left: calc(6ch + 12px); }
+.board-was { font-size: 12px; color: #9a9a9a; padding-left: calc(6ch + 12px); }
+.board-train.is-changed { border-left-color: #ffb000; background: #1c1608; }
+.board-train.is-hidden { opacity: 0.35; text-decoration: line-through; }
+.board-train.is-pinned-fill { background: var(--pin-fill); }
+.board-train.is-lit, .board-train.is-pinned-outline { outline: 1px solid var(--pin-line); }
+/* What the board shows, wherever it's shown: on the board and in the rules. */
+.board-text { background: #0b0b0b; color: #ffb000; border: 1px solid #2a2a2a; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.board-text.is-hidden-text { opacity: 0.5; text-decoration: line-through; }
+.tone-warn { color: #fff1c2; }
+.tone-bad { color: #ff6b5e; }
+.tone-flash { animation: flash 1s steps(1) infinite; }
+@keyframes flash { 50% { opacity: 0; } }
+
+/* The rules: one decision table per part of the board. */
+.card { min-width: 0; }
+.card h3 { margin: 16px 0 6px; font-size: 14px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.card h3:first-child { margin-top: 0; }
+.tables .rules { padding-top: 10px; }
+.rules { overflow-x: auto; }
+.rules table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rules th { text-align: left; font-weight: 600; color: var(--sb-muted); font-size: 12px; padding: 2px 4px; }
+.rules td { padding: 2px 4px; border-top: 1px solid var(--sb-border); }
+.rules tr.is-pinned-fill td { background: var(--pin-fill); }
+.rules tr.is-lit td, .rules tr.is-pinned-outline td { box-shadow: inset 0 1px 0 var(--pin-line), inset 0 -1px 0 var(--pin-line); }
+.rule-id { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); }
+.cell { width: 100%; padding: 2px 6px; border: 1px solid var(--sb-border); border-radius: 4px; background: var(--sb-surface); cursor: pointer; text-align: left; }
+.cell:hover { border-color: var(--sb-accent); }
+.cell.is-any { color: var(--sb-muted); text-align: center; }
+.cell.is-set { border-radius: 9px; background: var(--sb-surface-2); border-color: transparent; }
+.rules .groups th { color: var(--sb-text); text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
+
+/* The divide between conditions and what's shown: a gap with a line through it. */
+.rules .divide { width: 18px; min-width: 18px; padding: 0; border-top: none; background: linear-gradient(var(--sb-muted), var(--sb-muted)) center / 2px 100% no-repeat; }
+.is-changed .cell, .cell.is-changed, select.is-changed { outline: 2px dashed var(--sb-accent); outline-offset: -1px; }
+.rules select { font-size: 13px; max-width: 100%; border-radius: 4px; padding: 1px 2px; }
+.rules .board-text.cell:hover { border-color: #ffb000; }
+.hits { white-space: nowrap; color: var(--sb-muted); font-variant-numeric: tabular-nums; }
+.hits.is-dead { color: var(--sb-warn); }
+.rule-actions { white-space: nowrap; }
+.rule-actions button { border: none; background: none; cursor: pointer; color: var(--sb-muted); padding: 0 3px; }
+.rule-actions button:hover { color: var(--sb-text); }
+.add-rule { margin-top: 6px; }
+
+/* The trains as data, edited in place. */
+.tab-intro { margin: 10px 0; font-size: 14px; color: var(--sb-muted); max-width: 80ch; }
+.trains-bar { display: flex; gap: 8px; margin-top: 8px; }
+#trains { overflow-x: auto; }
+.inputs input:not([type="checkbox"]) { width: 100%; min-width: 4ch; box-sizing: border-box; padding: 1px 4px; font: inherit; color: var(--sb-text); background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: 4px; }
+.inputs input[data-field="destination"], .inputs input[data-field="reason"] { min-width: 14ch; }
+.inputs input[data-field="time"] { min-width: 9ch; }
+.inputs input[data-field="delay"] { min-width: 9ch; }
+.inputs input.is-changed, .inputs tr.is-new td:first-child { outline: 2px dashed var(--sb-accent); outline-offset: -1px; }
+.inputs .facts { white-space: nowrap; }
+.inputs { width: 100%; border-collapse: collapse; font-size: 13px; }
+.inputs th { text-align: left; color: var(--sb-muted); font-weight: 600; font-size: 12px; padding: 2px 6px; }
+.inputs td { padding: 2px 6px; border-top: 1px solid var(--sb-border); font-variant-numeric: tabular-nums; }
+.inputs tr.is-pinned-fill td { background: var(--pin-fill); }
+.inputs tr.is-lit td, .inputs tr.is-pinned-outline td { box-shadow: inset 0 1px 0 var(--pin-line), inset 0 -1px 0 var(--pin-line); }
+.fact { display: inline-block; padding: 0 6px; margin-right: 3px; border-radius: 9px; background: var(--sb-surface-2); font-size: 12px; }
+
+/* The highlights panel: every ref, pointed at to light up, clicked to pin. */
+.highlights-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--sb-muted); margin-bottom: 6px; }
+#highlights h4 { margin: 10px 0 4px; font-size: 12px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.chip { display: flex; align-items: center; gap: 8px; padding: 2px 6px; margin-bottom: 2px; border: 1px solid transparent; border-radius: 4px; font-size: 13px; }
+.chip-ref { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); min-width: 3ch; }
+.chip-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip.is-lit, .chip.is-pinned-outline { border-color: var(--pin-line); }
+.chip.is-pinned-fill { background: var(--pin-fill); }
+
+/* The two pins drawn as what they keep: a filled square and an outlined one. */
+.pin { flex: none; width: 14px; height: 14px; padding: 0; border-radius: 3px; cursor: pointer; opacity: 0.45; }
+.pin:hover { opacity: 0.8; }
+.pin[aria-pressed="true"] { opacity: 1; }
+.pin-fill { border: 1px solid transparent; background: var(--sb-muted); }
+.pin-fill[aria-pressed="true"] { background: var(--sb-accent); }
+.pin-outline { border: 2px solid var(--sb-muted); background: none; }
+.pin-outline[aria-pressed="true"] { border-color: var(--sb-accent); }
+
+.tour-start { padding: 5px 12px; border: 1px solid var(--sb-accent); border-radius: var(--sb-radius); background: var(--sb-accent); color: var(--sb-accent-text); font: inherit; font-size: 13px; cursor: pointer; }
+
+/* The graph page: a train's details, facts, rules and what the board shows, left to right, joined by wires. */
+.graph-scroll { overflow-x: auto; }
+.graph { position: relative; display: grid; grid-template-columns: 140px 150px minmax(400px, 1fr) 170px; column-gap: 64px; row-gap: 14px; align-items: start; min-width: 1000px; padding: 4px 0 8px; }
+.wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.column-heading { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); font-weight: 600; }
+.column { display: grid; gap: 8px; }
+.node { position: relative; background: var(--sb-surface-2); border: 1px solid var(--sb-border); border-radius: 6px; font-size: 13px; }
+.node-title { padding: 4px 8px; font-weight: 600; }
+.fact-node .node-title { border-radius: 6px 6px 0 0; background-image: linear-gradient(var(--sb-lift), var(--sb-lift)); }
+.detail { display: flex; justify-content: space-between; gap: 6px; padding: 3px 8px; }
+.detail b { font-variant-numeric: tabular-nums; }
+
+/* Facts: each value a socket to drag a wire from. */
+.port { position: relative; padding: 2px 8px; border-top: 1px solid var(--sb-border); cursor: grab; user-select: none; }
+.port::after { content: ""; position: absolute; right: -5px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--sb-muted); }
+.port:hover { background: var(--sb-accent-soft); }
+
+/* Rules, grouped by the part of the board they decide, in the order they're tried. */
+.group { display: grid; gap: 6px; padding: 8px; border: 1px dashed var(--sb-border); border-radius: 8px; background-image: linear-gradient(var(--sb-lift), var(--sb-lift)); box-shadow: var(--sb-lift-shadow); }
+.group-title { font-size: 12px; font-weight: 600; color: var(--sb-muted); }
+.group .add-rule { justify-self: start; margin-top: 0; }
+.rule-node { display: grid; gap: 4px; padding: 5px 8px; background-color: transparent; background-image: linear-gradient(var(--sb-drop), var(--sb-drop)); }   /* a step below its lifted group */
+.rule-node::before { content: ""; position: absolute; left: -5px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--sb-muted); }
+.rule-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rule-line select { font-size: 13px; border-radius: 4px; padding: 1px 2px; }
+.conditions { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+.condition { padding: 0 8px; border: 1px solid transparent; border-radius: 9px; background: var(--sb-surface); font-size: 12px; cursor: pointer; }
+.condition:hover { border-color: var(--sb-bad); }
+.condition.is-changed { outline: 2px dashed var(--sb-accent); outline-offset: -1px; }
+.otherwise { font-size: 12px; color: var(--sb-muted); font-style: italic; }
+.arrow { color: var(--sb-muted); }
+.tone-button { width: auto; padding: 1px 8px; }
+.rule-node.is-changed { outline: 2px dashed var(--sb-accent); outline-offset: 2px; }
+.rule-node.is-target { box-shadow: 0 0 0 3px var(--sb-accent); }
+.rule-node.is-pinned-fill { background: var(--pin-fill); }
+.rule-node.is-lit, .rule-node.is-pinned-outline { box-shadow: 0 0 0 2px var(--pin-line); }
+.output { align-self: center; }
+
+/* Wires: what feeds each fact, each rule's conditions, and its result. */
+.wire { fill: none; stroke: var(--sb-border); stroke-width: 1.5; opacity: 0.5; }   /* every wire dims alike until highlighted */
+.wire.feed { stroke-dasharray: 3 3; }
+.wire.is-dragging { stroke: var(--sb-accent); stroke-width: 2; stroke-dasharray: 5 4; opacity: 1; }
+
+/* A ref's trace through the graph: outlined while pointed at or pinned as an outline, filled when pinned as a fill. */
+.wires .wire.is-lit, .wires .wire.is-pinned-outline { stroke: var(--pin-line); }
+.wires .wire.is-pinned-fill { stroke: var(--pin-fill-line); }
+.wires .wire.is-lit, .wires .wire.is-pinned-outline, .wires .wire.is-pinned-fill { stroke-width: 3; opacity: 1; stroke-dasharray: none; }
+.detail.is-lit, .port.is-lit, .output.is-lit, .detail.is-pinned-outline, .port.is-pinned-outline, .output.is-pinned-outline { box-shadow: inset 0 0 0 2px var(--pin-line); }
+.detail.is-pinned-fill, .port.is-pinned-fill, .output.is-pinned-fill { background: var(--pin-fill); }
+
+/* Parts: a train's inputs and what the board shows for it, a rule's conditions and result. */
+[data-ref].is-lit, [data-ref].is-pinned-outline { box-shadow: inset 0 0 0 2px var(--pin-line); }
+[data-ref].is-pinned-fill { background: var(--pin-fill); }
+.board [data-ref].is-lit, .board [data-ref].is-pinned-outline { box-shadow: none; outline: 1px solid var(--pin-line); outline-offset: 1px; }
+.board [data-ref].is-pinned-fill { background: var(--pin-fill); }
+
+/* The outliner: trains and rules open into their parts. */
+.caret { flex: none; width: 16px; padding: 0; border: none; background: none; color: var(--sb-muted); cursor: pointer; }
+.outline-parts { margin: 0 0 4px 22px; }
+.outline-heading { margin: 4px 0 2px 6px; font-size: 11px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.chip.is-part { padding-left: 6px; }
+.chip.is-part.is-lit, .chip.is-part.is-pinned-outline { box-shadow: none; border-color: var(--pin-line); }
+
+/* Highlight colours, in one place: the accent everywhere but the board, which keeps its own amber and blue.
+   --glow is 1 except while pins glow, when it eases down and back, so pinned highlights fade gently in and out. */
+@property --glow { syntax: '<number>'; inherits: true; initial-value: 1; }
+:root { --line-base: var(--sb-accent); --fill-base: var(--sb-accent-soft); }
+.board { --line-base: #ffb000; --fill-base: #10233f; }
+.is-lit, .is-pinned-outline, .is-pinned-fill {
+  --pin-line: color-mix(in srgb, var(--line-base) calc(var(--glow) * 100%), transparent);
+  --pin-fill: color-mix(in srgb, var(--fill-base) calc(var(--glow) * 100%), transparent);
+  --pin-fill-line: color-mix(in srgb, var(--line-base) calc(var(--glow) * 60%), transparent);
+}
+.pins-glow .is-pinned-outline, .pins-glow .is-pinned-fill { animation: glow 2.6s ease-in-out infinite; }
+@keyframes glow { 50% { --glow: 0.4; } }   /* the dimmest point: the faint fill colours vanish much below this */
+@media (prefers-reduced-motion: reduce) { .pins-glow .is-pinned-outline, .pins-glow .is-pinned-fill { animation: none; } }
+.glow-toggle[aria-pressed="true"] { border-color: var(--sb-accent); color: var(--sb-accent); }
+
+/* Programming by example: choosing a train on the board, then a part and what it should show. */
+.board.is-choosing .board-train { cursor: pointer; }
+.board-train.is-chosen { box-shadow: inset 3px 0 0 #7fd18b; }
+.card h3 { margin-top: 20px; }
+.example-builder { display: grid; gap: 10px; padding: 12px 0; }
+.step { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.step-label { min-width: 90px; font-size: 12px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.step-hint { color: var(--sb-muted); font-size: 14px; }
+.step select { font-size: 13px; border-radius: 4px; padding: 1px 2px; }
+.part-choices { display: flex; gap: 6px; flex-wrap: wrap; }
+.part-choice { display: grid; gap: 3px; padding: 5px 8px; border: 1px solid var(--sb-border); border-radius: 6px; background: var(--sb-surface); font-size: 12px; text-align: left; cursor: pointer; }
+.part-choice .board-text { padding: 0 6px; border-radius: 3px; font-size: 13px; }
+.part-choice[aria-pressed="true"] { border-color: var(--sb-accent); box-shadow: 0 0 0 1px var(--sb-accent); }
+.proposal { display: grid; gap: 8px; justify-items: start; padding: 12px; border-radius: 8px; background-image: linear-gradient(var(--sb-lift), var(--sb-lift)); box-shadow: var(--sb-lift-shadow); }
+.proposal-rule { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 14px; }
+.proposal-rule .board-text { padding: 1px 8px; border-radius: 4px; }
+.condition-toggle { padding: 1px 10px; border: 1px dashed var(--sb-border); border-radius: 10px; background: none; color: var(--sb-muted); font-size: 12px; cursor: pointer; text-decoration: line-through; }
+.condition-toggle.is-on { border-style: solid; background: var(--sb-surface-2); color: var(--sb-text); text-decoration: none; }
+.placed { font-size: 12px; color: var(--sb-muted); }
+.leave-others { font-size: 14px; }
+.note { margin: 0; font-size: 13px; color: var(--sb-muted); }
+.verdict { margin: 0; font-size: 14px; font-weight: 600; }
+.verdict.is-good { color: var(--sb-good); }
+.verdict.is-warn { color: var(--sb-warn); }
+.verdict.is-bad { color: var(--sb-bad); }
+.change-list { margin: 0; padding-left: 20px; font-size: 13px; }
+.add-example { border-color: var(--sb-accent); }
+.example { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; border-top: 1px solid var(--sb-border); font-size: 14px; }
+.example .board-text { padding: 0 6px; border-radius: 3px; }
+.example-mark { width: 1.2em; font-weight: 700; }
+.example.is-holding .example-mark { color: var(--sb-good); }
+.example.is-broken .example-mark { color: var(--sb-bad); }
+.example .rule-actions { margin-left: auto; border: none; background: none; color: var(--sb-muted); cursor: pointer; }
+
+/* The catalog: families of scenario cards, each with its line on the board, its details and Given / When / Then. */
+.family-count { margin: 4px 0 8px; font-size: 13px; color: var(--sb-muted); }
+.scenario-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; padding-bottom: 12px; }
+.catalog-filters { display: grid; gap: 8px; margin-bottom: 12px; }
+.catalog-search { flex: 1; min-width: 240px; padding: 5px 10px; font: inherit; color: var(--sb-text); background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
+.facets { display: grid; gap: 4px; }
+.facet-group { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.facet { padding: 1px 10px; border: 1px solid var(--sb-border); border-radius: 12px; background: var(--sb-surface); font-size: 13px; cursor: pointer; }
+.facet span { color: var(--sb-muted); font-size: 12px; margin-left: 2px; }
+.facet[aria-pressed="true"] { border-color: var(--sb-accent); background: var(--sb-accent-soft); }
+.facet:disabled { opacity: 0.4; cursor: default; }
+.link-button { padding: 0; border: none; background: none; color: var(--sb-accent); cursor: pointer; text-decoration: underline; }
+.scenario-card { display: grid; gap: 8px; align-content: start; padding: 10px; border-radius: 6px; background-image: linear-gradient(var(--sb-drop), var(--sb-drop)); }
+.scenario-head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.scenario-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; }
+.board.snippet { padding: 6px 10px; font-size: 13px; }
+.board.snippet .board-row { grid-template-columns: 6ch 1fr 4ch 12ch; gap: 8px; }
+.board.snippet .board-note, .board.snippet .board-was { padding-left: calc(6ch + 8px); font-size: 12px; }
+.detail-pairs { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; }
+.detail-pair { display: inline-flex; gap: 4px; color: var(--sb-muted); }
+.detail-pair b { color: var(--sb-text); font-weight: 600; }
+.mark { font-size: 12px; color: var(--sb-muted); }
+.mark.is-seen { color: var(--sb-text); font-weight: 600; }
+.mark.is-given { color: var(--sb-good); font-weight: 600; }
+.mark.is-given.is-broken { color: var(--sb-bad); }
+
+/* Choosing a line: the parent and its variations, each a line of the board to click. */
+.population { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; }
+.candidate { position: relative; padding: 4px; border: 2px solid transparent; border-radius: 8px; cursor: pointer; }
+.candidate:hover, .candidate:focus-visible { border-color: var(--sb-accent); }
+.candidate.is-parent { border-color: #7fd18b; cursor: default; }
+.candidate-label { position: absolute; top: -9px; right: 10px; padding: 0 6px; border-radius: 6px; background: #7fd18b; color: #0b0b0b; font-size: 11px; font-weight: 700; }
+.candidate .board.snippet { min-height: 42px; }
+.choose-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.choosing { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .choosing { grid-template-columns: 1fr; } }
+.choosing-scenario { display: grid; gap: 8px; position: sticky; top: calc(var(--sb-header-height, 0px) + 12px); }
+.choosing .population { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+
+/* The map of lines: a slice of the space, with now, the population and the path of choices. */
+.space { margin-top: 16px; display: grid; gap: 6px; }
+.space-head { margin: 0; font-size: 13px; color: var(--sb-muted); }
+.space-map { max-width: 100%; height: auto; cursor: crosshair; }
+.space-frame { fill: none; stroke: var(--sb-border); }
+.space-band { fill: var(--sb-text); opacity: 0.05; }
+.space-label { font-size: 11px; fill: var(--sb-muted); }
+.space-path { fill: none; stroke: var(--sb-accent); stroke-width: 2; }
+.space-child { fill: var(--sb-muted); opacity: 0.8; }
+.space-now { fill: none; stroke: #7fd18b; stroke-width: 2.5; }
+.space-step { fill: var(--sb-accent); }
+.space-child.is-elsewhere, .space-step.is-elsewhere, .space-now.is-elsewhere { opacity: 0.35; }
+.space-hover { fill: none; stroke: var(--sb-text); stroke-width: 1.5; pointer-events: none; }

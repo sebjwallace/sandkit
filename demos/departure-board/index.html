@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Departure Board Sandbox</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-tabs/sb-tabs.js"></script>
+  <script src="../../components/sb-panel/sb-panel.js"></script>
+  <script src="../../components/sb-tour/sb-tour.js"></script>
+  <script src="model.js"></script>
+  <script src="board.js"></script>
+  <script src="tables.js"></script>
+  <script src="graph.js"></script>
+</head>
+<body>
+  <sb-shell heading="Departure Board Sandbox">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p><strong>Goal:</strong> design what a station's departure board shows for each train, by changing the rules yourself and watching every train on the board follow.</p>
+    <button type="button" slot="actions" id="tour-start" class="tour-start">Take the tour</button>
+  </sb-shell>
+
+  <main>
+    <section class="chapter">
+      <h2>Programming the board</h2>
+      <p>The board knows a few facts about each train: whether it's running, how late it is, whether its platform is confirmed and how soon it's due. Rules turn those facts into what the board shows, tried from the top for each part of the board, and the first that matches applies. Program them as tables or as a graph: the two are the same rules, drawn two ways.</p>
+      <p class="try"><strong>Try:</strong> make the board say <em>Boarding</em>, flashing, for trains due now: press <strong>+ Rule</strong>, click its Due cell until it says <em>now</em>, and choose <em>Boarding</em> with the tone <em>flash</em>. Switch the trains to rush hour to see your rule against a different day. Then open <strong>Rules as a graph</strong> and pin Luton in the Highlights panel to see its path through.</p>
+      <p class="caption">A demo of people programming a domain from inside the space its model describes, without the agent: rules as tables or a graph, programming by example, choosing among variations, and a catalog of every scenario. Inspired by the work of Kenneth Stanley and Jeff Clune on interactive evolution, Picbreeder above all. The idea, the path we took and the credits are in <code>README.md</code> beside this page.</p>
+    </section>
+
+    <section class="card">
+      <div class="board-bar">
+        <label>Trains <select id="data"></select></label>
+        <button type="button" class="small-button" id="reset">Back to the original rules</button>
+      </div>
+      <p class="summary" id="summary"></p>
+      <div class="board" id="board"></div>
+
+      <sb-tabs id="views">
+        <div heading="Rules as tables">
+          <sb-tabs id="tables" class="tables">
+            <div class="rules" data-table="expected" heading="Expected column"></div>
+            <div class="rules" data-table="platform" heading="Platform column"></div>
+            <div class="rules" data-table="note" heading="Message line"></div>
+            <div class="rules" data-table="show" heading="Show the train"></div>
+          </sb-tabs>
+        </div>
+        <div heading="Rules as a graph">
+          <p class="tab-intro">Point at or pin a train in the Highlights panel, or on the board, to see its path through the rules.</p>
+          <div class="graph-scroll">
+            <div class="graph" id="graph"></div>
+          </div>
+        </div>
+        <div id="trains" heading="Trains">
+          <p class="tab-intro">The trains as the board receives them. Change anything, add or remove trains, and the board follows. The facts on the right are what the board works out from each train: the rules only ever see these.</p>
+          <table class="inputs" id="inputs"></table>
+          <div class="trains-bar">
+            <button type="button" class="small-button" data-train-action="add">+ Train</button>
+            <button type="button" class="small-button" data-train-action="reset">Back to the original trains</button>
+          </div>
+        </div>
+      </sb-tabs>
+    </section>
+
+    <sb-panel id="highlights-panel" heading="Highlights">
+      <div class="highlights-bar">
+        <span>Point to light up · pin ■ □</span>
+        <button type="button" class="small-button glow-toggle" data-glow aria-pressed="false" title="Pinned highlights fade gently in and out">Glow</button>
+        <button type="button" class="small-button" data-unpin-all>Unpin all</button>
+      </div>
+      <div id="highlights"></div>
+    </sb-panel>
+
+    <sb-tour id="tour" heading="Programming the board">
+      <div data-step>Here you program a station's departure board yourself. Trains come in as data, rules decide what the board shows, and changing them needs no code and no agent.</div>
+      <div data-step data-at="inputs">The trains, as the board receives them. Change any of them, or add your own, and the board follows. On the right are the four facts the board works out from each one: running or not, how late, whether its platform is settled, how soon it's due. The rules only ever see these facts.</div>
+      <div data-step data-at="data">Each set of trains is a moment at the station. Switch between them to see the same rules on a quiet afternoon, in a rush hour, or for the last trains. Your changes to each are kept apart from the original.</div>
+      <div data-step data-at="board">The board, as passengers see it. Every line on it is decided by the rules just below.</div>
+      <div data-step data-at="T3" data-light="T3">Oxford is 12 minutes late. Its rules are lit: <b>E3</b> shows <i>Exp 14:20</i> and <b>N3</b> the message. Point at any train to see the rules that decided it.</div>
+      <div data-step data-at="expected">There's a tab of rules for each part of the board. On the left of the line are the conditions, on the right what the board shows, drawn as the board draws it. A table is read top to bottom, and the first rule whose conditions all match applies. A dash matches anything, so the last rule catches whatever's left.</div>
+      <div data-step data-at="E3" data-light="E3">Each rule counts the trains it decides. A rule that decides none says <i>never</i>, which usually means a rule above it catches those trains first.</div>
+      <div data-step data-at="expected" data-wait data-check="boarding">Your turn: make trains that are due now say <i>Boarding</i>. Press <b>+ Rule</b>, click its Due cell until it says <i>now</i>, and choose <i>Boarding</i>. For a flashing sign, click its tone until it flashes.</div>
+      <div data-step data-at="T1" data-light="T1">Brighton now says Boarding. Its line is marked as changed, with what it showed before, so you can always see what you've changed.</div>
+      <div data-step data-at="T10" data-light="T10" data-wait data-check="luton">Luton is due now too, but still says <i>Exp 14:02</i>: it's late, and <b>E3</b> sits above your rule, so E3 matches first. Move your rule up with <b>↑</b> until Luton boards.</div>
+      <div data-step data-at="graph">The same rules, drawn as a graph: a train's details on the left, the facts worked out from them, the rules in the order they're tried, and what the board shows. Pin a train in the Highlights panel to see its path through; drag from a fact's value onto a rule to make it a condition.</div>
+      <div data-step data-at="reset">The original is never changed. Outlined cells show what you've edited, and this button takes the board back to how it was found.</div>
+      <div data-step>That's the loop: change a rule and watch every train follow. Still to come: saving your own versions of the board and comparing them.</div>
+    </sb-tour>
+  </main>
+
+  <script>
+    // The page: the board, with its rules as tables or as a graph, and the trains, in tabs beneath it.
+
+    function renderLogic(rows) {
+      renderRules(rows);
+      renderGraph(rows);
+      if (tour.open) followTour();
+    }
+
+    // The tour: each step's data-at is a train, a rule, a table or an element's id.
+
+    const tour = document.getElementById('tour');
+
+    // What a waiting step asks the viewer to do, checked after every change.
+    const tourChecks = {
+      boarding: () => config.expected.some(rule => rule.when.due === 'now' && rule.then.text === 'Boarding'),
+      luton: () => runBoard(config, moment()).find(row => row.train.id === 'T10')?.shows.expected.text === 'Boarding',
+    };
+
+    // Opens every tab around a rule or a table on the way.
+    function placeOf(ref) {
+      const place = document.querySelector(`#board [data-train="${ref}"]`)
+        ?? document.querySelector(`.rules [data-rule="${ref}"]`)
+        ?? document.querySelector(`.rules[data-table="${ref}"]`)
+        ?? document.getElementById(ref);
+      for (let tabs = place?.closest('sb-tabs'); tabs; tabs = tabs.parentElement.closest('sb-tabs')) tabs.reveal(ref, place);
+      return place;
+    }
+
+    // Points the tour at its step's place again, since rendering redraws it, and relights and rechecks.
+    function followTour() {
+      const step = tour.current.element.dataset;
+      tour.anchor = step.at ? placeOf(step.at) : null;
+      drawWires();   // the graph may have just been revealed, so its wires are drawn, and marked, now
+      markPins(runBoard(config, moment()));
+      pointAt(step.light);
+      if (step.check) tour.ready = tourChecks[step.check]();
+    }
+
+    // The tour's examples are trains from the first set.
+    function startTour() {
+      useData(DATA[0].id);
+      tour.start();
+    }
+
+    // Start.
+
+    startTables();
+    startGraph();
+    startBoard();   // last: it draws the first render, through both views
+    document.getElementById('views').addEventListener('sb-select', () => renderOutputs());
+    tour.addEventListener('sb-step', followTour);
+    tour.addEventListener('sb-close', () => pointAt(null));
+    document.getElementById('tour-start').addEventListener('click', startTour);
+    if (!tour.seen) startTour();
+  </script>
+</body>
+</html>

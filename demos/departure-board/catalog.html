@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Departure Board Sandbox · Catalog</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-scenario/sb-scenario.js"></script>
+  <script src="../../components/sb-notebook/sb-notebook.js"></script>
+  <script src="model.js"></script>
+  <script src="board.js"></script>
+</head>
+<body>
+  <sb-shell heading="Departure Board Sandbox">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p><strong>Goal:</strong> see every situation the board can meet, grouped by how the rules treat it, and which of them anyone has actually seen or decided.</p>
+  </sb-shell>
+
+  <main>
+    <section class="chapter">
+      <h2>The scenario catalog</h2>
+      <p>The board only ever sees four facts about a train, so every situation it can meet is one combination of them: 108 in all. Each is a scenario, with its own code: a train's line on the board, the details it came from, and <em>given</em> its facts, <em>then</em> what each part of the board shows. Scenarios the rules treat the same way, through the same rules, form a family.</p>
+      <p>A scenario is <b>seen</b> when a train in the chosen set has those facts, and shown with that train; <b>given</b> when someone gave an example for it on the <a href="example.html">By example</a> page; otherwise only <b>inferred</b>, shown with a made-up train that has those facts.</p>
+      <p class="try"><strong>Try:</strong> search for <em>Oxford</em> to find its scenario, SC-021, or choose <em>seen</em> to see only what real trains do. Then choose <em>Delay: unknown</em> and sort by <em>Largest first</em>. Then change a rule on the <a href="index.html">rules page</a> and come back: the codes stay, and the cards move to their new families.</p>
+    </section>
+
+    <section class="card">
+      <div class="catalog-filters">
+        <div class="board-bar">
+          <input type="search" id="search" class="catalog-search" placeholder="Search codes, trains, facts, what the board shows, rules…">
+          <label>Sort families <select id="sort">
+            <option value="seen">Most seen first</option>
+            <option value="largest">Largest first</option>
+            <option value="smallest">Smallest first</option>
+            <option value="path">By rules</option>
+            <option value="code">By code</option>
+          </select></label>
+          <label>Seen in <select id="data"></select></label>
+        </div>
+        <div class="facets" id="facets"></div>
+        <p class="summary" id="summary"></p>
+      </div>
+      <sb-notebook id="families" heading="Scenario families"></sb-notebook>
+    </section>
+  </main>
+
+  <script>
+    // The catalog: every combination of facts, numbered once, run through the rules,
+    // and grouped into families by the rules they pass through. Each is drawn as a card.
+
+    const examples = remembered('departure-board-examples') ?? [];
+
+    const sameFacts = (a, b) => Object.keys(FACTS).every(fact => a[fact] === b[fact]);
+
+    // Every combination of the facts' values, in a fixed order, so each keeps its code whatever the rules.
+    function allFacts() {
+      return Object.entries(FACTS).reduce((combinations, [fact, { values }]) =>
+        combinations.flatMap(partial => values.map(value => ({ ...partial, [fact]: value }))), [{}]);
+    }
+
+    const codeOf = index => `SC-${String(index + 1).padStart(3, '0')}`;
+
+    // A made-up train with exactly the given facts, for scenarios no real train has.
+    const DELAYS = { none: 0, minor: 3, major: 12, unknown: null };
+    const WAITS = { now: 1, soon: 6, later: 20 };
+
+    function sampleTrain(facts, now, code) {
+      const delay = DELAYS[facts.delay];
+      const train = {
+        id: code, destination: 'Margate', delay, reason: 'a signal fault',
+        time: clock(minutes(now) + WAITS[facts.due] - (delay ?? 0)),
+        platform: { confirmed: '4', changed: '9', unconfirmed: '' }[facts.platform], planned: '4',
+        confirmed: facts.platform !== 'unconfirmed', cancelled: facts.state === 'cancelled', departed: facts.state === 'departed',
+      };
+      console.assert(sameFacts(factsOf(train, now), facts), 'sample train has the wrong facts', code);
+      return train;
+    }
+
+    function scenarios(rows) {
+      return allFacts().map((facts, index) => {
+        const code = codeOf(index);
+        const seen = rows.filter(row => sameFacts(row.facts, facts)).map(row => row.train);
+        const train = seen[0] ?? sampleTrain(facts, data.now, code);
+        return {
+          code, facts, seen, train,
+          row: runBoard(config, { now: data.now, trains: [train] })[0],
+          rules: Object.fromEntries(Object.keys(TABLES).map(table => [table, decide(config, table, facts)])),
+          given: examples.filter(example => sameFacts(example.facts, facts)),
+        };
+      }).map(scenario => ({ ...scenario, path: Object.keys(TABLES).map(table => scenario.rules[table]?.id ?? '–').join(' · ') }));
+    }
+
+    // Families: scenarios that pass through the same rules. What they all share is what defines them.
+    function families(all) {
+      const groups = new Map();
+      for (const scenario of all) groups.set(scenario.path, [...(groups.get(scenario.path) ?? []), scenario]);
+      return [...groups.values()].map(members => ({
+        path: members[0].path,
+        members,
+        shared: Object.keys(FACTS).filter(fact => members.every(member => member.facts[fact] === members[0].facts[fact])),
+        seen: members.filter(member => member.seen.length).length,
+        given: members.filter(member => member.given.length).length,
+      })).sort((a, b) => b.seen - a.seen || b.given - a.given || b.members.length - a.members.length);
+    }
+
+    // A card: the code and where it comes from, the train's line on the board, its details, then Given / When / Then.
+
+    function provenance(scenario) {
+      const seen = scenario.seen.length ? `<span class="mark is-seen">seen: ${scenario.seen.map(train => escapeHtml(train.destination)).join(', ')}</span>` : '';
+      const given = scenario.given.map(example =>
+        `<span class="${classes('mark is-given', !holds(config, example) && 'is-broken')}">given: ${TABLES[example.table].label} ${holds(config, example) ? '✓' : '✗'}</span>`).join('');
+      return seen + given || '<span class="mark">inferred</span>';
+    }
+
+    const DETAIL_FIELDS = ['time', 'delay', 'platform', 'planned', 'confirmed', 'cancelled', 'departed'];
+
+    function details(train) {
+      return DETAIL_FIELDS.map(field => `<span class="detail-pair"><span>${field}</span><b>${escapeHtml(shownValue(train[field]))}</b></span>`).join('');
+    }
+
+    function card(scenario) {
+      return `
+        <article class="scenario-card" data-code="${scenario.code}" data-ref="${scenario.code}">
+          <header class="scenario-head"><span class="scenario-code">${scenario.code}</span>${provenance(scenario)}</header>
+          <div class="board snippet">${boardRow(scenario.row, scenario.row)}</div>
+          <div class="detail-pairs">${details(scenario.train)}</div>
+          <sb-scenario></sb-scenario>
+        </article>`;
+    }
+
+    const FACT_WORDS = { state: 'the train is', delay: 'its delay is', platform: 'its platform is', due: 'it is due' };
+
+    // Given its facts, when the board shows it, then what each part shows, by which rule; a given example is checked.
+    function steps(scenario) {
+      const given = Object.keys(FACTS).map((fact, i) => ({ keyword: i ? 'And' : 'Given', text: `${FACT_WORDS[fact]} "${scenario.facts[fact]}"` }));
+      const then = Object.keys(TABLES).map((table, i) => ({
+        keyword: i ? 'And' : 'Then',
+        text: `${TABLES[table].label}: "${scenario.row.shows[table].text || '(blank)'}" (${scenario.rules[table]?.id ?? 'no rule'})`,
+      }));
+      const results = [...given.map(() => null), null, ...Object.keys(TABLES).map(table => {
+        const example = scenario.given.find(each => each.table === table);
+        if (!example) return null;
+        return holds(config, example) ? { ok: true } : { ok: false, actual: `asked for "${example.then.text}"` };
+      })];
+      return { scenario: { title: scenario.seen.length ? `As for ${scenario.seen[0].destination}` : 'A train in this situation', steps: [...given, { keyword: 'When', text: 'the board shows the train' }, ...then] }, results };
+    }
+
+    // A family is a notebook section; ones nobody has seen or given anything for start collapsed.
+    function familySection(family, members) {
+      const defined = family.shared.map(fact => `${FACTS[fact].label}: ${family.members[0].facts[fact]}`).join(', ') || 'no single fact in common';
+      const counts = `${members.length === family.members.length ? '' : `${members.length} of `}${family.members.length} scenario${family.members.length > 1 ? 's' : ''} · ${family.seen} seen · ${family.given} given`;
+      return `
+        <section heading="${family.path} · ${escapeHtml(defined)}" kind="family" relevance="${family.seen || family.given ? 'key' : 'aside'}">
+          <p class="family-count">${counts}</p>
+          <div class="scenario-grid">${members.map(card).join('')}</div>
+        </section>`;
+    }
+
+    // Searching, facets and sorting. Within a facet, choices widen; across facets, they narrow.
+
+    const FACETS = {
+      provenance: { label: 'Where from', values: ['seen', 'given', 'inferred'] },
+      ...Object.fromEntries(Object.entries(FACTS).map(([fact, { label, values }]) => [fact, { label, values }])),
+    };
+    const chosen = Object.fromEntries(Object.keys(FACETS).map(facet => [facet, new Set()]));
+
+    function valuesOf(scenario, facet) {
+      if (facet !== 'provenance') return [scenario.facts[facet]];
+      const from = [scenario.seen.length && 'seen', scenario.given.length && 'given'].filter(Boolean);
+      return from.length ? from : ['inferred'];
+    }
+
+    function searchText(scenario) {
+      return [
+        scenario.code, scenario.path, ...scenario.seen.map(train => train.destination),
+        ...Object.values(scenario.facts), ...Object.values(scenario.row.shows).map(shown => shown.text),
+        ...valuesOf(scenario, 'provenance'),
+      ].join(' ').toLowerCase();
+    }
+
+    function passes(scenario, query, except) {
+      if (query && !query.split(/\s+/).every(word => searchText(scenario).includes(word))) return false;
+      return Object.keys(FACETS).every(facet =>
+        facet === except || !chosen[facet].size || valuesOf(scenario, facet).some(value => chosen[facet].has(value)));
+    }
+
+    function renderFacets(all, query) {
+      document.getElementById('facets').innerHTML = Object.entries(FACETS).map(([facet, { label, values }]) => `
+        <div class="facet-group"><span class="step-label">${label}</span>
+          ${values.map(value => {
+            const count = all.filter(scenario => passes(scenario, query, facet) && valuesOf(scenario, facet).includes(value)).length;
+            return `<button type="button" class="facet" data-facet="${facet}" data-value="${value}" aria-pressed="${chosen[facet].has(value)}" ${count || chosen[facet].has(value) ? '' : 'disabled'}>${value} <span>${count}</span></button>`;
+          }).join('')}
+        </div>`).join('');
+    }
+
+    const lowestCode = family => family.members[0].code;
+    const SORTS = {
+      seen: (a, b) => b.seen - a.seen || b.given - a.given || b.members.length - a.members.length,
+      largest: (a, b) => b.members.length - a.members.length,
+      smallest: (a, b) => a.members.length - b.members.length,
+      path: (a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }),
+      code: (a, b) => lowestCode(a).localeCompare(lowestCode(b)),
+    };
+
+    function render() {
+      const rows = runBoard(config, moment());
+      const all = scenarios(rows);
+      const query = document.getElementById('search').value.trim().toLowerCase();
+      const showing = all.filter(scenario => passes(scenario, query));
+      const grouped = families(all).sort(SORTS[document.getElementById('sort').value])
+        .map(family => ({ family, members: family.members.filter(member => showing.includes(member)) }))
+        .filter(({ members }) => members.length);
+      renderDataChoice();
+      renderFacets(all, query);
+      const filtering = query || Object.values(chosen).some(set => set.size);
+      document.getElementById('summary').innerHTML = filtering
+        ? `Showing ${showing.length} of ${all.length} scenarios, in ${grouped.length} famil${grouped.length === 1 ? 'y' : 'ies'}. <button type="button" class="link-button" id="clear">Clear</button>`
+        : `${all.length} scenarios in ${families(all).length} families · ${all.filter(each => each.seen.length).length} seen in this set of trains · ${all.filter(each => each.given.length).length} given as examples · ${all.filter(each => !each.seen.length && !each.given.length).length} only inferred.`;
+      const notebook = document.getElementById('families');
+      notebook.innerHTML = grouped.map(({ family, members }) => familySection(family, members)).join('');
+      // While filtering, every family that matched opens.
+      if (filtering) notebook.expandAll();
+      for (const element of notebook.querySelectorAll('.scenario-card')) {
+        const { scenario, results } = steps(all.find(each => each.code === element.dataset.code));
+        const component = element.querySelector('sb-scenario');
+        component.scenario = scenario;
+        component.results = results;
+      }
+      notebook.refresh();
+    }
+
+    function onFacet(event) {
+      const button = event.target.closest('[data-facet]');
+      if (!button) return;
+      const set = chosen[button.dataset.facet];
+      if (!set.delete(button.dataset.value)) set.add(button.dataset.value);
+      render();
+    }
+
+    function clearFilters() {
+      Object.values(chosen).forEach(set => set.clear());
+      document.getElementById('search').value = '';
+      render();
+    }
+
+    // Start: the same saved rules, trains and examples as the other pages.
+
+    config = remembered(STORAGE_KEY) ?? copy(ORIGINAL);
+    data = DATA.find(preset => preset.id === remembered(DATA_KEY)) ?? DATA[0];
+    edits = remembered(EDITS_KEY) ?? {};
+    document.querySelector('sb-shell').pages = PAGES;
+    document.getElementById('data').addEventListener('change', event => { data = DATA.find(preset => preset.id === event.target.value); remember(DATA_KEY, data.id); render(); });
+    let typing;
+    document.getElementById('search').addEventListener('input', () => { clearTimeout(typing); typing = setTimeout(render, 200); });
+    document.getElementById('sort').addEventListener('change', render);
+    document.getElementById('facets').addEventListener('click', onFacet);
+    document.getElementById('summary').addEventListener('click', event => { if (event.target.id === 'clear') clearFilters(); });
+    document.getElementById('families').prefixes = { SC: 'Scenarios' };
+    render();
+  </script>
+</body>
+</html>
