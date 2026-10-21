@@ -2,6 +2,9 @@
 
 Covers `sb-shell`, `sb-theme-settings` and `sb-export`, which are versioned together.
 
+## 0.1.6 · 2026-10-21
+- Drop: a theme token, `--sb-drop`, the opposite of lift. A see-through dark tint so a part sits a step below whatever it's in, for when lifts inside lifts have climbed too far to stand apart.
+
 ## 0.1.5 · 2026-10-20
 - Lift: two theme tokens, `--sb-lift` (a see-through tint) and `--sb-lift-shadow`, for parts that sit on something, so a card or badge stands off whatever is beneath it, in any layer and in either theme.
 - The header stays within reach: once the page has scrolled past it, a compact header (title, mode picker, actions and controls) stays at the top of the window, without moving anything below. `compact` says when; `--sb-header-height` on `<html>` gives its height for anything else that sticks to the top, and the page's scroll padding keeps jumps below it.

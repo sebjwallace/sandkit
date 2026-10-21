@@ -401,6 +401,19 @@
       assert(lift.dark[0].startsWith('rgba('), 'see-through, so it works on any layer');
     });
 
+    test('both built-in themes define a drop: a see-through tint of their own', () => {
+      const themes = shell().querySelector('sb-theme-settings');
+      const drop = {};
+      for (const theme of ['light', 'dark']) {
+        themes.querySelector(`[value="${theme}"]`).click();
+        drop[theme] = token('drop');
+      }
+      themes.querySelector('[value="auto"]').click();
+      assert(drop.light && drop.dark, JSON.stringify(drop));
+      assert(drop.light !== drop.dark, 'each theme drops its own way');
+      assert(drop.dark.startsWith('rgba('), 'see-through, so it works on any layer');
+    });
+
     test('editing a token previews it live, and Discard reverts it', () => {
       const themes = openThemeEditor();
       const original = token('accent');

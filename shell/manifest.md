@@ -107,7 +107,15 @@ The Export button, placed with `slot="actions"`. A page opened from the computer
 .card { background-image: linear-gradient(var(--sb-lift), var(--sb-lift)); box-shadow: var(--sb-lift-shadow); }
 ```
 
-Use it for parts that sit on something, not for every component, or the page becomes a stack of floating boxes. A sandbox's own theme sets both in its CSS; the settings' token editor doesn't offer them.
+Use it for parts that sit on something, not for every component, or the page becomes a stack of floating boxes.
+
+**Drop,** the opposite: `--sb-drop` is a see-through dark tint, so a part sits a step below whatever it's in. Lifts inside lifts climb towards grey in dark themes and run out of room in light ones; a drop at that point keeps each layer apart from the one around it, so the eye can follow the nesting. Drop a part as a whole, with no shadow, and don't lift what's inside it, or it climbs straight back to its parent's shade:
+
+```css
+.card .detail { background-image: linear-gradient(var(--sb-drop), var(--sb-drop)); }
+```
+
+A sandbox's own theme sets these tokens in its CSS; the settings' token editor doesn't offer them.
 
 ## Notes
 
