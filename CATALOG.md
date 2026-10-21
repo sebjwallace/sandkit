@@ -50,6 +50,7 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 
 | Component | What it does |
 |---|---|
+| [`sb-accordion`](components/sb-accordion/manifest.md) | Sections that open and close, one or a group: a closed section shows a note from the model, a dot when what's inside changed since last seen, and a tint when something highlighted is inside; Expand all and Collapse all, or one open at a time; nests. |
 | [`sb-annotate`](components/sb-annotate/manifest.md) | Text with the parts that matter marked: pointing shows each mark's note just above it, clicking pins it, and kinds are counted in a legend. |
 | [`sb-bars`](components/sb-bars/manifest.md) | Things compared on one measure: bars on one scale, sorted or not, with reference lines and each bar's change since the last update. |
 | [`sb-board`](components/sb-board/manifest.md) | Things moving through stages, as cards in columns: each column counted against its limit, cards that just moved marked with where they came from, drags asked of the model. |

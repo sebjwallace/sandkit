@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-accordion demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-accordion.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 12px; font-size: 14px; }
+    .bar button { padding: 5px 12px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); color: var(--sb-text); font: inherit; font-weight: 600; cursor: pointer; }
+    .muted { color: var(--sb-muted); }
+    .watch [data-ref] { color: var(--sb-accent); text-decoration: underline dotted; cursor: pointer; }
+    .lit { background: color-mix(in srgb, var(--sb-accent) 18%, transparent); border-radius: 3px; }
+    .sb-accordion p { margin: 0 0 8px; font-size: 14px; }
+    .readings { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .readings td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--sb-border); }
+    .readings td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+    .alert { color: var(--sb-bad); font-weight: 600; }
+    .stack { display: grid; gap: 12px; }
+    .layering { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+
+    /* Lift (see the shell's manifest): a see-through tint and a soft shadow, so each accordion
+       stands off what it sits on, a nested one off its parent, and the open section comes forward. */
+    .lifted .sb-accordion,
+    .lifted .sb-accordion > details[open] { background: linear-gradient(var(--sb-lift), var(--sb-lift)); box-shadow: var(--sb-lift-shadow); }
+
+    /* Drop, the opposite: a nested accordion sits a step below its parent, open sections and all,
+       so the layers don't climb towards grey. */
+    .dropped .sb-accordion .sb-accordion { background: linear-gradient(var(--sb-drop), var(--sb-drop)); box-shadow: none; }
+    .dropped .sb-accordion .sb-accordion > details[open] { background: none; box-shadow: none; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-accordion">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Sections that open and close, and still tell you what's going on while closed.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Most of a subject can wait while you look at one part. An accordion keeps the rest folded, but a folded section isn't silent: its heading carries a short note, a dot when what's inside has changed, and a glow when something you're pointing at elsewhere is inside it. So closing a section never hides that it matters.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>A system in parts,</strong> such as the stages of a plant or the systems of a ship: each part's headline in its note, its detail inside.</li>
+        <li><strong>Questions and answers,</strong> where trying to answer before opening is the point. One section on its own works too.</li>
+        <li><strong>Going deeper,</strong> with an accordion nested inside a section for the detail most readers can skip.</li>
+        <li><strong>Long reference material</strong> beside a model: assumptions, definitions, the working behind a figure.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Chapters or views you move between,</strong> where only one part is ever wanted: tabs.</li>
+        <li><strong>Something everyone must read.</strong> Don't fold it away; show it.</li>
+        <li><strong>Dozens of sections.</strong> Split the subject, or give people a search; a long list of headings is a wall too.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-accordion/sb-accordion.js"&gt;&lt;/script&gt;
+&lt;sb-accordion&gt;
+  &lt;details data-ref="filters" note="3 of 4 fine"&gt;&lt;summary&gt;Filtration&lt;/summary&gt;…&lt;/details&gt;
+  &lt;details&gt;&lt;summary&gt;Storage&lt;/summary&gt;…&lt;/details&gt;
+&lt;/sb-accordion&gt;</pre>
+      <p>Each section is an ordinary <code>&lt;details&gt;</code>, so the page reads properly even before the script loads. Add <code>single</code> to keep one section open at a time.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Put the headline in the note,</strong> and keep it live from the model, so a closed section says how things stand.</li>
+        <li><strong>Let changes show.</strong> Update what's inside as the model runs; closed sections whose content changed are marked until opened.</li>
+        <li><strong>Mark what's inside with <code>data-ref</code>,</strong> so pointing at it elsewhere lights the section that hides it, and <code>reveal</code> can open it.</li>
+        <li><strong>Ask before you answer.</strong> A question as the heading, the answer folded below, gives people a moment to think first.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <div class="stack">
+      <label class="layering"><input type="checkbox" id="lift" checked> Lift: each accordion stands off what it sits on, and the open section comes forward</label>
+      <label class="layering"><input type="checkbox" id="drop" checked> Drop: a nested accordion, content and all, sits a step below its parent instead</label>
+    </div>
+    <section class="example">
+      <h2>A water treatment works on its hourly round</h2>
+      <p>Run the works an hour at a time. Closed stages show their headline, and a dot when something inside changed. Point at a watch item to see which stage holds it; click it to go there.</p>
+      <div class="bar">
+        <button type="button" id="run-hour">Run one hour</button>
+        <span id="clock" class="muted"></span>
+        <span id="round" class="muted"></span>
+      </div>
+      <p class="bar watch">Watch:
+        <span data-ref="filter-3">Filter 3</span>
+        <span data-ref="chlorine">chlorine residual</span>
+        <span data-ref="tank-level">tank level</span>
+      </p>
+      <sb-accordion id="works">
+        <details data-ref="intake">
+          <summary>1 · Intake</summary>
+          <p>River water is drawn in, screened and measured.</p>
+          <table class="readings"><tbody id="intake-readings"></tbody></table>
+        </details>
+        <details data-ref="filtration">
+          <summary>2 · Filtration</summary>
+          <p>Four sand filters. As one clogs, the pressure lost across it rises; past 2.0 m it needs a backwash.</p>
+          <table class="readings"><tbody id="filter-readings"></tbody></table>
+        </details>
+        <details data-ref="disinfection">
+          <summary>3 · Disinfection</summary>
+          <p>Chlorine kills what the filters let through. Enough must be left at the outlet to protect the pipes downstream: 0.5 to 1.0 mg/L.</p>
+          <table class="readings"><tbody id="chlorine-readings"></tbody></table>
+        </details>
+        <details data-ref="storage">
+          <summary>4 · Storage</summary>
+          <p>The treated water tank covers the town's demand peaks.</p>
+          <table class="readings"><tbody id="storage-readings"></tbody></table>
+        </details>
+      </sb-accordion>
+    </section>
+
+    <section class="example">
+      <h2>Why the tide comes and goes</h2>
+      <p>Questions first, answers folded: one open at a time. Try to answer before you open one. The first has a deeper layer nested inside.</p>
+      <div class="stack">
+        <sb-accordion single>
+          <details note="2 min">
+            <summary>Why are there two high tides a day, not one?</summary>
+            <p>The Moon pulls the near side of the Earth more strongly than the centre, and the centre more strongly than the far side. The water bulges towards the Moon on the near side, and is left behind on the far side. The Earth turns through both bulges each day.</p>
+            <sb-accordion>
+              <details>
+                <summary>Go deeper: why the far side bulges too</summary>
+                <p>It isn't pushed away. Everything is pulled towards the Moon, the far side least of all, so it lags behind the rest of the Earth and stands out as a bulge.</p>
+              </details>
+              <details>
+                <summary>Go deeper: why 12 hours 25 minutes, not 12</summary>
+                <p>While the Earth turns once, the Moon moves on along its orbit, so the Earth has to turn a little further to face it again: about 24 hours 50 minutes between one Moon overhead and the next, and half that between high tides.</p>
+              </details>
+            </sb-accordion>
+          </details>
+          <details note="1 min">
+            <summary>Why are some tides much bigger than others?</summary>
+            <p>The Sun raises tides too, about half as strong as the Moon's. At new and full moon they line up and add together: spring tides. At half moon they pull at right angles and partly cancel: neap tides.</p>
+          </details>
+          <details note="1 min">
+            <summary>Why does high tide come later each day?</summary>
+            <p>Because the Moon does: it rises about 50 minutes later each day, and the bulges follow it round.</p>
+          </details>
+        </sb-accordion>
+
+        <sb-accordion>
+          <details>
+            <summary>Check yourself: high tide is at 06:00 today. When is it tomorrow morning?</summary>
+            <p>About 06:50. Two tides of 12 hours 25 minutes each make 24 hours 50 minutes.</p>
+          </details>
+        </sb-accordion>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ---- Highlighting: pointing at a watch item lights it everywhere, and the stage that hides it ----
+
+    const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+
+    document.addEventListener('sb-highlight', (e) => {
+      for (const el of document.querySelectorAll('main [data-ref]')) {
+        el.classList.toggle('lit', Boolean(e.detail.ref) && el.dataset.ref === e.detail.ref && el.localName !== 'details');
+      }
+    });
+
+    // Pointing shows; clicking goes there.
+    for (const item of document.querySelectorAll('.watch [data-ref]')) {
+      item.addEventListener('pointerenter', () => announce(item.dataset.ref));
+      item.addEventListener('pointerleave', () => announce(null));
+      item.addEventListener('click', () => {
+        const ref = item.dataset.ref;
+        works.reveal(ref);
+        const place = works.querySelector(`[data-ref="${ref}"]`);
+        place.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        announce(ref);
+        setTimeout(() => announce(null), 1500);
+      });
+    }
+
+    // ---- The works: a small model run an hour at a time ----
+
+    const works = document.getElementById('works');
+    const state = { hour: 6, flow: 410, turbidity: 3.2, headloss: [0.6, 0.9, 1.5, 0.4], chlorine: 0.8, tank: 72, checked: new Set() };
+
+    function runHour() {
+      state.hour += 1;
+      state.turbidity = state.hour === 9 ? 11.4 : Math.max(3.0, state.turbidity * 0.7);  // rain upstream at 09:00
+      state.flow = 410 + (state.hour % 3) * 15;
+      state.headloss = state.headloss.map((h, i) => h + (i === 2 ? 0.2 : 0.08) * (state.turbidity > 6 ? 2 : 1));
+      state.chlorine = Math.max(0.3, 0.9 - state.turbidity * 0.04);
+      state.tank = Math.max(40, state.tank - (state.hour >= 7 && state.hour <= 9 ? 6 : 1));
+      state.checked.clear();
+      render();
+    }
+
+    const row = (label, value, { ref, alert } = {}) =>
+      `<tr${ref ? ` data-ref="${ref}"` : ''}><td>${label}</td><td${alert ? ' class="alert"' : ''}>${value}</td></tr>`;
+
+    function render() {
+      const { hour, flow, turbidity, headloss, chlorine, tank } = state;
+      const due = headloss.map((h, i) => (h > 2 ? i + 1 : null)).filter(Boolean);
+      const lowChlorine = chlorine < 0.5;
+
+      document.getElementById('intake-readings').innerHTML =
+        row('Flow', `${flow} L/s`) + row('Turbidity', `${turbidity.toFixed(1)} NTU`, { alert: turbidity > 6 });
+      document.getElementById('filter-readings').innerHTML = headloss.map((h, i) =>
+        row(`Filter ${i + 1}`, `${h.toFixed(2)} m${h > 2 ? ' · backwash due' : ''}`, { ref: `filter-${i + 1}`, alert: h > 2 })).join('');
+      document.getElementById('chlorine-readings').innerHTML =
+        row('Residual at outlet', `${chlorine.toFixed(2)} mg/L${lowChlorine ? ' · too low' : ''}`, { ref: 'chlorine', alert: lowChlorine }) + row('Contact time', '32 min');
+      document.getElementById('storage-readings').innerHTML =
+        row('Tank level', `${tank}%`, { ref: 'tank-level', alert: tank < 50 }) + row('Supply in hand', `${Math.round(tank / 6)} h`);
+
+      // Each stage's headline, so a closed stage still says how it stands.
+      const [intake, filtration, disinfection, storage] = works.sections;
+      intake.setAttribute('note', turbidity > 6 ? 'Dirty water coming in' : `${flow} L/s`);
+      filtration.setAttribute('note', due.length ? `Backwash due: filter ${due.join(', ')}` : '4 of 4 fine');
+      disinfection.setAttribute('note', `${chlorine.toFixed(2)} mg/L`);
+      storage.setAttribute('note', `Tank ${tank}%`);
+
+      document.getElementById('clock').textContent = `${String(hour).padStart(2, '0')}:00`;
+      showRound();
+    }
+
+    // The operator's round: which stages have been looked at this hour, heard through sb-toggle.
+    function showRound() {
+      document.getElementById('round').textContent = `Checked this hour: ${state.checked.size} of ${works.sections.length} stages`;
+    }
+    works.addEventListener('sb-toggle', (e) => {
+      if (e.target !== works || !e.detail.open) return;
+      state.checked.add(e.detail.index);
+      showRound();
+    });
+
+    // ---- Start ----
+
+    document.getElementById('run-hour').addEventListener('click', runHour);
+    // The layering switches, each a class on the page.
+    for (const [id, className] of [['lift', 'lifted'], ['drop', 'dropped']]) {
+      const box = document.getElementById(id);
+      const show = () => document.querySelector('main').classList.toggle(className, box.checked);
+      box.addEventListener('change', show);
+      show();
+    }
+    render();
+  </script>
+</body>
+</html>

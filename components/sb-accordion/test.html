@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-accordion tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-accordion.js"></script>
+</head>
+<body>
+  <script>
+    const section = (heading, body = '', attributes = '') => `<details ${attributes}><summary>${heading}</summary>${body}</details>`;
+    const accordion = (sections, attributes = '') => mount(`<sb-accordion ${attributes}>${sections.join('')}</sb-accordion>`);
+    const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+    const opened = (el) => el.sections.map((s) => s.open);
+    const has = (el, part) => el.classList.contains(`sb-accordion__section--${part}`);
+    const controls = (el) => el.querySelector(':scope > .sb-accordion__controls');
+    const button = (el, action) => controls(el).querySelector(`[data-action="${action}"]`);
+    const settle = () => new Promise((resolve) => setTimeout(resolve)); // lets the accordion see changes
+
+    // ---- Sections ----
+
+    test('its <details> children are its sections, all closed to begin with', () => {
+      const el = accordion([section('One'), section('Two')]);
+      assertEqual(el.sections.length, 2);
+      assertEqual(opened(el), [false, false]);
+    });
+
+    test('a click on a heading opens its section, and another closes it', () => {
+      const el = accordion([section('One', '<p>a</p>'), section('Two')]);
+      el.querySelector('summary').click();
+      assertEqual(opened(el), [true, false]);
+      el.querySelector('summary').click();
+      assertEqual(opened(el), [false, false]);
+    });
+
+    test('with single, opening one section closes the open one', () => {
+      const el = accordion([section('One'), section('Two'), section('Three')], 'single');
+      el.sections[0].querySelector('summary').click();
+      el.sections[2].querySelector('summary').click();
+      assertEqual(opened(el), [false, false, true]);
+    });
+
+    // ---- Expand all and collapse all ----
+
+    test('a group has Expand all and Collapse all; one section on its own has neither', () => {
+      assert(!controls(accordion([section('One'), section('Two')])).hidden);
+      assert(controls(accordion([section('Only')])).hidden);
+    });
+
+    test('with single, there are no group buttons, and setting it later hides them', () => {
+      assert(controls(accordion([section('One'), section('Two')], 'single')).hidden);
+      const el = accordion([section('One'), section('Two')]);
+      el.single = true;
+      assert(controls(el).hidden);
+    });
+
+    test('Expand all opens every section and Collapse all closes them', () => {
+      const el = accordion([section('One'), section('Two', '', 'open'), section('Three')]);
+      button(el, 'expand').click();
+      assertEqual(opened(el), [true, true, true]);
+      el.collapseAll();
+      assertEqual(opened(el), [false, false, false]);
+    });
+
+    test('a button with nothing to do is greyed out', async () => {
+      const el = accordion([section('One'), section('Two')]);
+      assert(!button(el, 'expand').disabled && button(el, 'collapse').disabled);
+      el.expandAll();
+      await settle();
+      assert(button(el, 'expand').disabled && !button(el, 'collapse').disabled);
+    });
+
+    // ---- Nesting ----
+
+    test('a nested accordion\'s buttons and headings leave its parent alone', () => {
+      const inner = `<sb-accordion>${section('Inner one')}${section('Inner two')}</sb-accordion>`;
+      const outer = accordion([section('Outer one', inner, 'open'), section('Outer two')], 'single');
+      const nested = outer.querySelector('sb-accordion');
+      button(nested, 'expand').click();
+      nested.sections[0].querySelector('summary').click();
+      assertEqual([opened(outer), opened(nested)], [[true, false], [false, true]]);
+    });
+
+    // ---- The note ----
+
+    test('a section\'s note shows beside its heading, and follows the attribute', async () => {
+      const el = accordion([section('Storage', '', 'note="Tank 72%"')]);
+      const note = () => el.querySelector('.sb-accordion__note').textContent;
+      assertEqual(note(), 'Tank 72%');
+      el.sections[0].setAttribute('note', 'Tank 53%');
+      await settle();
+      assertEqual(note(), 'Tank 53%');
+    });
+
+    // ---- Changed while closed ----
+
+    test('a closed section whose content changes is marked, until it is opened', async () => {
+      const el = accordion([section('Filters', '<p id="reading">1.5 m</p>'), section('Tank', '<p>72%</p>')]);
+      document.getElementById('reading').textContent = '2.7 m';
+      await settle();
+      assertEqual([has(el.sections[0], 'changed'), has(el.sections[1], 'changed')], [true, false]);
+      el.sections[0].querySelector('summary').click();
+      await settle();
+      assert(!has(el.sections[0], 'changed'));
+    });
+
+    test('an open section isn\'t marked, and nor is a change to a heading or note', async () => {
+      const el = accordion([section('Open', '<p id="open-text">a</p>', 'open'), section('Closed', '', 'note="x"')]);
+      document.getElementById('open-text').textContent = 'b';
+      el.sections[1].setAttribute('note', 'y');
+      el.sections[1].querySelector('summary').append(' (2)');
+      await settle();
+      assertEqual(el.sections.map((s) => has(s, 'changed')), [false, false]);
+    });
+
+    test('content seen open isn\'t news once closed again', async () => {
+      const el = accordion([section('One', '<p id="seen">a</p>', 'open')]);
+      document.getElementById('seen').textContent = 'b';
+      await settle();
+      el.sections[0].querySelector('summary').click();
+      await settle();
+      assert(!has(el.sections[0], 'changed'));
+    });
+
+    // ---- Highlighting ----
+
+    test('pointing at a heading announces its section\'s ref, and leaving announces null', () => {
+      const el = accordion([section('Pump 2', '', 'data-ref="pump-2"')]);
+      const events = recordEvents(document, 'sb-highlight');
+      const summary = el.querySelector('summary');
+      summary.dispatchEvent(new PointerEvent('pointerenter'));
+      summary.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(events.map((e) => e.detail.ref), ['pump-2', null]);
+    });
+
+    test('a section lights up for its own ref, and a closed one for a ref inside it', () => {
+      const el = accordion([section('Pumps', '', 'data-ref="pumps"'), section('Filters', '<span data-ref="filter-3">3</span>'), section('Tank')]);
+      announce('pumps');
+      assertEqual(el.sections.map((s) => has(s, 'highlighted')), [true, false, false]);
+      announce('filter-3');
+      assertEqual(el.sections.map((s) => has(s, 'lit-inside')), [false, true, false]);
+      announce(null);
+      assertEqual(el.sections.map((s) => has(s, 'lit-inside') || has(s, 'highlighted')), [false, false, false]);
+    });
+
+    // ---- Revealing ----
+
+    test('reveal opens the section holding the ref, quietly, and says whether it found it', () => {
+      const el = accordion([section('One'), section('Two', '<span data-ref="deep">x</span>')], 'single');
+      const events = recordEvents(el, 'sb-toggle');
+      assertEqual(el.reveal('deep'), true);
+      assertEqual(opened(el), [false, true]);
+      assertEqual(el.reveal('missing'), false);
+      assertEqual(events.length, 0);
+    });
+
+    test('reveal goes by the place when given one, and by a section\'s own ref', () => {
+      const el = accordion([section('One', '<i data-ref="r">a</i>'), section('Two', '<i data-ref="r">b</i>'), section('Three', '', 'data-ref="three"')]);
+      el.reveal('r', el.sections[1].querySelector('i'));
+      el.reveal('three');
+      assertEqual(opened(el), [false, true, true]);
+    });
+
+    // ---- Events ----
+
+    test('sb-toggle reports what the viewer opened or closed, in the state it is now in', () => {
+      const el = accordion([section('One'), section('Two', '', 'data-ref="two"')]);
+      const seen = [];
+      el.addEventListener('sb-toggle', (e) => seen.push({ ...e.detail, now: el.sections[e.detail.index].open }));
+      el.sections[1].querySelector('summary').click();
+      el.collapseAll();
+      assertEqual(seen, [{ index: 1, ref: 'two', open: true, now: true }, { index: 1, ref: 'two', open: false, now: false }]);
+    });
+
+    // ---- Several on one page, and safety ----
+
+    test('two accordions side by side keep their own sections', () => {
+      mount(`<div><sb-accordion>${section('A')}${section('B')}</sb-accordion><sb-accordion>${section('C')}</sb-accordion></div>`);
+      const [a, b] = document.querySelectorAll('#test-fixture sb-accordion');
+      a.expandAll();
+      assertEqual([opened(a), opened(b)], [[true, true], [false]]);
+    });
+
+    test('shows notes as text, never as markup', () => {
+      const el = accordion([section('One', '', 'note="<b>x</b>"')]);
+      assertEqual(el.querySelectorAll('.sb-accordion__note b').length, 0);
+      assertEqual(el.querySelector('.sb-accordion__note').textContent, '<b>x</b>');
+    });
+  </script>
+</body>
+</html>

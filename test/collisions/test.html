@@ -9,7 +9,7 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-choice', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-handoff', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-notebook', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-person', 'sb-poll', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
+    window.TAGS = ['sb-accordion', 'sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-choice', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-handoff', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-notebook', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-person', 'sb-poll', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
@@ -42,6 +42,7 @@
   <script src="../../components/sb-tree/sb-tree.js"></script>
   <script src="../../components/sb-venn/sb-venn.js"></script>
   <script src="../../components/sb-image/sb-image.js"></script>
+  <script src="../../components/sb-accordion/sb-accordion.js"></script>
   <script src="../../components/sb-annotate/sb-annotate.js"></script>
   <script src="../../components/sb-json/sb-json.js"></script>
   <script src="../../components/sb-math/sb-math.js"></script>

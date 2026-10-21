@@ -28,6 +28,7 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 |---|---|---|
 | [`sb-tree`](../components/sb-tree/manifest.md) | every node, folded ones too | opens the branches on the way |
 | [`sb-tabs`](../components/sb-tabs/manifest.md) | — | shows the panel holding the place, or else the ref |
+| [`sb-accordion`](../components/sb-accordion/manifest.md) | — | opens the section holding the place, or else the ref |
 | [`sb-notebook`](../components/sb-notebook/manifest.md) | each section's bar, when the section has a `ref` | opens the section holding the place, or else the ref, keeping the viewer's filter |
 | [`sb-id`](../components/sb-id/manifest.md) | each pill, with its code | — |
 | [`sb-table`](../components/sb-table/manifest.md) | each row with an `id` (not rows a viewer's search hides) | — |

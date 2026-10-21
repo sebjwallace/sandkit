@@ -4,6 +4,10 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.46 · 2026-10-21
+- Fifty-three components: added `sb-accordion`, sections that open and close and still say what's going on while closed: a note from the model, a dot when what's inside changed, and a tint when something highlighted is inside. The locating practice lists it.
+- The shell's themes have a drop, `--sb-drop`, lift's opposite, for layers nested past where lifts still stand apart (shell 0.1.6).
+
 ## 0.2.45 · 2026-10-20
 - A new practice, `practices/workshops.md`: working through a sandbox's model with the people who know the subject, until they understand it, have corrected it and own it. Principles, roles, preparing, the workshop page, the activities and the components for each, the round trip with the agent, driving attention, and closing. Linked from the README, the building guide, the catalog and the template's `AGENTS.md`.
 
