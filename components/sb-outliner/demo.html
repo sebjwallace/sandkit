@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-outliner demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-outliner.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .switches { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 10px; font-size: 14px; }
+
+    /* The two outliners float at the right, one above the other, until they're dragged. */
+    #grid-outliner { max-height: calc(55vh - 80px); }
+    #bread-outliner { top: auto; bottom: 16px; max-height: calc(45vh - 32px); }
+
+    /* Pinned colours are mixed with --sb-glow, so they fade while the outliner's pins glow;
+       pointing always lights at full strength. */
+
+    /* The grid, drawn in theme colours. Pointing lights a trace; pins keep one filled or outlined. */
+    .grid-map { display: block; width: 100%; max-width: 560px; height: auto; font: 12px var(--sb-font); }
+    .grid-map .shape { fill: var(--sb-surface-2); stroke: var(--sb-muted); stroke-width: 1.5; }
+    .grid-map .name { fill: var(--sb-text); font-weight: 600; }
+    .grid-map .note { fill: var(--sb-muted); }
+    .grid-map .wire { stroke: var(--sb-muted); stroke-width: 3; }
+    .grid-map .wire.is-dead { stroke-dasharray: 4 5; opacity: 0.5; }
+    .grid-map .is-dark { opacity: 0.45; }
+    .grid-map .is-pinned-outline .shape { stroke: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 100%), var(--sb-muted)); stroke-width: 3; }
+    .grid-map .is-pinned-fill .shape { fill: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 35%), var(--sb-surface-2)); }
+    .grid-map .wire.is-pinned-outline { stroke: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 100%), var(--sb-muted)); }
+    .grid-map .wire.is-pinned-fill { stroke: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 100%), var(--sb-muted)); stroke-width: 7; }
+    .grid-map text.is-pinned-outline, .grid-map text.is-pinned-fill { fill: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 100%), var(--sb-muted)); font-weight: 700; }
+    .grid-map .is-lit .shape { stroke: var(--sb-accent); stroke-width: 3; }
+    .grid-map .wire.is-lit { stroke: var(--sb-accent); }
+    .grid-map text.is-lit { fill: var(--sb-accent); font-weight: 700; }
+
+    /* The recipe */
+    .recipe { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 14px; font-size: 14px; }
+    @media (max-width: 720px) { .recipe { grid-template-columns: 1fr; } }
+    .recipe h3 { margin: 0 0 6px; font-size: 13px; color: var(--sb-muted); }
+    .recipe ul, .recipe ol { margin: 0; padding-left: 20px; }
+    .recipe li { margin-bottom: 4px; padding: 1px 4px; border-radius: 3px; }
+    .recipe [data-ref].is-pinned-outline { outline: 2px solid color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 100%), transparent); outline-offset: 1px; }
+    .recipe [data-ref].is-pinned-fill { background: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 28%), transparent); }
+    .recipe [data-ref].is-lit { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-outliner">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <sb-outliner slot="panels" id="grid-outliner" heading="The grid"></sb-outliner>
+    <sb-outliner slot="panels" id="bread-outliner" heading="The loaf"></sb-outliner>
+    <p>Everything on the page you can point at, in an outline: point to light up what's connected, pin to keep it lit.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Pointing at something to see what it's connected to is quick, but the light goes out the moment you move to change anything. The outliner lists everything on the page that can be pointed at, each opening into its parts. Point at an entry and everything connected to it lights up, wherever it is on the page. Pin it, and it stays lit while you work, following the model as it changes. Two pins, a fill and an outline, let you keep two things lit at once and compare them.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Following cause and effect,</strong> both ways: what does this input affect, and why does that output say what it says?</li>
+        <li><strong>Keeping an eye on something while you change the model,</strong> such as a town's supply while you switch things off.</li>
+        <li><strong>Comparing two cases,</strong> one filled and one outlined, to see where their paths part.</li>
+        <li><strong>A page with many views of one model,</strong> where the same thing appears in a table, a diagram and the prose.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Things inside things,</strong> such as a file system, to browse: a tree.</li>
+        <li><strong>Where a thing appears on the page, to go there:</strong> a cross-reference list.</li>
+        <li><strong>A page with a handful of things,</strong> where pointing at them directly is enough.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-outliner/sb-outliner.js"&gt;&lt;/script&gt;
+&lt;sb-shell&gt;
+  &lt;sb-outliner slot="panels" id="highlights"&gt;&lt;/sb-outliner&gt;
+&lt;/sb-shell&gt;
+
+outliner.items = [
+  { heading: 'Towns' },
+  { ref: 'brook', label: 'Brook', parts: [{ ref: 'brook.demand', label: 'Demand: 30 MW' }] },
+];
+outliner.trace = (ref) =&gt; model.traceOf(ref);   // what a ref lights, as refs
+
+document.addEventListener('sb-pins', (e) =&gt; light(e.detail.fill, e.detail.outline));</pre>
+      <p>In the shell's <code>panels</code> slot, the outliner gets a button in the header, named by its heading (Highlights by default), that opens and closes it. It floats over the page, dragged by its bar. It never lights the page itself: pointing announces the trace through <code>sb-highlight</code>, pins are sent as <code>sb-pins</code>, and the sandbox lights its own parts, as the highlighting practice describes. Set <code>items</code> again whenever the model changes: pins follow. With <strong>Glow</strong> on, pinned highlights fade slowly down and back; mix pinned colours with <code>var(--sb-glow)</code> and they fade with them.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Trace both ways.</strong> An input should light what it feeds; an output what decided it.</li>
+        <li><strong>Labels with values,</strong> such as "Demand: 30 MW", so the outline is worth reading on its own.</li>
+        <li><strong>Say what's off.</strong> A town without power, or a step left out, should say so in its label.</li>
+        <li><strong>Keep it short.</strong> List the things people reason about, not every element on the page.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Keeping the lights on</h2>
+      <p>Two plants feed four towns through two substations, joined by a tie. In The grid, opened from the header and floating at the right, pin a town and switch the wind off, then open the tie: its supply path follows, until there's nothing left to light. Switch on Glow to keep the pins in the corner of your eye.</p>
+      <div class="switches">
+        <label><input type="checkbox" id="wind" checked> Wind blowing</label>
+        <label><input type="checkbox" id="tie" checked> Tie breaker closed</label>
+      </div>
+      <svg class="grid-map" id="grid-map" viewBox="0 0 560 300" role="img" aria-label="Two plants, two substations and four towns"></svg>
+    </section>
+
+    <section class="example">
+      <h2>A loaf of bread</h2>
+      <p>Point at an ingredient, a step or what you get, here or in The loaf, opened from the header and floating at the bottom right. Pin the flavour, then leave the dough in the fridge overnight: the new step joins its trace.</p>
+      <div class="switches"><label><input type="checkbox" id="overnight"> Overnight in the fridge</label></div>
+      <div class="recipe" id="recipe"></div>
+    </section>
+  </main>
+
+  <script>
+    // ---- Lighting the page's own parts ----
+
+    // Both helpers are the highlighting practice's, for the page's own parts in root.
+    const announce = (ref, refs) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: refs ? { ref, refs } : { ref } }));
+
+    // Pointing at a part announces it with its trace; every part in the announced trace lights up.
+    function pointable(root, traceOf = (ref) => [ref]) {
+      const partAt = (el) => {
+        const part = el?.closest?.('[data-ref]');
+        return part && root.contains(part) ? part : null;
+      };
+      root.addEventListener('pointerover', (e) => {
+        const part = partAt(e.target);
+        if (part && part !== partAt(e.relatedTarget)) announce(part.dataset.ref, traceOf(part.dataset.ref));
+      });
+      root.addEventListener('pointerout', (e) => { if (partAt(e.target) && !partAt(e.relatedTarget)) announce(null); });
+      document.addEventListener('sb-highlight', (e) => {
+        const lit = new Set(e.detail.refs ?? [e.detail.ref]);
+        for (const part of root.querySelectorAll('[data-ref]')) part.classList.toggle('is-lit', lit.has(part.dataset.ref));
+      });
+    }
+
+    // Parts stay filled or outlined while the outliner's pins trace to them, glowing with them.
+    function pinnable(root, outliner) {
+      outliner.addEventListener('sb-pins', (e) => {
+        const fill = new Set(e.detail.fill), outline = new Set(e.detail.outline);
+        root.classList.toggle('sb-outliner__glowing', e.detail.glow);
+        for (const part of root.querySelectorAll('[data-ref]')) {
+          part.classList.toggle('is-pinned-fill', fill.has(part.dataset.ref));
+          part.classList.toggle('is-pinned-outline', outline.has(part.dataset.ref));
+        }
+      });
+    }
+
+    // ---- The grid: two plants, two substations, four towns ----
+
+    const PLANTS = {
+      w1: { name: 'Hill wind farm', mw: 60, sub: 's1', x: 70, y: 70 },
+      h1: { name: 'River hydro', mw: 80, sub: 's2', x: 70, y: 230 },
+    };
+    const SUBS = { s1: { name: 'North substation', x: 260, y: 70 }, s2: { name: 'South substation', x: 260, y: 230 } };
+    const TOWNS = {
+      ashby: { name: 'Ashby', mw: 20, sub: 's1', y: 30 },
+      brook: { name: 'Brook', mw: 30, sub: 's1', y: 110 },
+      carrow: { name: 'Carrow', mw: 25, sub: 's2', y: 190 },
+      dunmore: { name: 'Dunmore', mw: 35, sub: 's2', y: 270 },
+    };
+    const grid = { wind: true, tie: true };
+
+    const plantLine = (id) => `line-${id}`;
+    const townLine = (id) => `line-${id}`;
+    const townsOf = (sub) => Object.keys(TOWNS).filter((t) => TOWNS[t].sub === sub);
+    const otherSub = (sub) => (sub === 's1' ? 's2' : 's1');
+    const running = (plant) => plant !== 'w1' || grid.wind;
+
+    // The plants feeding a substation now, each with the way its power comes: straight down its own
+    // line, or across the tie from the other substation.
+    function feedsOf(sub) {
+      return Object.keys(PLANTS).filter(running).flatMap((plant) => {
+        if (PLANTS[plant].sub === sub) return [[plant, plantLine(plant)]];
+        return grid.tie ? [[plant, plantLine(plant), PLANTS[plant].sub, 'tie']] : [];
+      });
+    }
+    const powered = (sub) => feedsOf(sub).length > 0;
+
+    // What a ref lights: a town back to the plants feeding it, a plant on to the towns it feeds.
+    function traceGrid(ref) {
+      const [id, part] = ref.split('.');
+      if (part) return [ref, id];
+      if (TOWNS[id]) return [id, `${id}.demand`, townLine(id), TOWNS[id].sub, ...feedsOf(TOWNS[id].sub).flat()];
+      if (SUBS[id]) return [id, ...feedsOf(id).flat(), ...townsOf(id).flatMap((t) => [t, townLine(t)])];
+      if (PLANTS[id]) {
+        if (!running(id)) return [id, `${id}.output`];
+        const subs = grid.tie ? ['s1', 's2'] : [PLANTS[id].sub];
+        return [id, `${id}.output`, plantLine(id), ...subs, ...(grid.tie ? ['tie'] : []), ...subs.flatMap((s) => townsOf(s).flatMap((t) => [t, townLine(t)]))];
+      }
+      if (ref === 'tie') return grid.tie ? ['tie', 's1', 's2'] : ['tie'];
+      return [ref];
+    }
+
+    function drawGrid() {
+      const wire = (ref, x1, y1, x2, y2, live) => `<line class="wire${live ? '' : ' is-dead'}" data-ref="${ref}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+      const wires = [
+        ...Object.entries(PLANTS).map(([id, p]) => wire(plantLine(id), p.x + 24, p.y, SUBS[p.sub].x - 20, SUBS[p.sub].y, running(id))),
+        wire('tie', 260, 90, 260, 210, grid.tie && (powered('s1') || powered('s2'))),
+        ...Object.entries(TOWNS).map(([id, t]) => wire(townLine(id), SUBS[t.sub].x + 20, SUBS[t.sub].y, 420, t.y, powered(t.sub))),
+      ];
+      const plants = Object.entries(PLANTS).map(([id, p]) => `
+        <g data-ref="${id}" class="${running(id) ? '' : 'is-dark'}">
+          <circle class="shape" cx="${p.x}" cy="${p.y}" r="24"/>
+          <text class="name" x="${p.x}" y="${p.y + 42}" text-anchor="middle">${p.name}</text>
+        </g>
+        <text class="note" data-ref="${id}.output" x="${p.x}" y="${p.y - 32}" text-anchor="middle">${running(id) ? p.mw : 0} MW</text>`);
+      const subs = Object.entries(SUBS).map(([id, s]) => `
+        <g data-ref="${id}" class="${powered(id) ? '' : 'is-dark'}">
+          <rect class="shape" x="${s.x - 20}" y="${s.y - 20}" width="40" height="40" rx="4"/>
+          <text class="name" x="${s.x}" y="${id === 's1' ? s.y - 28 : s.y + 36}" text-anchor="middle">${s.name}</text>
+        </g>`);
+      const towns = Object.entries(TOWNS).map(([id, t]) => `
+        <g data-ref="${id}" class="${powered(t.sub) ? '' : 'is-dark'}">
+          <rect class="shape" x="420" y="${t.y - 15}" width="80" height="30" rx="6"/>
+          <text class="name" x="460" y="${t.y + 4}" text-anchor="middle">${t.name}</text>
+        </g>
+        <text class="note" data-ref="${id}.demand" x="508" y="${t.y + 4}">${powered(t.sub) ? `${t.mw} MW` : 'no power'}</text>`);
+      document.getElementById('grid-map').innerHTML = wires.join('') + plants.join('') + subs.join('') + towns.join('');
+    }
+
+    function gridItems() {
+      return [
+        { heading: 'Plants' },
+        ...Object.entries(PLANTS).map(([id, p]) => ({ ref: id, label: `${p.name}${running(id) ? '' : ' · still'}`, parts: [
+          { ref: `${id}.output`, label: `Output: ${running(id) ? p.mw : 0} MW` },
+          { ref: plantLine(id), label: `Line to the ${SUBS[p.sub].name.toLowerCase()}` },
+        ] })),
+        { heading: 'Substations' },
+        ...Object.entries(SUBS).map(([id, s]) => ({ ref: id, label: `${s.name}${powered(id) ? '' : ' · dead'}`, parts: [
+          { ref: 'tie', label: `Tie: ${grid.tie ? 'closed' : 'open'}` },
+        ] })),
+        { heading: 'Towns' },
+        ...Object.entries(TOWNS).map(([id, t]) => ({ ref: id, label: `${t.name}${powered(t.sub) ? '' : ' · no power'}`, parts: [
+          { ref: `${id}.demand`, label: `Demand: ${t.mw} MW` },
+          { ref: townLine(id), label: `Line from the ${SUBS[t.sub].name.toLowerCase()}` },
+        ] })),
+      ];
+    }
+
+    // ---- The loaf: ingredients, steps and what you get ----
+
+    const INGREDIENTS = { flour: 'Strong white flour, 500 g', water: 'Water, 350 g', yeast: 'Dried yeast, 7 g', salt: 'Salt, 10 g' };
+    const STEPS = {
+      mix: { text: 'Mix everything into a rough dough.', uses: ['flour', 'water', 'yeast', 'salt'], gives: ['crumb'] },
+      knead: { text: 'Knead for ten minutes, until smooth and stretchy.', uses: [], gives: ['crumb', 'rise'] },
+      prove: { text: 'Cover and leave until doubled, about an hour.', uses: ['yeast'], gives: ['rise', 'flavour'] },
+      cold: { text: 'Rest in the fridge overnight.', uses: ['yeast'], gives: ['flavour'], overnight: true },
+      shape: { text: 'Shape into a round and prove again for half an hour.', uses: ['yeast'], gives: ['rise'] },
+      bake: { text: 'Bake at 230 °C for 35 minutes.', uses: [], gives: ['crust', 'flavour'] },
+    };
+    const RESULTS = {
+      crust: () => 'Crust: deep brown and crackly',
+      crumb: () => 'Crumb: soft, with even holes',
+      rise: () => 'Rise: tall and round',
+      flavour: () => (bread.overnight ? 'Flavour: full, a little sour' : 'Flavour: mild and wheaty'),
+    };
+    const AFFECTS = { flour: ['crumb', 'crust'], water: ['crumb'], yeast: ['rise', 'flavour'], salt: ['flavour'] };
+    const bread = { overnight: false };
+
+    const steps = () => Object.keys(STEPS).filter((id) => !STEPS[id].overnight || bread.overnight);
+
+    function traceBread(ref) {
+      if (INGREDIENTS[ref]) return [ref, ...steps().filter((s) => STEPS[s].uses.includes(ref)), ...AFFECTS[ref]];
+      if (STEPS[ref]) return [ref, ...STEPS[ref].uses, ...STEPS[ref].gives];
+      if (RESULTS[ref]) return [ref, ...steps().filter((s) => STEPS[s].gives.includes(ref)), ...Object.keys(AFFECTS).filter((i) => AFFECTS[i].includes(ref))];
+      return [ref];
+    }
+
+    function drawRecipe() {
+      document.getElementById('recipe').innerHTML = `
+        <div><h3>Ingredients</h3><ul>${Object.entries(INGREDIENTS).map(([id, text]) => `<li data-ref="${id}">${text}</li>`).join('')}</ul></div>
+        <div><h3>Method</h3><ol>${steps().map((id) => `<li data-ref="${id}">${STEPS[id].text}</li>`).join('')}</ol></div>
+        <div><h3>What you get</h3><ul>${Object.keys(RESULTS).map((id) => `<li data-ref="${id}">${RESULTS[id]()}</li>`).join('')}</ul></div>`;
+    }
+
+    function breadItems() {
+      const named = (text) => text.split(',')[0];
+      return [
+        { heading: 'Ingredients' },
+        ...Object.entries(INGREDIENTS).map(([id, text]) => ({ ref: id, label: named(text) })),
+        { heading: 'Method' },
+        ...steps().map((id, i) => ({ ref: id, label: `${i + 1}. ${STEPS[id].text}` })),
+        { heading: 'What you get' },
+        ...Object.keys(RESULTS).map((id) => ({ ref: id, label: RESULTS[id]() })),
+      ];
+    }
+
+    // ---- Start ----
+
+    const gridOutliner = document.getElementById('grid-outliner');
+    gridOutliner.trace = traceGrid;
+    pointable(document.getElementById('grid-map'), traceGrid);
+    pinnable(document.getElementById('grid-map'), gridOutliner);
+    function renderGrid() {
+      drawGrid();
+      gridOutliner.items = gridItems(); // pins follow: their traces are worked out again, and the new drawing marked
+    }
+    document.getElementById('wind').addEventListener('change', (e) => { grid.wind = e.target.checked; renderGrid(); });
+    document.getElementById('tie').addEventListener('change', (e) => { grid.tie = e.target.checked; renderGrid(); });
+    renderGrid();
+
+    const breadOutliner = document.getElementById('bread-outliner');
+    breadOutliner.trace = traceBread;
+    pointable(document.getElementById('recipe'), traceBread);
+    pinnable(document.getElementById('recipe'), breadOutliner);
+    function renderBread() {
+      drawRecipe();
+      breadOutliner.items = breadItems();
+    }
+    document.getElementById('overnight').addEventListener('change', (e) => { bread.overnight = e.target.checked; renderBread(); });
+    renderBread();
+  </script>
+</body>
+</html>

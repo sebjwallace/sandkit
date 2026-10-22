@@ -9,7 +9,7 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-accordion', 'sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-choice', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-handoff', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-inspect-mode', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-notebook', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-person', 'sb-poll', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
+    window.TAGS = ['sb-accordion', 'sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-choice', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-handoff', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-inspect-mode', 'sb-outliner', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-notebook', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-person', 'sb-poll', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
@@ -26,6 +26,7 @@
   <script src="../../components/sb-comments/sb-comments.js"></script>
   <script src="../../components/sb-trace-mode/sb-trace-mode.js"></script>
   <script src="../../components/sb-inspect-mode/sb-inspect-mode.js"></script>
+  <script src="../../components/sb-outliner/sb-outliner.js"></script>
   <script src="../../components/sb-walkthrough/sb-walkthrough.js"></script>
   <script src="../../components/sb-callout/sb-callout.js"></script>
   <script src="../../components/sb-code/sb-code.js"></script>

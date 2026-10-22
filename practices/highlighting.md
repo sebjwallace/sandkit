@@ -20,6 +20,7 @@ document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: null } }
 - **A ref is a short name for a thing,** such as `i-hat`, `col-1` or `RUL-003`. Use the thing's code where it has one (see the [identifiers practice](identifiers.md)).
 - **Announce a ref** when something starts being pointed at (hover or keyboard focus), and `null` when it stops.
 - **Light up** whatever you've marked with the announced ref, and clear it on `null` or a different ref.
+- **A trace can come with it.** `refs` beside `ref` lists everything the thing is connected to, itself included, such as a train, the rules that decided it and what the board shows for it: `{ ref: 'T3', refs: ['T3', 'E3', 'T3.board.expected'] }`. Light everything in `refs` when it's there, and `ref` alone when it isn't. The model works the trace out, once, so every view lights the same things.
 
 No component knows about any other. Each just announces, or listens, or both.
 
@@ -30,6 +31,7 @@ No component knows about any other. Each just announces, or listens, or both.
 | [`sb-id`](../components/sb-id/manifest.md) | its code, while hovered or focused | itself, when its code is announced |
 | [`sb-math`](../components/sb-math/manifest.md) | the `data-ref` of the part hovered or focused | every part marked with the announced ref |
 | [`sb-xref`](../components/sb-xref/manifest.md) | the ref of the place or link hovered or focused | — |
+| [`sb-outliner`](../components/sb-outliner/manifest.md) | the ref of the entry pointed at, with its trace in `refs` | its entries: the ref strongly, the rest of `refs` faintly. Also keeps traces lit: see "Keeping things lit" |
 | Other components | — | through the sandbox, below |
 
 ## Wiring the rest
@@ -75,8 +77,9 @@ Write this once in the page script, beside `announce`, and call it for each cont
 
 ```js
 // Pointing at the sandbox's own parts in `root`: announces a part while it's pointed at or focused,
-// and lights every part with the announced ref. Components inside root point and light up themselves.
-function pointable(root) {
+// with its trace, and lights every part in the announced trace. Components inside root point and
+// light up themselves. traceOf is the model's; without one, a part lights only its own ref.
+function pointable(root, traceOf = (ref) => [ref]) {
   // The sandbox's own part an element is in, or null if it's in none, or inside a component.
   const partAt = (el) => {
     const part = el?.closest('[data-ref]');
@@ -87,7 +90,7 @@ function pointable(root) {
   // Arriving at a part announces it; leaving ends the highlight, unless it went straight to another part.
   const arrive = (e) => {
     const part = partAt(e.target);
-    if (part && part !== partAt(e.relatedTarget)) announce(part.dataset.ref);
+    if (part && part !== partAt(e.relatedTarget)) announce(part.dataset.ref, traceOf(part.dataset.ref));
   };
   const leave = (e) => { if (partAt(e.target) && !partAt(e.relatedTarget)) announce(null); };
   root.addEventListener('pointerover', arrive);
@@ -96,8 +99,9 @@ function pointable(root) {
   root.addEventListener('focusout', leave);
 
   document.addEventListener('sb-highlight', (e) => {
+    const lit = new Set(e.detail.refs ?? [e.detail.ref]);
     for (const part of root.querySelectorAll('[data-ref]')) {
-      if (partAt(part) === part) part.classList.toggle('is-lit', part.dataset.ref === e.detail.ref);
+      if (partAt(part) === part) part.classList.toggle('is-lit', lit.has(part.dataset.ref));
     }
   });
 }
@@ -150,6 +154,42 @@ assumptions.reveal = (ref) => {
 The locating practice's rules apply: it never selects, never fires viewers' events, and never undoes a viewer's choice. Give each container a `heading` (`<figure id="warehouse-map" heading="Warehouse map">`) so cross-references name its places as readers know them.
 
 When a part is used in more than one chapter or page, make it the sandbox's own component (see [building a sandbox](building-a-sandbox.md)), with `data-ref`, `highlight` and `reveal` like Sandkit's.
+
+## Keeping things lit
+
+Pointing lights things only while the pointer stays, and the light goes the moment someone moves to change something. Once a page is for doing, not only looking, people need highlights that last. [`sb-outliner`](../components/sb-outliner/manifest.md) lists what can be pointed at, and pins each thing as a **fill** or an **outline**, so two can be kept and compared. It sends every pinned trace in one page-wide event, `sb-pins`, from itself, bubbling to `document`, whenever pins, the outline or the model change:
+
+```js
+{ fill: ['T3', 'E3', 'T3.board.expected'], outline: ['T5'], glow: false }
+```
+
+- **Keep `is-pinned-fill` and `is-pinned-outline`** on every part whose ref is in each list, until the next `sb-pins`. They're the sandbox's own classes, like `is-lit`.
+- **When the model changes, set the outliner's `items` again,** or call its `refresh()`: it works the traces out afresh, so a pinned case's lit rules follow whichever rules decide it now.
+- **Components with a `highlight` property** take pins the way they take pointing: the sandbox routes them.
+- **Glow.** With `glow` on, pinned highlights fade slowly down to 5% and back, so they catch the eye while people work elsewhere. The outliner animates one number, `--sb-glow`, on anything carrying the class `sb-outliner__glowing`, and everything inside inherits it. Put that class on the container while `glow` is true, and mix pinned colours with the number; pointing's `is-lit` stays at full strength.
+
+Add this beside `pointable`, for each container:
+
+```js
+// Keeps the sandbox's own parts in root filled or outlined while the outliner's pins trace to them, glowing with them.
+function pinnable(root, outliner) {
+  outliner.addEventListener('sb-pins', (e) => {
+    const fill = new Set(e.detail.fill), outline = new Set(e.detail.outline);
+    root.classList.toggle('sb-outliner__glowing', e.detail.glow);
+    for (const part of root.querySelectorAll('[data-ref]')) {
+      part.classList.toggle('is-pinned-fill', fill.has(part.dataset.ref));
+      part.classList.toggle('is-pinned-outline', outline.has(part.dataset.ref));
+    }
+  });
+}
+```
+
+```css
+.is-pinned-fill { background: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 28%), transparent); }
+.is-pinned-outline { outline: 2px solid color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 100%), transparent); }
+```
+
+A part redrawn after `sb-pins` has lost its classes: keep the last lists and mark again after drawing, or draw before setting `items`, as the outliner then sends them afresh.
 
 ## Pointing shows, clicking acts
 

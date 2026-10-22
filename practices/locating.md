@@ -65,7 +65,8 @@ More components join as sandboxes need them. A component's manifest says what it
 The sandbox does the finding, so no component ever searches the page. Write these once, in the page script:
 
 ```js
-const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+// Announces a ref, and with it, when there is one, its trace (see the highlighting practice).
+const announce = (ref, refs) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: refs ? { ref, refs } : { ref } }));
 
 // Every place on the page a ref appears, in page order.
 const placesOf = (ref) => [...document.querySelectorAll(`[data-ref="${CSS.escape(ref)}"]`)];

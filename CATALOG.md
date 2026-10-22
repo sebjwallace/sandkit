@@ -21,7 +21,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | Practice | What it covers |
 |---|---|
 | [Building a sandbox](practices/building-a-sandbox.md) | Start here. The end-to-end method: setting up the folder, copying components in, the model, chapters, checking. |
-| [Highlighting](practices/highlighting.md) | Point at one thing and see it light up everywhere: the page-wide `sb-highlight` event, wiring components in, and making the sandbox's own parts point, light up and be found like them. Supported by `sb-math` and `sb-id`. |
+| [Highlighting](practices/highlighting.md) | Point at one thing and see it light up everywhere: the page-wide `sb-highlight` event, with a trace of everything connected, wiring components in, making the sandbox's own parts point, light up and be found like them, and keeping things lit with pins. Supported by `sb-math`, `sb-id` and `sb-outliner`. |
 | [Locating](practices/locating.md) | Find everywhere a ref appears and go to it, through closed tabs and folded branches: `data-ref` on parts, `reveal(ref)`, and the sandbox's `goTo`. Supported by `sb-tabs`, `sb-tree`, `sb-id`, `sb-table`, `sb-rules` and `sb-graph`. |
 | [Journal](practices/journal.md) | What changed in a sandbox and why, one entry per version, and where it stands now: for audit and handover. Retired codes recorded in the model. |
 | [Identifiers](practices/identifiers.md) | Short, stable codes for the things in a sandbox, and citing them everywhere. Supported by `sb-id`. |
@@ -35,7 +35,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 
 | Part | What it does |
 |---|---|
-| [Sandbox shell](shell/manifest.md) | The environment around a sandbox: header, goal, pages, full screen, settings and theming, and an Export button giving the prompt to export the page. |
+| [Sandbox shell](shell/manifest.md) | The environment around a sandbox: header, goal, pages, full screen, settings and theming, modes with a key each, panels opened from the header, and an Export button giving the prompt to export the page. |
 
 ## Modes
 
@@ -76,6 +76,7 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 | [`sb-matrix`](components/sb-matrix/manifest.md) | A matrix or vector in brackets, inline or on its own: editable, with coloured and highlighted rows, columns and cells. |
 | [`sb-modal`](components/sb-modal/manifest.md) | A window over the page for the one thing that deserves attention now: a heading, content and actions, reporting how the viewer closed it. |
 | [`sb-notebook`](components/sb-notebook/manifest.md) | A workshop's sections in one page: each with its kind, who and when, and the codes it cites counted; key sections open and asides tucked away, an outline and up and down to move around, and filters by code, kind and person that open what matches. |
+| [`sb-outliner`](components/sb-outliner/manifest.md) | Everything on the page that can be pointed at, as an outline in a floating panel opened from the header: pointing at an entry lights its whole trace across the page, and pins, a fill and an outline, keep traces lit while people work, follow the model and can glow. |
 | [`sb-panel`](components/sb-panel/manifest.md) | A frame viewers can pop out into a floating window, drag, resize, collapse, make full screen and dock back. |
 | [`sb-ontology`](components/sb-ontology/manifest.md) | Kinds of things and how they relate, a few at a time: classes, individuals and their links, what each kind inherits and from where, kinds to light up, and the model's problems marked where they are. |
 | [`sb-parameters`](components/sb-parameters/manifest.md) | The knobs people turn: labelled sliders with live values, changes from defaults marked, reset. |

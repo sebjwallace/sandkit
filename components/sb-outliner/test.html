@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-outliner tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-outliner.js"></script>
+</head>
+<body>
+  <script>
+    // A plant feeding a town: the town traces back to the plant, the plant on to the town.
+    const ITEMS = [
+      { heading: 'Plants' },
+      { ref: 'p1', label: 'Hydro', parts: [{ ref: 'p1.output', label: 'Output: 80 MW' }] },
+      { heading: 'Towns' },
+      { ref: 't1', label: 'Brook', parts: [{ heading: 'Inputs' }, { ref: 't1.demand', label: 'Demand: 30 MW' }, { ref: 't1.line', label: 'Line in' }] },
+      { ref: 't2', label: 'Ashby' },
+    ];
+    const TRACES = { t1: ['t1', 't1.demand', 't1.line', 'p1'], p1: ['p1', 'p1.output', 't1', 't1.line'] };
+
+    function setup(attrs = '') {
+      const el = mount(`<sb-outliner ${attrs}></sb-outliner>`);
+      el.trace = (ref) => TRACES[ref] ?? [ref];
+      el.items = ITEMS;
+      return el;
+    }
+
+    const entry = (el, ref) => el.querySelector(`.sb-outliner__entry[data-ref="${ref}"]`);
+    const has = (el, ref, mark) => entry(el, ref).classList.contains(`sb-outliner__entry--${mark}`);
+    const pin = (el, ref, kind) => entry(el, ref).querySelector(`.sb-outliner__pin--${kind}`);
+    const action = (el, name) => el.querySelector(`[data-action="${name}"]`);
+    const caret = (el, ref) => entry(el, ref).querySelector('.sb-outliner__caret');
+    const point = (node, from = null) => node.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, relatedTarget: from }));
+    const leave = (node, to = null) => node.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: to }));
+    const announce = (detail) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail }));
+    const clearStore = () => { try { localStorage.removeItem('sb-outliner:test-outliner'); } catch {} };
+
+    // ---- The outline ----
+
+    test('lists headings and items, items with parts closed, labels as text', () => {
+      const el = setup();
+      assertEqual([...el.querySelectorAll('.sb-outliner__heading')].map((h) => h.textContent), ['Plants', 'Towns']);
+      assertEqual([...el.querySelectorAll('.sb-outliner__entry')].map((e) => e.dataset.ref), ['p1', 't1', 't2']);
+      assert(caret(el, 't1') && !entry(el, 't2').querySelector('.sb-outliner__caret'), 'a caret only where there are parts');
+      el.items = [{ ref: 'x', label: '<b>bold</b>' }];
+      assertEqual([entry(el, 'x').textContent, el.querySelector('b')], ['<b>bold</b>', null]);
+    });
+
+    test('a caret opens an item into its parts, with their headings, and closes it again', () => {
+      const el = setup();
+      caret(el, 't1').click();
+      assertEqual([...el.querySelectorAll('.sb-outliner__parts .sb-outliner__entry')].map((e) => e.dataset.ref), ['t1.demand', 't1.line']);
+      assertEqual(el.querySelector('.sb-outliner__parts .sb-outliner__heading').textContent, 'Inputs');
+      assertEqual(caret(el, 't1').getAttribute('aria-expanded'), 'true');
+      caret(el, 't1').click();
+      assertEqual(entry(el, 't1.demand'), null);
+    });
+
+    test('is a panel headed Highlights, or by its heading', () => {
+      assertEqual(setup().querySelector('.sb-outliner__title').textContent, 'Highlights');
+      assertEqual(setup('heading="The grid"').querySelector('.sb-outliner__title').textContent, 'The grid');
+    });
+
+    // ---- Pointing ----
+
+    test('pointing at an entry announces its trace; going between entries never announces nothing until the last is left', () => {
+      const el = setup();
+      const heard = recordEvents(document, 'sb-highlight');
+      point(entry(el, 't1'));
+      point(entry(el, 'p1'), entry(el, 't1'));
+      leave(entry(el, 'p1'), entry(el, 't2'));
+      leave(entry(el, 't2'), document.body);
+      assertEqual(heard.map((e) => e.detail), [{ ref: 't1', refs: TRACES.t1 }, { ref: 'p1', refs: TRACES.p1 }, { ref: null }]);
+    });
+
+    test('whatever is announced marks its entry strongly and the rest of its trace faintly', () => {
+      const el = setup();
+      announce({ ref: 't1', refs: TRACES.t1 });
+      assertEqual([has(el, 't1', 'pointed'), has(el, 'p1', 'pointed'), has(el, 'p1', 'lit'), has(el, 't2', 'lit')], [true, false, true, false]);
+      announce({ ref: 'p1' });
+      assertEqual([has(el, 'p1', 'pointed'), has(el, 't1', 'lit')], [true, false], 'a ref alone marks just itself');
+      announce({ ref: null });
+      assertEqual(el.querySelectorAll('.sb-outliner__entry--pointed, .sb-outliner__entry--lit').length, 0);
+    });
+
+    test('a closed item is marked for its parts', () => {
+      const el = setup();
+      announce({ ref: 't1.demand' });
+      assert(has(el, 't1', 'pointed'), 'closed, it stands for the part');
+      caret(el, 't1').click();
+      assertEqual([has(el, 't1', 'pointed'), has(el, 't1.demand', 'pointed')], [false, true]);
+      announce({ ref: null });
+    });
+
+    // ---- Pins ----
+
+    test('a pin keeps a trace lit, says so, and sends every pinned trace as sb-pins', () => {
+      const el = setup();
+      const pinned = recordEvents(el, 'sb-pin');
+      const sent = recordEvents(document, 'sb-pins');
+      pin(el, 't1', 'fill').click();
+      pin(el, 't2', 'outline').click();
+      assertEqual(pinned.map((e) => e.detail), [{ ref: 't1', kind: 'fill', pinned: true }, { ref: 't2', kind: 'outline', pinned: true }]);
+      assertEqual(sent.at(-1).detail, { fill: TRACES.t1, outline: ['t2'], glow: false });
+      assertEqual(sent.at(-1).target, el);
+      assertEqual([pin(el, 't1', 'fill').getAttribute('aria-pressed'), has(el, 'p1', 'pinned-fill'), has(el, 't2', 'pinned-outline')], ['true', true, true]);
+      pin(el, 't1', 'fill').click();
+      assertEqual([el.pins, pinned.at(-1).detail.pinned], [{ fill: [], outline: ['t2'] }, false]);
+    });
+
+    test('Unpin all clears every pin, saying so for each', () => {
+      const el = setup();
+      el.pins = { fill: ['t1'], outline: ['p1'] };
+      const pinned = recordEvents(el, 'sb-pin');
+      action(el, 'unpin').click();
+      assertEqual([el.pins, pinned.length, action(el, 'unpin').disabled], [{ fill: [], outline: [] }, 2, true]);
+    });
+
+    test('setting pins sends sb-pins and no sb-pin', () => {
+      const el = setup();
+      const pinned = recordEvents(el, 'sb-pin');
+      const sent = recordEvents(el, 'sb-pins');
+      el.pins = { fill: ['p1'] };
+      assertEqual([pinned.length, sent.at(-1).detail.fill], [0, TRACES.p1]);
+    });
+
+    test('pins follow the model: setting items or refresh() works their traces out again', () => {
+      const el = setup();
+      el.pins = { fill: ['t1'] };
+      const sent = recordEvents(el, 'sb-pins');
+      el.trace = (ref) => [ref, 'elsewhere'];
+      el.refresh();
+      assertEqual(sent.at(-1).detail.fill, ['t1', 'elsewhere']);
+      el.items = ITEMS;
+      assertEqual(sent.length, 2);
+    });
+
+    test('pins on refs that are gone are dropped', () => {
+      const el = setup();
+      el.pins = { fill: ['t1', 't1.demand'], outline: ['t2'] };
+      el.items = ITEMS.filter((item) => item.ref !== 't1');
+      assertEqual(el.pins, { fill: [], outline: ['t2'] });
+    });
+
+    // ---- Glow ----
+
+    test('Glow makes pinned highlights glow, here and, through sb-pins, on the page', () => {
+      const el = setup();
+      const sent = recordEvents(el, 'sb-pins');
+      action(el, 'glow').click();
+      assertEqual([el.glow, action(el, 'glow').getAttribute('aria-pressed'), el.classList.contains('sb-outliner__glowing'), sent.at(-1).detail.glow], [true, 'true', true, true]);
+      assertEqual(getComputedStyle(el).animationName, 'sb-outliner-glow');
+      el.glow = false;
+      assertEqual([el.classList.contains('sb-outliner__glowing'), sent.at(-1).detail.glow], [false, false]);
+    });
+
+    test('pinned colours made with --sb-glow fade to 5% and back', () => {
+      const el = setup();
+      el.glow = true;
+      const rules = [...document.getElementById('sb-outliner-style').sheet.cssRules];
+      const frames = rules.find((rule) => rule.name === 'sb-outliner-glow');
+      assertEqual(frames.cssRules[0].style.getPropertyValue('--sb-glow').trim(), '0.05');
+    });
+
+    // ---- The panel ----
+
+    test('Close hides the panel and says so; open shows it again quietly', () => {
+      const el = setup('heading="The grid"');
+      const heard = recordEvents(el, 'sb-open');
+      action(el, 'close').click();
+      assertEqual([el.open, el.hidden, getComputedStyle(el).display], [false, true, 'none']);
+      el.open = true;
+      assertEqual([el.open, el.hidden, heard.map((e) => e.detail)], [true, false, [{ panel: 'The grid', open: false }]]);
+    });
+
+    test('reveal opens the panel and the item holding a part', () => {
+      const el = setup();
+      el.open = false;
+      assertEqual(el.reveal('t1.line'), true);
+      assertEqual([el.open, Boolean(entry(el, 't1.line'))], [true, true]);
+      assertEqual(el.reveal('nowhere'), false);
+    });
+
+    test('the panel is dragged by its bar, and stays within the window', () => {
+      const el = setup();
+      const bar = el.querySelector('.sb-outliner__bar');
+      const start = el.getBoundingClientRect();
+      const at = (type, x, y) => bar.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1, clientX: x, clientY: y }));
+      at('pointerdown', start.left + 20, start.top + 10);
+      at('pointermove', start.left - 80, start.top + 60);
+      at('pointerup', start.left - 80, start.top + 60);
+      const moved = el.getBoundingClientRect();
+      assertEqual([Math.round(moved.left), Math.round(moved.top)], [Math.round(start.left - 100), Math.round(start.top + 50)]);
+      at('pointerdown', moved.left + 20, moved.top + 10);
+      at('pointermove', -500, -500);
+      at('pointerup', -500, -500);
+      const kept = el.getBoundingClientRect();
+      assertEqual([kept.left, kept.top], [0, 0], 'kept within the window');
+    });
+
+    // ---- Remembering ----
+
+    test('with an id, pins, open items, glow and whether it is open are remembered', () => {
+      clearStore();
+      const first = setup('id="test-outliner"');
+      first.pins = { fill: ['t1'] };
+      caret(first, 'p1').click();
+      first.glow = true;
+      action(first, 'close').click();
+      const again = setup('id="test-outliner"');
+      assertEqual([again.pins.fill, Boolean(entry(again, 'p1.output')), again.glow, again.open], [['t1'], true, true, false]);
+      clearStore();
+    });
+
+    test('works when the browser refuses storage', () => {
+      clearStore();
+      const setItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = () => { throw new Error('refused'); };
+      try {
+        const el = setup('id="test-outliner"');
+        pin(el, 't1', 'fill').click();
+        assertEqual(el.pins.fill, ['t1']);
+      } finally {
+        Storage.prototype.setItem = setItem;
+      }
+    });
+
+    test('two on one page keep their own outlines and pins', () => {
+      const area = mount('<div><sb-outliner></sb-outliner><sb-outliner></sb-outliner></div>');
+      const [a, b] = area.querySelectorAll('sb-outliner');
+      a.items = ITEMS;
+      b.items = [{ ref: 'z', label: 'Z' }];
+      const sentByB = recordEvents(b, 'sb-pins');
+      pin(a, 't1', 'fill').click();
+      assertEqual([a.pins.fill, b.pins.fill, sentByB.length], [['t1'], [], 0]);
+      assertEqual(b.querySelectorAll('.sb-outliner__entry').length, 1);
+    });
+  </script>
+</body>
+</html>
