@@ -182,6 +182,50 @@
       assertEqual(press('t').defaultPrevented, true);
     });
 
+    // ---- Panels ----
+
+    // Two plain elements as panels: a heading and an open property are all a panel needs.
+    function withPanels() {
+      const el = shell('<div slot="panels" heading="Highlights"><button data-action="collapse">Inside</button></div><div slot="panels" heading="Notes"></div>');
+      const panels = [...el.querySelectorAll(':scope > [heading]')];
+      panels[0].open = true;
+      panels[1].open = false;
+      el._showPanels();
+      return { el, panels, buttons: [...el.querySelectorAll('.sb-shell__panel-button')] };
+    }
+
+    test('without panels there are no panel buttons', () => {
+      assert(shell().querySelector('.sb-shell__panels').hidden);
+    });
+
+    test('each panel has a button in the header by its heading, pressed while it is open', () => {
+      const { buttons } = withPanels();
+      assertEqual(buttons.map((b) => [b.textContent, b.getAttribute('aria-pressed')]), [['Highlights', 'true'], ['Notes', 'false']]);
+    });
+
+    test('a panel button opens and closes its panel, and says so', () => {
+      const { el, panels, buttons } = withPanels();
+      const heard = recordEvents(el, 'sb-open');
+      buttons[1].click();
+      buttons[0].click();
+      assertEqual([panels.map((p) => p.open), buttons.map((b) => b.getAttribute('aria-pressed'))], [[false, true], ['false', 'true']]);
+      assertEqual(heard.map((e) => e.detail), [{ panel: 'Notes', open: true }, { panel: 'Highlights', open: false }]);
+    });
+
+    test('a panel that closes itself puts its button back', () => {
+      const { panels, buttons } = withPanels();
+      panels[0].open = false;
+      panels[0].dispatchEvent(new CustomEvent('sb-open', { bubbles: true, detail: { panel: 'Highlights', open: false } }));
+      assertEqual(buttons[0].getAttribute('aria-pressed'), 'false');
+    });
+
+    test('panels sit outside the header, which leaves their clicks alone and never hides them', () => {
+      const { el, panels } = withPanels();
+      assert(!el.querySelector('.sb-shell__bar').contains(panels[0]), 'outside the bar');
+      panels[0].querySelector('button').click();
+      assert(!el.collapsed, 'a button inside a panel is the panel\'s own');
+    });
+
     test('shows the controls named in the controls attribute, in that order', () => {
       const el = shell('', 'controls="collapse settings"');
       const actions = [...el.querySelectorAll('.sb-shell__controls [data-action]')].map((b) => b.dataset.action);

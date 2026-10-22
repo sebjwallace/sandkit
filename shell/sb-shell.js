@@ -1,10 +1,11 @@
-// Sandkit sb-shell 0.1.7 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-shell 0.1.8 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The sandbox shell: the header and the settings dialog around a sandbox.
 //
 //   <sb-shell heading="My sandbox" controls="fullscreen settings collapse">
 //     <p>Header content, such as the goal. Long content shows one line, with More / Less.</p>
 //     <button slot="actions">Share</button>                     beside the header controls
 //     <sb-comments slot="modes"></sb-comments>                  a mode, chosen in the mode picker
+//     <aside slot="panels" heading="Notes"></aside>             a panel, opened from a header button
 //     <sb-theme-settings slot="settings"></sb-theme-settings>   a section in settings
 //   </sb-shell>
 //
@@ -58,7 +59,11 @@
     .sb-shell__page--excluded { color: var(--sb-muted, #616e7c); text-decoration: line-through; cursor: help; }
     .sb-shell__exported { margin: 6px 0 0; font-size: 12px; color: var(--sb-muted, #616e7c); }
     .sb-shell__exported[hidden] { display: none; }
-    .sb-shell__actions, .sb-shell__controls, .sb-shell__modes { flex: none; display: flex; align-items: center; gap: 6px; }
+    .sb-shell__actions, .sb-shell__controls, .sb-shell__modes, .sb-shell__panels { flex: none; display: flex; align-items: center; gap: 6px; }
+    .sb-shell__panels[hidden] { display: none; }
+    .sb-shell__panel-button { padding: 7px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: inherit; font-size: 13px; cursor: pointer; }
+    .sb-shell__panel-button[aria-pressed="true"] { border-color: var(--sb-accent, #2563eb); color: var(--sb-accent, #2563eb); font-weight: 600; }
+    .sb-shell__panel-button:focus-visible { outline: 2px solid var(--sb-accent, #2563eb); outline-offset: 1px; }
     .sb-shell__modes[hidden] { display: none; }
     .sb-shell__mode { appearance: none; padding: 7px 30px 7px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background-color: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: inherit; font-size: 13px; cursor: pointer; }
     /* The picker's own chevron, the header's icon, set in from the edge in place of the browser's. */
@@ -259,7 +264,7 @@
     _build() {
       if (this._built) return; // a shell moved while the page loads is asked twice
       this._built = true;
-      const { content, actions, sections, modes } = this._takeChildren();
+      const { content, actions, sections, modes, panels } = this._takeChildren();
       this._restoreCollapsed();
 
       this.innerHTML = `
@@ -270,6 +275,7 @@
             <p class="sb-shell__exported" hidden></p>
           </div>
           <div class="sb-shell__modes" data-modes hidden><span class="sb-shell__picker"><select class="sb-shell__mode" aria-label="Mode"></select>${icon('open')}</span></div>
+          <div class="sb-shell__panels" hidden></div>
           <div class="sb-shell__actions"></div>
           <div class="sb-shell__controls">${this._controlButtons()}</div>
         </header>
@@ -302,25 +308,28 @@
       this._showExported();
       sections.forEach((section) => this._addSection(section));
       this._addModes(modes);
+      this._addPanels(panels);
 
       this.addEventListener('click', (e) => this._onClick(e));
       this.addEventListener('sb-mode', (e) => this._followMode(e));
+      this.addEventListener('sb-open', (e) => this._showPanels(e));
       this._fileInput.addEventListener('change', () => this._importFile(this._fileInput.files[0]));
       this._showFullscreenState();
       this._measureCompact();
       this._followScroll();
     }
 
-    // Sorts the shell's children by slot: actions, settings sections, and header content.
+    // Sorts the shell's children by slot: actions, settings sections, modes, panels, and header content.
     _takeChildren() {
       const slotted = (name) => [...this.querySelectorAll(`:scope > [slot="${name}"]`)];
       const actions = slotted('actions');
       const sections = slotted('settings');
       const modes = slotted('modes');
-      const placed = [...actions, ...sections, ...modes];
+      const panels = slotted('panels');
+      const placed = [...actions, ...sections, ...modes, ...panels];
       placed.forEach((el) => el.removeAttribute('slot'));
       const rest = [...this.childNodes].filter((node) => !placed.includes(node));
-      return { content: hasContent(rest) ? rest : [], actions, sections, modes };
+      return { content: hasContent(rest) ? rest : [], actions, sections, modes, panels };
     }
 
     _restoreCollapsed() {
@@ -512,6 +521,32 @@
 
     _modeName(mode) { return mode.getAttribute('heading') || mode.heading; }
 
+    // ---- Panels ----
+
+    // A button in the header for each panel, by its heading, pressed while it's open. The panels
+    // themselves sit after the header, outside the bar, so hiding the header never hides them.
+    _addPanels(panels) {
+      this._panels = panels;
+      const buttons = this.querySelector('.sb-shell__panels');
+      panels.forEach((panel) => customElements.upgrade(panel)); // their heading and open are needed now
+      buttons.innerHTML = panels.map((panel, i) => `<button type="button" class="sb-shell__panel-button" data-panel="${i}">${esc(this._modeName(panel))}</button>`).join('');
+      buttons.hidden = panels.length === 0;
+      this.append(...panels);
+      this._showPanels();
+    }
+
+    // The viewer opened or closed a panel from the header. Listeners hear which, and whether it's open.
+    _togglePanel(panel) {
+      panel.open = !panel.open;
+      this._showPanels();
+      this.dispatchEvent(new CustomEvent('sb-open', { bubbles: true, detail: { panel: this._modeName(panel), open: panel.open } }));
+    }
+
+    // Each button shows whether its panel is open, following panels closed from their own bars.
+    _showPanels() {
+      this._panels.forEach((panel, i) => this.querySelector(`[data-panel="${i}"]`).setAttribute('aria-pressed', String(Boolean(panel.open))));
+    }
+
     // ---- Settings ----
 
     _addSection(element) {
@@ -551,8 +586,10 @@
     _onClick(e) {
       // A click on the dialog's backdrop lands on the dialog element itself.
       if (e.target === this._dialog) return this.closeSettings();
-      // Sections handle their own buttons.
-      if (this._sections.some((section) => section.contains(e.target))) return;
+      // Sections and panels handle their own buttons.
+      if ([...this._sections, ...this._panels].some((part) => part.contains(e.target))) return;
+      const panel = e.target.closest('[data-panel]');
+      if (panel) return this._togglePanel(this._panels[panel.dataset.panel]);
       const action = e.target.closest('[data-action]')?.dataset.action;
       switch (action) {
         case 'collapse': return this._collapse();

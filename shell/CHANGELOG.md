@@ -2,6 +2,9 @@
 
 Covers `sb-shell`, `sb-theme-settings` and `sb-export`, which are versioned together.
 
+## 0.1.8 · 2026-10-22
+- Panels: a `panels` slot for things viewers keep beside the page, such as `sb-outliner`. Each gets a button in the header, by its heading, that opens and closes it; `sb-open` says so, and a panel closed from its own bar puts its button back. Any element with a `heading` and an `open` property can be one.
+
 ## 0.1.7 · 2026-10-22
 - Keys for modes: each mode's first letter (C, T, I), or a `key` attribute on the mode, turns it on, and again goes back to Explore. Shown in the mode picker beside each name ("Trace · T") and listed when the picker is pointed at. Left alone while typing, with Ctrl, ⌘ or Alt, or when the page has used the key.
 - The mode picker's chevron is the header's own icon, set in from the edge like the other buttons, in place of the browser's, which sat against the border.

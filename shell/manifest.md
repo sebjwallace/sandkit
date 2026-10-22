@@ -50,6 +50,7 @@ Style the page with the theme tokens, for example `body { background: var(--sb-b
 | `slot="actions"` | Buttons or links shown beside the header controls. |
 | `slot="settings"` | A section in the settings dialog. Titled by its `heading` attribute or property. |
 | `slot="modes"` | A mode, offered in the header's mode picker by its `heading` attribute or property. Its key is the first letter of its heading, or its own `key` attribute. |
+| `slot="panels"` | A panel, such as [`sb-outliner`](../components/sb-outliner/manifest.md), opened and closed by a button in the header named by its `heading` attribute or property. |
 
 | Property or method | Meaning |
 |---|---|
@@ -66,11 +67,14 @@ Style the page with the theme tokens, for example `body { background: var(--sb-b
 | Event | Detail | When |
 |---|---|---|
 | `sb-collapse` | `{ collapsed }` | The header is hidden or shown. Useful for resizing canvases. |
+| `sb-open` | `{ panel, open }` | The viewer opened or closed a panel with its header button. `panel` is its heading. Bubbles to `document`, where panels closed from their own bars are heard too. |
 | `sb-mode` | `{ mode, active }` | The viewer chose a mode in the picker (`active: true`, with its heading), or Explore (`active: false`, with the mode that ended). Bubbles to `document`, where modes started or ended from their own banners are heard too. |
 
 **Compact while scrolled.** Once the page has scrolled past the header, a compact one stays at the top of the window: the title, the mode picker, actions and controls, without the goal or pages. Scrolling back up shows the full header again. The full header keeps its place on the page meanwhile, so nothing below it moves. The shell sets `--sb-header-height` on `<html>` to the compact header's height while it shows, and `0px` otherwise, so anything else sticking to the top of the window can sit below it: `top: var(--sb-header-height, 0px)`. It also sets the page's scroll padding to that height, so going to any part of the page lands below the header. A hidden (collapsed) header stays hidden.
 
 **Modes.** A mode changes what a click does until the viewer leaves it, such as commenting or tracing (see the [modes practice](../practices/modes.md)). Any element with a `heading` and an `active` property can be one. The picker offers Explore, then each mode; choosing one sets its `active` and turns the others off, so only one is ever on. A mode ended or started from its own banner fires `sb-mode` from itself, and the picker follows. The picker is marked `data-modes`, which every mode lets clicks through, so it's always in reach. Each mode has a key: the first letter of its heading (C for Comment, T for Trace, I for Inspect), or a `key` attribute on the mode; a letter already taken leaves a later mode without one. Pressing it turns the mode on, and pressing it again goes back to Explore, as Esc does in every mode. Keys are left alone while someone is typing in a field, with Ctrl, ⌘ or Alt held, or when something on the page has already used the key. The picker shows each mode's key beside its name, and lists them all when pointed at. The shell knows no mode by name, and without modes shows no picker.
+
+**Panels.** A panel is something viewers keep beside the page while they work, such as an outline of what can be highlighted. Any element with a `heading` and an `open` property can be one. Each gets a button in the header, named by its heading and pressed while it's open; pressing it switches `open` and fires `sb-open`. Several can be open at once, and none changes what a click does, which is what sets them apart from modes. A panel closed from its own bar fires `sb-open` from itself (`open: false`), and its button follows. Panels sit after the header, outside its bar, so hiding the header never hides them; they float, draw their own frame and handle their own clicks. The shell knows no panel by name, and without panels shows no buttons.
 
 **Settings sections.** Any element can be a section. If it also has `settingsKey`, `exportSettings()` and `importSettings(data)`, it is included when viewers export or import their settings as a file. The shell knows no section by name; the sandbox declares the ones it wants.
 
