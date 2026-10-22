@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-inspect-mode demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-inspect-mode.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .muted { color: var(--sb-muted); }
+    .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 12px; font-size: 14px; }
+    button.act { padding: 5px 12px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); color: var(--sb-text); font: inherit; font-weight: 600; cursor: pointer; }
+
+    /* What the card says, written by the sandbox. */
+    .sb-inspect-mode__content p { margin: 0 0 8px; font-size: 13.5px; }
+    .sb-inspect-mode__content dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0 0 8px; font-size: 13px; }
+    .sb-inspect-mode__content dt { color: var(--sb-muted); }
+    .sb-inspect-mode__content dd { margin: 0; }
+
+    /* The engine: a cutaway of one cylinder, drawn in theme colours. */
+    .engine { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start; }
+    @media (max-width: 640px) { .engine { grid-template-columns: 1fr; } }
+    .engine svg { width: 100%; height: auto; }
+    .engine .metal { fill: var(--sb-surface-2); stroke: var(--sb-muted); stroke-width: 1.5; }
+    .engine .moving { fill: color-mix(in srgb, var(--sb-accent) 22%, var(--sb-surface-2)); stroke: var(--sb-accent); stroke-width: 1.5; }
+    .engine .rod { stroke: var(--sb-accent); stroke-linecap: round; }
+    .engine .valve { stroke: var(--sb-muted); stroke-linecap: round; fill: none; }
+    .engine .ring { stroke: var(--sb-text); stroke-width: 2; }
+    .engine .path { fill: none; stroke: var(--sb-border); stroke-dasharray: 3 4; }
+    .engine .chamber { transition: fill 0.2s; }
+    .engine .chamber.intake, .engine .chamber.compression { fill: color-mix(in srgb, var(--sb-accent) 30%, transparent); }
+    .engine .chamber.power { fill: color-mix(in srgb, var(--sb-bad) 45%, transparent); }
+    .engine .chamber.exhaust { fill: color-mix(in srgb, var(--sb-muted) 35%, transparent); }
+    .engine .spark { fill: var(--sb-warn); }
+    .engine label { display: block; margin: 0 0 4px; font-size: 13px; color: var(--sb-muted); }
+    .engine input[type="range"] { width: 100%; max-width: 360px; }
+    .stroke-now { margin: 4px 0 12px; font-size: 20px; font-weight: 700; }
+    .strokes { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; padding: 0; list-style: none; font-size: 13px; }
+    .strokes li { padding: 2px 10px; border: 1px solid var(--sb-border); border-radius: 999px; color: var(--sb-muted); }
+    .strokes li.on { border-color: var(--sb-accent); color: var(--sb-accent); font-weight: 600; }
+
+    /* The weather report */
+    .report { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; font: 600 17px ui-monospace, Menlo, Consolas, monospace; }
+    .token { padding: 3px 6px; border-radius: 4px; background: var(--sb-surface-2); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-inspect-mode">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <sb-inspect-mode slot="modes"></sb-inspect-mode>
+    <p>Point at anything and be told exactly what it is.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>A sandbox is full of short labels that stand for something precise: a code, a column, a branch, a value. People guess what they mean, and a guess is where misreadings start. Inspect mode removes the guess. Choose <strong>Inspect</strong> at the top, point at a label, and a card at the side says what the thing is, in whatever way explains it best. Click to hold the card while you read it.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Codes and jargon,</strong> such as the groups of a weather report or the codes of a rulebook, where each label needs decoding.</li>
+        <li><strong>The parts of a machine or a system,</strong> such as an engine: what each part is, and what it's doing at this moment of the model.</li>
+        <li><strong>Labels in diagrams,</strong> where there's no room for more than a word: a question in a decision tree, a box in an architecture.</li>
+        <li><strong>The data behind a thing,</strong> with the lines that matter picked out, when that's the clearest answer.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>How do we know this?</strong> That's trace mode, which follows a thing back to its sources. Inspecting says what a thing is.</li>
+        <li><strong>Seeing how things connect while you work.</strong> That's highlighting, in the sandbox as it normally is. A mode is for a while, then you go back to exploring.</li>
+        <li><strong>Something everyone must read.</strong> Put it on the page, not behind a mode.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-inspect-mode/sb-inspect-mode.js"&gt;&lt;/script&gt;
+&lt;sb-shell&gt;
+  &lt;sb-inspect-mode slot="modes"&gt;&lt;/sb-inspect-mode&gt;
+&lt;/sb-shell&gt;
+&lt;g data-ref="piston"&gt;…&lt;/g&gt;
+
+inspect.explain = (ref) =&gt; ref === 'piston'
+  ? { kind: 'Part', title: 'Piston', body: '&lt;p&gt;A short plug that slides in the cylinder…&lt;/p&gt;' }
+  : null;</pre>
+      <p>Anything marked <code>data-ref</code> that the sandbox can explain is outlined while inspecting, including the parts components draw. Everything else is left alone.</p>
+
+      <h3>Making it reveal, not just display</h3>
+      <ul>
+        <li><strong>Lead with what it means,</strong> in plain words, before any detail.</li>
+        <li><strong>Say how it stands now,</strong> from the model: the reading, the value, whether it's in force and why.</li>
+        <li><strong>Say what it touches:</strong> what it feeds, what decides it, how many cases take it.</li>
+        <li><strong>Choose per kind.</strong> A definition suits a term, what it's doing now suits a moving part, a rule suits an outcome. Keep each short enough to read without scrolling.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Inside an engine</h2>
+      <p>One cylinder of a four-stroke petrol engine, cut away. Choose Inspect and point at any part to see what it is and what it's doing now. Back in Explore, turn the crank and inspect again: the same part is doing something else.</p>
+      <div class="engine">
+        <svg viewBox="100 0 200 360" role="img" aria-label="A cutaway of one cylinder">
+          <rect class="chamber" data-ref="chamber" x="140" y="70" width="120" height="20"/>
+          <g data-ref="cylinder">
+            <rect class="metal" x="128" y="70" width="12" height="165"/>
+            <rect class="metal" x="260" y="70" width="12" height="165"/>
+          </g>
+          <circle class="path" cx="200" cy="290" r="45"/>
+          <g data-ref="crankshaft">
+            <circle class="moving" cx="200" cy="290" r="30"/>
+            <line class="rod" id="crank-arm" x1="200" y1="290" x2="200" y2="245" stroke-width="16"/>
+            <circle class="metal" cx="200" cy="290" r="8"/>
+          </g>
+          <line class="rod" data-ref="con-rod" id="con-rod" x1="200" y1="115" x2="200" y2="245" stroke-width="10"/>
+          <g data-ref="piston" id="piston">
+            <rect class="moving" x="142" y="0" width="116" height="40" rx="2"/>
+            <g data-ref="piston-rings">
+              <line class="ring" x1="142" x2="258" y1="7" y2="7"/>
+              <line class="ring" x1="142" x2="258" y1="14" y2="14"/>
+            </g>
+            <circle class="metal" cx="200" cy="25" r="6"/>
+          </g>
+          <rect class="metal" data-ref="head" x="120" y="30" width="160" height="40" rx="3"/>
+          <g data-ref="intake-valve" id="intake-valve">
+            <line class="valve" x1="165" x2="165" y1="8" y2="68" stroke-width="4"/>
+            <line class="valve" x1="150" x2="180" y1="68" y2="68" stroke-width="6"/>
+          </g>
+          <g data-ref="exhaust-valve" id="exhaust-valve">
+            <line class="valve" x1="235" x2="235" y1="8" y2="68" stroke-width="4"/>
+            <line class="valve" x1="220" x2="250" y1="68" y2="68" stroke-width="6"/>
+          </g>
+          <g data-ref="spark-plug">
+            <rect class="metal" x="194" y="2" width="12" height="50" rx="2"/>
+            <line class="valve" x1="200" x2="200" y1="52" y2="70" stroke-width="3"/>
+          </g>
+          <polygon class="spark" id="spark" points="200,64 204,74 214,76 205,81 207,92 200,85 193,92 195,81 186,76 196,74"/>
+        </svg>
+        <div>
+          <label for="crank">Crank angle: <span id="angle"></span></label>
+          <input type="range" id="crank" min="0" max="690" step="30" value="90">
+          <p class="stroke-now" id="stroke-now"></p>
+          <ul class="strokes" id="strokes"></ul>
+          <p class="muted">Two turns of the crank make one cycle of four strokes, and only one of them, power, pushes the engine round.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="example">
+      <h2>Reading an airfield's weather report</h2>
+      <p>Pilots get the weather as a line of code. Choose Inspect and point at each group to have it read out; click one to hold it.</p>
+      <div class="bar">
+        <button type="button" class="act" id="next-report">Next report</button>
+        <span id="report-name" class="muted"></span>
+      </div>
+      <div class="report" id="report"></div>
+      <p class="muted" id="report-summary"></p>
+    </section>
+  </main>
+
+  <script>
+    // ---- The engine: one cylinder, set by the crank angle over a cycle of two turns ----
+
+    const STROKES = [
+      { id: 'intake', name: 'Intake', what: 'The piston moves down with the intake valve open, drawing fuel and air into the cylinder.' },
+      { id: 'compression', name: 'Compression', what: 'Both valves shut, the piston moves up and squeezes the mixture into the small space at the top.' },
+      { id: 'power', name: 'Power', what: 'The spark lights the mixture, and the burning gas pushes the piston down. The only stroke that drives the engine.' },
+      { id: 'exhaust', name: 'Exhaust', what: 'The exhaust valve opens and the piston moves up, pushing the burnt gas out.' },
+    ];
+    const CRANK = 45, ROD = 130, AXLE = { x: 200, y: 290 }; // the crank's throw, the rod's length and the crank's centre
+    const TOP = 90, BOTTOM = 180;                           // the piston's top at the top and bottom of its travel
+
+    const engine = { angle: 90 };
+    const stroke = () => STROKES[Math.floor((engine.angle % 720) / 180)];
+    const sparking = () => stroke().id === 'power' && engine.angle % 180 < 30;
+
+    // Where the moving parts are at the crank angle: the crank pin, the piston pin, the piston's top.
+    function geometry(angle) {
+      const t = (angle * Math.PI) / 180;
+      const pin = { x: AXLE.x + CRANK * Math.sin(t), y: AXLE.y - CRANK * Math.cos(t) };
+      const wrist = { x: AXLE.x, y: pin.y - Math.sqrt(ROD ** 2 - (pin.x - AXLE.x) ** 2) };
+      return { pin, wrist, top: wrist.y - 25 };
+    }
+
+    const set = (id, attributes) => Object.entries(attributes).forEach(([name, value]) => document.getElementById(id).setAttribute(name, value));
+
+    // Moves the parts in place rather than redrawing, so an outlined part stays the same element.
+    function drawEngine() {
+      const { pin, wrist, top } = geometry(engine.angle);
+      const now = stroke();
+      set('piston', { transform: `translate(0 ${top})` });
+      set('con-rod', { x1: wrist.x, y1: wrist.y, x2: pin.x, y2: pin.y });
+      set('crank-arm', { x2: pin.x, y2: pin.y });
+      set('intake-valve', { transform: `translate(0 ${now.id === 'intake' ? 10 : 0})` });
+      set('exhaust-valve', { transform: `translate(0 ${now.id === 'exhaust' ? 10 : 0})` });
+      set('spark', { visibility: sparking() ? 'visible' : 'hidden' });
+      const chamber = document.querySelector('[data-ref="chamber"]');
+      chamber.setAttribute('height', top - 70);
+      chamber.setAttribute('class', `chamber ${now.id}`);
+
+      document.getElementById('angle').textContent = `${engine.angle}° (turn ${engine.angle < 360 ? 1 : 2} of 2)`;
+      document.getElementById('stroke-now').textContent = `${now.name} stroke`;
+      document.getElementById('strokes').innerHTML = STROKES.map((s) =>
+        `<li data-ref="stroke-${s.id}" class="${s === now ? 'on' : ''}">${s.name}</li>`).join('');
+    }
+
+    // What each part is, then what it's doing at this point in the cycle.
+    const PARTS = {
+      head: { name: 'Cylinder head', fixed: true, is: 'The block that closes the top of the cylinder. It holds the valves and the spark plug, and has passages for fuel and air in and burnt gas out.',
+        now: () => 'Sealing the top of the chamber.' },
+      cylinder: { name: 'Cylinder', fixed: true, is: 'The smooth bore the piston slides up and down in.',
+        now: () => `The piston is ${Math.round(((geometry(engine.angle).top - TOP) / (BOTTOM - TOP)) * 100)}% of the way down, moving ${engine.angle % 360 < 180 ? 'down' : 'up'}.` },
+      chamber: { name: 'Combustion chamber', fixed: true, is: 'The space between the piston and the cylinder head. Its size changes as the piston moves: about ten times bigger at the bottom than at the top.',
+        now: () => ({ intake: 'Filling with fuel and air.', compression: 'Fuel and air, being squeezed to a tenth of the space.', power: 'Burning gas, at its hottest and highest pressure.', exhaust: 'Burnt gas, being pushed out.' })[stroke().id] },
+      piston: { name: 'Piston', is: 'A short plug that slides in the cylinder. Burning gas pushes it down; the rest of the time it draws gas in or pushes it out.',
+        now: () => ({ intake: 'Moving down, drawing in fuel and air.', compression: 'Moving up, squeezing the mixture.', power: 'Being pushed down by the burning gas, driving the engine.', exhaust: 'Moving up, pushing out the burnt gas.' })[stroke().id] },
+      'piston-rings': { name: 'Piston rings', is: 'Springy rings in grooves round the piston. They press against the cylinder wall so the gas can\'t leak past the piston and the oil below can\'t get up into the chamber.',
+        now: () => ['compression', 'power'].includes(stroke().id) ? 'Holding back the most pressure of the cycle.' : 'Little pressure to hold back.' },
+      'con-rod': { name: 'Connecting rod', is: 'Joins the piston to the crankshaft, turning the piston\'s up and down into the crank\'s round and round.',
+        now: () => `Leaning ${Math.abs(Math.round((Math.asin((CRANK / ROD) * Math.sin((engine.angle * Math.PI) / 180)) * 180) / Math.PI))}° from upright as the crank pin swings round.` },
+      crankshaft: { name: 'Crankshaft', is: 'The shaft the engine turns. Its offset pin swings round, so the rod pushes and pulls the piston. It turns twice for every power stroke; a heavy flywheel keeps it going in between.',
+        now: () => `At ${engine.angle % 360}°, on turn ${engine.angle < 360 ? 1 : 2} of the cycle.` },
+      'intake-valve': { name: 'Intake valve', is: 'A mushroom-shaped valve that opens to let fuel and air in. A cam pushes it open and a spring closes it.',
+        now: () => stroke().id === 'intake' ? 'Open: fuel and air are flowing in.' : 'Shut.' },
+      'exhaust-valve': { name: 'Exhaust valve', is: 'Opens to let the burnt gas out. It runs hotter than anything else in the engine.',
+        now: () => stroke().id === 'exhaust' ? 'Open: burnt gas is leaving.' : 'Shut.' },
+      'spark-plug': { name: 'Spark plug', is: 'Makes a spark across a small gap to light the squeezed fuel and air, just as the piston reaches the top.',
+        now: () => sparking() ? 'Sparking.' : stroke().id === 'compression' ? 'About to fire, once the piston reaches the top.' : 'Waiting for the next power stroke.' },
+    };
+
+    const away = (s) => (STROKES.indexOf(s) - STROKES.indexOf(stroke()) + 4) % 4;
+
+    function explainEngine(ref) {
+      const part = PARTS[ref];
+      if (part) {
+        return { kind: part.fixed ? 'Part · fixed' : 'Part · moving', title: part.name,
+          body: `<p>${part.is}</p><dl><dt>Now</dt><dd>${part.now()}</dd><dt>Stroke</dt><dd>${stroke().name}</dd></dl>` };
+      }
+      const s = STROKES.find((s) => `stroke-${s.id}` === ref);
+      if (s) return { kind: 'Stroke', title: `${s.name} stroke`, body: `<p>${s.what}</p><p class="muted">${s === stroke() ? 'Happening now.' : (away(s) === 1 ? 'Comes next.' : `Comes in ${away(s)} strokes.`)}</p>` };
+      return null;
+    }
+
+    // ---- The weather report: each group of the code, read out ----
+
+    const REPORTS = [
+      { name: 'Edinburgh, 10:50 on the 22nd', summary: 'Breezy and gusty from the south-west, light rain, low cloud: a crosswind to watch.', groups: [
+        { text: 'EGPH', kind: 'Station', title: 'Edinburgh Airport', words: 'The airfield, by its four-letter ICAO code. EG is the United Kingdom.' },
+        { text: '221050Z', kind: 'Time', title: '22nd, 10:50 UTC', words: 'Day of the month, then hours and minutes. Z means UTC, whatever the local time.' },
+        { text: '24015G28KT', kind: 'Wind', title: 'From 240° at 15 knots, gusting 28', words: 'Direction the wind blows from, in degrees; speed; G and the gust speed; KT for knots. 240° is south-west.' },
+        { text: '9999', kind: 'Visibility', title: '10 km or more', words: 'In metres. 9999 is the most it says: as far as matters.' },
+        { text: '-RA', kind: 'Weather', title: 'Light rain', words: 'A minus sign means light, a plus heavy. RA is rain.' },
+        { text: 'BKN012', kind: 'Cloud', title: 'Broken at 1,200 ft', words: 'Broken means five to seven eighths of the sky covered. Height in hundreds of feet. The lowest broken layer counts as the cloud base.' },
+        { text: 'OVC025', kind: 'Cloud', title: 'Overcast at 2,500 ft', words: 'Overcast is the whole sky covered, here above the broken layer.' },
+        { text: '09/07', kind: 'Temperatures', title: 'Air 9 °C, dew point 7 °C', words: 'When the two are close the air is nearly saturated: mist and low cloud are likely.' },
+        { text: 'Q0998', kind: 'Pressure', title: '998 hPa', words: 'Pressure at sea level, set on the altimeter so it reads height above the sea. Below 1013 is lower than standard.' },
+      ] },
+      { name: 'Palma, 11:00 on the 22nd', summary: 'Calm, clear and warm: nothing to worry about.', groups: [
+        { text: 'LEPA', kind: 'Station', title: 'Palma de Mallorca', words: 'The airfield, by its ICAO code. LE is Spain.' },
+        { text: '221100Z', kind: 'Time', title: '22nd, 11:00 UTC', words: 'Day of the month, then hours and minutes, in UTC.' },
+        { text: 'VRB03KT', kind: 'Wind', title: 'Variable, 3 knots', words: 'VRB: too light to have a steady direction.' },
+        { text: 'CAVOK', kind: 'Visibility and cloud', title: 'Ceiling and visibility OK', words: 'Visibility 10 km or more, no cloud below 5,000 ft, no weather of note. One word for a good day.' },
+        { text: '24/12', kind: 'Temperatures', title: 'Air 24 °C, dew point 12 °C', words: 'Far apart: dry air, no mist.' },
+        { text: 'Q1021', kind: 'Pressure', title: '1021 hPa', words: 'Above the standard 1013: high pressure, settled weather.' },
+      ] },
+    ];
+    let reportAt = 0;
+    const report = () => REPORTS[reportAt];
+
+    function drawReport() {
+      document.getElementById('report-name').textContent = report().name;
+      document.getElementById('report-summary').textContent = report().summary;
+      document.getElementById('report').replaceChildren(...report().groups.map((g, i) => {
+        const token = Object.assign(document.createElement('span'), { className: 'token', textContent: g.text });
+        token.dataset.ref = `group-${reportAt}-${i}`;
+        return token;
+      }));
+    }
+
+    // A group's ref names its report and place in it.
+    function explainGroup(ref) {
+      const [, r, i] = ref.match(/^group-(\d+)-(\d+)$/) ?? [];
+      const group = REPORTS[r]?.groups[i];
+      if (!group) return null;
+      const body = document.createElement('div');
+      body.innerHTML = '<p></p><dl><dt>Code</dt><dd></dd><dt>Report</dt><dd></dd></dl>';
+      const [words, code, from] = body.querySelectorAll('p, dd');
+      words.textContent = group.words;
+      code.textContent = group.text;
+      from.textContent = REPORTS[r].name;
+      return { kind: group.kind, title: group.title, body };
+    }
+
+    // ---- Start ----
+
+    const inspect = document.querySelector('sb-inspect-mode');
+    inspect.explain = (ref) => explainEngine(ref) ?? explainGroup(ref);
+    document.getElementById('crank').addEventListener('input', (e) => { engine.angle = Number(e.target.value); drawEngine(); });
+    document.getElementById('next-report').addEventListener('click', () => {
+      reportAt = (reportAt + 1) % REPORTS.length;
+      drawReport();
+    });
+    drawEngine();
+    drawReport();
+  </script>
+</body>
+</html>

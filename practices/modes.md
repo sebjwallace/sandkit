@@ -17,12 +17,13 @@ Modes go in the shell's `modes` slot. The shell offers them in a mode picker in 
 </sb-shell>
 ```
 
-Then wire what a pick does, as each mode's manifest says. Every sandbox has comment mode; trace mode comes once the model cites its sources (see the [sources practice](sources.md)).
+Then wire what a pick does, as each mode's manifest says. Every sandbox has comment mode; trace mode comes once the model cites its sources (see the [sources practice](sources.md)); inspect mode once the sandbox has labels people could misread.
 
 | Mode | In the picker | A pick |
 |---|---|---|
 | [`sb-comments`](../components/sb-comments/manifest.md) | Comment | opens a box to comment on the part |
 | [`sb-trace-mode`](../components/sb-trace-mode/manifest.md) | Trace | asks the sandbox to show why the part is there |
+| [`sb-inspect-mode`](../components/sb-inspect-mode/manifest.md) | Inspect | holds the card saying what the part is, shown already by pointing |
 
 To act when a mode starts, such as closing a tour, listen on `document`:
 

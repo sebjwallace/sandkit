@@ -44,6 +44,7 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 | Mode | What it does |
 |---|---|
 | [`sb-comments`](components/sb-comments/manifest.md) | Comments from the people exploring a sandbox: choose Comment, click any part and say what you think; each comment cites its refs, view, version and state, and all are copied as one prompt or downloaded. |
+| [`sb-inspect-mode`](components/sb-inspect-mode/manifest.md) | What something is: choose Inspect, point at any part and a card at the side says what it is and how it stands now, in whatever way the sandbox explains it best; a click holds it. |
 | [`sb-trace-mode`](components/sb-trace-mode/manifest.md) | Why something is there: choose Trace, and pointing outlines every part the model can trace; a click asks the sandbox to show its trace instead of acting. |
 
 ## Components

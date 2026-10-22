@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-inspect-mode tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-inspect-mode.js"></script>
+</head>
+<body>
+  <script>
+    let presses = 0; // clicks that reached the page's own buttons
+
+    // A mode, and parts: PART-1 inside BOX-1, both explained; OTHER inside BOX-1, not explained itself.
+    function setup(attrs = '') {
+      const area = mount(`<div>
+        <sb-inspect-mode ${attrs}></sb-inspect-mode>
+        <div data-ref="BOX-1"><button class="target" data-ref="PART-1">Part 1</button><button class="other" data-ref="OTHER">Other</button></div>
+        <p class="nothing">Nothing to explain</p>
+      </div>`);
+      area.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => presses++));
+      const el = area.querySelector('sb-inspect-mode');
+      el.explain = (ref) => ({ 'PART-1': { kind: 'Part', title: 'Part one', body: '<p>The <b>first</b> part.</p>' }, 'BOX-1': { kind: 'Box', title: 'The box' } })[ref] ?? null;
+      return { el, area, target: area.querySelector('.target'), other: area.querySelector('.other'), nothing: area.querySelector('.nothing') };
+    }
+
+    const card = (el) => el.querySelector('.sb-inspect-mode__card');
+    const outline = (el) => el.querySelector('.sb-inspect-mode__outline');
+    const banner = (el) => el.querySelector('.sb-inspect-mode__banner');
+    const text = (el, part) => el.querySelector(`.sb-inspect-mode__${part}`).textContent;
+    const point = (node) => node.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+    const click = (node) => node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    const escape = () => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    const shown = (el, ref) => waitFor(() => el.current === ref, { message: `${ref} never shown` });
+
+    // ---- The mode ----
+
+    test('is a mode named Inspect, or by its heading', () => {
+      assertEqual(setup().el.heading, 'Inspect');
+      assertEqual(setup('heading="What"').el.heading, 'What');
+    });
+
+    test('active starts inspecting: the page dims, and a banner says what pointing does, with Stop', () => {
+      const { el } = setup();
+      el.active = true;
+      assert(el.querySelector('.sb-inspect-mode__dim').matches(':popover-open'));
+      assert(banner(el).matches(':popover-open'));
+      assert(banner(el).textContent.includes('point at anything outlined'));
+      assert(!card(el).matches(':popover-open'), 'no card until something is pointed at');
+      el.active = false;
+      assert(!banner(el).matches(':popover-open'));
+    });
+
+    test('setting active fires no event', () => {
+      const { el } = setup();
+      const modes = recordEvents(el, 'sb-mode');
+      el.active = true;
+      el.active = false;
+      assertEqual(modes.length, 0);
+    });
+
+    // ---- Pointing ----
+
+    test('pointing at a part shows what it is after a moment, outlined, and says so', async () => {
+      const { el, target } = setup();
+      const inspected = recordEvents(el, 'sb-inspect');
+      el.active = true;
+      point(target);
+      assertEqual(el.current, null, 'not at once');
+      await shown(el, 'PART-1');
+      assert(card(el).matches(':popover-open'));
+      assertEqual([text(el, 'kind'), text(el, 'title'), el.querySelector('.sb-inspect-mode__content b').textContent], ['Part', 'Part one', 'first']);
+      const r = target.getBoundingClientRect(), box = outline(el).getBoundingClientRect();
+      assert(box.left < r.left && box.right > r.right && box.top < r.top && box.bottom > r.bottom, 'outlined round the part');
+      assertEqual(inspected.map((e) => e.detail), [{ ref: 'PART-1' }]);
+      el.active = false;
+    });
+
+    test('a part the sandbox can\'t explain shows the explained part around it', async () => {
+      const { el, other } = setup();
+      el.active = true;
+      point(other);
+      await shown(el, 'BOX-1');
+      el.active = false;
+    });
+
+    test('pointing at nothing keeps what was shown, and cancels what was on its way', async () => {
+      const { el, area, target, nothing } = setup();
+      el.explain = (ref) => (ref === 'PART-1' || ref === 'OTHER' ? { title: ref } : null);
+      el.active = true;
+      point(target);
+      await shown(el, 'PART-1');
+      point(area.querySelector('.other'));
+      point(nothing);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      assertEqual([el.current, text(el, 'title')], ['PART-1', 'PART-1']);
+      el.active = false;
+    });
+
+    test('kind and title are text, never markup; a body can be an element', async () => {
+      const { el, target } = setup();
+      const body = Object.assign(document.createElement('section'), { textContent: 'Any element, components too' });
+      el.explain = () => ({ kind: '<i>k</i>', title: '<b>t</b>', body });
+      el.active = true;
+      point(target);
+      await shown(el, 'PART-1');
+      assertEqual([text(el, 'kind'), text(el, 'title')], ['<i>k</i>', '<b>t</b>']);
+      assert(!el.querySelector('.sb-inspect-mode__card i, .sb-inspect-mode__card b'));
+      assertEqual(el.querySelector('.sb-inspect-mode__content > section'), body);
+      el.active = false;
+    });
+
+    test('a title can be an element', async () => {
+      const { el, target } = setup();
+      const title = Object.assign(document.createElement('code'), { textContent: 'PART-1' });
+      el.explain = () => ({ title });
+      el.active = true;
+      point(target);
+      await shown(el, 'PART-1');
+      assertEqual(el.querySelector('.sb-inspect-mode__title > code'), title);
+      el.active = false;
+    });
+
+    test('pointing adds nothing to the parts themselves', async () => {
+      const { el, target } = setup();
+      el.active = true;
+      point(target);
+      await shown(el, 'PART-1');
+      assertEqual(target.getAttribute('class'), 'target');
+      el.active = false;
+    });
+
+    test('outside inspect mode, pointing shows nothing', async () => {
+      const { el, target } = setup();
+      point(target);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      assertEqual([el.current, card(el).matches(':popover-open')], [null, false]);
+    });
+
+    // ---- Holding ----
+
+    test('a click holds a part at once, instead of acting, until it is clicked again', async () => {
+      const { el, target, other } = setup();
+      const inspected = recordEvents(el, 'sb-inspect');
+      presses = 0;
+      el.active = true;
+      click(target);
+      assertEqual([el.current, presses], ['PART-1', 0]);
+      assert(el.classList.contains('sb-inspect-mode--held'));
+      assert(banner(el).textContent.includes('Held'));
+      point(other);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      assertEqual(el.current, 'PART-1', 'pointing elsewhere changes nothing while held');
+      click(target);
+      assert(!el.classList.contains('sb-inspect-mode--held'), 'let go');
+      assertEqual([inspected.length, presses], [1, 0]);
+      el.active = false;
+    });
+
+    test('a click on another part holds that one; a click on nothing lets go', () => {
+      const { el, area, target, nothing } = setup();
+      el.active = true;
+      click(target);
+      click(area.querySelector('.other'));
+      assertEqual(el.current, 'BOX-1');
+      click(nothing);
+      assertEqual([el.current, el.classList.contains('sb-inspect-mode--held')], ['BOX-1', false]);
+      el.active = false;
+    });
+
+    test('show() explains and holds a ref, quietly, only while inspecting', () => {
+      const { el, target } = setup();
+      const inspected = recordEvents(el, 'sb-inspect');
+      assertEqual(el.show('PART-1'), false, 'off');
+      el.active = true;
+      assertEqual(el.show('UNKNOWN'), false, 'nothing to say');
+      assertEqual(el.show('PART-1', target), true);
+      assertEqual([el.current, el.classList.contains('sb-inspect-mode--held'), inspected.length], ['PART-1', true, 0]);
+      assert(outline(el).matches(':popover-open'));
+      el.active = false;
+    });
+
+    test('ending the mode clears the card and lets go', () => {
+      const { el, target } = setup();
+      el.active = true;
+      click(target);
+      el.active = false;
+      assertEqual([el.current, card(el).matches(':popover-open'), outline(el).matches(':popover-open'), el.classList.contains('sb-inspect-mode--held')], [null, false, false, false]);
+    });
+
+    test('clicks on what every mode lets through (data-modes) and in an open dialog still act', () => {
+      const area = mount('<div><sb-inspect-mode></sb-inspect-mode><button data-modes>Mode</button><dialog><button data-ref="PART-1">In a dialog</button></dialog></div>');
+      const el = area.querySelector('sb-inspect-mode');
+      el.explain = () => ({ title: 'Anything' });
+      let pressed = 0;
+      area.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => pressed++));
+      area.querySelector('dialog').show();
+      el.active = true;
+      click(area.querySelector('[data-modes]'));
+      click(area.querySelector('dialog button'));
+      assertEqual([pressed, el.current], [2, null]);
+      el.active = false;
+    });
+
+    // ---- Moving the card ----
+
+    test('the card is dragged by its bar, and stays within the window', () => {
+      const { el, target } = setup();
+      el.active = true;
+      el.show('PART-1', target);
+      const bar = el.querySelector('.sb-inspect-mode__bar');
+      const start = card(el).getBoundingClientRect();
+      const at = (type, x, y) => bar.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1, clientX: x, clientY: y }));
+      at('pointerdown', start.left + 20, start.top + 10);
+      at('pointermove', start.left - 80, start.top + 60);
+      at('pointerup', start.left - 80, start.top + 60);
+      const moved = card(el).getBoundingClientRect();
+      assertEqual([Math.round(moved.left), Math.round(moved.top)], [Math.round(start.left - 100), Math.round(start.top + 50)]);
+      at('pointerdown', moved.left + 20, moved.top + 10);
+      at('pointermove', -500, -500);
+      at('pointerup', -500, -500);
+      const kept = card(el).getBoundingClientRect();
+      assertEqual([kept.left, kept.top], [0, 0], 'kept within the window');
+      el.active = false;
+    });
+
+    // ---- Ending ----
+
+    test('Stop ends inspecting and says so', () => {
+      const { el } = setup();
+      const modes = recordEvents(document, 'sb-mode');
+      el.active = true;
+      el.querySelector('.sb-inspect-mode__button').click();
+      assertEqual([el.active, modes.map((e) => e.detail)], [false, [{ mode: 'Inspect', active: false }]]);
+    });
+
+    test('Escape ends inspecting, unless a dialog is open, which it leaves to close first', () => {
+      const area = mount('<div><sb-inspect-mode></sb-inspect-mode><dialog>Open</dialog></div>');
+      const el = area.querySelector('sb-inspect-mode'), dialog = area.querySelector('dialog');
+      el.active = true;
+      dialog.show();
+      escape();
+      assert(el.active, 'the dialog closes first');
+      dialog.close();
+      escape();
+      assertEqual(el.active, false);
+    });
+
+    test('two on one page keep their own modes and explanations', () => {
+      const area = mount('<div><sb-inspect-mode></sb-inspect-mode><sb-inspect-mode></sb-inspect-mode><button data-ref="A-1">A</button></div>');
+      const [a, b] = area.querySelectorAll('sb-inspect-mode');
+      a.explain = (ref) => (ref === 'A-1' ? { title: 'From a' } : null);
+      b.explain = () => ({ title: 'From b' });
+      a.active = true;
+      click(area.querySelector('[data-ref="A-1"]'));
+      assertEqual([a.current, text(a, 'title'), b.active, b.current], ['A-1', 'From a', false, null]);
+      a.active = false;
+    });
+  </script>
+</body>
+</html>
