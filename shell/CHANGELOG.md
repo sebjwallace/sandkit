@@ -2,6 +2,10 @@
 
 Covers `sb-shell`, `sb-theme-settings` and `sb-export`, which are versioned together.
 
+## 0.1.7 · 2026-10-22
+- Keys for modes: each mode's first letter (C, T, I), or a `key` attribute on the mode, turns it on, and again goes back to Explore. Shown in the mode picker beside each name ("Trace · T") and listed when the picker is pointed at. Left alone while typing, with Ctrl, ⌘ or Alt, or when the page has used the key.
+- The mode picker's chevron is the header's own icon, set in from the edge like the other buttons, in place of the browser's, which sat against the border.
+
 ## 0.1.6 · 2026-10-21
 - Drop: a theme token, `--sb-drop`, the opposite of lift. A see-through dark tint so a part sits a step below whatever it's in, for when lifts inside lifts have climbed too far to stand apart.
 

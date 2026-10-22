@@ -1,4 +1,4 @@
-// Sandkit sb-shell 0.1.6 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-shell 0.1.7 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The sandbox shell: the header and the settings dialog around a sandbox.
 //
 //   <sb-shell heading="My sandbox" controls="fullscreen settings collapse">
@@ -60,8 +60,11 @@
     .sb-shell__exported[hidden] { display: none; }
     .sb-shell__actions, .sb-shell__controls, .sb-shell__modes { flex: none; display: flex; align-items: center; gap: 6px; }
     .sb-shell__modes[hidden] { display: none; }
-    .sb-shell__mode { padding: 7px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: inherit; font-size: 13px; cursor: pointer; }
-    .sb-shell__mode[data-on] { border-color: var(--sb-warn, #d69e2e); background: color-mix(in srgb, var(--sb-warn, #d69e2e) 22%, var(--sb-surface, #fff)); font-weight: 600; }
+    .sb-shell__mode { appearance: none; padding: 7px 30px 7px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background-color: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: inherit; font-size: 13px; cursor: pointer; }
+    /* The picker's own chevron, the header's icon, set in from the edge in place of the browser's. */
+    .sb-shell__picker { position: relative; display: flex; }
+    .sb-shell__picker svg { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--sb-text, #1f2933); pointer-events: none; }
+    .sb-shell__mode[data-on] { border-color: var(--sb-warn, #d69e2e); background-color: color-mix(in srgb, var(--sb-warn, #d69e2e) 22%, var(--sb-surface, #fff)); font-weight: 600; }
     .sb-shell__actions:empty { display: none; }
 
     .sb-shell__icon-button { flex: none; display: inline-flex; padding: 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); cursor: pointer; }
@@ -98,10 +101,25 @@
     enterFullscreen: '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>',
     exitFullscreen: '<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>',
     collapse: '<polyline points="18 15 12 9 6 15"/>',
+    open: '<polyline points="6 9 12 15 18 9"/>',
     expand: '<polyline points="6 9 12 15 18 9"/>'
   };
 
   // ---- Helpers ----
+
+  // Where a key press is someone typing, not a shortcut.
+  const typing = (el) => el.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"])');
+
+  // Each mode's key: its own `key` attribute, or the first letter of its name. The first mode to
+  // claim a letter keeps it; a later one has no key.
+  function modeKeys(modes, nameOf) {
+    const keys = new Map();
+    for (const mode of modes) {
+      const key = (mode.getAttribute('key') || nameOf(mode)[0] || '').toLowerCase();
+      if (key && !keys.has(key)) keys.set(key, mode);
+    }
+    return keys;
+  }
 
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
@@ -148,6 +166,7 @@
       this._onFullscreenChange = () => this._showFullscreenState();
       this._onScroll = () => this._followScroll();
       this._onResize = () => { this._measureCompact(); this._followScroll(); };
+      this._onKey = (e) => this._modeKey(e);
     }
 
     connectedCallback() {
@@ -156,6 +175,7 @@
       document.addEventListener('fullscreenchange', this._onFullscreenChange);
       addEventListener('scroll', this._onScroll, { passive: true });
       addEventListener('resize', this._onResize);
+      document.addEventListener('keydown', this._onKey);
       if (this._built) return;
       // The shell takes its children as header content, so wait until they have been parsed.
       if (document.readyState === 'loading') {
@@ -169,6 +189,7 @@
       document.removeEventListener('fullscreenchange', this._onFullscreenChange);
       removeEventListener('scroll', this._onScroll);
       removeEventListener('resize', this._onResize);
+      document.removeEventListener('keydown', this._onKey);
       this._setCompact(false);
       document.documentElement.style.scrollPaddingTop = '';
     }
@@ -248,7 +269,7 @@
             <nav class="sb-shell__pages" aria-label="Pages" hidden></nav>
             <p class="sb-shell__exported" hidden></p>
           </div>
-          <div class="sb-shell__modes" data-modes hidden><select class="sb-shell__mode" aria-label="Mode"></select></div>
+          <div class="sb-shell__modes" data-modes hidden><span class="sb-shell__picker"><select class="sb-shell__mode" aria-label="Mode"></select>${icon('open')}</span></div>
           <div class="sb-shell__actions"></div>
           <div class="sb-shell__controls">${this._controlButtons()}</div>
         </header>
@@ -434,13 +455,17 @@
 
     // ---- Modes ----
 
-    // Explore, then each mode by its heading. The modes sit beside the picker, drawing their own banners.
+    // Explore, then each mode by its heading and key. The modes sit beside the picker, drawing their own banners.
     _addModes(modes) {
       this._modes = modes;
       const picker = this.querySelector('.sb-shell__modes');
       const select = picker.querySelector('select');
       modes.forEach((mode) => customElements.upgrade(mode)); // their heading and active are needed now
-      select.innerHTML = `<option value="">Explore</option>` + modes.map((mode, i) => `<option value="${i}">${esc(this._modeName(mode))}</option>`).join('');
+      this._modeKeys = modeKeys(modes, (mode) => this._modeName(mode));
+      const keyOf = (mode) => [...this._modeKeys].find(([, m]) => m === mode)?.[0];
+      const label = (mode) => this._modeName(mode) + (keyOf(mode) ? ` · ${keyOf(mode).toUpperCase()}` : '');
+      select.innerHTML = `<option value="">Explore</option>` + modes.map((mode, i) => `<option value="${i}">${esc(label(mode))}</option>`).join('');
+      select.title = `Keys: ${[...this._modeKeys].map(([key, mode]) => `${key.toUpperCase()} ${this._modeName(mode)}`).join(', ')}. The same key again, or Esc, to explore.`;
       select.addEventListener('change', () => this._pickMode(this._modes[select.value] ?? null));
       picker.append(...modes);
       picker.hidden = modes.length === 0;
@@ -471,6 +496,16 @@
       const on = this._modes.findIndex((mode) => mode.active);
       select.value = on < 0 ? '' : String(on);
       select.toggleAttribute('data-on', on >= 0);
+    }
+
+    // A mode's key turns it on, or back to Explore if it's on. Not while typing, with Ctrl, ⌘ or Alt,
+    // or when something on the page has already used the key.
+    _modeKey(e) {
+      if (e.defaultPrevented || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e.target)) return;
+      const mode = this._modeKeys?.get(e.key.toLowerCase());
+      if (!mode) return;
+      e.preventDefault();
+      this._pickMode(mode.active ? null : mode);
     }
 
     _activeMode() { return this._modes.find((mode) => mode.active) ?? null; }

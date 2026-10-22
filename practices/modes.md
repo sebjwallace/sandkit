@@ -33,7 +33,7 @@ document.addEventListener('sb-mode', (e) => { if (e.detail.active) tour.close();
 
 ## What every mode has
 
-- **A way in:** the shell's mode picker. A mode has no button of its own.
+- **A way in:** the shell's mode picker, or the mode's key, the first letter of its name. A mode has no button of its own.
 - **A sign it's on:** the picker turns amber, and the mode draws an amber frame round the page and a banner at the bottom saying what clicking does. Amber for every mode: it says "not exploring", never blending with the sandbox.
 - **Picking instead of acting:** pointing shows what can be picked; a click picks it and never reaches the page.
 - **What it lets through:** its own parts, and anything marked `data-modes`, such as the mode picker, so another mode is always a choice away.

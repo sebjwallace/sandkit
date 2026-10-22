@@ -268,7 +268,7 @@
 
       page.getElementById('outline').expanded = ['SYS-1'];
       const picker = page.querySelector('.sb-shell__mode');
-      picker.value = [...picker.options].find((o) => o.text === 'Comment').value;
+      picker.value = [...picker.options].find((o) => o.text.startsWith('Comment')).value;
       picker.dispatchEvent(new Event('change'));
       clickOn(page.querySelector('#diagram [data-ref="SYS-2"]'));
       write('Is the provider really outside the shop?');

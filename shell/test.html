@@ -65,11 +65,11 @@
     // Two plain elements as modes: a heading and an active property are all a mode needs.
     function withModes() {
       const el = shell('<span slot="modes" heading="Comment"></span><span slot="modes" heading="Trace"></span>');
-      const modes = [...el.querySelectorAll('.sb-shell__modes span')];
+      const modes = [...el.querySelectorAll('.sb-shell__modes [heading]')];
       modes.forEach((mode) => { mode.active = false; });
       const picker = el.querySelector('.sb-shell__mode');
       const choose = (text) => {
-        picker.value = [...picker.options].find((o) => o.text === text).value;
+        picker.value = [...picker.options].find((o) => o.text.startsWith(text)).value;
         picker.dispatchEvent(new Event('change'));
       };
       return { el, modes, picker, choose };
@@ -79,9 +79,9 @@
       assert(shell().querySelector('.sb-shell__modes').hidden);
     });
 
-    test('the mode picker offers Explore, then each mode by its heading, marked for every mode to let through', () => {
+    test('the mode picker offers Explore, then each mode by its heading and key, marked for every mode to let through', () => {
       const { picker } = withModes();
-      assertEqual([...picker.options].map((o) => o.text), ['Explore', 'Comment', 'Trace']);
+      assertEqual([...picker.options].map((o) => o.text), ['Explore', 'Comment · C', 'Trace · T']);
       assertEqual(picker.selectedOptions[0].text, 'Explore');
       assert(picker.closest('[data-modes]'));
     });
@@ -110,7 +110,7 @@
       choose('Trace');
       modes[0].active = true;
       modes[0].dispatchEvent(new CustomEvent('sb-mode', { bubbles: true, detail: { mode: 'Comment', active: true } }));
-      assertEqual([modes[1].active, picker.selectedOptions[0].text], [false, 'Comment']);
+      assertEqual([modes[1].active, picker.selectedOptions[0].text], [false, 'Comment · C']);
     });
 
     test('a mode that refuses to start leaves the picker on Explore', () => {
@@ -120,6 +120,66 @@
       picker.value = '0';
       picker.dispatchEvent(new Event('change'));
       assertEqual([picker.selectedOptions[0].text, heard.length], ['Explore', 0]);
+    });
+
+    // ---- Mode keys ----
+
+    const press = (key, options = {}, target = document.body) => {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...options });
+      target.dispatchEvent(event);
+      return event;
+    };
+
+    test('a mode\'s key turns it on and says so; the same key again goes back to Explore', () => {
+      const { el, modes, picker } = withModes();
+      const heard = recordEvents(el, 'sb-mode');
+      press('t');
+      assertEqual([modes.map((m) => m.active), picker.selectedOptions[0].text], [[false, true], 'Trace · T']);
+      press('C');
+      assertEqual(modes.map((m) => m.active), [true, false], 'another key switches, in either case');
+      press('c');
+      assertEqual([modes.map((m) => m.active), picker.selectedOptions[0].text], [[false, false], 'Explore']);
+      assertEqual(heard.map((e) => e.detail), [{ mode: 'Trace', active: true }, { mode: 'Comment', active: true }, { mode: 'Comment', active: false }]);
+    });
+
+    test('the picker lists the keys when pointed at', () => {
+      const { picker } = withModes();
+      assertEqual(picker.title, 'Keys: C Comment, T Trace. The same key again, or Esc, to explore.');
+    });
+
+    test('keys are left alone while typing, with Ctrl, ⌘ or Alt, held down, or used already', () => {
+      const { el, modes } = withModes();
+      const field = el.appendChild(document.createElement('input'));
+      const editable = el.appendChild(Object.assign(document.createElement('div'), { contentEditable: 'true' }));
+      const left = (why) => assertEqual(modes[1].active, false, why);
+      press('t', {}, field);
+      left('typing in a field');
+      press('t', {}, editable);
+      left('typing in editable text');
+      for (const held of ['ctrlKey', 'metaKey', 'altKey', 'repeat']) {
+        press('t', { [held]: true });
+        left(held);
+      }
+      const used = (e) => e.preventDefault();
+      document.body.addEventListener('keydown', used);
+      press('t');
+      document.body.removeEventListener('keydown', used);
+      left('used already');
+    });
+
+    test('a mode can name its own key; a letter already taken leaves a mode without one', () => {
+      const el = shell('<span slot="modes" heading="Comment"></span><span slot="modes" heading="Check"></span><span slot="modes" heading="Count" key="n"></span>');
+      const modes = [...el.querySelectorAll('.sb-shell__modes [heading]')];
+      modes.forEach((mode) => { mode.active = false; });
+      assertEqual([...el.querySelector('.sb-shell__mode').options].map((o) => o.text), ['Explore', 'Comment · C', 'Check', 'Count · N']);
+      press('n');
+      assertEqual(modes.map((m) => m.active), [false, false, true]);
+    });
+
+    test('a key the page uses itself is let through', () => {
+      withModes();
+      assertEqual(press('x').defaultPrevented, false);
+      assertEqual(press('t').defaultPrevented, true);
     });
 
     test('shows the controls named in the controls attribute, in that order', () => {

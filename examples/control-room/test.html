@@ -39,7 +39,7 @@
 
       const picker = page.querySelector('.sb-shell__mode');
       const choose = (text) => {
-        picker.value = [...picker.options].find((o) => o.text === text).value;
+        picker.value = [...picker.options].find((o) => o.text.startsWith(text)).value;
         picker.dispatchEvent(new Event('change'));
       };
       choose('Comment');
