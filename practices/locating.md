@@ -49,7 +49,7 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | [`sb-source-trace`](../components/sb-source-trace/manifest.md) | each node in the trace, source or item | — |
 | [`sb-sources`](../components/sb-sources/manifest.md) | each source's card, with its code (not cards a viewer's search or filters hide) | — |
 | [`sb-timeline`](../components/sb-timeline/manifest.md) | each event, and each lane's label | — |
-| [`sb-board`](../components/sb-board/manifest.md) | each card and column | — |
+| [`sb-kanban`](../components/sb-kanban/manifest.md) | each card and column | — |
 | [`sb-ontology`](../components/sb-ontology/manifest.md) | each class or individual drawn, each link as `from.relation.to`, and each row of its details as `owner.property` | switches to the level where the thing is drawn |
 | [`sb-c4`](../components/sb-c4/manifest.md) | each box in the current view, and each line carrying one relationship with an `id` | goes to the view where an element can be seen |
 | [`sb-math`](../components/sb-math/manifest.md), [`sb-annotate`](../components/sb-annotate/manifest.md), [`sb-walkthrough`](../components/sb-walkthrough/manifest.md) | the parts the sandbox marks in their content | — |

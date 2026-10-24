@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.53 · 2026-10-24
+- `sb-board` renamed `sb-kanban` (0.2.0), while no sandbox uses it.
+
 ## 0.2.52 · 2026-10-24
 - A style guide, `STYLE.md`: the materials that make things recognisable (paper, the record card, the mode frame, the agent's dashed circle, ink) and which components wear each, the theme tokens and their fallbacks, tones, lighting, shapes and type, and where components differ today. Copied into every sandbox, linked from the domain components practice and the template's `AGENTS.md`, and from the readme and contributing guide.
 - Using Sandkit saves tokens, and the guides now say why: the building guide, the template's `AGENTS.md` and the readme explain that a manifest is the part a sandbox needs, about a third of a script's size. Copying by hand uses a copy command, never reading files and writing them out, and a component's source is read only as a last resort. The building guide also says Sandkit's own examples and demos load its files directly because they live inside it, which a sandbox shouldn't copy.

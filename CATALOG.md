@@ -55,7 +55,6 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 | [`sb-accordion`](components/sb-accordion/manifest.md) | Sections that open and close, one or a group: a closed section shows a note from the model, a dot when what's inside changed since last seen, and a tint when something highlighted is inside; Expand all and Collapse all, or one open at a time; nests. |
 | [`sb-annotate`](components/sb-annotate/manifest.md) | Text with the parts that matter marked: pointing shows each mark's note just above it, clicking pins it, and kinds are counted in a legend. |
 | [`sb-bars`](components/sb-bars/manifest.md) | Things compared on one measure: bars on one scale, sorted or not, with reference lines and each bar's change since the last update. |
-| [`sb-board`](components/sb-board/manifest.md) | Things moving through stages, as cards in columns: each column counted against its limit, cards that just moved marked with where they came from, drags asked of the model. |
 | [`sb-c4`](components/sb-c4/manifest.md) | A C4 software architecture walked into level by level, with a path back out; relationships deep inside roll up to every view. |
 | [`sb-callout`](components/sb-callout/manifest.md) | A stand-out block for definitions, notes, tips, questions, answers and warnings; optionally collapsible. |
 | [`sb-chart`](components/sb-chart/manifest.md) | Values over time as lines, with reference lines, the latest values marked, and a legend. |
@@ -72,6 +71,7 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 | [`sb-id`](components/sb-id/manifest.md) | An identifying code as a pill: hover explains it, click highlights every mention. |
 | [`sb-image`](components/sb-image/manifest.md) | An image to zoom and pan, starting on the part that matters, with boxes and pins that prose can glide to and light up. |
 | [`sb-json`](components/sb-json/manifest.md) | JSON shown cleanly, with the paths that matter spotlit and the rest folded away; a clicked line shows its path and the note written for it. |
+| [`sb-kanban`](components/sb-kanban/manifest.md) | Things moving through stages, as cards in columns: each column counted against its limit, cards that just moved marked with where they came from, drags asked of the model. |
 | [`sb-log`](components/sb-log/manifest.md) | A stream of things that happened, in order: tones, columns, expandable detail, selection. |
 | [`sb-math`](components/sb-math/manifest.md) | Equations in native MathML whose marked parts light up, and are lit by, what they stand for. |
 | [`sb-matrix`](components/sb-matrix/manifest.md) | A matrix or vector in brackets, inline or on its own: editable, with coloured and highlighted rows, columns and cells. |

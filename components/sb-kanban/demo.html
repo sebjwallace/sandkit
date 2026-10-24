@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>sb-board demo</title>
+  <title>sb-kanban demo</title>
   <script src="../../shell/sb-theme-settings.js"></script>
   <script src="../../shell/sb-shell.js"></script>
-  <script src="sb-board.js"></script>
+  <script src="sb-kanban.js"></script>
   <style>
     body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
     main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
@@ -34,7 +34,7 @@
   </style>
 </head>
 <body>
-  <sb-shell heading="sb-board">
+  <sb-shell heading="sb-kanban">
     <sb-theme-settings slot="settings"></sb-theme-settings>
     <p>Things moving through stages, as cards in columns, with the bottlenecks counted and every move marked.</p>
   </sb-shell>
@@ -60,11 +60,11 @@
       </ul>
 
       <h3>Getting started</h3>
-      <pre>&lt;script src="components/sb-board/sb-board.js"&gt;&lt;/script&gt;
-&lt;sb-board movable&gt;&lt;/sb-board&gt;
+      <pre>&lt;script src="components/sb-kanban/sb-kanban.js"&gt;&lt;/script&gt;
+&lt;sb-kanban movable&gt;&lt;/sb-kanban&gt;
 
 &lt;script&gt;
-  const board = document.querySelector('sb-board');
+  const board = document.querySelector('sb-kanban');
   board.columns = [{ id: 'todo', label: 'To do' }, { id: 'doing', label: 'Doing', limit: 2 }, { id: 'done', label: 'Done' }];
   board.items = model.tasks;                      // [{ id, label, column, note, tone }]
 
@@ -92,21 +92,21 @@
         <button id="warehouse-play">Play</button><button id="warehouse-step" class="quiet">Step</button><button id="warehouse-reset" class="quiet">Start again</button>
         <label>Packers <input type="range" id="packers" min="1" max="4" step="1" value="2"> <span id="packers-value">2</span></label>
       </div>
-      <sb-board id="warehouse"></sb-board>
+      <sb-kanban id="warehouse"></sb-kanban>
       <p class="readout" id="warehouse-readout"></p>
     </section>
 
     <section class="example">
       <h2>How a bill becomes law</h2>
       <p>Drag a bill, or focus one and press the arrow keys, to move it through parliament. Each bill moves forward one stage at a time, and can always be withdrawn back to the start. <span class="point" data-columns="committee">The committee</span> can only examine two bills at once, so it's where bills stall: every other bill that moves past one stuck there makes it look more stuck. Try moving <span class="point" data-items="B4">the School Meals Bill</span> into committee, or getting <span class="point" data-items="B5">the Data Privacy Bill</span> into law.</p>
-      <sb-board id="parliament" movable></sb-board>
+      <sb-kanban id="parliament" movable></sb-kanban>
       <p class="readout" id="parliament-readout">Try to move a bill.</p>
     </section>
 
     <section class="example">
       <h2>What to explore next</h2>
       <p>A board can also be practical: a sandbox's own list of what to explore next, moved along as the work goes. Here it's a mortgage sandbox, part way through being built. Drag cards as things move on; every move is accepted, because here the board is just a record. <span class="point" data-items="Q3">The question about overpaying</span> is the one everyone's waiting on, and <span class="point" data-columns="understood">what's understood so far</span> shows what the sandbox has already answered.</p>
-      <sb-board id="roadmap" movable></sb-board>
+      <sb-kanban id="roadmap" movable></sb-kanban>
     </section>
   </main>
 
@@ -282,7 +282,7 @@
     // ---- Pointing from the text ----
 
     for (const point of document.querySelectorAll('.point')) {
-      const board = point.closest('.example').querySelector('sb-board');
+      const board = point.closest('.example').querySelector('sb-kanban');
       const ids = (list) => list?.split(' ') ?? [];
       point.addEventListener('pointerenter', () => { board.highlight = { columns: ids(point.dataset.columns), items: ids(point.dataset.items) }; });
       point.addEventListener('pointerleave', () => { board.highlight = {}; });

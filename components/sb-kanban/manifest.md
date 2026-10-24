@@ -1,4 +1,4 @@
-# sb-board
+# sb-kanban
 
 Things moving through stages, as cards in columns: orders through a warehouse, bills through parliament, patients through a ward, cases through a court, tickets through a team. Use it wherever a sandbox's model moves many things through the same steps, and where they pile up matters. It is practical too: a sandbox's own board of questions to explore and ideas to try, moved along as the sandbox grows.
 
@@ -9,12 +9,12 @@ Use this component through the interface below. You don't need to read its sourc
 ## Usage
 
 ```html
-<script src="components/sb-board/sb-board.js"></script>
+<script src="components/sb-kanban/sb-kanban.js"></script>
 
-<sb-board movable></sb-board>
+<sb-kanban movable></sb-kanban>
 
 <script>
-  const board = document.querySelector('sb-board');
+  const board = document.querySelector('sb-kanban');
   board.columns = [
     { id: 'picking', label: 'Picking' },
     { id: 'packing', label: 'Packing', limit: 3 },
@@ -74,7 +74,7 @@ Cards appear in their column in the order of `items`.
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-radius`.
 
-Classes: `sb-board__columns`, `sb-board__column` (`--over`, `--highlighted`, `--drop`; carries `data-column` and `data-ref`), `sb-board__head`, `sb-board__count`, `sb-board__cards`, `sb-board__card` (`--moved`, `--new`, `--highlighted`, `--dragging`; carries `data-id`, `data-ref` and `data-tone`), `sb-board__note`, `sb-board__from`, `sb-board__empty`.
+Classes: `sb-kanban__columns`, `sb-kanban__column` (`--over`, `--highlighted`, `--drop`; carries `data-column` and `data-ref`), `sb-kanban__head`, `sb-kanban__count`, `sb-kanban__cards`, `sb-kanban__card` (`--moved`, `--new`, `--highlighted`, `--dragging`; carries `data-id`, `data-ref` and `data-tone`), `sb-kanban__note`, `sb-kanban__from`, `sb-kanban__empty`.
 
 Cards and columns carry `data-ref` with their id, beside `data-id` and `data-column`, so a sandbox can find them (see the [locating practice](../../practices/locating.md)).
 
@@ -96,4 +96,4 @@ Suggestions only: nothing here is wired in. The sandbox composes these itself.
 - **Size:** made for the tens of cards a sandbox shows at once. Columns grow with their cards; give the element a height and an `overflow` for a long board.
 - **Dependencies:** none.
 - **Export:** safe for single-file export. Classic script, no fetches, no external assets.
-- **Renaming:** if another component on the page is already called `sb-board`, the console says so. Replace every `sb-board` in `sb-board.js` (tag, classes and style id all use it) to give this copy a new name.
+- **Renaming:** if another component on the page is already called `sb-kanban`, the console says so. Replace every `sb-kanban` in `sb-kanban.js` (tag, classes and style id all use it) to give this copy a new name.
