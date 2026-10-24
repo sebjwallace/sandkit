@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fulfilment</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-scrubber/sb-scrubber.js"></script>
+  <script src="model.js"></script>
+</head>
+<body>
+  <sb-shell heading="Fulfilment">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p><strong>Goal:</strong> understand how a spare-parts warehouse decides which depot's order gets scarce stock, and when it leaves, by watching its model grow one idea at a time.</p>
+  </sb-shell>
+
+  <main>
+    <section class="chapter">
+      <h2>How the warehouse came to be</h2>
+      <p>A warehouse supplies rail maintenance depots with parts. Its model is a lineage of small versions, each one runnable, each adding one idea to its parent. A version runs a whole day: every hour on the hour, deliveries land, waiting order lines take stock, and orders decide whether they can go.</p>
+      <p class="try"><strong>Try:</strong> pick V2 and scrub through the day: who is left without couplers at 09:00? Then pick the rival V2b at the same hour and see who loses instead. In V4, watch which orders make the 16:00 van. In V10, watch the ledger at 13:00, then pick V11.</p>
+    </section>
+
+    <div class="workspace">
+      <div class="lineage">
+        <section class="card">
+          <div class="tree" id="tree"></div>
+        </section>
+        <section class="card">
+          <h3 id="version-title"></h3>
+          <p class="cause" id="cause"></p>
+          <p class="summary" id="summary"></p>
+        </section>
+        <section class="card">
+          <sb-scrubber id="clock" step="1" duration="8" label="Time of day"></sb-scrubber>
+          <h4>Stock</h4>
+          <div class="stock" id="stock"></div>
+          <h4>Ledger</h4>
+          <p class="ledger-equation" id="ledger-equation"></p>
+          <div class="ledger-scroll"><table class="ledger" id="ledger"></table></div>
+          <div class="ledger-day" id="ledger-day"></div>
+          <h4>Orders</h4>
+          <div class="orders" id="orders"></div>
+          <h4 id="happened-title"></h4>
+          <ul class="happened" id="happened"></ul>
+        </section>
+      </div>
+
+      <div class="maps">
+        <section class="card">
+          <h3 id="line-title"></h3>
+          <p class="map-intro">What one order line's decision can see when its turn comes, and what happens to it. Quantities are bands against what the line still needs. Neighbouring values that always lead to the same outcome share a tile; ● marks regions decided at the clock's hour.</p>
+          <div class="map-scroll"><div class="map" id="line-map"></div></div>
+          <p class="map-detail" id="line-detail"></p>
+        </section>
+        <section class="card" id="order-card">
+          <h3 id="order-title"></h3>
+          <p class="map-intro">Whether an order can go yet. Its <b>lines</b> fact joins it to the line map: it counts how many of its unshipped lines are fully allocated.</p>
+          <div class="map-scroll"><div class="map" id="order-map"></div></div>
+          <p class="map-detail" id="order-detail"></p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // The page: the lineage as a tree; the selected version's warehouse and ledger at the chosen hour; and the maps
+    // of its two decisions, the line's and the order's.
+
+    let selected = TRUNK[0];
+    let hour = OPEN;
+
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+    }
+
+    const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+    // How each outcome or stage reads: good, waiting on something, or bad.
+    const TONES = {
+      allocated: 'good', substituted: 'good', 'for the van': 'good', dispatched: 'good', 'ready to collect': 'good', collected: 'good',
+      'part allocated': 'warn', 'awaiting delivery': 'warn', queued: 'warn', 'split for the van': 'warn', 'ships tomorrow': 'warn',
+      'back-ordered': 'bad', waiting: 'plain', open: 'plain',
+    };
+    const toneOf = outcome => TONES[outcome] ?? 'plain';
+
+    // The tree: generations left to right, the trunk along the top, each rival on a row of its own.
+
+    const NODE = { width: 92, height: 40, across: 120, down: 58 };
+    const branches = VERSIONS.filter(version => version.rival && !parentOf(version).rival);
+
+    function rowOf(version) {
+      if (!version.rival) return 0;
+      return parentOf(version).rival ? rowOf(parentOf(version)) : branches.indexOf(version) + 1;
+    }
+
+    function placeOf(version) {
+      return { x: 6 + depthOf(version) * NODE.across, y: 6 + rowOf(version) * NODE.down };
+    }
+
+    function edge(version) {
+      const from = placeOf(parentOf(version));
+      const to = placeOf(version);
+      const [x1, y1, x2, y2] = [from.x + NODE.width, from.y + NODE.height / 2, to.x, to.y + NODE.height / 2];
+      const bend = (x2 - x1) / 2;
+      return `<path class="tree-edge${version.rival ? ' is-rival' : ''}" d="M${x1},${y1} C${x1 + bend},${y1} ${x2 - bend},${y2} ${x2},${y2}"/>`;
+    }
+
+    function node(version) {
+      const { x, y } = placeOf(version);
+      return `
+        <g class="tree-node${version.rival ? ' is-rival' : ''}" data-version="${version.id}" tabindex="0" role="button" aria-label="${version.id}: ${escapeHtml(version.name)}">
+          <rect x="${x}" y="${y}" width="${NODE.width}" height="${NODE.height}" rx="6"/>
+          <text x="${x + NODE.width / 2}" y="${y + 16}" class="tree-id">${version.id}</text>
+          <text x="${x + NODE.width / 2}" y="${y + 31}" class="tree-name">${escapeHtml(version.name)}</text>
+        </g>`;
+    }
+
+    function renderTree() {
+      const places = VERSIONS.map(placeOf);
+      const width = Math.max(...places.map(p => p.x)) + NODE.width + 6;
+      const height = Math.max(...places.map(p => p.y)) + NODE.height + 6;
+      document.getElementById('tree').innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" width="${width}" role="group" aria-label="The lineage">
+          ${VERSIONS.filter(version => version.parent).map(edge).join('')}
+          ${VERSIONS.map(node).join('')}
+        </svg>`;
+    }
+
+    // The stock: a block per unit in the building, reserved, free or being put away, then what's on its way.
+
+    const blocks = (count, kind) => `<span class="unit unit--${kind}"></span>`.repeat(count);
+
+    function renderStock(snapshot) {
+      const inbound = inboundOf(snapshot.onItsWay);
+      document.getElementById('stock').innerHTML = Object.entries(snapshot.stock).map(([part, shelf]) => {
+        const counts = [
+          `${shelf.reserved} reserved`, `${shelf.free} free`,
+          shelf.receiving && `${shelf.receiving} being put away`,
+          inbound[part] && `${inbound[part]} on its way`,
+          shelf.shipped && `${shelf.shipped} shipped`,
+          shelf['written off'] && `${shelf['written off']} written off`,
+        ].filter(Boolean);
+        return `
+          <div class="part">
+            <div class="part-name">${PARTS[part]}</div>
+            <div class="units">${blocks(shelf.reserved, 'reserved')}${blocks(shelf.free, 'free')}${blocks(shelf.receiving, 'receiving')}${blocks(inbound[part] ?? 0, 'inbound')}</div>
+            <div class="part-counts">${counts.join(' · ')}</div>
+          </div>`;
+      }).join('');
+    }
+
+    // The ledger: the version's own equation, each part checked against it now, and every hour of the day marked.
+
+    function renderLedger(day, snapshot) {
+      document.getElementById('ledger-equation').textContent = `received = ${selected.ledger.join(' + ')}`;
+      const rows = ledgerOf(selected, snapshot);
+      const head = `<tr><th>Part</th><th>received</th>${selected.ledger.map(term => `<th>${term}</th>`).join('')}<th></th></tr>`;
+      const body = rows.map(row => `
+        <tr class="${row.missing ? 'is-broken' : ''}">
+          <td>${PARTS[row.part]}</td><td>${row.received}</td>
+          ${selected.ledger.map(term => `<td>${row.terms[term]}</td>`).join('')}
+          <td>${row.missing ? `✗ ${row.missing} unaccounted for` : '✓'}</td>
+        </tr>`).join('');
+      document.getElementById('ledger').innerHTML = head + body;
+      document.getElementById('ledger-day').innerHTML = day.map(each => {
+        const broken = ledgerOf(selected, each).some(row => row.missing);
+        return `<span class="ledger-hour${broken ? ' is-broken' : ''}${each.hour === hour ? ' is-now' : ''}" title="${hourLabel(each.hour)}">${each.hour}</span>`;
+      }).join('');
+    }
+
+    // The orders that have arrived, each marked if it differs from the parent version's at this hour.
+
+    const stateIn = (version, order) => (version.order ? order.stage : statusOf(order));
+    const stateOf = order => stateIn(selected, order);
+
+    // What an order shows, so two versions' orders differ only when something visible does.
+    const shownIn = (version, order) => order && JSON.stringify([stateIn(version, order), order.lines.map(line => [line.status, line.takes, line.shipped])]);
+
+    function lineHtml(line) {
+      const from = Object.entries(line.takes).filter(([part]) => part !== line.part).map(([part, qty]) => `${qty} from ${PARTS[part]}`);
+      const status = line.shipped ? 'shipped' : line.status;
+      return `<div class="order-line tone-${toneOf(line.status)}">${line.qty} ${PARTS[line.part]}${from.length ? ` <i>(${from.join(', ')})</i>` : ''} <span>${status}</span></div>`;
+    }
+
+    function orderCard(order, before) {
+      const state = stateOf(order);
+      const changed = before && shownIn(parentOf(selected), before) !== shownIn(selected, order);
+      return `
+        <div class="order tone-${toneOf(state)}${changed ? ' is-changed' : ''}">
+          <div class="order-head">
+            <b>${order.id}</b> ${escapeHtml(order.depot)} <span class="order-time">${order.time}</span>
+            ${order.priority ? '<span class="badge">priority</span>' : ''}
+            ${order.method === 'collection' ? `<span class="badge badge--collect">collect ${order.collect}</span>` : ''}
+            <span class="order-status">${state}</span>
+          </div>
+          ${order.lines.map(lineHtml).join('')}
+          ${changed ? `<div class="order-was">${selected.parent}: ${stateIn(parentOf(selected), before)}</div>` : ''}
+        </div>`;
+    }
+
+    function renderOrders(snapshot, parentSnapshot) {
+      const beforeOf = order => parentSnapshot?.orders.find(each => each.id === order.id);
+      document.getElementById('orders').innerHTML = snapshot.orders.length
+        ? snapshot.orders.map(order => orderCard(order, beforeOf(order))).join('')
+        : '<p class="empty">No orders yet.</p>';
+    }
+
+    function renderHappened(snapshot) {
+      document.getElementById('happened-title').textContent = `At ${hourLabel(snapshot.hour)}`;
+      document.getElementById('happened').innerHTML = snapshot.happened.length
+        ? snapshot.happened.map(line => `<li>${escapeHtml(line)}</li>`).join('')
+        : '<li class="empty">Nothing happened.</li>';
+    }
+
+    // The parent can only be compared when it ran the same day.
+    function parentDay() {
+      const parent = parentOf(selected);
+      return parent && parent.day === selected.day ? runDay(parent) : null;
+    }
+
+    const shippedBy = snapshot => sum(Object.values(snapshot.stock).map(shelf => shelf.shipped));
+
+    function renderSummary(day, parentHours) {
+      const parent = parentOf(selected);
+      const summary = document.getElementById('summary');
+      const shipped = shippedBy(day.at(-1));
+      if (!parent) { summary.textContent = 'The first version.'; return; }
+      if (!parentHours) { summary.textContent = `A new day, so it can't be compared with ${parent.id}.`; return; }
+      const end = day.at(-1).orders;
+      const parentEnd = parentHours.at(-1).orders;
+      const differ = end.filter(order => shownIn(selected, order) !== shownIn(parent, parentEnd.find(each => each.id === order.id)));
+      summary.textContent = `By ${hourLabel(CLOSE)}, ${differ.length} of ${end.length} orders end differently from ${parent.id}${differ.length ? ` (${differ.map(order => order.id).join(', ')})` : ''}. `
+        + `${plural(shipped, 'unit')} shipped today, against ${shippedBy(parentHours.at(-1))} in ${parent.id}.`;
+    }
+
+    // A map: fact columns on the left, the decision's outcome on the right, a band of rows per region.
+
+    function tile(className, row, size, column, content) {
+      return `<div class="${className}" data-from="${row}" data-to="${row + size}"
+        style="grid-row: ${row + 2} / span ${size}; grid-column: ${column + 1}"><span>${content}</span></div>`;
+    }
+
+    // A fact's tiles: neighbouring regions that agree on this fact and every fact before it share one.
+    function factTiles(decision, regions, facts, column) {
+      const key = region => JSON.stringify(facts.slice(0, column + 1).map(fact => region.facts[fact]));
+      const tiles = [];
+      let row = 0;
+      regions.forEach((region, i) => {
+        if (i === 0 || key(region) !== key(regions[i - 1])) tiles.push({ row, size: 0, values: region.facts[facts[column]] });
+        tiles.at(-1).size += region.size;
+        row += region.size;
+      });
+      const fact = facts[column];
+      return tiles.map(({ row, size, values }) => {
+        const whole = values.length === decision.facts[fact].values.length && values.length > 1;
+        const label = whole ? `any ${fact}` : values.join(' · ');
+        return tile(`map-tile${values.length > 1 ? ' is-merged' : ''}${whole ? ' is-whole' : ''}`, row, size, column, label);
+      });
+    }
+
+    function outcomeTiles(regions, column, now) {
+      let row = 0;
+      return regions.map(region => {
+        const decidedNow = now.filter(decision => isIn(decision.facts, region)).length;
+        const html = tile(`map-out tone-${toneOf(region.outcome)}`, row, region.size, column,
+          `${region.outcome}${decidedNow ? ` <b class="now">● ${decidedNow}</b>` : ''}`);
+        row += region.size;
+        return html;
+      });
+    }
+
+    // Each map keeps its regions and the day's decisions, for pointing.
+    const maps = {};
+
+    function renderMap(kind, title, decision, day, now) {
+      const regions = regionsOf(decision);
+      const decisions = day.flatMap(snapshot => snapshot.decisions[kind].map(each => ({ ...each, hour: snapshot.hour })));
+      maps[kind] = { regions, decisions };
+      const facts = Object.keys(decision.facts);
+      const scenarios = sum(regions.map(region => region.size));
+      document.getElementById(`${kind}-title`).textContent = `${title}: ${plural(scenarios, 'scenario')} in ${plural(regions.length, 'region')}`;
+      const map = document.getElementById(`${kind}-map`);
+      map.style.setProperty('--facts', facts.length);
+      const heads = [...facts, kind].map(name => `<div class="map-head">${name}</div>`);
+      map.innerHTML = heads.join('') + facts.flatMap((_, column) => factTiles(decision, regions, facts, column)).join('') + outcomeTiles(regions, facts.length, now).join('');
+      showDetail(kind, null);
+    }
+
+    // Pointing at a tile lights every tile its rows pass through, and lists the day's decisions that landed there.
+
+    function describe(kind, decision) {
+      const what = kind === 'line' ? `${decision.order} ${decision.qty} ${PARTS[decision.part]}` : decision.order;
+      return `${hourLabel(decision.hour)} ${escapeHtml(what)}`;
+    }
+
+    function showDetail(kind, target) {
+      const { regions, decisions } = maps[kind];
+      const map = document.getElementById(`${kind}-map`);
+      const from = Number(target?.dataset.from);
+      const to = Number(target?.dataset.to);
+      for (const each of map.querySelectorAll('[data-from]')) {
+        each.classList.toggle('is-lit', Boolean(target) && Number(each.dataset.from) < to && Number(each.dataset.to) > from);
+      }
+      map.classList.toggle('is-pointing', Boolean(target));
+      const detail = document.getElementById(`${kind}-detail`);
+      if (!target) { detail.textContent = `${plural(decisions.length, 'decision')} over the day. Point at a tile to see which landed there.`; return; }
+      let row = 0;
+      const lit = regions.filter(region => { const inside = row >= from && row < to; row += region.size; return inside; });
+      const landed = decisions.filter(decision => lit.some(region => isIn(decision.facts, region)));
+      detail.innerHTML = landed.length
+        ? `${plural(landed.length, 'decision')}: ${landed.map(decision => describe(kind, decision)).join(' · ')}`
+        : 'No decision landed here today.';
+    }
+
+    for (const kind of ['line', 'order']) {
+      const map = document.getElementById(`${kind}-map`);
+      map.addEventListener('pointerover', event => showDetail(kind, event.target.closest('[data-from]')));
+      map.addEventListener('pointerleave', () => showDetail(kind, null));
+    }
+
+    // The clock's marks: the moments this version knows about.
+    function marksOf(version) {
+      const day = DAYS[version.day];
+      const marks = knows(version, 'deliveries') ? day.deliveries.map(delivery => ({ value: Math.ceil(minutesOf(delivery.time) / 60), label: delivery.id })) : [];
+      if (knows(version, 'damage')) marks.push(...day.damage.map(damage => ({ value: minutesOf(damage.time) / 60, label: '✗' })));
+      if (version.order) marks.push({ value: CUTOFF, label: 'cut-off' }, { value: VAN, label: 'van' });
+      return marks;
+    }
+
+    function render() {
+      const day = runDay(selected);
+      const parentHours = parentDay();
+      const at = hours => hours?.find(snapshot => snapshot.hour === hour);
+      document.getElementById('version-title').textContent = `${selected.id} · ${selected.name}${selected.rival ? ' (rival)' : ''}`;
+      document.getElementById('cause').textContent = selected.cause;
+      for (const each of document.querySelectorAll('.tree-node')) each.classList.toggle('is-selected', each.dataset.version === selected.id);
+      renderSummary(day, parentHours);
+      renderStock(at(day));
+      renderLedger(day, at(day));
+      renderOrders(at(day), at(parentHours));
+      renderHappened(at(day));
+      renderMap('line', `The line map of ${selected.id}`, selected.line, day, at(day).decisions.line);
+      document.getElementById('order-card').hidden = !selected.order;
+      if (selected.order) renderMap('order', `The order map of ${selected.id}`, selected.order, day, at(day).decisions.order);
+      clock.marks = marksOf(selected);
+    }
+
+    // Choosing a version from the tree, and an hour from the clock.
+
+    const clock = document.getElementById('clock');
+    clock.setAttribute('min', OPEN);
+    clock.setAttribute('max', CLOSE);
+    clock.format = value => hourLabel(Math.round(value));
+    clock.value = hour;
+    clock.addEventListener('sb-change', event => {
+      const next = Math.round(event.detail.value);
+      if (next !== hour) { hour = next; render(); }
+    });
+
+    function select(version) {
+      selected = version;
+      render();
+    }
+
+    const tree = document.getElementById('tree');
+    const versionAt = event => versionById(event.target.closest('[data-version]')?.dataset.version);
+    tree.addEventListener('click', event => { const version = versionAt(event); if (version) select(version); });
+    tree.addEventListener('keydown', event => {
+      const version = versionAt(event);
+      if (version && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); select(version); }
+    });
+
+    renderTree();
+    select(selected);
+  </script>
+</body>
+</html>

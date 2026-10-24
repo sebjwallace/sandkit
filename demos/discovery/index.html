@@ -9,7 +9,7 @@
 
   <style>
     body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
-    main { max-width: var(--sb-page-width, 1100px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    main { max-width: var(--sb-page-width, 1400px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
     .chapter, .card { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
     h2 { margin: 0 0 6px; font-size: 18px; }
     h3 { margin: 0 0 10px; font-size: 15px; }
@@ -136,34 +136,46 @@
     .fields dd { margin: 0; display: flex; align-items: center; gap: 8px; }
 
 
-    /* The flow: columns from evidence to commitments, links drawn only while tracing. */
+    /* The iteration boards: one at a time, columns from the world to acting on it, links drawn only while tracing. */
     .scroll { overflow-x: auto; }
     .flow-hint { margin: -4px 0 12px; color: var(--sb-muted); font-size: 13px; }
-    .flow { position: relative; display: grid; gap: 22px; }
-    .flow-iteration { display: grid; gap: 30px; padding: 12px 14px 16px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background-image: linear-gradient(var(--sb-drop), var(--sb-drop)); }
-    .flow-iteration-title { margin: 0; font-size: 13px; font-weight: 600; }
-    .flow-band { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }
-    .flow-band .flow-title { margin: 6px 0 0; }
-    .flow-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+    .board-nav { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+    .board-nav button { padding: 4px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); font: inherit; font-size: 12px; cursor: pointer; }
+    .board-nav button:disabled { opacity: 0.4; cursor: default; }
+    .board-nav button:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+    .board-nav button[aria-current="true"] { border-color: var(--sb-accent); background: var(--sb-accent); color: var(--sb-accent-text, #fff); }
+    .board-title { margin: 0 0 12px; font-size: 13px; font-weight: 600; }
+    .board { position: relative; display: grid; gap: 56px; align-items: start; min-width: min-content; padding-bottom: 4px; }
+    .board-column { display: grid; gap: 8px; align-content: start; }
+    .board-column.is-empty .flow-title { writing-mode: vertical-rl; transform: rotate(180deg); opacity: 0.6; }
     .node--awaited { border-style: dashed; background: none; color: var(--sb-muted); }
     .node-note { color: var(--sb-muted); font-size: 11px; font-style: italic; }
     .node-file { color: var(--sb-muted); font: 10px ui-monospace, Menlo, Consolas, monospace; }
     .flow-title { margin: 0 0 2px; color: var(--sb-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-    .node { position: relative; z-index: 1; display: grid; gap: 4px; padding: 6px 8px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2, var(--sb-surface)); color: inherit; font: inherit; font-size: 12px; line-height: 1.35; text-align: left; cursor: pointer; transition: opacity 0.15s; }
+    .node { position: relative; z-index: 1; display: grid; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2, var(--sb-surface)); font-size: 12px; line-height: 1.35; transition: opacity 0.15s; }
+    .node-main { display: grid; gap: 4px; padding: 6px 8px; border: 0; border-radius: inherit; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+    .node-main:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
     .node--source { border-radius: 2px; background: color-mix(in srgb, var(--sb-surface) 94%, #f3e2b8); }
     .node.is-assumed { border-style: dashed; border-color: var(--sb-warn, #b7791f); }
-    .node:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
-    .node-head { display: flex; align-items: center; gap: 6px; }
+    .node.is-earlier { opacity: 0.6; }
+    .node-since { justify-self: start; margin: -2px 8px 6px; padding: 0; border: 0; background: none; color: var(--sb-accent); font: inherit; font-size: 11px; text-align: left; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+    .node-since:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+    .node-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
     .node-head .card-icon { width: 20px; height: 20px; }
     .node-head .card-icon svg { width: 13px; height: 13px; }
     .node-head .status { padding: 1px 7px; font-size: 10px; }
     .node-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-    .flow.is-tracing .node:not(.is-lit) { opacity: 0.25; }
+    .board.is-tracing .node:not(.is-lit) { opacity: 0.25; }
+    .board.is-tracing .node.is-lit { opacity: 1; }
     .node.is-lit { outline: none; }
     .node.is-focus { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
-    .flow-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+    .flow-lines, .flow-labels { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+    .flow-labels { z-index: 2; }
     .flow-lines path { fill: none; stroke: var(--sb-accent); stroke-width: 1.5; stroke-linejoin: round; opacity: 0.7; }
-    .flow-lines text { fill: var(--sb-accent); font: 600 10px var(--sb-font); paint-order: stroke; stroke: var(--sb-surface); stroke-width: 4px; stroke-linejoin: round; }
+    .flow-labels text { fill: var(--sb-accent); font: 600 10px var(--sb-font); paint-order: stroke; stroke: var(--sb-surface); stroke-width: 4px; stroke-linejoin: round; }
+    /* A peek at how a card stood in an earlier iteration. */
+    .peek { position: fixed; inset: auto; width: 200px; margin: 0; padding: 0; border: 0; background: none; overflow: visible; }
+    .peek-label { margin: 0 0 4px; color: var(--sb-muted); font-size: 11px; }
     .is-arrived { outline: 3px solid var(--sb-accent); outline-offset: 3px; transition: outline-color 0.4s; }
     /* The key: scope, grade and standing. */
     .parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
@@ -175,7 +187,7 @@
 <body>
   <sb-shell heading="Weighing Evidence">
     <sb-theme-settings slot="settings"></sb-theme-settings>
-    <p><strong>Goal:</strong> see what's true, what's assumed and what's in dispute, from what each source asserts and how well it can speak to it.</p>
+    <p><strong>Goal:</strong> find out how Ashford International's departure board decides what to show, and why trains vanish from it before they leave: what's true, what's assumed and what's in dispute.</p>
   </sb-shell>
 
   <main>
@@ -188,8 +200,8 @@
 
     <section class="card">
       <h3>How it connects</h3>
-      <p class="flow-hint">The loop unrolled downwards, one block per iteration: what arrived from the world, then the sandbox’s own records made from it (each one a file among the sources). A card that changes appears again, updated, in the iteration that changed it. Point at a card to see what it rests on and what rests on it; click to go to it.</p>
-      <div class="scroll" id="flow"></div>
+      <p class="flow-hint">One board per iteration, left to right: what arrived from the world, then the sandbox’s own records made from it (each one a file among the sources), and what it now awaits. A board holds what arrived or changed in its iteration, with the earlier cards they rest on shown quieter. Point at a card to see what it rests on and what rests on it; click to go to it.</p>
+      <div id="flow"></div>
     </section>
 
     <section class="card">
@@ -275,52 +287,52 @@
   </main>
 
   <script>
-    // Harrow Ridge, a 32-turbine wind farm on a non-firm grid connection, curtailed on its
-    // windiest days whenever the Tarn Lane 132 kV line reaches its limit.
+    // Ashford International's departure board, where trains vanish before they leave: the board
+    // drops a train as soon as it's reported departed, and some reports come too early.
     const SOURCES = [
-      { id: 'SRC-1', name: 'SCADA log', title: 'Farm SCADA log, February', summary: 'Setpoints, availability and output for every turbine, every ten minutes.', format: 'data', role: 'record', asOf: '28 Feb 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-2', name: 'Grid operator', title: 'Constraint notice, 4 February', summary: 'The network operator’s notice limiting the farm’s output, and why.', format: 'document', role: 'record', asOf: '4 Feb 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-3', name: 'Site manager', title: 'Maintenance log, February', summary: 'Alarms, faults and site visits, in the site manager’s notes.', format: 'notes', role: 'record', asOf: '28 Feb 2026', grade: { distance: 2, trust: 3, clarity: 2 } },
-      { id: 'SRC-4', name: 'Local paper', title: '“Turbines idle on windiest day”', summary: 'The local paper’s story, written from the campaign blog.', format: 'web', role: 'record', asOf: '6 Feb 2026', copies: 'SRC-5', grade: { distance: 1, trust: 2, clarity: 3 } },
-      { id: 'SRC-5', name: 'Campaign blog', title: 'Ridge Watch blog post', summary: 'A local campaign group says the turbines were iced up.', format: 'web', role: 'opinion', asOf: '5 Feb 2026', grade: { distance: 1, trust: 1, clarity: 2 } },
-      { id: 'SRC-6', name: 'Network plan', title: 'Network development plan 2026', summary: 'The grid operator’s plan for reinforcing the Tarn Lane circuit.', format: 'document', role: 'plan', asOf: '10 Jan 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-7', name: 'Agent', title: 'Curtailment in February', summary: 'The agent’s reading of the SCADA log against the wind and day-ahead prices.', format: 'analysis', role: 'record', asOf: '1 Mar 2026', derivedFrom: 'SRC-1', grade: { distance: 2, trust: 2, clarity: 3 } },
-      { id: 'SRC-8', name: 'Contractor', title: 'Reinforcement progress report, February', summary: 'The cable contractor’s monthly report on the second circuit.', format: 'document', role: 'record', asOf: '24 Feb 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
-      { id: 'SRC-9', name: 'Community fund', title: 'Email from the community fund', summary: 'The fund’s trustees ask how curtailment affects their payments.', format: 'email', role: 'opinion', asOf: '12 Feb 2026', grade: { distance: 2, trust: 3, clarity: 3 } },
-      { id: 'SRC-10', name: 'Board', title: 'Board minute, 26 February', summary: 'The Harrow Ridge board’s resolutions on curtailment.', format: 'document', role: 'decision', asOf: '26 Feb 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-11', name: 'Brackley Hydrogen', title: 'Flexibility offer', summary: 'A nearby electrolyser offers to buy power during constraint periods.', format: 'document', role: 'plan', asOf: '18 Feb 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
-      { id: 'SRC-12', name: 'Brackley Hydrogen', title: 'March statement', summary: 'What the electrolyser took during constraint periods in March, and paid.', format: 'document', role: 'record', asOf: '31 Mar 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
-      { id: 'SRC-13', name: 'SCADA log', title: 'Farm SCADA log, March', summary: 'Setpoints, availability and output for every turbine, every ten minutes.', format: 'data', role: 'record', asOf: '31 Mar 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-1', name: 'Board feed', title: 'Board feed log, March', summary: 'Every train report the board received, and what it showed, minute by minute.', format: 'data', role: 'record', asOf: '31 Mar 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-2', name: 'Control centre', title: 'Incident report, 3 March', summary: 'The control centre’s report on the Oxford train that vanished from the board.', format: 'document', role: 'record', asOf: '4 Mar 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-3', name: 'Station staff', title: 'Station log, March', summary: 'Faults, complaints and announcements, in the duty managers’ notes.', format: 'notes', role: 'record', asOf: '31 Mar 2026', grade: { distance: 2, trust: 3, clarity: 2 } },
+      { id: 'SRC-4', name: 'Local paper', title: '“Station board hides late trains”', summary: 'The local paper’s story, written from the commuter forum.', format: 'web', role: 'record', asOf: '6 Mar 2026', copies: 'SRC-5', grade: { distance: 1, trust: 2, clarity: 3 } },
+      { id: 'SRC-5', name: 'Commuter forum', title: 'Thread: “Where did the 14:08 go?”', summary: 'A regular commuter says late trains are taken off the board on purpose.', format: 'web', role: 'opinion', asOf: '5 Mar 2026', grade: { distance: 1, trust: 1, clarity: 2 } },
+      { id: 'SRC-6', name: 'Board supplier', title: 'Software roadmap 2026', summary: 'The supplier’s plan for the next version of the board software.', format: 'document', role: 'plan', asOf: '10 Jan 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-7', name: 'Agent', title: 'Vanishing trains in March', summary: 'The agent’s reading of the board feed against the ticket gates.', format: 'analysis', role: 'record', asOf: '1 Apr 2026', derivedFrom: 'SRC-1', grade: { distance: 2, trust: 2, clarity: 3 } },
+      { id: 'SRC-8', name: 'Board supplier', title: 'Progress report, March', summary: 'The supplier’s monthly report on the new software.', format: 'document', role: 'record', asOf: '24 Mar 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
+      { id: 'SRC-9', name: 'Passenger group', title: 'Email from the rail users’ group', summary: 'The group asks what happens to passengers when a train vanishes from the board.', format: 'email', role: 'opinion', asOf: '12 Mar 2026', grade: { distance: 2, trust: 3, clarity: 3 } },
+      { id: 'SRC-10', name: 'Operations meeting', title: 'Minute, 26 March', summary: 'The station operations meeting’s decisions on the board.', format: 'document', role: 'decision', asOf: '26 Mar 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-11', name: 'Control centre', title: 'Offer to hold departure reports', summary: 'The control centre offers to hold departure reports until a dispatcher confirms.', format: 'document', role: 'plan', asOf: '18 Mar 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
+      { id: 'SRC-12', name: 'Control centre', title: 'April statement', summary: 'What holding departure reports caught in April.', format: 'document', role: 'record', asOf: '30 Apr 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
+      { id: 'SRC-13', name: 'Board feed', title: 'Board feed log, April', summary: 'Every train report the board received, and what it showed, minute by minute.', format: 'data', role: 'record', asOf: '30 Apr 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
     ];
 
     // Each assertion: what the passage says to the claim, '+' (yes) or '−' (no), and its words.
     const CLAIMS = [
-      { id: 'CLM-1', text: 'On 4 February the farm was curtailed because the Tarn Lane line reached its thermal limit, not because of any fault at the farm.', summary: 'The grid operator’s notice, the SCADA log and the agent’s reading of it all point to a network limit: every turbine was available, and output sat on the 40 MW cap for nine hours. Well backed.', assertions: {
-        'SRC-2': ['+', 'Constraint applied 14:05–23:10: Harrow Ridge limited to 40 MW to keep the Tarn Lane 132 kV circuit within its thermal rating.'],
-        'SRC-1': ['+', '14:10: active power setpoint cut from 96 MW to 40 MW by network instruction NI-0412. Turbines available: 32 of 32. No faults logged.'],
-        'SRC-7': ['+', 'Output followed the 40 MW limit to within 1 MW for nine hours, while the wind would have supported about 90 MW. That is a network limit, not a farm fault.'],
+      { id: 'CLM-1', text: 'On 3 March the 14:08 to Oxford left the board because a faulty track circuit reported it departed, not to hide its delay.', summary: 'The control centre’s report, the board feed and the agent’s reading of it all point to a false departure report: the train was still at platform 7 when the board dropped it. Well backed.', assertions: {
+        'SRC-2': ['+', '14:04: departure reported for the 14:08 Oxford by the platform 7 track circuit while the train stood at the platform. Fault logged; the train left at 14:21.'],
+        'SRC-1': ['+', '14:04:12 14:08 Oxford: departed (reported by track circuit TC-7B). Removed from board. No staff action recorded.'],
+        'SRC-7': ['+', 'The 14:08 left the board seventeen minutes before it left the station, on a report from the platform 7 track circuit. That is a false report, not anyone hiding a delay.'],
       } },
-      { id: 'CLM-2', text: 'The turbines were iced up on 4 February, and the grid limit was a cover story.', summary: 'Only the campaign blog says so, and the paper repeats it. The site manager logged no icing alarms all month, and the SCADA log shows every turbine available. This leans false.', assertions: {
-        'SRC-5': ['+', 'The blades were iced up on the 4th, and they’re hiding behind the grid. Nobody turns turbines off on the windiest day of the year.'],
-        'SRC-4': ['+', 'Campaigners say the turbines were iced up, and that the grid limit was a cover story.'],
-        'SRC-3': ['−', 'No icing alarms on any turbine in February; blade heaters not called on once.'],
+      { id: 'CLM-2', text: 'Staff take late trains off the board on purpose, to make punctuality look better.', summary: 'Only the commuter forum says so, and the paper repeats it. The station log says staff can’t edit the board at all, and the board feed shows no staff action. This leans false.', assertions: {
+        'SRC-5': ['+', 'The 14:08 was running late so they just wiped it. Happens every week, and it makes the figures look good.'],
+        'SRC-4': ['+', 'Commuters say late trains are taken off the board to flatter the station’s punctuality figures.'],
+        'SRC-3': ['−', 'Reminder to new staff: the board can’t be edited from the station. Trains come off it only when reported departed.'],
       } },
-      { id: 'CLM-3', text: 'Curtailment falls sharply once the second Tarn Lane circuit is energised in June.', summary: 'Only the grid operator’s plan says so, and a plan says what should happen, not what will. RSK-1 rests on it, so it’s an assumption, and the contractor’s report already puts the circuit months later.', assertions: {
-        'SRC-6': ['+', 'Tarn Lane reinforcement: second 132 kV circuit, energisation planned for June 2026. Non-firm curtailment in the zone expected to fall by about 80%.'],
+      { id: 'CLM-3', text: 'Trains stop vanishing once the new board software arrives in April.', summary: 'Only the supplier’s roadmap says so, and a roadmap says what should happen, not what will. RSK-1 rests on it, so it’s an assumption, and the supplier’s own progress report already puts the software months later.', assertions: {
+        'SRC-6': ['+', 'Version 5, April 2026: a departure needs two reports before a train leaves the board. False departures expected to fall by about 90%.'],
       } },
-      { id: 'CLM-4', text: 'The second circuit won’t be energised before November.', summary: 'The contractor’s forecast, after a fourteen-week delay to the cable. Nobody else has updated the date yet.', assertions: {
-        'SRC-8': ['+', 'Cable delivery delayed by 14 weeks. Energisation now forecast for November at the earliest.'],
+      { id: 'CLM-4', text: 'The new software won’t arrive before September.', summary: 'The supplier’s forecast, after testing found a fault. Nobody else has updated the date yet.', assertions: {
+        'SRC-8': ['+', 'Version 5 failed acceptance testing at two pilot stations. Release now forecast for September at the earliest.'],
       } },
-      { id: 'CLM-5', informs: ['QST-1'], text: 'Curtailment cost the farm about £180,000 in February.', summary: 'The agent’s figure, from the curtailed energy and the month’s average day-ahead price. Nothing disputes it, but nothing else checks it either.', assertions: {
-        'SRC-7': ['+', 'About 1,900 MWh curtailed in February, at an average day-ahead price of £95/MWh: about £180,000 of lost revenue.'],
+      { id: 'CLM-5', informs: ['QST-1'], text: 'Vanishing trains left about 25 passengers a week looking for a train that wasn’t on the board, in March.', summary: 'The agent’s figure, from the board feed against the ticket gates. Nothing disputes it, but nothing else checks it either.', assertions: {
+        'SRC-7': ['+', 'About 100 passengers in March came through the gates for a train that had already vanished from the board: about 25 a week.'],
       } },
-      { id: 'CLM-6', informs: ['QST-2'], text: 'The farm lost about 1,900 MWh to curtailment in February.', summary: 'The SCADA log’s own count and the agent’s reading of it agree. Well backed.', assertions: {
-        'SRC-1': ['+', 'February curtailed energy (setpoint below available): 1,912 MWh.'],
-        'SRC-7': ['+', 'About 1,900 MWh curtailed in February, mostly on six windy days.'],
+      { id: 'CLM-6', informs: ['QST-2'], text: 'About 40 trains vanished from the board before they left, in March.', summary: 'The board feed’s own count and the agent’s reading of it agree. Well backed.', assertions: {
+        'SRC-1': ['+', 'March: 41 trains reported departed while still at their platform; 36 of them by TC-7B, platform 7.'],
+        'SRC-7': ['+', 'About 40 trains vanished early in March, nearly all at platform 7, mostly on wet days.'],
       } },
-      { id: 'CLM-7', text: 'Curtailment carries on at about February’s level until the second circuit is in.', summary: 'The board’s own belief, which no record backed: an assumption DEC-1 rests on. March’s SCADA log goes against it, with curtailment down to a third of February’s. Now refuted.', assertions: {
-        'SRC-10': ['+', 'On the basis that curtailment continues at around February’s level, the flexibility contract pays back within its first year.'],
-        'SRC-13': ['−', 'March curtailed energy: 640 MWh, a third of February’s. The Tarn Lane line was rarely at its limit.'],
+      { id: 'CLM-7', text: 'Trains carry on vanishing at about March’s rate until the new software is in.', summary: 'The operations meeting’s own belief, which no record backed: an assumption DEC-1 rests on. April’s board feed goes against it, with vanishing trains down to a third of March’s. Now refuted.', assertions: {
+        'SRC-10': ['+', 'On the basis that false departures continue at around March’s rate, holding reports is worth the dispatchers’ time until the new software is in.'],
+        'SRC-13': ['−', 'April: 13 trains reported departed while still at their platform, a third of March’s. A dry month; TC-7B faulted only twice.'],
       } },
     ];
 
@@ -329,15 +341,15 @@
 
     // A question is raised by a passage, and answered by passages from any source.
     const QUESTIONS = [
-      { id: 'QST-1', text: 'Is the farm paid for the energy it’s told not to generate?',
-        answer: 'No. The farm has a non-firm connection, so the network operator pays nothing for curtailment. February’s loss of about £180,000 falls on the farm, and on the community fund’s share.',
-        raisedBy: ['SRC-9', 'Our payments follow the farm’s output. When the farm is told to turn down, is it paid for the energy it would have made?'],
+      { id: 'QST-1', text: 'Do passengers miss their train when it vanishes from the board?',
+        answer: 'Yes. The control centre logged passengers who missed the Oxford train after the board dropped it, and the agent puts it at about 25 passengers a week looking for a train that wasn’t there.',
+        raisedBy: ['SRC-9', 'When a train disappears from the board early, what happens to the people waiting for it? Do they miss it?'],
         answers: {
-          'SRC-2': 'Harrow Ridge holds a non-firm connection: constraint under it is not compensated.',
-          'SRC-7': 'Under the non-firm terms, February’s loss of about £180,000 falls on the farm; nothing is paid back.',
+          'SRC-2': 'Two passengers reported missing the 14:21 departure, having taken the board to mean it had gone.',
+          'SRC-7': 'About 25 passengers a week came through the gates for a train that had already vanished from the board.',
         } },
-      { id: 'QST-2', text: 'Would a battery on site pay back by storing the energy that’s curtailed?',
-        raisedBy: ['SRC-10', 'The board asks whether a battery on site could store the energy now curtailed, and at what size it would pay back.'],
+      { id: 'QST-2', text: 'Would repairing the platform 7 track circuit stop most of the vanishing trains?',
+        raisedBy: ['SRC-10', 'The meeting asks whether repairing the platform 7 track circuit alone would stop most trains vanishing, and how soon it could be done.'],
         answers: {} },
     ];
 
@@ -345,29 +357,29 @@
     // passages behind it.
     const DECISION = {
       id: 'DEC-1',
-      title: 'How does the farm cut its curtailment losses until the second circuit is in?',
+      title: 'How does the station stop trains vanishing from the board until the new software is in?',
       status: 'accepted',
-      when: '2026-02-26',
-      deciders: ['Harrow Ridge board'],
+      when: '2026-03-26',
+      deciders: ['Station operations meeting'],
       options: [
-        { id: 'a', title: 'Accept curtailment until the circuit is in', pros: ['No cost, no new contract'], cons: ['About £180,000 lost in a windy month'] },
-        { id: 'b', title: 'Sell curtailed hours to Brackley Hydrogen', source: 'SRC-11', pros: ['Earns from the hours lost now'], cons: ['A new counterparty to rely on'] },
-        { id: 'c', title: 'Build a 20 MW battery on site', pros: ['Keeps the energy for later'], cons: ['£9m, and 18 months to build'] },
+        { id: 'a', title: 'Live with it until the new software', pros: ['No cost, no change to anyone’s work'], cons: ['About 40 trains a month vanish early'] },
+        { id: 'b', title: 'Hold departure reports until a dispatcher confirms', source: 'SRC-11', pros: ['Stops false departures now'], cons: ['Trains that have gone stay on the board up to a minute longer'] },
+        { id: 'c', title: 'Replace the station’s boards and their software', pros: ['Fixes it for good'], cons: ['£400,000, and a year to install'] },
       ],
       chosen: 'b',
       restsOn: ['GOL-1', 'CLM-1', 'CLM-4', 'CLM-5', 'CLM-7', 'QST-1'],
-      decided: 'We sign a two-year flexibility contract with Brackley Hydrogen for our curtailed hours.',
-      reason: 'It earns from the hours we lose now, at no capital cost, and its extension option covers a late circuit. A battery would take longer to build than the circuit is likely to slip.',
+      decided: 'The control centre holds departure reports at Ashford until the platform dispatcher confirms the train has gone.',
+      reason: 'It stops false departures now at no cost, and can be dropped once the new software is in. New boards would take longer to install than the software is likely to slip.',
       // What the decision predicts, so the next iteration's material can bear it out or not.
-      expects: 'Selling curtailed hours earns back about £60,000 in a windy month, bringing losses to about £120,000: closer to the goal, not there. The second circuit has to close the rest.',
+      expects: 'Holding reports catches about 30 of the 40 false departures a month, leaving about 10: closer to the goal, not there. The new software has to close the rest.',
       // Material that bears on what it expects: '+' bears it out, '−' goes against it.
       checks: {
-        'SRC-12': ['−', 'March: 410 MWh taken during constraint periods; £17,200 paid. Constraint periods were short, with the line rarely at its limit.'],
+        'SRC-12': ['−', 'April: 14 departure reports held; 5 were false. False reports were rare in a dry month, and dispatchers confirmed only half of those held.'],
       },
       sources: [
-        { source: 'SRC-10', quote: 'Resolved: sign the two-year flexibility contract with Brackley Hydrogen for curtailed hours.' },
-        { source: 'SRC-11', quote: 'We will take up to 35 MW during any constraint period at £42/MWh, for two years, with an option to extend by one.' },
-        { source: 'SRC-7', quote: 'About 1,900 MWh curtailed in February, at an average day-ahead price of £95/MWh: about £180,000 of lost revenue.' },
+        { source: 'SRC-10', quote: 'Agreed: the control centre will hold departure reports at Ashford until the platform dispatcher confirms.' },
+        { source: 'SRC-11', quote: 'We can hold departure reports at any station until the dispatcher confirms, for up to 60 seconds, and stop at any time.' },
+        { source: 'SRC-7', quote: 'About 40 trains vanished early in March, nearly all at platform 7, mostly on wet days.' },
       ],
     };
 
@@ -375,32 +387,32 @@
     // A goal: where the sandbox is trying to get to, how that's measured, and where things stand
     // against it. Decisions are made towards it, and judged by whether they bring it closer.
     const GOALS = [
-      { id: 'GOL-1', text: 'Cut curtailment losses to under £50,000 a month by next winter.', status: 'off track',
-        measuredBy: 'Revenue lost to curtailment each month: curtailed energy from the SCADA log, at that month’s day-ahead price.',
-        now: 'About £180,000 in February (CLM-5): more than three times the target.',
-        from: ['CLM-5'],
-        setIn: ['SRC-10', 'Target: bring curtailment losses under £50,000 a month by next winter, and review against it at every board.'] },
+      { id: 'GOL-1', text: 'Fewer than 5 trains a month vanish from the board before they leave, by the summer timetable.', status: 'off track',
+        measuredBy: 'Trains reported departed while still at their platform each month, from the board feed.',
+        now: 'About 40 in March (CLM-6): eight times the target.',
+        from: ['CLM-6'],
+        setIn: ['SRC-10', 'Target: fewer than 5 false departures a month by the summer timetable, reviewed at every operations meeting.'] },
     ];
 
     // An action: something that has to happen, who owns it, and how anyone can tell it's done.
     const ACTIONS = [
-      { id: 'ACT-1', from: 'DEC-1', text: 'Agree metering with Brackley Hydrogen, so curtailed hours are counted the same way on both sides.', status: 'to do',
-        owner: 'Commercial manager', due: '2026-03-20',
-        doneWhen: 'Both sides sign a metering schedule matching the farm’s constraint periods half-hour by half-hour.',
-        why: 'DEC-1 is only worth what can be billed, and billing rests on both sides counting the same hours.',
-        sources: [{ source: 'SRC-11', quote: 'Payment is against metered import at our site, matched half-hourly to the farm’s constraint periods.' }] },
+      { id: 'ACT-1', from: 'DEC-1', text: 'Give every Ashford dispatcher a handset that confirms departures, and show them how.', status: 'to do',
+        owner: 'Station manager', due: '2026-04-01',
+        doneWhen: 'Every dispatcher on the roster has confirmed a departure on their own handset.',
+        why: 'DEC-1 only works if someone confirms each departure; a report nobody confirms goes through as sent.',
+        sources: [{ source: 'SRC-11', quote: 'Reports are held for 60 seconds at most; unconfirmed, they go through as sent.' }] },
     ];
 
     // A risk: something that could go wrong, how likely and how bad, and how it's handled.
     const RISKS = [
-      { id: 'RSK-1', from: ['DEC-1', 'CLM-3', 'CLM-4'], text: 'The second circuit slips past the flexibility contract, and curtailment returns at full cost.', status: 'open',
-        raisedBy: 'Agent', likelihood: 'possible', impact: 'severe',
-        ifItHappens: 'Windy months cost the farm around £180,000 again, with nothing earned back from the lost hours.',
-        handling: 'The contract can be extended by a year. Watch the contractor’s monthly report: the circuit has already moved from June to November.',
+      { id: 'RSK-1', from: ['DEC-1', 'CLM-3', 'CLM-4'], text: 'The new software slips past the summer timetable, and the workaround has to hold for months.', status: 'open',
+        raisedBy: 'Agent', likelihood: 'possible', impact: 'serious',
+        ifItHappens: 'Every missed confirmation lets a false departure through, and wet autumn weather brings the track circuit faults back.',
+        handling: 'The control centre can keep holding reports as long as needed. Watch the supplier’s monthly report: the software has already moved from April to September.',
         sources: [
-          { source: 'SRC-8', quote: 'Cable delivery delayed by 14 weeks. Energisation now forecast for November at the earliest.' },
-          { source: 'SRC-6', quote: 'Tarn Lane reinforcement: second 132 kV circuit, energisation planned for June 2026.' },
-          { source: 'SRC-11', quote: 'We will take up to 35 MW during any constraint period at £42/MWh, for two years, with an option to extend by one.' },
+          { source: 'SRC-8', quote: 'Version 5 failed acceptance testing at two pilot stations. Release now forecast for September at the earliest.' },
+          { source: 'SRC-6', quote: 'Version 5, April 2026: a departure needs two reports before a train leaves the board.' },
+          { source: 'SRC-11', quote: 'We can hold departure reports at any station until the dispatcher confirms, for up to 60 seconds, and stop at any time.' },
         ] },
     ];
 
@@ -409,9 +421,9 @@
     // it's done, a risk for what to watch, a question for what would answer it, an assumption
     // for what would test it. When it arrives it becomes a source, and the loop turns once.
     const AWAITED = [
-      { id: 'NEXT-2', title: 'Signed metering schedule', for: 'ACT-1', why: 'shows it’s done' },
-      { id: 'NEXT-3', title: 'Contractor’s April report', for: 'RSK-1', why: 'to watch' },
-      { id: 'NEXT-4', title: 'Battery supplier’s quote', for: 'QST-2', why: 'would answer it' },
+      { id: 'NEXT-2', title: 'Dispatchers’ handset records', for: 'ACT-1', why: 'shows it’s done' },
+      { id: 'NEXT-3', title: 'Supplier’s May report', for: 'RSK-1', why: 'to watch' },
+      { id: 'NEXT-4', title: 'Signalling engineer’s survey', for: 'QST-2', why: 'would answer it' },
     ];
     // Each grade's words, from low (1) to high (3).
     const GRADES = {
@@ -786,17 +798,19 @@
     }
 
 
-    // The flow: every card in a column, left to right in the order things depend on each other.
-    // Nothing is joined at rest. Pointing at a card lights everything it rests on and everything
-    // that rests on it, draws those links, and fades the rest; clicking goes to the card in full.
+    // The iteration boards: one at a time, every card in a column, left to right in the order
+    // things depend on each other, ending with what's awaited from the world. Nothing is joined
+    // at rest. Pointing at a card lights everything on the board it rests on and everything that
+    // rests on it, draws those links, and fades the rest; clicking goes to the card in full.
 
     const COLUMNS = [
-      { title: 'From the world', prefix: /^(NEXT|SRC)/ },
+      { title: 'From the world', prefix: 'SRC' },
       { title: 'Claims', prefix: 'CLM' },
       { title: 'Questions', prefix: 'QST' },
       { title: 'Goals', prefix: 'GOL' },
       { title: 'Decisions', prefix: 'DEC' },
       { title: 'Actions and risks', prefix: /^(ACT|RSK)/ },
+      { title: 'Awaited', prefix: 'NEXT' },
     ];
 
     // Every link, from what something rests on to what rests on it.
@@ -842,17 +856,16 @@
     const FOLDERS = { GOL: 'goals', CLM: 'claims', QST: 'questions', DEC: 'decisions', ACT: 'actions', RSK: 'risks' };
     const fileOf = id => `${FOLDERS[id.slice(0, 3)]}/${id}.md`;
 
-    // The loop unrolled: each iteration a block of its own, flowing downwards. Its sources are
-    // what arrived from the world in that turn, and its cards what was raised in it. Nothing
-    // points back up: a card that changes later appears again, as its updated self.
+    // Each turn of the loop: its sources are what arrived from the world in that turn, and its
+    // cards what was raised in it.
     const ITERATIONS = [
-      { title: 'Iteration 1 · the first curtailment, early February',
+      { title: 'Iteration 1 · a train vanishes, early March',
         sources: ['SRC-2', 'SRC-3', 'SRC-4', 'SRC-5', 'SRC-9'], cards: ['CLM-1', 'CLM-2', 'QST-1'] },
-      { title: 'Iteration 2 · counting the cost and deciding, late February',
+      { title: 'Iteration 2 · counting the problem and deciding, late March',
         sources: ['SRC-1', 'SRC-6', 'SRC-7', 'SRC-8', 'SRC-10', 'SRC-11'], cards: ['GOL-1', 'CLM-3', 'CLM-4', 'CLM-5', 'CLM-6', 'CLM-7', 'QST-2', 'DEC-1', 'ACT-1', 'RSK-1'] },
-      { title: 'Iteration 3 · first results, March',
+      { title: 'Iteration 3 · first results, April',
         sources: ['SRC-12', 'SRC-13'], cards: [] },
-      { title: 'Iteration 4 · awaited from the world, April',
+      { title: 'Iteration 4 · awaited from the world, May',
         sources: AWAITED.map(a => a.id), cards: [] },
     ];
 
@@ -887,8 +900,8 @@
       return [...new Set([first, ...later.filter(k => k > first)])].sort((a, b) => a - b);
     }
 
-    const keyOf = (id, k) => `${id}@${k}`;
-    const latestBy = (id, k) => appearancesOf(id).filter(at => at <= k).pop();
+    // The last iteration before k that a card appeared in, if any.
+    const before = (id, k) => appearancesOf(id).filter(at => at < k).pop();
 
     // A card as it stood in one iteration: a claim weighed on what had arrived by then.
     function asOf(id, k, isLatest) {
@@ -905,91 +918,159 @@
       return { kind, text: kind === 'decision' ? item.decided : item.text, status: kind === 'decision' ? decisionStatus(item, k) : item.status };
     }
 
-    // Every card in every iteration it appears in, and the links between them, all downwards:
-    // from an earlier version, from new sources, and from new versions of the cards it rests on.
-    function unrolled() {
-      const nodes = [], found = [];
-      const ids = [...SOURCES, ...AWAITED, ...GOALS, ...CLAIMS, ...QUESTIONS, DECISION, ...ACTIONS, ...RISKS].map(item => item.id);
-      for (const id of ids) {
-        const at = appearancesOf(id), { sources, cards } = inputsOf(id);
-        at.forEach((k, i) => {
-          const before = i ? at[i - 1] : 0;
-          nodes.push({ key: keyOf(id, k), id, k, updated: i > 0, ...asOf(id, k, i === at.length - 1) });
-          if (i) found.push([keyOf(id, before), keyOf(id, k)]);
-          for (const source of sources) {
-            const arrived = iterationOf(source);
-            if (arrived > before && arrived <= k) found.push([keyOf(source, arrived), keyOf(id, k)]);
-          }
-          for (const card of cards) {
-            const version = latestBy(card, k);
-            if (version > before || (!i && version)) found.push([keyOf(card, version), keyOf(id, k)]);
-          }
-        });
-      }
-      return { nodes, links: found };
+    const stateOf = (id, k) => asOf(id, k, k >= appearancesOf(id).at(-1));
+
+    const allIds = () => [...SOURCES, ...GOALS, ...CLAIMS, ...QUESTIONS, DECISION, ...ACTIONS, ...RISKS, ...AWAITED].map(item => item.id);
+
+    // One iteration's board: every card that arrived or changed in it, and the earlier cards
+    // those rest on, so the board reads on its own. Links stay within the board.
+    function boardOf(k) {
+      const here = allIds().filter(id => appearancesOf(id).includes(k));
+      const restedOn = new Set(here.flatMap(id => Object.values(inputsOf(id)).flat()));
+      const earlier = allIds().filter(id => restedOn.has(id) && !here.includes(id) && iterationOf(id) < k);
+      const ids = [...earlier, ...here];
+      return { ids, earlier, links: links().filter(([from, to]) => ids.includes(from) && ids.includes(to)) };
     }
 
-    function flowNode(node) {
-      const item = el('button', `node node--${node.kind}${node.assumed ? ' is-assumed' : ''}`);
-      item.type = 'button';
-      item.dataset.node = node.key;
-      const head = el('span', 'node-head');
+    function cardFace(id, k) {
+      const node = stateOf(id, k);
       const awaited = node.kind === 'awaited';
-      head.append(icon(awaited ? 'source' : node.kind), el('span', 'claim-id', awaited ? 'awaited' : node.id));
+      const head = el('span', 'node-head');
+      head.append(icon(awaited ? 'source' : node.kind), el('span', 'claim-id', awaited ? 'awaited' : id));
       if (node.status) head.append(statusBadge(node.status));
-      item.append(head, el('span', 'node-text', node.text));
-      if (node.note) item.append(el('span', 'node-note', node.note));
-      if (node.updated) item.append(el('span', 'node-note', 'updated: new material arrived'));
-      if (FOLDERS[node.id.slice(0, 3)]) item.append(el('span', 'node-file', fileOf(node.id)));
-      item.addEventListener('click', () => goTo(node.id));
-      return item;
+      const face = [head, el('span', 'node-text', node.text)];
+      if (node.note) face.push(el('span', 'node-note', node.note));
+      if (FOLDERS[id.slice(0, 3)]) face.push(el('span', 'node-file', fileOf(id)));
+      return face;
     }
 
-    function drawFlow(root) {
-      const { nodes, links: all } = unrolled();
-      const flow = el('div', 'flow');
-      ITERATIONS.forEach((iteration, i) => {
-        const block = el('section', 'flow-iteration');
-        block.append(el('h4', 'flow-iteration-title', iteration.title));
-        for (const band of COLUMNS) {
-          const here = nodes.filter(n => n.k === i + 1 && inColumn(band, n.id));
-          if (!here.length) continue;
-          const row = el('div', 'flow-band');
-          const cards = el('div', 'flow-cards');
-          cards.append(...here.map(flowNode));
-          row.append(el('h5', 'flow-title', band.title), cards);
-          block.append(row);
-        }
-        flow.append(block);
-      });
-      const lines = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      lines.classList.add('flow-lines');
-      flow.append(lines);
-      root.replaceChildren(flow);
+    function cardClass(id, k) {
+      const node = stateOf(id, k);
+      return `node node--${node.kind}${node.assumed ? ' is-assumed' : ''}`;
+    }
 
-      for (const node of flow.querySelectorAll('.node')) {
-        node.addEventListener('mouseenter', () => lightChain(flow, lines, node.dataset.node, all));
-        node.addEventListener('mouseleave', () => clearChain(flow, lines));
-        node.addEventListener('focus', () => lightChain(flow, lines, node.dataset.node, all));
-        node.addEventListener('blur', () => clearChain(flow, lines));
+    // A card on a board. One from an earlier iteration says where it came from, and one that
+    // changed says since when, and what it was; pointing at that peeks at how it stood then,
+    // and clicking goes to that board.
+    function boardCard(id, k, isEarlier, peek, show) {
+      const card = el('div', cardClass(id, k) + (isEarlier ? ' is-earlier' : ''));
+      card.dataset.node = id;
+      const main = el('button', 'node-main');
+      main.type = 'button';
+      main.append(...cardFace(id, k));
+      main.addEventListener('click', () => goTo(id));
+      card.append(main);
+
+      const then = before(id, k);
+      if (!then) return card;
+      const was = stateOf(id, then).status, now = stateOf(id, k).status;
+      const since = el('button', 'node-since', isEarlier ? `from iteration ${then}` : `changed since ${then}` + (was !== now ? ` · was ${was}` : ''));
+      since.type = 'button';
+      since.title = `Go to iteration ${then}`;
+      since.addEventListener('click', () => show(then));
+      if (!isEarlier) {
+        for (const on of ['mouseenter', 'focus']) since.addEventListener(on, () => peek.at(since, id, then));
+        for (const off of ['mouseleave', 'blur']) since.addEventListener(off, () => peek.hide());
       }
+      card.append(since);
+      return card;
+    }
+
+    // The peek: a card as it stood in an earlier iteration, held just below what's pointed at.
+    function makePeek() {
+      const holder = el('div', 'peek');
+      holder.popover = 'manual';
+      holder.at = (anchor, id, k) => {
+        const card = el('div', cardClass(id, k)), face = el('div', 'node-main');
+        face.append(...cardFace(id, k));
+        card.append(face);
+        holder.replaceChildren(el('p', 'peek-label', `In iteration ${k}`), card);
+        const box = anchor.getBoundingClientRect();
+        holder.style.left = `${box.left}px`;
+        holder.style.top = `${box.bottom + 6}px`;
+        holder.showPopover();
+      };
+      holder.hide = () => holder.matches(':popover-open') && holder.hidePopover();
+      return holder;
+    }
+
+    // The carousel: back and forth between boards, or straight to one.
+    function drawBoards(root) {
+      const peek = makePeek();
+      const title = el('h4', 'board-title');
+      const holder = el('div', 'scroll');
+      const step = (text, label) => { const button = el('button', null, text); button.type = 'button'; button.setAttribute('aria-label', label); return button; };
+      const previous = step('‹', 'Previous iteration'), next = step('›', 'Next iteration');
+      const tabs = ITERATIONS.map((_, i) => step(`Iteration ${i + 1}`, `Iteration ${i + 1}`));
+      let current = 1;
+
+      function show(k) {
+        current = k;
+        peek.hide();
+        previous.disabled = k === 1;
+        next.disabled = k === ITERATIONS.length;
+        tabs.forEach((tab, i) => tab.setAttribute('aria-current', i + 1 === k));
+        title.textContent = ITERATIONS[k - 1].title;
+        holder.replaceChildren(drawBoard(k, peek, show));
+      }
+
+      previous.addEventListener('click', () => show(current - 1));
+      next.addEventListener('click', () => show(current + 1));
+      tabs.forEach((tab, i) => tab.addEventListener('click', () => show(i + 1)));
+      const nav = el('nav', 'board-nav');
+      nav.append(previous, ...tabs, next);
+      root.replaceChildren(nav, title, holder, peek);
+      show(1);
+    }
+
+    // One board: a column for each kind of card, narrow when empty so every board keeps its shape.
+    function drawBoard(k, peek, show) {
+      const { ids, earlier, links: shown } = boardOf(k);
+      const board = el('div', 'board');
+      const columns = COLUMNS.map(column => ids.filter(id => inColumn(column, id)));
+      board.style.gridTemplateColumns = columns.map(cards => cards.length ? 'minmax(140px, 1fr)' : 'min-content').join(' ');
+      COLUMNS.forEach((column, i) => {
+        const holder = el('div', columns[i].length ? 'board-column' : 'board-column is-empty');
+        holder.append(el('h5', 'flow-title', column.title), ...columns[i].map(id => boardCard(id, k, earlier.includes(id), peek, show)));
+        board.append(holder);
+      });
+      const lines = svg('flow-lines'), labels = svg('flow-labels');
+      board.append(lines, labels);
+
+      for (const node of board.querySelectorAll('.node')) {
+        const light = () => lightChain(board, lines, labels, node.dataset.node, shown);
+        const clear = () => clearChain(board, lines, labels);
+        node.addEventListener('mouseenter', light);
+        node.addEventListener('mouseleave', clear);
+        node.addEventListener('focusin', light);
+        node.addEventListener('focusout', clear);
+      }
+      return board;
+    }
+
+    function svg(className) {
+      const node = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      node.classList.add(className);
+      return node;
     }
 
     function inColumn(column, id) {
       return typeof column.prefix === 'string' ? id.startsWith(column.prefix) : column.prefix.test(id);
     }
 
-    function lightChain(flow, lines, id, all) {
+    function lightChain(board, lines, labels, id, all) {
       const back = reach(id, 0, all), on = reach(id, 1, all);
       const lit = new Set([...back, ...on]);
-      flow.classList.add('is-tracing');
-      for (const node of flow.querySelectorAll('.node')) {
+      board.classList.add('is-tracing');
+      for (const node of board.querySelectorAll('.node')) {
         node.classList.toggle('is-lit', lit.has(node.dataset.node));
         node.classList.toggle('is-focus', node.dataset.node === id);
       }
       // Only the links on a path through the card: back along what it rests on, on along what rests on it.
       const onPath = ([from, to]) => (back.has(from) && back.has(to)) || (on.has(from) && on.has(to));
-      lines.replaceChildren(...drawLinks(flow, all.filter(onPath)));
+      const { paths, texts } = drawLinks(board, all.filter(onPath));
+      lines.replaceChildren(...paths);
+      labels.replaceChildren(...texts);
     }
 
     // What a link means, read from the card it leaves to the card it reaches, as a knowledge
@@ -1013,34 +1094,35 @@
       return 'raises';
     }
 
-    // Links reaching a card meet it at one point per kind of link, spread along its top edge and
+    // Links reaching a card meet it at one point per kind of link, spread down its left edge and
     // labelled there, where links of one kind have gathered and other kinds have parted. Labels
     // by the target never pile up the way they would where links leave a card together.
-    function drawLinks(flow, shown) {
-      const box = flow.getBoundingClientRect();
-      const rect = key => flow.querySelector(`[data-node="${key}"]`).getBoundingClientRect();
-      const middle = key => { const r = rect(key); return r.left + r.width / 2 - box.left; };
-      const drawn = [];
+    function drawLinks(board, shown) {
+      const box = board.getBoundingClientRect();
+      const rect = id => {
+        const r = board.querySelector(`[data-node="${id}"]`).getBoundingClientRect();
+        return { left: r.left - box.left, right: r.right - box.left, top: r.top - box.top, middle: r.top + r.height / 2 - box.top, height: r.height };
+      };
+      const paths = [], texts = [];
       for (const [to, links] of groupBy(shown, ([, target]) => target)) {
         const kinds = [...groupBy(links, ([from]) => relation(from, to))]
-          .sort(([, p], [, q]) => average(p.map(([from]) => middle(from))) - average(q.map(([from]) => middle(from))));
+          .sort(([, p], [, q]) => average(p.map(([from]) => rect(from).middle)) - average(q.map(([from]) => rect(from).middle)));
         const target = rect(to);
         kinds.forEach(([name, group], i) => {
-          const entry = target.left - box.left + target.width * (i + 1) / (kinds.length + 1);
-          const top = target.top - box.top;
-          // With more than two kinds, labels alternate between two heights so neighbours don't touch.
-          const lift = kinds.length > 2 && i % 2 ? 12 : 0;
-          drawn.push(...group.map(link => curve(flow, link, entry)), label(name, entry, top - 12 - lift));
+          const entry = target.top + target.height * (i + 1) / (kinds.length + 1);
+          const turn = target.left - 46;
+          paths.push(...group.map(([from]) => route(rect(from), turn, target.left, entry)));
+          texts.push(label(name, target.left - 4, entry - 4));
         });
       }
-      return drawn;
+      return { paths, texts };
     }
 
     function label(text, x, y) {
       const node = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       node.setAttribute('x', x);
       node.setAttribute('y', y);
-      node.setAttribute('text-anchor', 'middle');
+      node.setAttribute('text-anchor', 'end');
       node.textContent = text;
       return node;
     }
@@ -1053,22 +1135,18 @@
       return groups;
     }
 
-    function clearChain(flow, lines) {
-      flow.classList.remove('is-tracing');
+    function clearChain(board, lines, labels) {
+      board.classList.remove('is-tracing');
       lines.replaceChildren();
+      labels.replaceChildren();
     }
 
-    // A route from the bottom of one card to a point on the top of the other, drawn like a
-    // transit map: down, a 45° corner, across in the gap above the target's band, another
-    // corner, and down into the card. Down runs pass behind the cards between.
-    function curve(flow, [from, to], entry) {
-      const box = flow.getBoundingClientRect();
-      const a = flow.querySelector(`[data-node="${from}"]`).getBoundingClientRect();
-      const b = flow.querySelector(`[data-node="${to}"]`).getBoundingClientRect();
-      const x1 = a.left + a.width / 2 - box.left, x2 = entry;
-      const y1 = a.bottom - box.top, y2 = b.top - box.top, turn = y2 - 8;
+    // A route from the right of one card to a point on the left of another, drawn like a
+    // transit map: across, a 45° corner, up or down in the gap before the target's column,
+    // another corner, and across into the card. Runs across pass behind the cards between.
+    function route(from, turn, x, y) {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M' + chamfer([[x1, y1], [x1, turn], [x2, turn], [x2, y2]], 6).map(([x, y]) => `${x},${y}`).join(' L'));
+      path.setAttribute('d', 'M' + chamfer([[from.right, from.middle], [turn, from.middle], [turn, y], [x, y]], 6).map(([px, py]) => `${px},${py}`).join(' L'));
       return path;
     }
 
@@ -1118,7 +1196,7 @@
     document.getElementById('risks').replaceChildren(...RISKS.map(riskCard));
     document.getElementById('sources').replaceChildren(...SOURCES.map(sourceCard));
     lightTogether(document.querySelector('main'));
-    drawFlow(document.getElementById('flow'));
+    drawBoards(document.getElementById('flow'));
   </script>
 </body>
 </html>

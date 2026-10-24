@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lineage</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-scrubber/sb-scrubber.js"></script>
+  <script src="lineage.js"></script>
+</head>
+<body>
+  <sb-shell heading="Lineage">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p><strong>Goal:</strong> understand a station's departure board by watching its model grow, from the simplest board to the full picture, one idea at a time.</p>
+  </sb-shell>
+
+  <main>
+    <section class="chapter">
+      <h2>How the board came to be</h2>
+      <p>Every domain starts small and simple and grows step by step. Here the departure board's model is a lineage of small versions, each one runnable, each adding one idea to its parent, with a note on what caused it. Rivals that were tried and set aside stay, as dead ends.</p>
+      <p class="try"><strong>Try:</strong> step along the trunk and watch the same twelve trains gain detail. Lines marked in amber look different from the version before, with what they showed then. At V4, look at Dover Priory: what's wrong with it, and how does V5 fix it?</p>
+    </section>
+
+    <div class="workspace">
+      <div class="lineage">
+        <section class="card">
+          <div class="tree" id="tree"></div>
+          <sb-scrubber id="scrubber" step="1" duration="6" label="Version"></sb-scrubber>
+        </section>
+
+        <section class="card">
+          <h3 id="version-title"></h3>
+          <p class="cause" id="cause"></p>
+          <div class="growth" id="growth"></div>
+          <p class="summary" id="summary"></p>
+          <div class="board" id="board"></div>
+          <h4>What this version knows about each train</h4>
+          <div class="facts-scroll"><table class="facts" id="facts"></table></div>
+        </section>
+      </div>
+
+      <section class="card map-card">
+        <h3 id="map-title"></h3>
+        <p class="map-intro">Every combination of the facts this version knows, one band each, and what the board shows for it. Where what's shown doesn't depend on a fact, its tile is left whole. Point at any tile to light what passes through it.</p>
+        <div class="map-scroll"><div class="map" id="map"></div></div>
+        <p class="map-detail" id="map-detail"></p>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // The page: the lineage as a tree, and the selected version's board and facts beneath it.
+
+    let selected = TRUNK[0];
+
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+    }
+
+    // The tree: generations left to right, the trunk along the top, versions set aside below it.
+
+    const NODE = { width: 92, height: 40, across: 120, down: 58 };
+
+    // Each branch off the trunk gets a row of its own, shared by the versions that grow from it.
+    const branches = VERSIONS.filter(version => version.setAside && !parentOf(version).setAside);
+
+    function rowOf(version) {
+      if (!version.setAside) return 0;
+      return parentOf(version).setAside ? rowOf(parentOf(version)) : branches.indexOf(version) + 1;
+    }
+
+    function placeOf(version) {
+      return { x: 6 + depthOf(version) * NODE.across, y: 6 + rowOf(version) * NODE.down };
+    }
+
+    function edge(version) {
+      const from = placeOf(parentOf(version));
+      const to = placeOf(version);
+      const [x1, y1, x2, y2] = [from.x + NODE.width, from.y + NODE.height / 2, to.x, to.y + NODE.height / 2];
+      const bend = (x2 - x1) / 2;
+      return `<path class="tree-edge${version.setAside ? ' is-set-aside' : ''}" d="M${x1},${y1} C${x1 + bend},${y1} ${x2 - bend},${y2} ${x2},${y2}"/>`;
+    }
+
+    function node(version) {
+      const { x, y } = placeOf(version);
+      return `
+        <g class="tree-node${version.setAside ? ' is-set-aside' : ''}" data-version="${version.id}" tabindex="0" role="button" aria-label="${version.id}: ${escapeHtml(version.name)}">
+          <rect x="${x}" y="${y}" width="${NODE.width}" height="${NODE.height}" rx="6"/>
+          <text x="${x + NODE.width / 2}" y="${y + 16}" class="tree-id">${version.id}</text>
+          <text x="${x + NODE.width / 2}" y="${y + 31}" class="tree-name">${escapeHtml(version.name)}</text>
+        </g>`;
+    }
+
+    function renderTree() {
+      const places = VERSIONS.map(placeOf);
+      const width = Math.max(...places.map(p => p.x)) + NODE.width + 6;
+      const height = Math.max(...places.map(p => p.y)) + NODE.height + 6;
+      document.getElementById('tree').innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" width="${width}" role="group" aria-label="The lineage">
+          ${VERSIONS.filter(version => version.parent).map(edge).join('')}
+          ${VERSIONS.map(node).join('')}
+        </svg>`;
+    }
+
+    // What the version adds: new facts, and values that are new or split.
+
+    function renderGrowth() {
+      const changes = growthOf(selected).map(({ fact, isNew, added, gone }) => {
+        const values = selected.facts[fact].values.join(' · ');
+        if (isNew) return `<span class="change"><b>+ ${fact}</b> ${values}</span>`;
+        if (gone.length) return `<span class="change"><b>${fact}</b> ${gone.join(', ')} → ${added.join(' · ')}</span>`;
+        return `<span class="change"><b>${fact}</b> + ${added.join(' · ')}</span>`;
+      });
+      document.getElementById('growth').innerHTML = changes.join('');
+    }
+
+    // The board, with only the parts this version has, and each line marked if it differs from the parent's.
+
+    const hidden = row => row.shows.show?.text === 'hide';
+
+    function lineText(row) {
+      if (hidden(row)) return 'hidden';
+      const parts = ['platform', 'expected', 'note'].filter(part => row.shows[part]?.text);
+      return parts.map(part => row.shows[part].text).join(' · ') || 'listed';
+    }
+
+    function cell(shown) {
+      return `<span class="tone-${shown.tone}">${escapeHtml(shown.text)}</span>`;
+    }
+
+    function boardRow(row, before) {
+      const changed = before && lineText(row) !== lineText(before);
+      const classes = ['board-train', hidden(row) && 'is-hidden', changed && 'is-changed'].filter(Boolean).join(' ');
+      return `
+        <div class="${classes}">
+          <div class="board-row">
+            <span>${row.train.time}</span>
+            <span>${escapeHtml(row.train.destination)}</span>
+            ${row.shows.platform ? cell(row.shows.platform) : ''}
+            ${row.shows.expected ? cell(row.shows.expected) : ''}
+          </div>
+          ${row.shows.note?.text ? `<div class="board-note">${cell(row.shows.note)}</div>` : ''}
+          ${changed ? `<div class="board-was">${selected.parent}: ${escapeHtml(lineText(before))}</div>` : ''}
+        </div>`;
+    }
+
+    function renderBoard(rows, parentRows) {
+      const columns = ['6ch', '1fr', selected.rules.platform && '5ch', selected.rules.expected && '16ch'].filter(Boolean).join(' ');
+      const heads = ['Time', 'Destination', selected.rules.platform && 'Plat', selected.rules.expected && 'Expected'].filter(Boolean);
+      const byTime = rows.map((row, i) => [row, parentRows?.[i]]).sort(([a], [b]) => minutes(a.train.time) - minutes(b.train.time));
+      const board = document.getElementById('board');
+      board.style.setProperty('--columns', columns);
+      board.innerHTML = `
+        <div class="board-title"><span>${STATION}</span><span>${NOW}</span></div>
+        <div class="board-head board-row">${heads.map(head => `<span>${head}</span>`).join('')}</div>
+        ${byTime.map(([row, before]) => boardRow(row, before)).join('')}`;
+      const changed = parentRows ? rows.filter((row, i) => lineText(row) !== lineText(parentRows[i])).length : 0;
+      document.getElementById('summary').textContent = parentRows
+        ? `${changed} of ${rows.length} trains look different from ${selected.parent}.`
+        : 'The first version: every train is simply listed.';
+    }
+
+    // The facts: one column per fact this version knows, new columns and values marked.
+
+    function renderFacts(rows) {
+      const growth = growthOf(selected);
+      const isNewFact = fact => growth.some(change => change.fact === fact && change.isNew);
+      const isNewValue = (fact, value) => growth.some(change => change.fact === fact && change.added.includes(value));
+      const facts = Object.keys(selected.facts);
+      const head = `<tr><th>Train</th>${facts.map(fact => `<th class="${isNewFact(fact) ? 'is-new' : ''}">${fact}</th>`).join('')}</tr>`;
+      const body = rows.map(row => `
+        <tr>
+          <td>${row.train.time} ${escapeHtml(row.train.destination)}</td>
+          ${facts.map(fact => {
+            const value = row.facts[fact];
+            const isNew = isNewFact(fact) || isNewValue(fact, value);
+            return `<td><span class="fact${isNew ? ' is-new' : ''}">${value}</span></td>`;
+          }).join('')}
+        </tr>`).join('');
+      document.getElementById('facts').innerHTML = facts.length ? head + body : '<tr><td>Nothing yet: a train is only a time and a destination.</td></tr>';
+    }
+
+    // The map: fact columns on the left, what the board shows on the right, a band of rows per region.
+
+    const PART_NAMES = { platform: 'Plat', expected: 'Expected', note: 'Message', show: 'Shown' };
+    let regions = [];
+
+    const asShown = text => escapeHtml(text)
+      .replace('{expected}', '<i>time</i>').replace('{platform}', '<i>plat</i>').replace('{reason}', '<i>reason</i>')
+      .replace('{delay}', '<i>n</i>').replace('{wait}', '<i>n</i>');
+
+    function tile(className, row, size, column, content, span = 1) {
+      return `<div class="${className}" data-from="${row}" data-to="${row + size}"
+        style="grid-row: ${row + 2} / span ${size}; grid-column: ${column + 1} / span ${span}"><span>${content}</span></div>`;
+    }
+
+    // A fact's tiles: neighbouring regions that agree on this fact and every fact before it share one.
+    function factTiles(facts, column) {
+      const key = region => JSON.stringify(facts.slice(0, column + 1).map(fact => region.facts[fact]));
+      const tiles = [];
+      let row = 0;
+      regions.forEach((region, i) => {
+        if (i === 0 || key(region) !== key(regions[i - 1])) tiles.push({ row, size: 0, values: region.facts[facts[column]] });
+        tiles.at(-1).size += region.size;
+        row += region.size;
+      });
+      const fact = facts[column];
+      return tiles.map(({ row, size, values }) => {
+        const whole = values.length > 1;
+        return tile(`map-tile${whole ? ' is-whole' : ''}`, row, size, column, whole ? `any ${fact}` : values[0]);
+      });
+    }
+
+    function outcomeTiles(parts, column) {
+      let row = 0;
+      return regions.flatMap(region => {
+        const tiles = region.outcome.show?.text === 'hide'
+          ? [tile('map-out board-text is-hidden-text', row, region.size, column, 'hidden', parts.length)]
+          : parts.map((part, i) => {
+            const then = region.outcome[part];
+            return tile(`map-out board-text tone-${then.tone ?? 'plain'}`, row, region.size, column + i, asShown(then.text) || '&nbsp;');
+          });
+        row += region.size;
+        return tiles;
+      });
+    }
+
+    function renderMap() {
+      regions = regionsOf(selected);
+      const facts = Object.keys(selected.facts);
+      const parts = Object.keys(selected.rules).filter(part => part !== 'show');
+      const scenarios = regions.reduce((total, region) => total + region.size, 0);
+      document.getElementById('map-title').textContent =
+        `The map of ${selected.id}: ${scenarios} scenario${scenarios === 1 ? '' : 's'} in ${regions.length} region${regions.length === 1 ? '' : 's'}`;
+      const map = document.getElementById('map');
+      map.style.setProperty('--facts', facts.length);
+      map.style.setProperty('--parts', parts.length);
+      const heads = [...facts, ...parts.map(part => PART_NAMES[part])].map(name => `<div class="map-head">${name}</div>`);
+      map.innerHTML = facts.length || parts.length
+        ? heads.join('') + facts.flatMap((_, column) => factTiles(facts, column)).join('') + outcomeTiles(parts, facts.length).join('')
+        : '<div class="map-empty">One scenario: every train is simply listed.</div>';
+      showDetail(null);
+    }
+
+    // Pointing at a tile lights every tile its rows pass through, and says which trains land there.
+
+    function showDetail(target) {
+      const map = document.getElementById('map');
+      const from = Number(target?.dataset.from);
+      const to = Number(target?.dataset.to);
+      for (const each of map.querySelectorAll('[data-from]')) {
+        each.classList.toggle('is-lit', Boolean(target) && Number(each.dataset.from) < to && Number(each.dataset.to) > from);
+      }
+      map.classList.toggle('is-pointing', Boolean(target));
+      const detail = document.getElementById('map-detail');
+      if (!target) { detail.textContent = 'Point at a tile.'; return; }
+      let row = 0;
+      const lit = regions.filter(region => { const inside = row >= from && row < to; row += region.size; return inside; });
+      const size = lit.reduce((total, region) => total + region.size, 0);
+      const trains = TRAINS.filter(train => lit.some(region => isIn(factsOf(selected, train), region)));
+      detail.textContent = `${size} scenario${size === 1 ? '' : 's'}. ` + (trains.length
+        ? `This afternoon: ${trains.map(train => `${train.time} ${train.destination}`).join(', ')}.`
+        : 'No train lands here this afternoon.');
+    }
+
+    const mapElement = document.getElementById('map');
+    mapElement.addEventListener('pointerover', event => showDetail(event.target.closest('[data-from]')));
+    mapElement.addEventListener('pointerleave', () => showDetail(null));
+
+    function render() {
+      document.getElementById('version-title').textContent = `${selected.id} · ${selected.name}${selected.setAside ? ' (set aside)' : ''}`;
+      document.getElementById('cause').textContent = selected.cause;
+      const rows = runVersion(selected);
+      const parent = parentOf(selected);
+      for (const each of document.querySelectorAll('.tree-node')) each.classList.toggle('is-selected', each.dataset.version === selected.id);
+      renderGrowth();
+      renderBoard(rows, parent && runVersion(parent));
+      renderFacts(rows);
+      renderMap();
+    }
+
+    // Choosing a version: from the tree, or by stepping along the trunk.
+
+    const scrubber = document.getElementById('scrubber');
+
+    function select(version) {
+      selected = version;
+      scrubber.value = depthOf(version);
+      render();
+    }
+
+    scrubber.setAttribute('max', TRUNK.length - 1);
+    scrubber.marks = TRUNK.map((version, i) => ({ value: i, label: version.id }));
+    scrubber.format = value => `Step ${Math.round(value) + 1} of ${TRUNK.length}`;
+    scrubber.addEventListener('sb-change', event => {
+      const version = TRUNK[Math.round(event.detail.value)];
+      if (version !== selected) { selected = version; render(); }
+    });
+
+    const tree = document.getElementById('tree');
+    const versionAt = event => versionById(event.target.closest('[data-version]')?.dataset.version);
+    tree.addEventListener('click', event => { const version = versionAt(event); if (version) select(version); });
+    tree.addEventListener('keydown', event => {
+      const version = versionAt(event);
+      if (version && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); select(version); }
+    });
+
+    renderTree();
+    select(selected);
+  </script>
+</body>
+</html>
