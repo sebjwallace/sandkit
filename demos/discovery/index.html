@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weighing Evidence</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 1100px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .chapter, .card { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    h2 { margin: 0 0 6px; font-size: 18px; }
+    h3 { margin: 0 0 10px; font-size: 15px; }
+    .chapter p { margin: 0 0 8px; max-width: 75ch; }
+    .try { padding: 8px 12px; border-left: 3px solid var(--sb-accent); background: var(--sb-accent-soft); border-radius: 0 var(--sb-radius) var(--sb-radius) 0; }
+    .is-lit { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+
+    .role, .format { padding: 1px 7px; border: 1px solid var(--sb-border); border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+    .role { border-color: transparent; color: var(--sb-accent); background: var(--sb-accent-soft); }
+
+    /* Claim, question and decision cards, in the look of sb-choice: a header band and a dropped body. */
+    .claims { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; align-items: start; }
+    .claim { overflow: hidden; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); font-size: 13px; line-height: 1.45; }
+    .claim-head { display: flex; align-items: flex-start; gap: 8px; padding: 10px 14px; background: var(--sb-surface-2, rgba(127,127,127,0.08)); border-bottom: 1px solid var(--sb-border); }
+    .raised { flex: 1; min-width: 0; align-self: center; color: var(--sb-muted); font-size: 12px; }
+    .claim-badges { flex: none; display: flex; gap: 6px; }
+    .claim-id { flex: none; padding: 1px 7px; border-radius: 999px; background: var(--sb-surface); color: var(--sb-muted); font: 600 11px/1.6 ui-monospace, Menlo, Consolas, monospace; }
+    .status { --tone: var(--sb-muted); margin-left: auto; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; color: var(--tone); background: color-mix(in srgb, var(--tone) 16%, transparent); }
+    .status[data-status="corroborated"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="single source"] { --tone: var(--sb-accent); }
+    .status[data-status="contested"] { --tone: var(--sb-warn, #b7791f); }
+    .status[data-status="refuted"] { --tone: var(--sb-bad, #c53030); }
+    .status[data-status="answered"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="unresolved"] { --tone: var(--sb-warn, #b7791f); }
+    .basis { padding: 1px 8px; border-radius: 999px; color: var(--sb-muted); font-size: 11px; font-style: italic; white-space: nowrap; box-shadow: inset 0 0 0 1px var(--sb-border); }
+    .basis[data-basis="assumption"], .basis[data-basis="conjecture"] { color: var(--sb-warn, #b7791f); box-shadow: none; border: 1px dashed currentColor; }
+    .status[data-status="held"] { --tone: var(--sb-muted); }
+    .status[data-status="confirmed"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="broken"] { --tone: var(--sb-bad, #c53030); }
+    .claim-body { padding: 12px 14px; background-image: linear-gradient(var(--sb-drop), var(--sb-drop)); }
+    .assertions { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .nobody { color: var(--sb-muted); font-style: italic; }
+    .passages > summary { margin: 0; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; }
+    .passages > summary::-webkit-details-marker { display: none; }
+    .passages > summary::before { content: "▸"; font-size: 10px; transition: transform 0.15s; }
+    .passages[open] > summary::before { transform: rotate(90deg); }
+    .passages > summary:hover { color: var(--sb-text); }
+    .passages[open] > .assertions { margin-top: 8px; }
+    .options { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+    .option { padding: 6px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); opacity: 0.65; }
+    .option.is-chosen { opacity: 1; border: 2px solid var(--sb-good, #3f9142); padding: 5px 9px; }
+    .option-head { display: flex; align-items: center; gap: 6px; }
+    .option-title { font-weight: 600; }
+    .chosen { margin-left: auto; padding: 1px 7px; border-radius: 999px; background: var(--sb-good, #3f9142); color: #fff; font-size: 11px; white-space: nowrap; }
+    .points { display: flex; flex-wrap: wrap; gap: 0 14px; margin: 2px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--sb-muted); }
+    .points li::before { display: inline-block; width: 1em; font-weight: 700; }
+    .points .pro::before { content: "+"; color: var(--sb-good, #3f9142); }
+    .points .con::before { content: "−"; color: var(--sb-bad, #c53030); }
+    .card-icon { flex: none; display: grid; place-items: center; width: 24px; height: 24px; margin: -1px 0; border-radius: 6px; color: var(--tone); background: color-mix(in srgb, var(--tone) 16%, transparent); }
+    .card-icon--claim { --tone: var(--sb-accent); }
+    .card-icon--question { --tone: var(--sb-warn, #b7791f); }
+    .card-icon--decision { --tone: var(--sb-good, #3f9142); }
+    .card-icon--goal { --tone: var(--sb-accent); }
+    .card-icon--source { --tone: var(--sb-text); }
+    .status[data-status="accepted"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="on track"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="off track"] { --tone: var(--sb-bad, #c53030); }
+    .status[data-status="review"] { --tone: var(--sb-warn, #b7791f); }
+    .status[data-status="to do"] { --tone: var(--sb-accent); }
+    .status[data-status="done"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="open"] { --tone: var(--sb-warn, #b7791f); }
+    .level { padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; color: var(--sb-bad, #c53030); box-shadow: inset 0 0 0 1px currentColor; }
+    .card-icon--action { --tone: var(--sb-accent); }
+    .card-icon--risk { --tone: var(--sb-bad, #c53030); }
+    .claim-body .label { margin: 0 0 4px; color: var(--sb-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .claim-body p { margin: 0; }
+    .claim-body > * + * { margin-top: 12px; }
+    .strip { --tone: var(--sb-accent); padding: 8px 12px; border-left: 3px solid var(--tone); border-radius: 0 var(--sb-radius) var(--sb-radius) 0; background: color-mix(in srgb, var(--tone) 14%, var(--sb-surface)); }
+    .strip--main p { font-weight: 600; font-size: 14px; line-height: 1.4; }
+    .strip--answer { --tone: var(--sb-good, #3f9142); }
+    .strip--note { --tone: var(--sb-muted); }
+    .strip--warn { --tone: var(--sb-warn, #b7791f); }
+    .strip--expect { --tone: var(--sb-accent); border-left-style: dashed; background: color-mix(in srgb, var(--tone) 7%, var(--sb-surface)); }
+    .strip--unresolved { --tone: var(--sb-warn, #b7791f); border-left-style: dashed; }
+    .strip--unresolved p { color: var(--sb-muted); font-style: italic; }
+    .claim-body .strip .label { color: var(--tone); }
+
+    /* Slips: a passage of source material, on the source's paper. */
+    .assertion { --fold: 10px; --edge: color-mix(in srgb, var(--sb-text) 24%, transparent); --sheet: color-mix(in srgb, var(--sb-surface) 94%, #f3e2b8); position: relative; display: flex; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12)) drop-shadow(0 2px 4px rgba(0,0,0,0.12)); }
+    .assertion::after { content: ""; position: absolute; top: 0; right: 0; width: var(--fold); height: var(--fold); border-left: 1px solid var(--edge); border-bottom: 1px solid var(--edge); border-bottom-left-radius: 2px; background: linear-gradient(to top right, color-mix(in srgb, var(--sheet) 84%, var(--sb-text)) 50%, transparent 50%); }
+    .slip { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 14px 6px 10px; border: 1px solid var(--edge); border-radius: 2px; clip-path: polygon(0 0, calc(100% - var(--fold)) 0, 100% var(--fold), 100% 100%, 0 100%); background: linear-gradient(135deg, color-mix(in srgb, var(--sheet) 97%, #fff), var(--sheet) 45%, color-mix(in srgb, var(--sheet) 93%, #000)); cursor: pointer; }
+    .slip:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: -2px; }
+    .assertion.is-lit { outline: none; }
+    .assertion.is-lit .slip { background: color-mix(in srgb, var(--sb-accent) 14%, var(--sheet)); }
+    .slip .who { font: 600 14px/1.35 Georgia, "Iowan Old Style", "Times New Roman", serif; }
+    .quote { flex-basis: 100%; color: var(--sb-text); font: italic 13px/1.5 Georgia, "Iowan Old Style", "Times New Roman", serif; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
+    .has-stance .quote, .has-stance .pills { padding-left: 30px; }
+    .assertion.is-open .quote { display: block; }
+    .assertion.is-repeat { margin-left: 22px; opacity: 0.7; }
+    .assertion .role { margin-left: auto; }
+    .repeats { color: var(--sb-muted); font-size: 12px; }
+    .pills { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; padding: 0 3px 0 8px; border: 1px solid var(--sb-border); border-radius: 999px; font-size: 11px; white-space: nowrap; }
+    .pill-level { min-width: 16px; padding: 0 4px; border-radius: 999px; background: color-mix(in srgb, var(--sb-text) 10%, transparent); font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+    .strength { margin-left: auto; color: var(--sb-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .score { padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--sb-muted); border: 1px solid currentColor; }
+    .score.is-high { color: var(--sb-good, #3f9142); }
+    .score.is-low { color: var(--sb-bad, #c53030); }
+    .stance { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; font-weight: 700; color: #fff; }
+    .stance.yes { background: var(--sb-good, #3f9142); }
+    .stance.no { background: var(--sb-bad, #c53030); }
+
+    /* Questions and decisions side by side. */
+    .asked { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; align-items: start; }
+    .asked > div { display: grid; gap: 12px; }
+    .question-mark { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; background: var(--sb-accent); color: var(--sb-accent-text, #fff); font-weight: 700; }
+
+    /* Source cards, in the look of sb-sources: paper with a folded corner. */
+    .sources { --fold: 16px; --edge: color-mix(in srgb, var(--sb-text) 24%, transparent); display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+    .source { --sheet: color-mix(in srgb, var(--sb-surface) 94%, #f3e2b8); position: relative; display: flex; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12)) drop-shadow(0 3px 7px rgba(0,0,0,0.14)); }
+    .source::after { content: ''; position: absolute; top: 0; right: 0; width: var(--fold); height: var(--fold); border-left: 1px solid var(--edge); border-bottom: 1px solid var(--edge); border-bottom-left-radius: 2px; background: linear-gradient(to top right, color-mix(in srgb, var(--sheet) 84%, var(--sb-text)) 50%, transparent 50%); }
+    .paper { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 10px 14px 10px 13px; border: 1px solid var(--edge); border-radius: 2px; clip-path: polygon(0 0, calc(100% - var(--fold)) 0, 100% var(--fold), 100% 100%, 0 100%); background: linear-gradient(135deg, color-mix(in srgb, var(--sheet) 97%, #fff), var(--sheet) 45%, color-mix(in srgb, var(--sheet) 93%, #000)); }
+    .source.is-lit { outline: none; }
+    .source.is-lit .paper { background: color-mix(in srgb, var(--sb-accent) 14%, var(--sheet)); }
+    .paper-head { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; padding-right: 10px; }
+    .paper-head > :nth-child(2) { margin-right: auto; }
+    .paper-id { flex: none; white-space: nowrap; padding: 0 6px; border-radius: 4px; background: color-mix(in srgb, var(--sb-text) 8%, transparent); color: var(--sb-muted); font: 600 11px/1.6 ui-monospace, Menlo, Consolas, monospace; }
+
+    .paper .format { border-color: var(--edge); }
+    .paper-title { margin: 0; font: 600 15px/1.35 Georgia, 'Iowan Old Style', 'Times New Roman', serif; }
+    .paper-summary { flex: 1; color: var(--sb-muted); font: 13px/1.5 Georgia, 'Iowan Old Style', 'Times New Roman', serif; }
+    .fields { display: grid; grid-template-columns: max-content 1fr; align-items: center; gap: 3px 10px; margin: 2px 0 0; padding-top: 7px; border-top: 1px solid var(--edge); font-size: 12px; }
+    .fields dt { color: var(--sb-muted); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+    .fields dd { margin: 0; display: flex; align-items: center; gap: 8px; }
+
+
+    /* The flow: columns from evidence to commitments, links drawn only while tracing. */
+    .scroll { overflow-x: auto; }
+    .flow-hint { margin: -4px 0 12px; color: var(--sb-muted); font-size: 13px; }
+    .flow { position: relative; display: grid; gap: 22px; }
+    .flow-iteration { display: grid; gap: 30px; padding: 12px 14px 16px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background-image: linear-gradient(var(--sb-drop), var(--sb-drop)); }
+    .flow-iteration-title { margin: 0; font-size: 13px; font-weight: 600; }
+    .flow-band { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }
+    .flow-band .flow-title { margin: 6px 0 0; }
+    .flow-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+    .node--awaited { border-style: dashed; background: none; color: var(--sb-muted); }
+    .node-note { color: var(--sb-muted); font-size: 11px; font-style: italic; }
+    .node-file { color: var(--sb-muted); font: 10px ui-monospace, Menlo, Consolas, monospace; }
+    .flow-title { margin: 0 0 2px; color: var(--sb-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .node { position: relative; z-index: 1; display: grid; gap: 4px; padding: 6px 8px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2, var(--sb-surface)); color: inherit; font: inherit; font-size: 12px; line-height: 1.35; text-align: left; cursor: pointer; transition: opacity 0.15s; }
+    .node--source { border-radius: 2px; background: color-mix(in srgb, var(--sb-surface) 94%, #f3e2b8); }
+    .node.is-assumed { border-style: dashed; border-color: var(--sb-warn, #b7791f); }
+    .node:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+    .node-head { display: flex; align-items: center; gap: 6px; }
+    .node-head .card-icon { width: 20px; height: 20px; }
+    .node-head .card-icon svg { width: 13px; height: 13px; }
+    .node-head .status { padding: 1px 7px; font-size: 10px; }
+    .node-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+    .flow.is-tracing .node:not(.is-lit) { opacity: 0.25; }
+    .node.is-lit { outline: none; }
+    .node.is-focus { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+    .flow-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+    .flow-lines path { fill: none; stroke: var(--sb-accent); stroke-width: 1.5; stroke-linejoin: round; opacity: 0.7; }
+    .flow-lines text { fill: var(--sb-accent); font: 600 10px var(--sb-font); paint-order: stroke; stroke: var(--sb-surface); stroke-width: 4px; stroke-linejoin: round; }
+    .is-arrived { outline: 3px solid var(--sb-accent); outline-offset: 3px; transition: outline-color 0.4s; }
+    /* The key: scope, grade and standing. */
+    .parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .parts dl { margin: 0; font-size: 14px; }
+    .parts dt { font-weight: 600; margin-top: 6px; }
+    .parts dd { margin: 0; color: var(--sb-muted); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="Weighing Evidence">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p><strong>Goal:</strong> see what's true, what's assumed and what's in dispute, from what each source asserts and how well it can speak to it.</p>
+  </sb-shell>
+
+  <main>
+    <section class="chapter">
+      <h2>Claims and their sources</h2>
+      <p>Usually called sensemaking, or evidence synthesis. Everything here is source material, the agent's own analyses included, and each passage that speaks to a claim is an assertion: yes or no. A claim is a group of assertions that say the same thing, under a line someone wrote for them. Its standing is worked out from its assertions, never labelled by hand.</p>
+      <p>Questions and decisions have cards of their own, since each does a different job: a question gathers the passages that answer it, and a decision records what was chosen and why.</p>
+      <p class="try"><strong>Try:</strong> click a passage to read all of it. Point at one to find its source below, or at a source to light every passage it gives.</p>
+    </section>
+
+    <section class="card">
+      <h3>How it connects</h3>
+      <p class="flow-hint">The loop unrolled downwards, one block per iteration: what arrived from the world, then the sandbox’s own records made from it (each one a file among the sources). A card that changes appears again, updated, in the iteration that changed it. Point at a card to see what it rests on and what rests on it; click to go to it.</p>
+      <div class="scroll" id="flow"></div>
+    </section>
+
+    <section class="card">
+      <h3 id="summary"></h3>
+      <div class="claims" id="claims"></div>
+    </section>
+
+    <section class="card">
+      <h3>Goals, questions, decisions, actions and risks</h3>
+      <div class="asked">
+        <div id="goals"></div>
+        <div id="questions"></div>
+        <div id="decisions"></div>
+        <div id="actions"></div>
+        <div id="risks"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Sources</h3>
+      <ul class="sources" id="sources"></ul>
+    </section>
+
+    <section class="card parts">
+      <div>
+        <h3>Scope: what a source can speak to</h3>
+        <dl>
+          <dt>Role</dt><dd>Which kind of claim. A <b>record</b> speaks to what is or was, a <b>plan</b> to what should be, a <b>decision</b> to what was chosen, an <b>opinion</b> to what people think.</dd>
+          <dt>As of</dt><dd>Which moment it describes. An old source isn't worse; it speaks to an earlier time.</dd>
+        </dl>
+      </div>
+      <div>
+        <h3>Grade: how well it speaks</h3>
+        <dl>
+          <dt>Distance</dt><dd>How far from what happened: direct, first-hand or second-hand.</dd>
+          <dt>Trust</dt><dd>Whether whoever made it is able and willing to get it right: trusted, unknown or doubtful.</dd>
+          <dt>Clarity</dt><dd>How well the record kept it: clean, partial or noisy.</dd>
+        </dl>
+      </div>
+      <div>
+        <h3>Standing: worked out from assertions</h3>
+        <dl>
+          <dt><span class="status" data-status="corroborated">corroborated</span></dt><dd>Two or more independent sources for, none against.</dd>
+          <dt><span class="status" data-status="single source">single source</span></dt><dd>One independent source for, none against.</dd>
+          <dt><span class="status" data-status="contested">contested</span></dt><dd>Sources for and against.</dd>
+          <dt><span class="status" data-status="refuted">refuted</span></dt><dd>Only sources against.</dd>
+          <dt><span class="status" data-status="unbacked">unbacked</span></dt><dd>Nothing that speaks to the world backs it: a conjecture, or an assumption once something rests on it.</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section class="card parts">
+      <div>
+        <h3>Kinds: what a thing is</h3>
+        <dl>
+          <dt>Question</dt><dd>Something open, with rival answers under it.</dd>
+          <dt>Claim</dt><dd>A possible answer; true or not, depending on its evidence.</dd>
+          <dt>Decision</dt><dd>Choosing one claim. Made true by deciding, so it can be made on weak ground.</dd>
+          <dt>Source</dt><dd>Where evidence comes from, with what kind it is and its track record.</dd>
+        </dl>
+      </div>
+      <div>
+        <h3>Standing: how sure, worked out</h3>
+        <dl>
+          <dt><span class="status" data-status="corroborated">corroborated</span></dt><dd>Two or more independent sources for, none against.</dd>
+          <dt><span class="status" data-status="single source">single source</span></dt><dd>One independent source for, none against.</dd>
+          <dt><span class="status" data-status="contested">contested</span></dt><dd>Sources for and against.</dd>
+          <dt><span class="status" data-status="refuted">refuted</span></dt><dd>Only sources against.</dd>
+          <dt><span class="status" data-status="assumption">assumption</span></dt><dd>No evidence at all, yet still in play.</dd>
+        </dl>
+      </div>
+      <div>
+        <h3>Relations: how things connect</h3>
+        <dl>
+          <dt>For / against</dt><dd>The cells: a source's evidence on a claim.</dd>
+          <dt>How it knows</dt><dd>Measured, saw, told or inferred: from empirical to anecdotal and second-hand.</dd>
+          <dt>Answers</dt><dd>The grouping: a claim under its question.</dd>
+          <dt>Depends on</dt><dd>A claim that's only true if another is.</dd>
+          <dt>Copies</dt><dd>A source repeating another; it agrees, but counts once.</dd>
+        </dl>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Harrow Ridge, a 32-turbine wind farm on a non-firm grid connection, curtailed on its
+    // windiest days whenever the Tarn Lane 132 kV line reaches its limit.
+    const SOURCES = [
+      { id: 'SRC-1', name: 'SCADA log', title: 'Farm SCADA log, February', summary: 'Setpoints, availability and output for every turbine, every ten minutes.', format: 'data', role: 'record', asOf: '28 Feb 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-2', name: 'Grid operator', title: 'Constraint notice, 4 February', summary: 'The network operator’s notice limiting the farm’s output, and why.', format: 'document', role: 'record', asOf: '4 Feb 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-3', name: 'Site manager', title: 'Maintenance log, February', summary: 'Alarms, faults and site visits, in the site manager’s notes.', format: 'notes', role: 'record', asOf: '28 Feb 2026', grade: { distance: 2, trust: 3, clarity: 2 } },
+      { id: 'SRC-4', name: 'Local paper', title: '“Turbines idle on windiest day”', summary: 'The local paper’s story, written from the campaign blog.', format: 'web', role: 'record', asOf: '6 Feb 2026', copies: 'SRC-5', grade: { distance: 1, trust: 2, clarity: 3 } },
+      { id: 'SRC-5', name: 'Campaign blog', title: 'Ridge Watch blog post', summary: 'A local campaign group says the turbines were iced up.', format: 'web', role: 'opinion', asOf: '5 Feb 2026', grade: { distance: 1, trust: 1, clarity: 2 } },
+      { id: 'SRC-6', name: 'Network plan', title: 'Network development plan 2026', summary: 'The grid operator’s plan for reinforcing the Tarn Lane circuit.', format: 'document', role: 'plan', asOf: '10 Jan 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-7', name: 'Agent', title: 'Curtailment in February', summary: 'The agent’s reading of the SCADA log against the wind and day-ahead prices.', format: 'analysis', role: 'record', asOf: '1 Mar 2026', derivedFrom: 'SRC-1', grade: { distance: 2, trust: 2, clarity: 3 } },
+      { id: 'SRC-8', name: 'Contractor', title: 'Reinforcement progress report, February', summary: 'The cable contractor’s monthly report on the second circuit.', format: 'document', role: 'record', asOf: '24 Feb 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
+      { id: 'SRC-9', name: 'Community fund', title: 'Email from the community fund', summary: 'The fund’s trustees ask how curtailment affects their payments.', format: 'email', role: 'opinion', asOf: '12 Feb 2026', grade: { distance: 2, trust: 3, clarity: 3 } },
+      { id: 'SRC-10', name: 'Board', title: 'Board minute, 26 February', summary: 'The Harrow Ridge board’s resolutions on curtailment.', format: 'document', role: 'decision', asOf: '26 Feb 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-11', name: 'Brackley Hydrogen', title: 'Flexibility offer', summary: 'A nearby electrolyser offers to buy power during constraint periods.', format: 'document', role: 'plan', asOf: '18 Feb 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
+      { id: 'SRC-12', name: 'Brackley Hydrogen', title: 'March statement', summary: 'What the electrolyser took during constraint periods in March, and paid.', format: 'document', role: 'record', asOf: '31 Mar 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
+      { id: 'SRC-13', name: 'SCADA log', title: 'Farm SCADA log, March', summary: 'Setpoints, availability and output for every turbine, every ten minutes.', format: 'data', role: 'record', asOf: '31 Mar 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+    ];
+
+    // Each assertion: what the passage says to the claim, '+' (yes) or '−' (no), and its words.
+    const CLAIMS = [
+      { id: 'CLM-1', text: 'On 4 February the farm was curtailed because the Tarn Lane line reached its thermal limit, not because of any fault at the farm.', summary: 'The grid operator’s notice, the SCADA log and the agent’s reading of it all point to a network limit: every turbine was available, and output sat on the 40 MW cap for nine hours. Well backed.', assertions: {
+        'SRC-2': ['+', 'Constraint applied 14:05–23:10: Harrow Ridge limited to 40 MW to keep the Tarn Lane 132 kV circuit within its thermal rating.'],
+        'SRC-1': ['+', '14:10: active power setpoint cut from 96 MW to 40 MW by network instruction NI-0412. Turbines available: 32 of 32. No faults logged.'],
+        'SRC-7': ['+', 'Output followed the 40 MW limit to within 1 MW for nine hours, while the wind would have supported about 90 MW. That is a network limit, not a farm fault.'],
+      } },
+      { id: 'CLM-2', text: 'The turbines were iced up on 4 February, and the grid limit was a cover story.', summary: 'Only the campaign blog says so, and the paper repeats it. The site manager logged no icing alarms all month, and the SCADA log shows every turbine available. This leans false.', assertions: {
+        'SRC-5': ['+', 'The blades were iced up on the 4th, and they’re hiding behind the grid. Nobody turns turbines off on the windiest day of the year.'],
+        'SRC-4': ['+', 'Campaigners say the turbines were iced up, and that the grid limit was a cover story.'],
+        'SRC-3': ['−', 'No icing alarms on any turbine in February; blade heaters not called on once.'],
+      } },
+      { id: 'CLM-3', text: 'Curtailment falls sharply once the second Tarn Lane circuit is energised in June.', summary: 'Only the grid operator’s plan says so, and a plan says what should happen, not what will. RSK-1 rests on it, so it’s an assumption, and the contractor’s report already puts the circuit months later.', assertions: {
+        'SRC-6': ['+', 'Tarn Lane reinforcement: second 132 kV circuit, energisation planned for June 2026. Non-firm curtailment in the zone expected to fall by about 80%.'],
+      } },
+      { id: 'CLM-4', text: 'The second circuit won’t be energised before November.', summary: 'The contractor’s forecast, after a fourteen-week delay to the cable. Nobody else has updated the date yet.', assertions: {
+        'SRC-8': ['+', 'Cable delivery delayed by 14 weeks. Energisation now forecast for November at the earliest.'],
+      } },
+      { id: 'CLM-5', informs: ['QST-1'], text: 'Curtailment cost the farm about £180,000 in February.', summary: 'The agent’s figure, from the curtailed energy and the month’s average day-ahead price. Nothing disputes it, but nothing else checks it either.', assertions: {
+        'SRC-7': ['+', 'About 1,900 MWh curtailed in February, at an average day-ahead price of £95/MWh: about £180,000 of lost revenue.'],
+      } },
+      { id: 'CLM-6', informs: ['QST-2'], text: 'The farm lost about 1,900 MWh to curtailment in February.', summary: 'The SCADA log’s own count and the agent’s reading of it agree. Well backed.', assertions: {
+        'SRC-1': ['+', 'February curtailed energy (setpoint below available): 1,912 MWh.'],
+        'SRC-7': ['+', 'About 1,900 MWh curtailed in February, mostly on six windy days.'],
+      } },
+      { id: 'CLM-7', text: 'Curtailment carries on at about February’s level until the second circuit is in.', summary: 'The board’s own belief, which no record backed: an assumption DEC-1 rests on. March’s SCADA log goes against it, with curtailment down to a third of February’s. Now refuted.', assertions: {
+        'SRC-10': ['+', 'On the basis that curtailment continues at around February’s level, the flexibility contract pays back within its first year.'],
+        'SRC-13': ['−', 'March curtailed energy: 640 MWh, a third of February’s. The Tarn Lane line was rarely at its limit.'],
+      } },
+    ];
+
+    // Who raised each claim: who grouped its assertions and wrote its line.
+    for (const claim of CLAIMS) claim.raisedBy ??= 'Agent';
+
+    // A question is raised by a passage, and answered by passages from any source.
+    const QUESTIONS = [
+      { id: 'QST-1', text: 'Is the farm paid for the energy it’s told not to generate?',
+        answer: 'No. The farm has a non-firm connection, so the network operator pays nothing for curtailment. February’s loss of about £180,000 falls on the farm, and on the community fund’s share.',
+        raisedBy: ['SRC-9', 'Our payments follow the farm’s output. When the farm is told to turn down, is it paid for the energy it would have made?'],
+        answers: {
+          'SRC-2': 'Harrow Ridge holds a non-firm connection: constraint under it is not compensated.',
+          'SRC-7': 'Under the non-firm terms, February’s loss of about £180,000 falls on the farm; nothing is paid back.',
+        } },
+      { id: 'QST-2', text: 'Would a battery on site pay back by storing the energy that’s curtailed?',
+        raisedBy: ['SRC-10', 'The board asks whether a battery on site could store the energy now curtailed, and at what size it would pay back.'],
+        answers: {} },
+    ];
+
+    // A decision: the question, what was decided and why, the options weighed, and the
+    // passages behind it.
+    const DECISION = {
+      id: 'DEC-1',
+      title: 'How does the farm cut its curtailment losses until the second circuit is in?',
+      status: 'accepted',
+      when: '2026-02-26',
+      deciders: ['Harrow Ridge board'],
+      options: [
+        { id: 'a', title: 'Accept curtailment until the circuit is in', pros: ['No cost, no new contract'], cons: ['About £180,000 lost in a windy month'] },
+        { id: 'b', title: 'Sell curtailed hours to Brackley Hydrogen', source: 'SRC-11', pros: ['Earns from the hours lost now'], cons: ['A new counterparty to rely on'] },
+        { id: 'c', title: 'Build a 20 MW battery on site', pros: ['Keeps the energy for later'], cons: ['£9m, and 18 months to build'] },
+      ],
+      chosen: 'b',
+      restsOn: ['GOL-1', 'CLM-1', 'CLM-4', 'CLM-5', 'CLM-7', 'QST-1'],
+      decided: 'We sign a two-year flexibility contract with Brackley Hydrogen for our curtailed hours.',
+      reason: 'It earns from the hours we lose now, at no capital cost, and its extension option covers a late circuit. A battery would take longer to build than the circuit is likely to slip.',
+      // What the decision predicts, so the next iteration's material can bear it out or not.
+      expects: 'Selling curtailed hours earns back about £60,000 in a windy month, bringing losses to about £120,000: closer to the goal, not there. The second circuit has to close the rest.',
+      // Material that bears on what it expects: '+' bears it out, '−' goes against it.
+      checks: {
+        'SRC-12': ['−', 'March: 410 MWh taken during constraint periods; £17,200 paid. Constraint periods were short, with the line rarely at its limit.'],
+      },
+      sources: [
+        { source: 'SRC-10', quote: 'Resolved: sign the two-year flexibility contract with Brackley Hydrogen for curtailed hours.' },
+        { source: 'SRC-11', quote: 'We will take up to 35 MW during any constraint period at £42/MWh, for two years, with an option to extend by one.' },
+        { source: 'SRC-7', quote: 'About 1,900 MWh curtailed in February, at an average day-ahead price of £95/MWh: about £180,000 of lost revenue.' },
+      ],
+    };
+
+
+    // A goal: where the sandbox is trying to get to, how that's measured, and where things stand
+    // against it. Decisions are made towards it, and judged by whether they bring it closer.
+    const GOALS = [
+      { id: 'GOL-1', text: 'Cut curtailment losses to under £50,000 a month by next winter.', status: 'off track',
+        measuredBy: 'Revenue lost to curtailment each month: curtailed energy from the SCADA log, at that month’s day-ahead price.',
+        now: 'About £180,000 in February (CLM-5): more than three times the target.',
+        from: ['CLM-5'],
+        setIn: ['SRC-10', 'Target: bring curtailment losses under £50,000 a month by next winter, and review against it at every board.'] },
+    ];
+
+    // An action: something that has to happen, who owns it, and how anyone can tell it's done.
+    const ACTIONS = [
+      { id: 'ACT-1', from: 'DEC-1', text: 'Agree metering with Brackley Hydrogen, so curtailed hours are counted the same way on both sides.', status: 'to do',
+        owner: 'Commercial manager', due: '2026-03-20',
+        doneWhen: 'Both sides sign a metering schedule matching the farm’s constraint periods half-hour by half-hour.',
+        why: 'DEC-1 is only worth what can be billed, and billing rests on both sides counting the same hours.',
+        sources: [{ source: 'SRC-11', quote: 'Payment is against metered import at our site, matched half-hourly to the farm’s constraint periods.' }] },
+    ];
+
+    // A risk: something that could go wrong, how likely and how bad, and how it's handled.
+    const RISKS = [
+      { id: 'RSK-1', from: ['DEC-1', 'CLM-3', 'CLM-4'], text: 'The second circuit slips past the flexibility contract, and curtailment returns at full cost.', status: 'open',
+        raisedBy: 'Agent', likelihood: 'possible', impact: 'severe',
+        ifItHappens: 'Windy months cost the farm around £180,000 again, with nothing earned back from the lost hours.',
+        handling: 'The contract can be extended by a year. Watch the contractor’s monthly report: the circuit has already moved from June to November.',
+        sources: [
+          { source: 'SRC-8', quote: 'Cable delivery delayed by 14 weeks. Energisation now forecast for November at the earliest.' },
+          { source: 'SRC-6', quote: 'Tarn Lane reinforcement: second 132 kV circuit, energisation planned for June 2026.' },
+          { source: 'SRC-11', quote: 'We will take up to 35 MW during any constraint period at £42/MWh, for two years, with an option to extend by one.' },
+        ] },
+    ];
+
+
+    // Awaited: material a card is waiting for from the world. An action waits for what shows
+    // it's done, a risk for what to watch, a question for what would answer it, an assumption
+    // for what would test it. When it arrives it becomes a source, and the loop turns once.
+    const AWAITED = [
+      { id: 'NEXT-2', title: 'Signed metering schedule', for: 'ACT-1', why: 'shows it’s done' },
+      { id: 'NEXT-3', title: 'Contractor’s April report', for: 'RSK-1', why: 'to watch' },
+      { id: 'NEXT-4', title: 'Battery supplier’s quote', for: 'QST-2', why: 'would answer it' },
+    ];
+    // Each grade's words, from low (1) to high (3).
+    const GRADES = {
+      distance: ['second-hand', 'first-hand', 'direct'],
+      trust: ['doubtful', 'unknown', 'trusted'],
+      clarity: ['noisy', 'partial', 'clean'],
+    };
+
+    // Working out standing
+
+    const sourceById = id => SOURCES.find(s => s.id === id);
+    const says = (claim, id) => claim.assertions[id][0];
+
+    // A source that copies another is counted as the one it copies.
+    function originOf(id) {
+      let source = sourceById(id);
+      while (source.copies) source = sourceById(source.copies);
+      return source.id;
+    }
+
+    // Only a source that speaks to how things are can back a claim about the world: a record or
+    // an opinion. A plan says what should happen and a decision what was chosen, so their
+    // passages show on the card but aren't counted.
+    const inScope = id => ['record', 'opinion'].includes(sourceById(id).role);
+
+    function independent(claim, mark) {
+      const origins = Object.keys(claim.assertions).filter(id => says(claim, id) === mark && inScope(id)).map(originOf);
+      return new Set(origins).size;
+    }
+
+    function standing(claim) {
+      const supporters = independent(claim, '+'), opponents = independent(claim, '−');
+      if (supporters && opponents) return 'contested';
+      if (opponents) return 'refuted';
+      if (supporters >= 2) return 'corroborated';
+      if (supporters) return 'single source';
+      return 'unbacked';
+    }
+
+    // What holds a claim up, from its counted yeses: observed when data backs it, reported when
+    // someone says so first-hand, inferred when only an analysis does. With nothing behind it, a
+    // claim is a conjecture, or an assumption once something rests on it.
+    function basis(claim) {
+      const backers = Object.keys(claim.assertions).filter(id => says(claim, id) === '+' && inScope(id)).map(sourceById);
+      if (backers.some(source => source.format === 'data')) return 'observed';
+      if (backers.some(source => !source.derivedFrom)) return 'reported';
+      if (backers.length) return 'inferred';
+      return reliedOnBy(claim).length ? 'assumption' : 'conjecture';
+    }
+
+    const reliedOnBy = claim => links().filter(([from]) => from === claim.id).map(([, to]) => to);
+
+    const isCopy = (claim, id) => sourceById(id).copies && claim.assertions[originOf(id)] && says(claim, originOf(id)) === says(claim, id);
+
+    // Repeats sit under the source they repeat.
+    function orderedSources(claim) {
+      const ids = Object.keys(claim.assertions);
+      const originals = ids.filter(id => !isCopy(claim, id));
+      return originals.flatMap(id => [id, ...ids.filter(other => isCopy(claim, other) && originOf(other) === id)]);
+    }
+
+    // An assertion's strength is its source's grades added up, 3 to 9.
+    const strength = source => Object.keys(GRADES).reduce((total, name) => total + source.grade[name], 0);
+
+    // A claim's score: the strength of each independent yes, less each no. Repeats add nothing.
+    function score(claim) {
+      return Object.keys(claim.assertions)
+        .filter(id => inScope(id) && !isCopy(claim, id))
+        .reduce((total, id) => total + (says(claim, id) === '+' ? 1 : -1) * strength(sourceById(id)), 0);
+    }
+
+
+    // A claim weighed only on what had arrived by an iteration.
+    function claimAsOf(claim, k) {
+      return { ...claim, assertions: Object.fromEntries(Object.entries(claim.assertions).filter(([source]) => iterationOf(source) <= k)) };
+    }
+
+    // Why a decision needs reviewing by an iteration: a claim it rests on has turned against
+    // it, or what it expected hasn't been borne out. None means it stands.
+    function reviewReasons(decision, k = Infinity) {
+      const reasons = [];
+      for (const claim of CLAIMS.filter(c => decision.restsOn.includes(c.id))) {
+        const now = standing(claimAsOf(claim, k));
+        if (now === 'refuted' || now === 'contested') reasons.push(`${claim.id}, which it rests on, is now ${now}.`);
+      }
+      for (const [source, [mark]] of Object.entries(decision.checks ?? {})) {
+        if (mark === '−' && iterationOf(source) <= k) reasons.push(`${source} goes against what it expects.`);
+      }
+      return reasons;
+    }
+
+    const decisionStatus = (decision, k) => reviewReasons(decision, k).length ? 'review' : decision.status;
+    // Drawing
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text != null) node.textContent = text;
+      return node;
+    }
+
+    const capitalised = word => word[0].toUpperCase() + word.slice(1);
+
+    function pill(name, level) {
+      const node = el('span', 'pill', GRADES[name][level - 1]);
+      node.title = capitalised(name);
+      node.append(el('span', 'pill-level', level));
+      return node;
+    }
+
+    // A source's grades as pills, then its strength, or a note in its place.
+    function pills(source, note = `= ${strength(source)}`) {
+      const row = el('span', 'pills');
+      for (const name of Object.keys(GRADES)) row.append(pill(name, source.grade[name]));
+      row.append(el('span', 'strength', note));
+      return row;
+    }
+
+    function scoreBadge(claim) {
+      const value = score(claim);
+      const badge = el('span', `score${value > 0 ? ' is-high' : value < 0 ? ' is-low' : ''}`, value > 0 ? `+${value}` : `${value}`);
+      badge.title = 'Score: each independent yes adds its strength, each no takes it away';
+      return badge;
+    }
+
+    // A slip of the source's paper holding one passage, so it reads as the material it comes from.
+    // Its words show on one line; clicking the slip opens it to the full passage, and again closes it.
+    function passage(sourceId, quote, { mark, after = [] } = {}) {
+      const source = sourceById(sourceId);
+      const item = el('li', 'assertion');
+      item.dataset.source = sourceId;
+      const slip = el('div', 'slip');
+      if (mark) {
+        item.classList.add('has-stance');
+        slip.append(mark);
+      }
+      slip.append(el('span', 'paper-id', source.id), el('span', 'who', source.name), el('span', 'role', source.role), el('q', 'quote', quote), ...after);
+      makeToggle(slip, item);
+      item.append(slip);
+      return item;
+    }
+
+    function assertionItem(claim, sourceId) {
+      const source = sourceById(sourceId);
+      const [mark, quote] = claim.assertions[sourceId];
+      const yes = mark === '+';
+      const note = isCopy(claim, sourceId) ? 'counted once' : inScope(sourceId) ? undefined : `a ${source.role}: not counted`;
+      const item = passage(sourceId, quote, { mark: el('span', `stance ${yes ? 'yes' : 'no'}`, yes ? '✓' : '✗'), after: [pills(source, note)] });
+      if (isCopy(claim, sourceId)) {
+        item.classList.add('is-repeat');
+        item.querySelector('.who').after(el('span', 'repeats', 'repeats it'));
+      }
+      return item;
+    }
+
+    function makeToggle(handle, target) {
+      handle.tabIndex = 0;
+      handle.setAttribute('role', 'button');
+      handle.setAttribute('aria-expanded', 'false');
+      const toggle = () => handle.setAttribute('aria-expanded', target.classList.toggle('is-open'));
+      handle.addEventListener('click', toggle);
+      handle.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        toggle();
+      });
+    }
+
+    // Each kind of card has its own icon, top left: a claim is something said, a question is
+    // asked, a decision takes one path of several, an action is a box to tick, a risk is a
+    // warning, and source material is a sheet of paper.
+    const ICONS = {
+      claim: '<path d="M3 3.5h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.5L4.5 14v-2.5H3a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z"/><path d="M5 6.5h6M5 8.5h4"/>',
+      question: '<circle cx="8" cy="8" r="6.25"/><path d="M6.25 6.4a1.8 1.8 0 1 1 2.5 1.65c-.45.25-.75.6-.75 1.1v.35"/><path d="M8 11.4v.1"/>',
+      source: '<path d="M4 1.75h5.5L12.5 4.75v9a.5.5 0 0 1-.5.5H4a.5.5 0 0 1-.5-.5v-11.5a.5.5 0 0 1 .5-.5z"/><path d="M9.5 1.75v3h3"/><path d="M5.75 8h4.5M5.75 10.5h4.5"/>',
+      action: '<rect x="2.25" y="2.25" width="11.5" height="11.5" rx="2"/><path d="m5 8.25 2 2 4-4.5"/>',
+      risk: '<path d="M8 2 14.5 13.5h-13z"/><path d="M8 6.5v3.25M8 11.6v.1"/>',
+      goal: '<circle cx="8" cy="8" r="6.25"/><circle cx="8" cy="8" r="3.25"/><circle cx="8" cy="8" r="0.6" fill="currentColor"/>',
+      decision: '<path d="M8 14.5V9l4.5-5.5"/><path d="M9.75 3.5h2.75v2.75"/><path d="M8 9 3.5 3.5" opacity="0.35"/>',
+    };
+
+    function icon(kind) {
+      const holder = el('span', `card-icon card-icon--${kind}`);
+      holder.title = capitalised(kind);
+      holder.innerHTML = `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[kind]}</svg>`;
+      return holder;
+    }
+
+    // The header every card shares: its code, who raised or decided it, and its badges.
+    function cardHead(kind, id, byline, badges) {
+      const head = el('header', 'claim-head');
+      const group = el('span', 'claim-badges');
+      group.append(...badges);
+      head.dataset.ref = id;
+      head.append(icon(kind), el('span', 'claim-id', id), el('span', 'raised', byline), group);
+      return head;
+    }
+
+    // A strip, as sb-choice draws its reason: a label and a line set off by a bar.
+    function strip(tone, label, text) {
+      const block = el('div', `strip strip--${tone}`);
+      block.append(el('div', 'label', label), el('p', null, text));
+      return block;
+    }
+
+    // Every card: a header, then a body of strips saying what it means, then folds holding
+    // what it rests on.
+    function card(head, ...parts) {
+      const body = el('div', 'claim-body');
+      body.append(...parts);
+      const article = el('article', 'claim');
+      article.dataset.ref = head.dataset.ref;
+      article.append(head, body);
+      return article;
+    }
+
+    function statusBadge(name) {
+      const status = el('span', 'status', name);
+      status.dataset.status = name;
+      return status;
+    }
+
+    // A fold, closed at first: a counted label that opens to what it holds.
+    function fold(label, items, className = 'assertions') {
+      const details = el('details', 'passages');
+      const list = el('ul', className);
+      list.append(...items);
+      details.append(el('summary', 'label', `${label} · ${items.length}`), list);
+      return details;
+    }
+
+    const sources = (items, empty) => items.length ? fold('Sources', items) : el('p', 'nobody', empty);
+
+    // A claim's header line: who raised it, and what rests on it.
+    function byline(claim) {
+      const relied = reliedOnBy(claim);
+      return `Raised by ${claim.raisedBy}` + (relied.length ? ` · relied on by ${relied.join(', ')}` : '');
+    }
+
+    function basisBadge(claim) {
+      const name = basis(claim);
+      const badge = el('span', 'basis', name);
+      badge.dataset.basis = name;
+      badge.title = 'Basis: what holds it up';
+      return badge;
+    }
+
+    function claimCard(claim) {
+      return card(
+        cardHead('claim', claim.id, byline(claim), [basisBadge(claim), statusBadge(standing(claim)), scoreBadge(claim)]),
+        strip('main', 'Claim', claim.text),
+        strip('note', 'Summary', claim.summary),
+        sources(orderedSources(claim).map(id => assertionItem(claim, id)), 'No sources'),
+      );
+    }
+
+    // A question: asked in a passage, its answer written up, and the passages that answer it.
+    function questionCard(question) {
+      const [askedIn, asking] = question.raisedBy;
+      const asked = passage(askedIn, asking, { mark: el('span', 'question-mark', '?'), after: [pills(sourceById(askedIn))] });
+      const answers = Object.entries(question.answers).map(([id, quote]) => passage(id, quote, { after: [pills(sourceById(id))] }));
+      return card(
+        cardHead('question', question.id, `Raised by ${sourceById(askedIn).name}, ${askedIn}`, [statusBadge(question.answer ? 'answered' : 'unresolved')]),
+        strip('main', 'Question', question.text),
+        question.answer ? strip('answer', 'Answer', question.answer) : strip('unresolved', 'Unresolved', 'No answer yet. Nothing in the sources settles this question.'),
+        sources([asked, ...answers], 'No answers yet'),
+      );
+    }
+    // A decision: the question faced, what was decided and why, what it expects, and whether it
+    // needs reviewing; then the options weighed, as many as there were, and the sources behind
+    // them, including what has since borne on its expectation.
+    function decisionCard(decision) {
+      const options = decision.options.map(option => optionItem(option, option.id === decision.chosen));
+      const checks = Object.entries(decision.checks ?? {});
+      const checked = checks.map(([source, [mark, quote]]) => passage(source, quote, {
+        mark: el('span', `stance ${mark === '+' ? 'yes' : 'no'}`, mark === '+' ? '✓' : '✗'), after: [pills(sourceById(source))] }));
+      const notBorneOut = checks.some(([, [mark]]) => mark === '−');
+      const reasons = reviewReasons(decision);
+      return card(
+        cardHead('decision', decision.id, `Decided by ${decision.deciders.join(', ')}, ${formatDate(decision.when)}`, [statusBadge(decisionStatus(decision))]),
+        strip('main', 'Question', decision.title),
+        strip('answer', 'Decision', decision.decided),
+        strip('note', 'Reason', decision.reason),
+        strip('expect', notBorneOut ? 'Expects · not borne out' : 'Expects', decision.expects),
+        ...(reasons.length ? [strip('warn', 'Review', reasons.join(' '))] : []),
+        fold('Options', options, 'options'),
+        sources([...cite(decision.sources), ...checked], 'No sources'),
+      );
+    }
+
+    // One option a row, so any number of them reads down the card; the chosen one is marked,
+    // the rest faded, and an option put forward in a source names it.
+    function optionItem(option, isChosen) {
+      const item = el('li', isChosen ? 'option is-chosen' : 'option');
+      const head = el('div', 'option-head');
+      head.append(el('span', 'option-title', option.title));
+      if (option.source) head.append(el('span', 'paper-id', option.source));
+      if (isChosen) head.append(el('span', 'chosen', '✓ Chosen'));
+      const points = el('ul', 'points');
+      for (const pro of option.pros ?? []) points.append(el('li', 'pro', pro));
+      for (const con of option.cons ?? []) points.append(el('li', 'con', con));
+      item.append(head, points);
+      return item;
+    }
+
+
+    const cite = list => list.map(({ source, quote }) => passage(source, quote, { after: [pills(sourceById(source))] }));
+
+
+    // A goal: where we're trying to get to, how we'll know, and where we stand now.
+    function goalCard(goal) {
+      const [setIn, words] = goal.setIn;
+      return card(
+        cardHead('goal', goal.id, `Set by ${sourceById(setIn).name}, ${setIn}`, [statusBadge(goal.status)]),
+        strip('main', 'Goal', goal.text),
+        strip('note', 'Measured by', goal.measuredBy),
+        strip(goal.status === 'on track' ? 'answer' : 'warn', 'Where we are', goal.now),
+        sources(cite([{ source: setIn, quote: words }]), 'No sources'),
+      );
+    }
+
+    // An action: what has to happen, how anyone can tell it's done, and why.
+    function actionCard(action) {
+      return card(
+        cardHead('action', action.id, `Owned by ${action.owner} · due ${formatDate(action.due)}`, [statusBadge(action.status)]),
+        strip('main', 'Action', action.text),
+        strip('answer', 'Done when', action.doneWhen),
+        strip('note', 'Why', action.why),
+        sources(cite(action.sources), 'No sources'),
+      );
+    }
+
+    // A risk: what could go wrong, what follows if it does, and how it's handled. Likelihood
+    // and impact are words, not a score.
+    function riskCard(risk) {
+      const level = el('span', 'level', `${risk.likelihood} · ${risk.impact}`);
+      level.title = 'Likelihood · impact';
+      return card(
+        cardHead('risk', risk.id, `Raised by ${risk.raisedBy}`, [level, statusBadge(risk.status)]),
+        strip('main', 'Risk', risk.text),
+        strip('warn', 'If it happens', risk.ifItHappens),
+        strip('note', 'Handling', risk.handling),
+        sources(cite(risk.sources), 'No sources'),
+      );
+    }
+    const formatDate = date => new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    function field(list, label, value) {
+      const dd = el('dd');
+      dd.append(value);
+      list.append(el('dt', null, label), dd);
+    }
+
+    function sourceCard(source) {
+      const card = el('li', 'source');
+      card.dataset.source = source.id;
+      card.dataset.ref = source.id;
+      const head = el('div', 'paper-head');
+      head.append(icon('source'), el('span', 'paper-id', source.id), el('span', 'role', source.role), el('span', 'format', source.format));
+
+      const fields = el('dl', 'fields');
+      field(fields, 'As of', source.asOf);
+      if (source.copies) field(fields, 'Repeats', source.copies);
+      if (source.derivedFrom) field(fields, 'Derived from', source.derivedFrom);
+      for (const name of Object.keys(GRADES)) field(fields, capitalised(name), pill(name, source.grade[name]));
+      field(fields, 'Strength', `= ${strength(source)}`);
+
+      const paper = el('div', 'paper');
+      paper.append(head, el('h4', 'paper-title', source.title), el('div', 'paper-summary', source.summary), fields);
+      card.append(paper);
+      return card;
+    }
+
+
+    // The flow: every card in a column, left to right in the order things depend on each other.
+    // Nothing is joined at rest. Pointing at a card lights everything it rests on and everything
+    // that rests on it, draws those links, and fades the rest; clicking goes to the card in full.
+
+    const COLUMNS = [
+      { title: 'From the world', prefix: /^(NEXT|SRC)/ },
+      { title: 'Claims', prefix: 'CLM' },
+      { title: 'Questions', prefix: 'QST' },
+      { title: 'Goals', prefix: 'GOL' },
+      { title: 'Decisions', prefix: 'DEC' },
+      { title: 'Actions and risks', prefix: /^(ACT|RSK)/ },
+    ];
+
+    // Every link, from what something rests on to what rests on it.
+    function links() {
+      const found = [];
+      const add = (from, to) => found.push([from, to]);
+      const cited = (item, list) => list.forEach(({ source }) => add(source, item.id));
+      for (const claim of CLAIMS) {
+        Object.keys(claim.assertions).forEach(id => add(id, claim.id));
+        (claim.informs ?? []).forEach(id => add(claim.id, id));
+      }
+      for (const question of QUESTIONS) {
+        add(question.raisedBy[0], question.id);
+        Object.keys(question.answers).forEach(id => add(id, question.id));
+      }
+      DECISION.restsOn.forEach(id => add(id, DECISION.id));
+      cited(DECISION, DECISION.sources);
+      for (const action of ACTIONS) { add(action.from, action.id); cited(action, action.sources); }
+      for (const risk of RISKS) { risk.from.forEach(id => add(id, risk.id)); cited(risk, risk.sources); }
+      for (const awaited of AWAITED) add(awaited.for, awaited.id);
+      for (const goal of GOALS) { add(goal.setIn[0], goal.id); goal.from.forEach(id => add(id, goal.id)); }
+      Object.keys(DECISION.checks ?? {}).forEach(id => add(id, DECISION.id));
+      return found;
+    }
+
+    // Everything reached from an id by following links one way: 0 back to what it rests on, 1 on.
+    function reach(id, way, all) {
+      const seen = new Set([id]);
+      const queue = [id];
+      while (queue.length) {
+        const at = queue.shift();
+        for (const link of all) {
+          if (link[1 - way] !== at || seen.has(link[way])) continue;
+          seen.add(link[way]);
+          queue.push(link[way]);
+        }
+      }
+      return seen;
+    }
+
+    // Everything below the sources is the sandbox's own record, kept as a file among the
+    // source material; only what comes from the world sits in the sources band.
+    const FOLDERS = { GOL: 'goals', CLM: 'claims', QST: 'questions', DEC: 'decisions', ACT: 'actions', RSK: 'risks' };
+    const fileOf = id => `${FOLDERS[id.slice(0, 3)]}/${id}.md`;
+
+    // The loop unrolled: each iteration a block of its own, flowing downwards. Its sources are
+    // what arrived from the world in that turn, and its cards what was raised in it. Nothing
+    // points back up: a card that changes later appears again, as its updated self.
+    const ITERATIONS = [
+      { title: 'Iteration 1 · the first curtailment, early February',
+        sources: ['SRC-2', 'SRC-3', 'SRC-4', 'SRC-5', 'SRC-9'], cards: ['CLM-1', 'CLM-2', 'QST-1'] },
+      { title: 'Iteration 2 · counting the cost and deciding, late February',
+        sources: ['SRC-1', 'SRC-6', 'SRC-7', 'SRC-8', 'SRC-10', 'SRC-11'], cards: ['GOL-1', 'CLM-3', 'CLM-4', 'CLM-5', 'CLM-6', 'CLM-7', 'QST-2', 'DEC-1', 'ACT-1', 'RSK-1'] },
+      { title: 'Iteration 3 · first results, March',
+        sources: ['SRC-12', 'SRC-13'], cards: [] },
+      { title: 'Iteration 4 · awaited from the world, April',
+        sources: AWAITED.map(a => a.id), cards: [] },
+    ];
+
+    const iterationOf = id => ITERATIONS.findIndex(it => it.sources.includes(id) || it.cards.includes(id)) + 1;
+
+    function itemOf(id) {
+      return [...SOURCES, ...AWAITED, ...GOALS, ...CLAIMS, ...QUESTIONS, DECISION, ...ACTIONS, ...RISKS].find(item => item.id === id);
+    }
+
+    // What a card is built from: the sources it cites, and the cards it rests on.
+    function inputsOf(id) {
+      const item = itemOf(id), cited = list => list.map(({ source }) => source);
+      switch (id.slice(0, 3)) {
+        case 'GOL': return { sources: [item.setIn[0]], cards: item.from };
+        case 'CLM': return { sources: Object.keys(item.assertions), cards: [] };
+        case 'QST': return { sources: [item.raisedBy[0], ...Object.keys(item.answers)], cards: CLAIMS.filter(c => c.informs?.includes(id)).map(c => c.id) };
+        case 'DEC': return { sources: [...cited(item.sources), ...Object.keys(item.checks ?? {})], cards: item.restsOn };
+        case 'ACT': return { sources: cited(item.sources), cards: [item.from] };
+        case 'RSK': return { sources: cited(item.sources), cards: item.from };
+        case 'NEX': return { sources: [], cards: [item.for] };
+        default: return { sources: [], cards: [] };
+      }
+    }
+
+    // The iterations a card appears in: where it was raised, and each later one that brought
+    // new material for it. A decision also comes back when anything it rests on changes, so
+    // it can be reviewed against its new grounds.
+    function appearancesOf(id) {
+      const first = iterationOf(id), { sources, cards } = inputsOf(id);
+      const later = sources.map(iterationOf);
+      if (id.startsWith('DEC')) later.push(...cards.flatMap(appearancesOf));
+      return [...new Set([first, ...later.filter(k => k > first)])].sort((a, b) => a - b);
+    }
+
+    const keyOf = (id, k) => `${id}@${k}`;
+    const latestBy = (id, k) => appearancesOf(id).filter(at => at <= k).pop();
+
+    // A card as it stood in one iteration: a claim weighed on what had arrived by then.
+    function asOf(id, k, isLatest) {
+      const item = itemOf(id);
+      if (id.startsWith('SRC')) return { kind: 'source', text: `${item.name}: ${item.title}` };
+      if (id.startsWith('NEXT')) return { kind: 'awaited', text: item.title, note: `for ${item.for} · ${item.why}` };
+      if (id.startsWith('CLM')) {
+        const then = claimAsOf(item, k);
+        return { kind: 'claim', text: item.text, status: standing(then), assumed: basis(then) === 'assumption' };
+      }
+      if (id.startsWith('GOL')) return { kind: 'goal', text: item.text, status: item.status };
+      if (id.startsWith('QST')) return { kind: 'question', text: item.text, status: item.answer && isLatest ? 'answered' : 'unresolved' };
+      const kind = { DEC: 'decision', ACT: 'action', RSK: 'risk' }[id.slice(0, 3)];
+      return { kind, text: kind === 'decision' ? item.decided : item.text, status: kind === 'decision' ? decisionStatus(item, k) : item.status };
+    }
+
+    // Every card in every iteration it appears in, and the links between them, all downwards:
+    // from an earlier version, from new sources, and from new versions of the cards it rests on.
+    function unrolled() {
+      const nodes = [], found = [];
+      const ids = [...SOURCES, ...AWAITED, ...GOALS, ...CLAIMS, ...QUESTIONS, DECISION, ...ACTIONS, ...RISKS].map(item => item.id);
+      for (const id of ids) {
+        const at = appearancesOf(id), { sources, cards } = inputsOf(id);
+        at.forEach((k, i) => {
+          const before = i ? at[i - 1] : 0;
+          nodes.push({ key: keyOf(id, k), id, k, updated: i > 0, ...asOf(id, k, i === at.length - 1) });
+          if (i) found.push([keyOf(id, before), keyOf(id, k)]);
+          for (const source of sources) {
+            const arrived = iterationOf(source);
+            if (arrived > before && arrived <= k) found.push([keyOf(source, arrived), keyOf(id, k)]);
+          }
+          for (const card of cards) {
+            const version = latestBy(card, k);
+            if (version > before || (!i && version)) found.push([keyOf(card, version), keyOf(id, k)]);
+          }
+        });
+      }
+      return { nodes, links: found };
+    }
+
+    function flowNode(node) {
+      const item = el('button', `node node--${node.kind}${node.assumed ? ' is-assumed' : ''}`);
+      item.type = 'button';
+      item.dataset.node = node.key;
+      const head = el('span', 'node-head');
+      const awaited = node.kind === 'awaited';
+      head.append(icon(awaited ? 'source' : node.kind), el('span', 'claim-id', awaited ? 'awaited' : node.id));
+      if (node.status) head.append(statusBadge(node.status));
+      item.append(head, el('span', 'node-text', node.text));
+      if (node.note) item.append(el('span', 'node-note', node.note));
+      if (node.updated) item.append(el('span', 'node-note', 'updated: new material arrived'));
+      if (FOLDERS[node.id.slice(0, 3)]) item.append(el('span', 'node-file', fileOf(node.id)));
+      item.addEventListener('click', () => goTo(node.id));
+      return item;
+    }
+
+    function drawFlow(root) {
+      const { nodes, links: all } = unrolled();
+      const flow = el('div', 'flow');
+      ITERATIONS.forEach((iteration, i) => {
+        const block = el('section', 'flow-iteration');
+        block.append(el('h4', 'flow-iteration-title', iteration.title));
+        for (const band of COLUMNS) {
+          const here = nodes.filter(n => n.k === i + 1 && inColumn(band, n.id));
+          if (!here.length) continue;
+          const row = el('div', 'flow-band');
+          const cards = el('div', 'flow-cards');
+          cards.append(...here.map(flowNode));
+          row.append(el('h5', 'flow-title', band.title), cards);
+          block.append(row);
+        }
+        flow.append(block);
+      });
+      const lines = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      lines.classList.add('flow-lines');
+      flow.append(lines);
+      root.replaceChildren(flow);
+
+      for (const node of flow.querySelectorAll('.node')) {
+        node.addEventListener('mouseenter', () => lightChain(flow, lines, node.dataset.node, all));
+        node.addEventListener('mouseleave', () => clearChain(flow, lines));
+        node.addEventListener('focus', () => lightChain(flow, lines, node.dataset.node, all));
+        node.addEventListener('blur', () => clearChain(flow, lines));
+      }
+    }
+
+    function inColumn(column, id) {
+      return typeof column.prefix === 'string' ? id.startsWith(column.prefix) : column.prefix.test(id);
+    }
+
+    function lightChain(flow, lines, id, all) {
+      const back = reach(id, 0, all), on = reach(id, 1, all);
+      const lit = new Set([...back, ...on]);
+      flow.classList.add('is-tracing');
+      for (const node of flow.querySelectorAll('.node')) {
+        node.classList.toggle('is-lit', lit.has(node.dataset.node));
+        node.classList.toggle('is-focus', node.dataset.node === id);
+      }
+      // Only the links on a path through the card: back along what it rests on, on along what rests on it.
+      const onPath = ([from, to]) => (back.has(from) && back.has(to)) || (on.has(from) && on.has(to));
+      lines.replaceChildren(...drawLinks(flow, all.filter(onPath)));
+    }
+
+    // What a link means, read from the card it leaves to the card it reaches, as a knowledge
+    // graph would label its edges.
+    function relation(fromKey, toKey) {
+      const from = fromKey.split('@')[0], to = toKey.split('@')[0];
+      const kind = id => id.slice(0, 3);
+      if (from === to) return 'updated';
+      if (kind(to) === 'NEX') return 'awaits';
+      if (kind(from) === 'SRC') {
+        if (kind(to) === 'CLM') return itemOf(to).assertions[from][0] === '−' ? 'disputes' : 'supports';
+        if (kind(to) === 'QST') return itemOf(to).raisedBy[0] === from ? 'asks' : 'answers';
+        if (kind(to) === 'GOL') return 'sets';
+        if (kind(to) === 'DEC' && DECISION.checks?.[from]) return DECISION.checks[from][0] === '−' ? 'contradicts' : 'bears out';
+        return sourceById(from).role === 'decision' ? 'records' : 'informs';
+      }
+      if (kind(to) === 'DEC') return kind(from) === 'GOL' ? 'aims' : 'grounds';
+      if (kind(to) === 'QST') return 'informs';
+      if (kind(to) === 'GOL') return 'measures';
+      if (kind(to) === 'ACT') return 'calls for';
+      return 'raises';
+    }
+
+    // Links reaching a card meet it at one point per kind of link, spread along its top edge and
+    // labelled there, where links of one kind have gathered and other kinds have parted. Labels
+    // by the target never pile up the way they would where links leave a card together.
+    function drawLinks(flow, shown) {
+      const box = flow.getBoundingClientRect();
+      const rect = key => flow.querySelector(`[data-node="${key}"]`).getBoundingClientRect();
+      const middle = key => { const r = rect(key); return r.left + r.width / 2 - box.left; };
+      const drawn = [];
+      for (const [to, links] of groupBy(shown, ([, target]) => target)) {
+        const kinds = [...groupBy(links, ([from]) => relation(from, to))]
+          .sort(([, p], [, q]) => average(p.map(([from]) => middle(from))) - average(q.map(([from]) => middle(from))));
+        const target = rect(to);
+        kinds.forEach(([name, group], i) => {
+          const entry = target.left - box.left + target.width * (i + 1) / (kinds.length + 1);
+          const top = target.top - box.top;
+          // With more than two kinds, labels alternate between two heights so neighbours don't touch.
+          const lift = kinds.length > 2 && i % 2 ? 12 : 0;
+          drawn.push(...group.map(link => curve(flow, link, entry)), label(name, entry, top - 12 - lift));
+        });
+      }
+      return drawn;
+    }
+
+    function label(text, x, y) {
+      const node = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      node.setAttribute('x', x);
+      node.setAttribute('y', y);
+      node.setAttribute('text-anchor', 'middle');
+      node.textContent = text;
+      return node;
+    }
+
+    const average = list => list.reduce((sum, n) => sum + n, 0) / list.length;
+
+    function groupBy(list, key) {
+      const groups = new Map();
+      for (const item of list) groups.set(key(item), [...(groups.get(key(item)) ?? []), item]);
+      return groups;
+    }
+
+    function clearChain(flow, lines) {
+      flow.classList.remove('is-tracing');
+      lines.replaceChildren();
+    }
+
+    // A route from the bottom of one card to a point on the top of the other, drawn like a
+    // transit map: down, a 45° corner, across in the gap above the target's band, another
+    // corner, and down into the card. Down runs pass behind the cards between.
+    function curve(flow, [from, to], entry) {
+      const box = flow.getBoundingClientRect();
+      const a = flow.querySelector(`[data-node="${from}"]`).getBoundingClientRect();
+      const b = flow.querySelector(`[data-node="${to}"]`).getBoundingClientRect();
+      const x1 = a.left + a.width / 2 - box.left, x2 = entry;
+      const y1 = a.bottom - box.top, y2 = b.top - box.top, turn = y2 - 8;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M' + chamfer([[x1, y1], [x1, turn], [x2, turn], [x2, y2]], 6).map(([x, y]) => `${x},${y}`).join(' L'));
+      return path;
+    }
+
+    // Cuts each corner of a route of straight runs at 45°, never by more than half a run.
+    function chamfer(points, size) {
+      const cut = [points[0]];
+      for (let i = 1; i < points.length - 1; i++) {
+        const [px, py] = points[i];
+        const [ax, ay] = points[i - 1], [bx, by] = points[i + 1];
+        const r = Math.min(size, Math.hypot(px - ax, py - ay) / 2, Math.hypot(bx - px, by - py) / 2);
+        const unit = (dx, dy) => { const length = Math.hypot(dx, dy) || 1; return [dx / length, dy / length]; };
+        const [ix, iy] = unit(px - ax, py - ay), [ox, oy] = unit(bx - px, by - py);
+        cut.push([px - ix * r, py - iy * r], [px + ox * r, py + oy * r]);
+      }
+      cut.push(points[points.length - 1]);
+      return cut;
+    }
+
+    // Going to a card in full: scrolled into view and briefly marked.
+    function goTo(id) {
+      const target = document.querySelector(`[data-ref="${id}"]`);
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.add('is-arrived');
+      setTimeout(() => target.classList.remove('is-arrived'), 1600);
+    }
+    // Pointing at a passage lights its source, and pointing at a source lights its passages.
+    function lightTogether(root) {
+      const sharing = node => root.querySelectorAll(`[data-source="${node.dataset.source}"]`);
+      for (const node of root.querySelectorAll('[data-source]')) {
+        node.addEventListener('mouseenter', () => sharing(node).forEach(n => n.classList.add('is-lit')));
+        node.addEventListener('mouseleave', () => sharing(node).forEach(n => n.classList.remove('is-lit')));
+      }
+    }
+
+    function summary() {
+      const count = name => CLAIMS.filter(c => standing(c) === name).length;
+      return `${CLAIMS.length} claims · ${count('corroborated')} corroborated, ${count('contested')} contested, ${count('single source')} on a single source, ${CLAIMS.filter(c => basis(c) === 'assumption').length} assumptions`;
+    }
+
+    document.getElementById('summary').textContent = summary();
+    document.getElementById('claims').replaceChildren(...CLAIMS.map(claimCard));
+    document.getElementById('goals').replaceChildren(...GOALS.map(goalCard));
+    document.getElementById('questions').replaceChildren(...QUESTIONS.map(questionCard));
+    document.getElementById('decisions').replaceChildren(decisionCard(DECISION));
+    document.getElementById('actions').replaceChildren(...ACTIONS.map(actionCard));
+    document.getElementById('risks').replaceChildren(...RISKS.map(riskCard));
+    document.getElementById('sources').replaceChildren(...SOURCES.map(sourceCard));
+    lightTogether(document.querySelector('main'));
+    drawFlow(document.getElementById('flow'));
+  </script>
+</body>
+</html>
