@@ -77,3 +77,27 @@ New views: a **second map, for the order**, and the **ledger**, with each versio
 - **Order of facts shapes the maps here too.** With method last, "ready to collect" appears under both clock values; method first would merge them.
 
 **What took its place:** running the day and counting across it: units shipped, stock reserved at close, decisions taken, promises broken. That's the outcomes map's job, over many days instead of one.
+
+## Step 4: the box, and journeys for the lifecycle
+
+From `demos/lineage/`'s step 5, the row maps become boxes: a column per fact, each value once, then a column of outcomes, with each region as a bundle of pathways that gathers at a knot and fans out. The fog comes from the day's decisions instead of trains: a line is solid where some decision went that way, dashed where only the rules say so, and lines taken at the clock's hour are in the accent colour. The page is now full width and stacked. The drawing lives in `box.js`.
+
+New: **the journeys**, for the lifecycle. The first column lists a lifecycle's stages in order (an order's, or a line's, with a switch). Then comes a column per hour, each tile counting who is at that stage then. Each order or line threads its stage hour by hour, flat while it stays and slanting when it moves; journeys that run together share a thicker line. Pointing at a tile, or at an order card, follows the journeys through it.
+
+What the journeys show that the maps couldn't:
+
+- **Commitments that carry time.** The orders' journeys in V8 run flat along "for the van" from 09:00 and drop to "dispatched" together at 16:00; ones arriving after the cut-off slant straight to "ships tomorrow" and stay. The repeated decisions the maps counted (26 to 39 a day) are a handful of lines that simply hold.
+- **The day's rhythm.** Deliveries and the van show as moments when many journeys slant at once (15:00 and 16:00 in V8), without being drawn anywhere.
+- **A line's status isn't its stage.** In V8, O12's oil filter line is part allocated at 15:00, holding 2 filters, then becomes back-ordered at 16:00 while still holding them, because its status is its latest decision rather than where it is in a lifecycle. The journey slants back up the column, against the lifecycle's order, and that's how it showed. The model mixes "what was just decided" with "what state it's in"; a lifecycle needs its own states, and the decision should move between them.
+
+How the boxes fared here:
+
+- **They stay small.** The line and order boxes are three to four fact columns of two or three tiles each; a single decision here sees little, as before.
+- **Fog tells which rules have been exercised.** In V8 the line box's "inbound: short" is in fog, as are most of the order box's priority and collection fans. The day tests only 6 of 7 line bundles and 6 of 9 order bundles.
+- **The decisions taken now, in the accent colour, tie the boxes to the clock.** Scrub to 15:00 and D2's landing lights a burst of "allocated" and "substituted" pathways.
+
+Where it struggles:
+
+- **The journeys' stages are only those that occur,** so a stage nobody reached today (like "queued" outside V4b) disappears rather than showing as fog. Allowed transitions aren't drawn either; only the ones taken.
+- **Lines run thick but anonymous.** Eleven lines shipped together are one thick stroke; pointing names them, but the picture doesn't.
+- **Two lifecycles, one at a time.** Orders and lines are joined (an order moves when its lines do), but the switch shows one or the other, not the link between them.

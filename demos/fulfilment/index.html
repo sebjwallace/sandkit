@@ -9,6 +9,7 @@
   <script src="../../shell/sb-shell.js"></script>
   <script src="../../components/sb-scrubber/sb-scrubber.js"></script>
   <script src="model.js"></script>
+  <script src="box.js"></script>
 </head>
 <body>
   <sb-shell heading="Fulfilment">
@@ -23,46 +24,62 @@
       <p class="try"><strong>Try:</strong> pick V2 and scrub through the day: who is left without couplers at 09:00? Then pick the rival V2b at the same hour and see who loses instead. In V4, watch which orders make the 16:00 van. In V10, watch the ledger at 13:00, then pick V11.</p>
     </section>
 
-    <div class="workspace">
-      <div class="lineage">
-        <section class="card">
-          <div class="tree" id="tree"></div>
-        </section>
-        <section class="card">
-          <h3 id="version-title"></h3>
-          <p class="cause" id="cause"></p>
-          <p class="summary" id="summary"></p>
-        </section>
-        <section class="card">
-          <sb-scrubber id="clock" step="1" duration="8" label="Time of day"></sb-scrubber>
+    <section class="card">
+      <div class="tree" id="tree"></div>
+    </section>
+
+    <section class="card">
+      <h3 id="version-title"></h3>
+      <p class="cause" id="cause"></p>
+      <p class="summary" id="summary"></p>
+    </section>
+
+    <section class="card">
+      <sb-scrubber id="clock" step="1" duration="8" label="Time of day"></sb-scrubber>
+      <div class="warehouse">
+        <div>
           <h4>Stock</h4>
           <div class="stock" id="stock"></div>
+        </div>
+        <div>
           <h4>Ledger</h4>
           <p class="ledger-equation" id="ledger-equation"></p>
           <div class="ledger-scroll"><table class="ledger" id="ledger"></table></div>
           <div class="ledger-day" id="ledger-day"></div>
-          <h4>Orders</h4>
-          <div class="orders" id="orders"></div>
-          <h4 id="happened-title"></h4>
-          <ul class="happened" id="happened"></ul>
-        </section>
+        </div>
       </div>
+      <h4>Orders</h4>
+      <div class="orders" id="orders"></div>
+      <h4 id="happened-title"></h4>
+      <ul class="happened" id="happened"></ul>
+    </section>
 
-      <div class="maps">
-        <section class="card">
-          <h3 id="line-title"></h3>
-          <p class="map-intro">What one order line's decision can see when its turn comes, and what happens to it. Quantities are bands against what the line still needs. Neighbouring values that always lead to the same outcome share a tile; ● marks regions decided at the clock's hour.</p>
-          <div class="map-scroll"><div class="map" id="line-map"></div></div>
-          <p class="map-detail" id="line-detail"></p>
-        </section>
-        <section class="card" id="order-card">
-          <h3 id="order-title"></h3>
-          <p class="map-intro">Whether an order can go yet. Its <b>lines</b> fact joins it to the line map: it counts how many of its unshipped lines are fully allocated.</p>
-          <div class="map-scroll"><div class="map" id="order-map"></div></div>
-          <p class="map-detail" id="order-detail"></p>
-        </section>
+    <section class="card">
+      <div class="card-head">
+        <h3 id="journey-title"></h3>
+        <div class="toggle" id="journey-kind">
+          <button type="button" class="small-button" data-kind="order" aria-pressed="true">Orders</button>
+          <button type="button" class="small-button" data-kind="line" aria-pressed="false">Lines</button>
+        </div>
       </div>
-    </div>
+      <p class="map-intro">The lifecycle: each stage in order on the left, then a column per hour counting who is there. Each journey threads its stage hour by hour, flat while it stays and slanting when it moves on; journeys that run together share a thicker line. Point at a tile, or at an order above, to follow its journey.</p>
+      <div class="map-scroll"><div class="map" id="journeys"></div></div>
+      <p class="map-detail" id="journey-detail"></p>
+    </section>
+
+    <section class="card">
+      <h3 id="line-title"></h3>
+      <p class="map-intro">What one order line's decision can see when its turn comes, and what happens to it. Quantities are bands against what the line still needs. A bundle of pathways gathers at a knot and fans out across the values a rule doesn't care about. Solid lines are routes some decision took today, dashed ones rest on the rules alone; lines in the accent colour were taken at the clock's hour.</p>
+      <div class="map-scroll"><div class="map" id="line-map"></div></div>
+      <p class="map-detail" id="line-detail"></p>
+    </section>
+
+    <section class="card" id="order-card">
+      <h3 id="order-title"></h3>
+      <p class="map-intro">Whether an order can go yet. Its <b>lines</b> fact joins it to the line map: how many of its unshipped lines are fully allocated.</p>
+      <div class="map-scroll"><div class="map" id="order-map"></div></div>
+      <p class="map-detail" id="order-detail"></p>
+    </section>
   </main>
 
   <script>
@@ -189,7 +206,7 @@
       const state = stateOf(order);
       const changed = before && shownIn(parentOf(selected), before) !== shownIn(selected, order);
       return `
-        <div class="order tone-${toneOf(state)}${changed ? ' is-changed' : ''}">
+        <div class="order tone-${toneOf(state)}${changed ? ' is-changed' : ''}" data-order="${order.id}">
           <div class="order-head">
             <b>${order.id}</b> ${escapeHtml(order.depot)} <span class="order-time">${order.time}</span>
             ${order.priority ? '<span class="badge">priority</span>' : ''}
@@ -236,90 +253,89 @@
         + `${plural(shipped, 'unit')} shipped today, against ${shippedBy(parentHours.at(-1))} in ${parent.id}.`;
     }
 
-    // A map: fact columns on the left, the decision's outcome on the right, a band of rows per region.
+    // The decision boxes and the journeys, drawn by box.js; each keeps what pointing needs.
 
-    function tile(className, row, size, column, content) {
-      return `<div class="${className}" data-from="${row}" data-to="${row + size}"
-        style="grid-row: ${row + 2} / span ${size}; grid-column: ${column + 1}"><span>${content}</span></div>`;
+    const drawn = {};
+    let journeyKind = 'order';
+
+    function describe(kind, record) {
+      const what = kind === 'line' ? `${record.order} ${record.qty} ${PARTS[record.part]}` : record.order;
+      return `${hourLabel(record.hour)} ${escapeHtml(what)}`;
     }
 
-    // A fact's tiles: neighbouring regions that agree on this fact and every fact before it share one.
-    function factTiles(decision, regions, facts, column) {
-      const key = region => JSON.stringify(facts.slice(0, column + 1).map(fact => region.facts[fact]));
-      const tiles = [];
-      let row = 0;
-      regions.forEach((region, i) => {
-        if (i === 0 || key(region) !== key(regions[i - 1])) tiles.push({ row, size: 0, values: region.facts[facts[column]] });
-        tiles.at(-1).size += region.size;
-        row += region.size;
-      });
-      const fact = facts[column];
-      return tiles.map(({ row, size, values }) => {
-        const whole = values.length === decision.facts[fact].values.length && values.length > 1;
-        const label = whole ? `any ${fact}` : values.join(' · ');
-        return tile(`map-tile${values.length > 1 ? ' is-merged' : ''}${whole ? ' is-whole' : ''}`, row, size, column, label);
-      });
-    }
-
-    function outcomeTiles(regions, column, now) {
-      let row = 0;
-      return regions.map(region => {
-        const decidedNow = now.filter(decision => isIn(decision.facts, region)).length;
-        const html = tile(`map-out tone-${toneOf(region.outcome)}`, row, region.size, column,
-          `${region.outcome}${decidedNow ? ` <b class="now">● ${decidedNow}</b>` : ''}`);
-        row += region.size;
-        return html;
-      });
-    }
-
-    // Each map keeps its regions and the day's decisions, for pointing.
-    const maps = {};
-
-    function renderMap(kind, title, decision, day, now) {
-      const regions = regionsOf(decision);
-      const decisions = day.flatMap(snapshot => snapshot.decisions[kind].map(each => ({ ...each, hour: snapshot.hour })));
-      maps[kind] = { regions, decisions };
-      const facts = Object.keys(decision.facts);
+    function renderBox(kind, title, decision, day) {
+      const records = day.flatMap(snapshot => snapshot.decisions[kind].map(record => ({ ...record, hour: snapshot.hour })));
+      const now = records.filter(record => record.hour === hour);
+      const element = document.getElementById(`${kind}-map`);
+      drawn[kind] = drawDecisionBox(element, decision, records, now);
+      const { regions } = drawn[kind];
       const scenarios = sum(regions.map(region => region.size));
-      document.getElementById(`${kind}-title`).textContent = `${title}: ${plural(scenarios, 'scenario')} in ${plural(regions.length, 'region')}`;
-      const map = document.getElementById(`${kind}-map`);
-      map.style.setProperty('--facts', facts.length);
-      const heads = [...facts, kind].map(name => `<div class="map-head">${name}</div>`);
-      map.innerHTML = heads.join('') + facts.flatMap((_, column) => factTiles(decision, regions, facts, column)).join('') + outcomeTiles(regions, facts.length, now).join('');
-      showDetail(kind, null);
+      const taken = regions.filter(region => records.some(record => isIn(record.facts, region))).length;
+      document.getElementById(`${kind}-title`).textContent =
+        `${title}: ${plural(scenarios, 'scenario')} in ${plural(regions.length, 'bundle')}, ${taken} taken today`;
+      showBoxDetail(kind, null);
     }
 
-    // Pointing at a tile lights every tile its rows pass through, and lists the day's decisions that landed there.
-
-    function describe(kind, decision) {
-      const what = kind === 'line' ? `${decision.order} ${decision.qty} ${PARTS[decision.part]}` : decision.order;
-      return `${hourLabel(decision.hour)} ${escapeHtml(what)}`;
-    }
-
-    function showDetail(kind, target) {
-      const { regions, decisions } = maps[kind];
-      const map = document.getElementById(`${kind}-map`);
-      const from = Number(target?.dataset.from);
-      const to = Number(target?.dataset.to);
-      for (const each of map.querySelectorAll('[data-from]')) {
-        each.classList.toggle('is-lit', Boolean(target) && Number(each.dataset.from) < to && Number(each.dataset.to) > from);
-      }
-      map.classList.toggle('is-pointing', Boolean(target));
+    function showBoxDetail(kind, lit) {
+      const element = document.getElementById(`${kind}-map`);
       const detail = document.getElementById(`${kind}-detail`);
-      if (!target) { detail.textContent = `${plural(decisions.length, 'decision')} over the day. Point at a tile to see which landed there.`; return; }
-      let row = 0;
-      const lit = regions.filter(region => { const inside = row >= from && row < to; row += region.size; return inside; });
-      const landed = decisions.filter(decision => lit.some(region => isIn(decision.facts, region)));
+      const { regions, records } = drawn[kind];
+      lightBundles(element, drawn[kind], lit ?? []);
+      if (!lit) { detail.textContent = `${plural(records.length, 'decision')} over the day. Point at a tile to see which went that way.`; return; }
+      const landed = records.filter(record => lit.some(r => isIn(record.facts, regions[r])));
       detail.innerHTML = landed.length
-        ? `${plural(landed.length, 'decision')}: ${landed.map(decision => describe(kind, decision)).join(' · ')}`
-        : 'No decision landed here today.';
+        ? `${plural(landed.length, 'decision')}: ${landed.map(record => describe(kind, record)).join(' · ')}`
+        : 'No decision went this way today: these pathways rest on the rules alone.';
+    }
+
+    function renderJourneys(day) {
+      const element = document.getElementById('journeys');
+      drawn.journeys = drawJourneys(element, journeysOf(selected, day, journeyKind), journeyKind, hour);
+      document.getElementById('journey-title').textContent = `The ${journeyKind === 'order' ? 'orders\'' : 'lines\''} journeys in ${selected.id}`;
+      for (const button of document.querySelectorAll('#journey-kind button')) button.setAttribute('aria-pressed', String(button.dataset.kind === journeyKind));
+      showJourneyDetail(null);
+    }
+
+    function showJourneyDetail(ids, label) {
+      lightJourneys(document.getElementById('journeys'), drawn.journeys, ids ?? []);
+      document.getElementById('journey-detail').textContent = ids
+        ? `${label}: ${ids.join(', ') || 'nobody'}`
+        : `${plural(drawn.journeys.journeys.length, journeyKind)} over the day.`;
     }
 
     for (const kind of ['line', 'order']) {
-      const map = document.getElementById(`${kind}-map`);
-      map.addEventListener('pointerover', event => showDetail(kind, event.target.closest('[data-from]')));
-      map.addEventListener('pointerleave', () => showDetail(kind, null));
+      const element = document.getElementById(`${kind}-map`);
+      element.addEventListener('pointerover', event => {
+        const tile = event.target.closest('.box-tile');
+        showBoxDetail(kind, tile ? bundlesThrough(drawn[kind], tile) : null);
+      });
+      element.addEventListener('pointerleave', () => showBoxDetail(kind, null));
     }
+
+    const journeysElement = document.getElementById('journeys');
+    journeysElement.addEventListener('pointerover', event => {
+      const tile = event.target.closest('.box-tile');
+      if (!tile) { showJourneyDetail(null); return; }
+      const column = drawn.journeys.columns[Number(tile.dataset.column)];
+      showJourneyDetail(journeysThrough(drawn.journeys, tile), `${column.hour ? `${hourLabel(column.hour)} · ` : ''}${tile.dataset.key}`);
+    });
+    journeysElement.addEventListener('pointerleave', () => showJourneyDetail(null));
+
+    const ordersElement = document.getElementById('orders');
+    ordersElement.addEventListener('pointerover', event => {
+      const card = event.target.closest('[data-order]');
+      if (!card) { showJourneyDetail(null); return; }
+      const ids = drawn.journeys.journeys.filter(journey => journey.order === card.dataset.order).map(journey => journey.id);
+      showJourneyDetail(ids, `${card.dataset.order}'s journey`);
+    });
+    ordersElement.addEventListener('pointerleave', () => showJourneyDetail(null));
+
+    document.getElementById('journey-kind').addEventListener('click', event => {
+      const button = event.target.closest('[data-kind]');
+      if (!button) return;
+      journeyKind = button.dataset.kind;
+      renderJourneys(runDay(selected));
+    });
 
     // The clock's marks: the moments this version knows about.
     function marksOf(version) {
@@ -342,9 +358,10 @@
       renderLedger(day, at(day));
       renderOrders(at(day), at(parentHours));
       renderHappened(at(day));
-      renderMap('line', `The line map of ${selected.id}`, selected.line, day, at(day).decisions.line);
+      renderJourneys(day);
+      renderBox('line', `The line map of ${selected.id}`, selected.line, day);
       document.getElementById('order-card').hidden = !selected.order;
-      if (selected.order) renderMap('order', `The order map of ${selected.id}`, selected.order, day, at(day).decisions.order);
+      if (selected.order) renderBox('order', `The order map of ${selected.id}`, selected.order, day);
       clock.marks = marksOf(selected);
     }
 
