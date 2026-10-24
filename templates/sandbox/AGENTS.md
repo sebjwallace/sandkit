@@ -33,6 +33,7 @@ Where this sandbox is now, and how it is meant to grow. Rewrite it at the end of
 | `JOURNAL.md` | What changed and why, one entry per version, newest first. |
 | `style.css` | The sandbox's own styles, using the theme tokens (`--sb-*`). |
 | `lib/sandkit/` | Sandkit components, shell and practices, copied in. See `SOURCE.md` for where they came from. |
+| `parts.js` | Functions returning HTML for parts used on more than one page or chapter, if any. |
 | `components/` | Components this sandbox owns (ejected or written here), if any. |
 
 ## Sandkit components
@@ -41,6 +42,12 @@ Where this sandbox is now, and how it is meant to grow. Rewrite it at the end of
 - **Don't edit anything in `lib/`.** It is a copy, and may be replaced when Sandkit is updated.
 - **To change a component, eject it:** copy its folder into `components/`, rename it (replace every occurrence of its tag name, e.g. `sb-log`, with a new one), note where it came from at the top of the file, and point the pages that use it at the new copy. From then on it belongs to this sandbox.
 - **Combine components in the page,** never inside each other. Each manifest's "Works well with" section suggests pairings and how to wire them.
+
+## This sandbox's components
+
+Parts of the surface this sandbox made its own, once they were needed in more than one place. Use them through these lines, not their code. See `lib/sandkit/practices/domain-components.md`.
+
+{{one line each: its name, where it is, and what it takes; none yet}}
 
 ## Conventions
 

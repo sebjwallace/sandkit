@@ -153,7 +153,7 @@ assumptions.reveal = (ref) => {
 
 The locating practice's rules apply: it never selects, never fires viewers' events, and never undoes a viewer's choice. Give each container a `heading` (`<figure id="warehouse-map" heading="Warehouse map">`) so cross-references name its places as readers know them.
 
-When a part is used in more than one chapter or page, make it the sandbox's own component (see [building a sandbox](building-a-sandbox.md)), with `data-ref`, `highlight` and `reveal` like Sandkit's.
+When a part is used in more than one chapter or page, make it one of the sandbox's own components (see the [domain components practice](domain-components.md)), with `data-ref`, `highlight` and `reveal` like Sandkit's.
 
 ## Keeping things lit
 

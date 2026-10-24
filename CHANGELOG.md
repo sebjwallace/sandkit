@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.51 · 2026-10-24
+- A new practice, `practices/domain-components.md`: a sandbox's own components, for things in its subject that appear in more than one place. When to make one, composing them from Sandkit components, a function in `parts.js` before a custom element, and listing them in `AGENTS.md`. Linked from the building guide, the highlighting practice and the catalog; the template's `AGENTS.md` has a section for them.
+
 ## 0.2.50 · 2026-10-24
 - Fifty-six components: added `sb-stamp`, a status pressed onto the page like a rubber stamp, set from the model and marked stale, with the reason, when the model has moved past it.
 
