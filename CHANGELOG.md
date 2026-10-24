@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.54 · 2026-10-24
+- Fifty-seven components: added `sb-board`, a board to pan and zoom holding the sandbox's own content where the agent placed it, with labelled frames, pen marks anchored to refs, and viewers' moves kept apart from the layout and described in words for the agent. The locating practice lists it.
+
 ## 0.2.53 · 2026-10-24
 - `sb-board` renamed `sb-kanban` (0.2.0), while no sandbox uses it.
 

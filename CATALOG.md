@@ -55,6 +55,7 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 | [`sb-accordion`](components/sb-accordion/manifest.md) | Sections that open and close, one or a group: a closed section shows a note from the model, a dot when what's inside changed since last seen, and a tint when something highlighted is inside; Expand all and Collapse all, or one open at a time; nests. |
 | [`sb-annotate`](components/sb-annotate/manifest.md) | Text with the parts that matter marked: pointing shows each mark's note just above it, clicking pins it, and kinds are counted in a legend. |
 | [`sb-bars`](components/sb-bars/manifest.md) | Things compared on one measure: bars on one scale, sorted or not, with reference lines and each bar's change since the last update. |
+| [`sb-board`](components/sb-board/manifest.md) | A board to pan and zoom, holding the sandbox's own notes, sources, images and diagrams where they belong together: labelled frames group them, pen marks anchored to refs point out what matters, and what viewers move comes back in words for the agent. |
 | [`sb-c4`](components/sb-c4/manifest.md) | A C4 software architecture walked into level by level, with a path back out; relationships deep inside roll up to every view. |
 | [`sb-callout`](components/sb-callout/manifest.md) | A stand-out block for definitions, notes, tips, questions, answers and warnings; optionally collapsible. |
 | [`sb-chart`](components/sb-chart/manifest.md) | Values over time as lines, with reference lines, the latest values marked, and a legend. |

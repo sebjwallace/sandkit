@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-board tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-board.js"></script>
+  <script src="sb-board.js"></script>
+</head>
+<body>
+  <script>
+    const note = (ref, text = ref) => `<div data-ref="${ref}" style="height: 80px">${text}</div>`;
+    const board = (content, layout, attributes = '') => {
+      const el = mount(`<sb-board ${attributes} style="--sb-board-height: 300px">${content}</sb-board>`);
+      if (layout) el.layout = layout;
+      return el;
+    };
+    const itemOf = (el, ref) => el.querySelector(`[data-ref="${ref}"]`).parentElement;
+    const placeOf = (el, ref) => {
+      const { left, top, width } = itemOf(el, ref).style;
+      return { x: parseFloat(left), y: parseFloat(top), w: parseFloat(width) };
+    };
+    const viewportWidth = (el) => el.querySelector('.sb-board__viewport').clientWidth;
+    const zoomOf = (el) => viewportWidth(el) / el.shown.w;
+    const inView = (el, ref) => {
+      const s = el.shown, p = placeOf(el, ref);
+      const h = itemOf(el, ref).offsetHeight;
+      return p.x >= s.x && p.x + p.w <= s.x + s.w && p.y >= s.y && p.y + h <= s.y + s.h;
+    };
+    const wide = { items: { a: { x: 0, y: 0, w: 200 }, b: { x: 2400, y: 0, w: 200 }, c: { x: 1200, y: 600 } } };
+
+    // ---- Placing ----
+
+    test('places each child by its ref, wrapped so its own element is untouched', () => {
+      const el = board(note('a') + note('b'), { items: { a: { x: 10, y: 20, w: 180 }, b: { x: 300, y: 40, w: 200 } } });
+      assertEqual(placeOf(el, 'a'), { x: 10, y: 20, w: 180 });
+      assertEqual(placeOf(el, 'b'), { x: 300, y: 40, w: 200 });
+      assert(itemOf(el, 'a').matches('.sb-board__item'), 'in a wrapper');
+      assertEqual(itemOf(el, 'a').dataset.ref, undefined, 'the wrapper carries no ref');
+      assertEqual(el.querySelector('[data-ref="a"]').getAttribute('style'), 'height: 80px');
+    });
+
+    test('an item without a width is 240 wide', () => {
+      const el = board(note('a'), { items: { a: { x: 0, y: 0 } } });
+      assertEqual(placeOf(el, 'a').w, 240);
+    });
+
+    test('items the layout leaves out go in a row below the rest', () => {
+      const el = board(note('a') + note('b') + note('c'), { items: { a: { x: 100, y: 0, w: 200 } } });
+      assertEqual(placeOf(el, 'b'), { x: 100, y: 128, w: 240 });
+      assertEqual(placeOf(el, 'c'), { x: 364, y: 128, w: 240 });
+    });
+
+    test('a new layout moves things', () => {
+      const el = board(note('a'), { items: { a: { x: 0, y: 0 } } });
+      el.layout = { items: { a: { x: 50, y: 60, w: 100 } } };
+      assertEqual(placeOf(el, 'a'), { x: 50, y: 60, w: 100 });
+    });
+
+    test('the layout read back is a copy', () => {
+      const el = board(note('a'), { items: { a: { x: 0, y: 0 } } });
+      el.layout.items.a.x = 99;
+      assertEqual(el.layout, { frames: [], items: { a: { x: 0, y: 0 } }, marks: [] });
+    });
+
+    test('places children added later, and leaves nothing behind for ones removed', async () => {
+      const el = board(note('a'), { items: { a: { x: 0, y: 0 }, b: { x: 300, y: 0 } } });
+      el.insertAdjacentHTML('beforeend', note('b'));
+      await waitFor(() => el.querySelector('[data-ref="b"]')?.parentElement.matches('.sb-board__item'));
+      assertEqual(placeOf(el, 'b').x, 300);
+      el.querySelector('[data-ref="a"]').remove();
+      await waitFor(() => el.querySelectorAll('.sb-board__item').length === 1);
+    });
+
+    test('keeps the state of the content it holds', () => {
+      const el = mount('<sb-board><input data-ref="a"></sb-board>');
+      const input = el.querySelector('input');
+      input.value = 'typed';
+      el.layout = { items: { a: { x: 40, y: 40 } } };
+      assertEqual(el.querySelector('input'), input);
+      assertEqual(input.value, 'typed');
+    });
+
+    test('says when there is nothing on it, as text', () => {
+      const el = mount('<sb-board empty-text="<b>No evidence yet.</b>"></sb-board>');
+      const empty = el.querySelector('.sb-board__empty');
+      assertEqual(empty.textContent, '<b>No evidence yet.</b>');
+      assertEqual(empty.querySelectorAll('b').length, 0);
+      assert(!empty.hidden, 'shown');
+      el.insertAdjacentHTML('beforeend', note('a'));
+      el.layout = { items: {} };
+      assert(empty.hidden, 'hidden once something is on it');
+    });
+
+    // ---- Frames ----
+
+    const framed = {
+      frames: [{ ref: 'F-1', label: 'Evidence', x: 0, y: 0, w: 400, h: 200 }, { ref: 'F-2', x: 2000, y: 800, w: 300, h: 200 }],
+      items: { a: { x: 20, y: 48 } }
+    };
+    const frameOf = (el, ref) => el.querySelector(`.sb-board__frame[data-ref="${ref}"]`);
+
+    test('draws each frame where the layout says, labelled, behind the items', () => {
+      const el = board(note('a'), framed);
+      const frame = frameOf(el, 'F-1');
+      assertEqual([frame.style.left, frame.style.top, frame.style.width, frame.style.height], ['0px', '0px', '400px', '200px']);
+      assertEqual(frame.querySelector('.sb-board__label').textContent, 'Evidence');
+      assertEqual(frameOf(el, 'F-2').textContent.trim(), 'F-2', 'its ref without a label');
+      assert(frame.compareDocumentPosition(itemOf(el, 'a')) & Node.DOCUMENT_POSITION_FOLLOWING, 'items come after, so they sit on top');
+    });
+
+    test('frames set before the board is on the page are drawn once it is', () => {
+      const el = document.createElement('sb-board');
+      el.layout = framed;
+      mount(el);
+      assert(frameOf(el, 'F-1'), 'drawn');
+    });
+
+    test('a frame\'s label is text, never markup', () => {
+      const el = board('', { frames: [{ ref: '"><b>x</b>', label: '<i>Evidence</i>', x: 0, y: 0, w: 100, h: 100 }] });
+      assertEqual(el.querySelectorAll('.sb-board__frame b, .sb-board__frame i').length, 0);
+      assertEqual(el.querySelector('.sb-board__label').textContent, '<i>Evidence</i>');
+      assertEqual(el.querySelector('.sb-board__frame').dataset.ref, '"><b>x</b>');
+    });
+
+    test('a board with only frames isn\'t empty', () => {
+      const el = board('', framed);
+      assert(el.querySelector('.sb-board__empty').hidden);
+    });
+
+    test('frames are part of the whole board, and items left out go below them', () => {
+      const el = board(note('a') + note('b'), framed);
+      const s = el.shown;
+      assert(s.x + s.w >= 2300 && s.y + s.h >= 1000, 'the far frame is in view');
+      assertEqual(placeOf(el, 'b').y, 1048);
+    });
+
+    test('reveal goes to a frame by its ref, or the frame holding a place', () => {
+      const el = board(note('a'), framed);
+      assertEqual(el.reveal('F-2'), true);
+      const s = el.shown;
+      assert(s.x <= 2000 && s.x + s.w >= 2300, 'the frame in view');
+      assert(s.x > 400, 'not the rest');
+      el.fit();
+      assertEqual(el.reveal('anything', frameOf(el, 'F-2').querySelector('.sb-board__label')), true);
+      assert(el.shown.x > 400, 'went to the frame holding the place');
+    });
+
+    // ---- Viewers moving things ----
+
+    const desk = {
+      frames: [{ ref: 'F-1', label: 'Readings', x: 0, y: 0, w: 300, h: 200 }, { ref: 'F-2', label: 'Accounts', x: 340, y: 0, w: 300, h: 200 }],
+      items: { a: { x: 20, y: 48, w: 100 }, b: { x: 360, y: 48, w: 100 } }
+    };
+    // Drags an item's content by a distance in board units, as a viewer's pointer would.
+    function drag(el, ref, dx, dy, target = el.querySelector(`[data-ref="${ref}"]`)) {
+      const z = zoomOf(el), box = target.getBoundingClientRect();
+      const x = box.left + 5, y = box.top + 5;
+      target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: x, clientY: y }));
+      dispatchEvent(new PointerEvent('pointermove', { clientX: x + dx * z, clientY: y + dy * z }));
+      dispatchEvent(new PointerEvent('pointerup', { clientX: x + dx * z, clientY: y + dy * z }));
+    }
+    const movable = (content, layout, id) => board(content, layout, id ? `movable id="${id}"` : 'movable');
+    const forget = (id) => localStorage.removeItem(`sb-board:${id}`);
+
+    test('items stay put unless the board is movable', () => {
+      const el = board(note('a') + note('b'), desk);
+      drag(el, 'b', -340, 100);
+      assertEqual(placeOf(el, 'b').x, 360);
+      assertEqual(el.changes, []);
+    });
+
+    test('a viewer drags an item, and the board says what moved, in words', () => {
+      const el = movable(note('a') + note('b'), desk);
+      let detail = null;
+      el.addEventListener('sb-moves', (e) => { detail = e.detail; });
+      drag(el, 'b', -220, 0);
+      assertEqual(placeOf(el, 'b'), { x: 140, y: 48, w: 100 });
+      const change = { ref: 'b', from: { x: 360, y: 48 }, to: { x: 140, y: 48 }, words: 'Moved b from Accounts into Readings, beside a.' };
+      assertEqual(el.changes, [change]);
+      assertEqual(detail, { changes: [change] });
+    });
+
+    test('the words say within, out of, or into a frame', () => {
+      const el = movable(note('a') + note('b') + note('c'), desk);
+      drag(el, 'c', 0, -200); // from the row below, where the layout left it
+      drag(el, 'a', 0, 20);
+      drag(el, 'b', 0, 400);
+      assertEqual(el.changes.map((c) => c.words), ['Moved c into Readings, beside a.', 'Moved a within Readings, beside c.', 'Moved b out of Accounts.']);
+    });
+
+    test('pressing something to use inside an item uses it, rather than dragging', () => {
+      const el = movable('<div data-ref="a"><button>Open</button></div>', desk);
+      drag(el, 'a', 100, 100, el.querySelector('button'));
+      assertEqual(placeOf(el, 'a').x, 20);
+    });
+
+    test('the click that ends a drag doesn\'t reach the item', async () => {
+      const el = movable(note('a'), desk);
+      let clicks = 0;
+      el.querySelector('[data-ref="a"]').addEventListener('click', () => clicks++);
+      drag(el, 'a', 50, 0);
+      el.querySelector('[data-ref="a"]').click();
+      assertEqual(clicks, 0, 'swallowed');
+      await new Promise((resolve) => setTimeout(resolve));
+      el.querySelector('[data-ref="a"]').click();
+      assertEqual(clicks, 1, 'later clicks arrive');
+    });
+
+    test('dropping an item back where the layout put it is no change', () => {
+      const el = movable(note('a'), desk);
+      drag(el, 'a', 50, 0);
+      drag(el, 'a', -50, 0);
+      assertEqual(el.changes, []);
+    });
+
+    test('revert puts everything back where the layout says', () => {
+      const el = movable(note('a'), desk);
+      let fired = 0;
+      drag(el, 'a', 50, 0);
+      el.addEventListener('sb-moves', () => fired++);
+      el.revert();
+      assertEqual(placeOf(el, 'a').x, 20);
+      assertEqual(el.changes, []);
+      assertEqual(fired, 0, 'quietly');
+    });
+
+    test('with an id, a viewer\'s moves are remembered', () => {
+      forget('desk');
+      movable(note('a'), desk, 'desk');
+      drag(document.querySelector('sb-board'), 'a', 50, 0);
+      const again = movable(note('a'), desk, 'desk');
+      assertEqual(placeOf(again, 'a').x, 70);
+      assertEqual(again.changes.map((c) => c.ref), ['a']);
+      forget('desk');
+    });
+
+    test('a remembered move drops once the layout matches it, or has moved the item since', () => {
+      forget('desk');
+      movable(note('a') + note('b') + note('c'), desk, 'desk');
+      const first = document.querySelector('sb-board');
+      drag(first, 'a', 50, 0);
+      drag(first, 'b', 50, 0);
+      const layout = structuredClone(desk);
+      layout.items.a = { x: 70, y: 48, w: 100 }; // the agent took in the move
+      layout.items.b = { x: 500, y: 100, w: 100 }; // the agent moved it somewhere else
+      const again = movable(note('a') + note('b') + note('c'), layout, 'desk');
+      assertEqual(again.changes, []);
+      assertEqual(placeOf(again, 'b').x, 500, 'the agent\'s place wins');
+      assertEqual(JSON.parse(localStorage.getItem('sb-board:desk')), {}, 'forgotten');
+      forget('desk');
+    });
+
+    test('a remembered move stays while the layout hasn\'t caught up', () => {
+      forget('desk');
+      movable(note('a'), desk, 'desk');
+      drag(document.querySelector('sb-board'), 'a', 50, 0);
+      const layout = structuredClone(desk);
+      layout.items.b = { x: 0, y: 300 }; // something else changed
+      const again = movable(note('a'), layout, 'desk');
+      assertEqual(placeOf(again, 'a').x, 70);
+      forget('desk');
+    });
+
+    test('without an id, nothing is remembered', () => {
+      const before = localStorage.length;
+      const el = movable(note('a'), desk);
+      drag(el, 'a', 50, 0);
+      assertEqual(localStorage.length, before);
+    });
+
+    // ---- Marks ----
+
+    const markOf = (el, ref) => el.querySelector(`.sb-board__mark[data-ref="${ref}"]`);
+    const pathOf = (el, ref) => markOf(el, ref).querySelector('path').getAttribute('d');
+    const startOf = (d) => d.match(/^M(\S+) (\S+)/).slice(1).map(Number);
+    const withMarks = (marks) => ({ ...desk, marks });
+
+    test('draws each kind of mark, labelled and toned, anchored to what it names', () => {
+      const el = board(note('a') + note('b'), withMarks([
+        { ref: 'M-1', kind: 'box', on: 'a', label: 'odd' },
+        { ref: 'M-2', kind: 'circle', on: 'b', tone: 'good' },
+        { ref: 'M-3', kind: 'underline', on: 'a' },
+        { ref: 'M-4', kind: 'arrow', from: 'a', to: 'b' },
+        { ref: 'M-5', kind: 'label', on: 'F-2', label: 'thin' }
+      ]));
+      assertEqual(['M-1', 'M-2', 'M-3', 'M-4', 'M-5'].map((ref) => markOf(el, ref)?.classList[1]),
+        ['sb-board__mark--box', 'sb-board__mark--circle', 'sb-board__mark--underline', 'sb-board__mark--arrow', 'sb-board__mark--label']);
+      assertEqual(markOf(el, 'M-1').querySelector('text').textContent, 'odd');
+      assertEqual(markOf(el, 'M-2').dataset.tone, 'good');
+      assertEqual(markOf(el, 'M-4').querySelectorAll('path').length, 3, 'a line and a head of two strokes');
+      assertEqual(markOf(el, 'M-5').querySelectorAll('path').length, 0, 'a label is only words');
+    });
+
+    test('an arrow runs from one thing to the other', () => {
+      const el = board(note('a') + note('b'), withMarks([{ ref: 'M-1', kind: 'arrow', from: 'a', to: 'b' }]));
+      const [x] = startOf(pathOf(el, 'M-1'));
+      assert(x > 120 && x < 140, `starts just right of a, at ${x}`);
+    });
+
+    test('marks follow what they\'re anchored to, as the layout and viewers move it', () => {
+      const marks = [{ ref: 'M-1', kind: 'box', on: 'a' }];
+      const el = board(note('a') + note('b'), withMarks(marks), 'movable');
+      const before = startOf(pathOf(el, 'M-1'));
+      el.layout = { ...withMarks(marks), items: { ...desk.items, a: { x: 20, y: 248, w: 100 } } };
+      assert(Math.abs(startOf(pathOf(el, 'M-1'))[1] - before[1] - 200) < 5, 'with the layout');
+      drag(el, 'a', 100, 0);
+      assert(Math.abs(startOf(pathOf(el, 'M-1'))[0] - before[0] - 100) < 5, 'with a viewer\'s drag');
+    });
+
+    test('a mark can be anchored to a part inside an item, or to a place', () => {
+      const el = board('<div data-ref="a" style="padding-top: 60px"><span data-ref="a.1">here</span></div>', withMarks([
+        { ref: 'M-1', kind: 'underline', on: 'a.1' },
+        { ref: 'M-2', kind: 'box', on: { x: 1000, y: 1000, w: 50, h: 50 } }
+      ]));
+      const [, y] = startOf(pathOf(el, 'M-1'));
+      assert(y > 48 + 60 && y < 48 + 60 + 40, `under the part, at ${y}`);
+      const [x2, y2] = startOf(pathOf(el, 'M-2'));
+      assert(Math.abs(x2 - 992) < 3 && Math.abs(y2 - 992) < 3, 'around the place');
+    });
+
+    test('a mark of no known kind, or on nothing here, isn\'t drawn', () => {
+      const el = board(note('a'), withMarks([
+        { ref: 'M-1', kind: 'scribble', on: 'a' },
+        { ref: 'M-2', kind: 'box', on: 'nowhere' },
+        { ref: 'M-3', kind: 'arrow', from: 'a' }
+      ]));
+      assertEqual(el.querySelectorAll('.sb-board__mark').length, 0);
+    });
+
+    test('a mark\'s label is text, never markup', () => {
+      const el = board(note('a'), withMarks([{ ref: '"><b>', kind: 'box', on: 'a', label: '<i>odd</i>', tone: '"><b>' }]));
+      assertEqual(el.querySelectorAll('.sb-board__marks b, .sb-board__marks i').length, 0);
+      assertEqual(el.querySelector('.sb-board__pen').textContent, '<i>odd</i>');
+    });
+
+    test('a mark is drawn the same way every time', () => {
+      const marks = [{ ref: 'M-1', kind: 'circle', on: 'a' }];
+      const one = board(note('a'), withMarks(marks));
+      const first = pathOf(one, 'M-1');
+      one.layout = withMarks(marks);
+      assertEqual(pathOf(one, 'M-1'), first);
+    });
+
+    test('marks are part of the whole board, and can be revealed', () => {
+      const el = board(note('a'), withMarks([{ ref: 'M-1', kind: 'label', on: { x: 2000, y: 900 }, label: 'far away' }]));
+      const s = el.shown;
+      assert(s.x + s.w >= 2000 && s.y + s.h >= 900, 'the far mark in view');
+      assertEqual(el.reveal('M-1'), true);
+      assert(el.shown.x > 1000, 'went to it');
+    });
+
+    // ---- Looking around ----
+
+    test('starts with the whole board in view, never larger than full size', () => {
+      const el = board(note('a') + note('b') + note('c'), wide);
+      assert(['a', 'b', 'c'].every((ref) => inView(el, ref)), 'all in view');
+      assert(zoomOf(el) < 1, 'zoomed out to fit');
+      const small = board(note('a'), { items: { a: { x: 0, y: 0 } } });
+      assertEqual(Math.round(zoomOf(small) * 100) / 100, 1, 'a small board at full size');
+    });
+
+    test('reveal goes to an item at full size, and says whether it holds it', () => {
+      const el = board(note('a') + note('b') + note('c'), wide);
+      assertEqual(el.reveal('b'), true);
+      assert(inView(el, 'b'), 'b in view');
+      assert(!inView(el, 'a'), 'a out of view');
+      assertEqual(Math.round(zoomOf(el) * 100) / 100, 1);
+      assertEqual(el.reveal('nowhere'), false);
+    });
+
+    test('reveal finds a ref inside an item, or the item holding a place', () => {
+      const el = board('<div data-ref="a"><span data-ref="a.1">x</span></div>' + note('b') + '<div data-ref="c"><i>here</i></div>', wide);
+      assertEqual(el.reveal('a.1'), true);
+      assert(inView(el, 'a'), 'the item holding the ref');
+      assertEqual(el.reveal('anything', el.querySelector('i')), true);
+      assert(inView(el, 'c'), 'the item holding the place');
+      assertEqual(el.reveal('b', document.body), false, 'a place it does not hold');
+    });
+
+    test('fit goes back to the whole board', () => {
+      const el = board(note('a') + note('b') + note('c'), wide);
+      el.reveal('b');
+      el.fit();
+      assert(['a', 'b', 'c'].every((ref) => inView(el, ref)));
+    });
+
+    test('zooming out stops at the whole board, and in at twice full size', () => {
+      const el = board(note('a') + note('b') + note('c'), wide);
+      const fitted = el.shown;
+      el.querySelector('[data-tool="out"]').click();
+      assertEqual(el.shown, fitted, 'no further out');
+      for (let i = 0; i < 20; i++) el.querySelector('[data-tool="in"]').click();
+      assertEqual(Math.round(zoomOf(el) * 100) / 100, 2);
+    });
+
+    test('the arrow keys pan either way, past the board\'s edges too', () => {
+      const el = board(note('a'), { items: { a: { x: 0, y: 0 } } });
+      const before = el.shown;
+      const viewport = el.querySelector('.sb-board__viewport');
+      const press = (key) => viewport.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      press('ArrowRight');
+      assert(el.shown.x > before.x, 'moved right, though the whole board was in view');
+      press('ArrowDown');
+      assert(el.shown.y > before.y, 'moved down');
+      for (let i = 0; i < 10; i++) press('ArrowLeft');
+      assert(el.shown.x + el.shown.w < 0, 'left of everything on the board');
+    });
+
+    test('two boards keep their own layout and view', () => {
+      mount(`<div><sb-board style="--sb-board-height: 300px">${note('a')}${note('b')}${note('c')}</sb-board><sb-board style="--sb-board-height: 300px">${note('a')}${note('b')}${note('c')}</sb-board></div>`);
+      const [one, two] = document.querySelectorAll('#test-fixture sb-board');
+      one.layout = wide;
+      two.layout = wide;
+      one.reveal('b');
+      one.layout = { items: { ...wide.items, a: { x: 0, y: 40 } } };
+      assertEqual(placeOf(two, 'a').y, 0);
+      assert(inView(two, 'a') && inView(two, 'b'), 'the second still shows the whole board');
+    });
+  </script>
+</body>
+</html>

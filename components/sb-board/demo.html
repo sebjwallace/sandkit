@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-board demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-board.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; }
+    button { font: inherit; padding: 4px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); cursor: pointer; }
+    button:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+
+    /* The sandbox's own content, placed on the boards. */
+    .note { padding: 10px 12px; font-size: 13px; background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); box-shadow: var(--sb-drop, 0 1px 3px rgb(0 0 0 / 0.12)); }
+    .note h3 { margin: 0 0 4px; font-size: 13px; }
+    .note p { margin: 0; color: var(--sb-muted); }
+    .note .code { float: right; font: 11px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); }
+    .note--question { border-left: 3px solid var(--sb-warn); }
+    .idea { padding: 12px; min-height: 64px; font-size: 13px; border-radius: 4px; background: color-mix(in srgb, var(--sb-warn) 22%, var(--sb-surface)); box-shadow: var(--sb-drop, 0 1px 3px rgb(0 0 0 / 0.12)); }
+    .idea--route { background: color-mix(in srgb, var(--sb-accent) 16%, var(--sb-surface)); }
+    .idea--worry { background: color-mix(in srgb, var(--sb-bad) 14%, var(--sb-surface)); }
+    .figure { margin: 0; padding: 8px; background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
+    .figure svg { display: block; width: 100%; height: auto; }
+    .moves { margin: 10px 0 0; font-size: 13px; }
+    .moves h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; font-size: 13px; }
+    .moves ul { margin: 0; padding-left: 20px; }
+    .moves p { margin: 0; color: var(--sb-muted); }
+    .figure figcaption { margin-top: 4px; font-size: 12px; color: var(--sb-muted); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-board">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A board to pan and zoom, holding notes, sources, images and diagrams where they belong together.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Some understanding comes from arrangement. Put a gauge reading next to the interview that contradicts it, gather every idea about one route in a corner, and the board itself starts saying something. <code>sb-board</code> is that space: a wall to pan and zoom across, where the sandbox's own content sits where the agent placed it.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Gathering evidence.</strong> Sources, readings, photos and open questions side by side, so gaps and contradictions show.</li>
+        <li><strong>Brainstorms.</strong> Ideas grouped by theme, where how many sit in each group is itself a finding.</li>
+        <li><strong>Telling a story around a picture.</strong> A tour stepping from item to item, with the board gliding to each.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Things joined by a structure.</strong> A network, a flow or a hierarchy is better drawn by a component that knows that structure, laying it out itself.</li>
+        <li><strong>Things moving through stages.</strong> A kanban counts and flags them; a board only holds them.</li>
+        <li><strong>Everything at once.</strong> A board with a hundred items is a wall nobody reads. Put on it the handful that belong together, and make another board for the next question.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-board/sb-board.js"&gt;&lt;/script&gt;
+&lt;sb-board&gt;
+  &lt;article data-ref="SRC-3"&gt;…&lt;/article&gt;
+  &lt;figure data-ref="IMG-1"&gt;…&lt;/figure&gt;
+&lt;/sb-board&gt;
+&lt;script&gt;
+  board.layout = { items: {
+    'SRC-3': { x: 0, y: 0, w: 240 },
+    'IMG-1': { x: 280, y: 0, w: 320 }
+  } };
+&lt;/script&gt;</pre>
+      <p>Each child names itself with <code>data-ref</code>, and the layout places it by that ref, in pixels at full size. Frames are labelled regions behind the items, grouping them by role: <code>frames: [{ ref, label, x, y, w, h }]</code>. Drag the background to pan; zoom with the buttons, the keys, or Ctrl or ⌘ and scrolling. <code>reveal(ref)</code> glides to a thing.</p>
+      <p>Marks are the agent's pen: <code>marks: [{ kind, on, label }]</code> with a box, circle, underline or label <code>on</code> a ref, or an <code>arrow</code> <code>from</code> one ref <code>to</code> another. Anchored to refs, they follow things when they move. A mark only comments; anything with content belongs on the board as an item.</p>
+      <p>Add <code>movable</code> and people can drag things where they think they belong, and an <code>id</code> remembers their moves. <code>changes</code> says what they moved, in words, ready to hand to the agent; once the agent has written them into the layout, they drop away on their own.</p>
+
+      <h3>Making it reveal, not just hold</h3>
+      <ul>
+        <li><strong>Let position mean something.</strong> Left to right for before and after, near for related, far for unrelated. Say what the arrangement means in words beside the board.</li>
+        <li><strong>Treat a move as something said.</strong> Someone dragging a reading next to an account is making a claim about how they connect. Ask them why, and record it.</li>
+        <li><strong>Name the groups.</strong> A frame called "Readings" or "Worries" says what its things have in common, and how full it is becomes a finding.</li>
+        <li><strong>Put the contradiction side by side.</strong> The reading and the account that disagrees with it, close enough to read together.</li>
+        <li><strong>Glide to what the words are about.</strong> Prose that says "the photo from the bridge" can reveal it, so the eye follows the argument.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+
+    <section class="example">
+      <h2>Why did the Wenning Bridge flood?</h2>
+      <p>Evidence gathered for a flood inquiry: the gauge says the river peaked late, an interview says the water came early. Readings and accounts in frames either side of the photo, open questions below. The agent's pen marks point out the conflict and the gap. Drag things to where you think they belong, and the marks follow; the board says what you moved, in words the agent can take in.</p>
+      <div class="controls">
+        Go to:
+        <button data-reveal="GAUGE-2">The gauge</button>
+        <button data-reveal="SRC-4">The interview</button>
+        <button data-reveal="IMG-1">The photo</button>
+        <button data-reveal="F-QUESTIONS">Open questions</button>
+        <button data-reveal="M-2">The camera clock</button>
+        <button data-fit>Whole board</button>
+      </div>
+      <sb-board id="flood" movable style="--sb-board-height: 300px">
+        <article class="note" data-ref="GAUGE-2"><span class="code">GAUGE-2</span><h3>Upstream gauge</h3><p>Peak 3.1 m at 04:40, two hours after the bridge was closed.</p></article>
+        <article class="note" data-ref="GAUGE-3"><span class="code">GAUGE-3</span><h3>Bridge gauge</h3><p>Offline from 01:15 to 06:00. No reading at the moment it mattered.</p></article>
+        <figure class="figure" data-ref="IMG-1">
+          <svg viewBox="0 0 320 180" role="img" aria-label="Water over the bridge deck">
+            <rect width="320" height="180" fill="#9fb8c9"/>
+            <rect y="110" width="320" height="70" fill="#5d7f96"/>
+            <rect x="40" y="96" width="240" height="14" fill="#6b6257"/>
+            <rect x="60" y="110" width="12" height="40" fill="#6b6257"/><rect x="248" y="110" width="12" height="40" fill="#6b6257"/>
+            <path d="M0 104 Q80 96 160 104 T320 104 V112 H0Z" fill="#5d7f96" opacity="0.85"/>
+          </svg>
+          <figcaption>IMG-1 · Bridge deck under water, timestamped <span data-ref="IMG-1.time">02:55</span>.</figcaption>
+        </figure>
+        <article class="note" data-ref="SRC-4"><span class="code">SRC-4</span><h3>Interview, lock keeper</h3><p>"It was over the deck before three. I've never seen it come up that fast."</p></article>
+        <article class="note" data-ref="SRC-6"><span class="code">SRC-6</span><h3>Council log</h3><p>Bridge closed at 02:40 "as a precaution".</p></article>
+        <article class="note note--question" data-ref="Q-1"><span class="code">Q-1</span><h3>Did a culvert block?</h3><p>Would explain water at the bridge before the upstream peak.</p></article>
+        <article class="note note--question" data-ref="Q-2"><span class="code">Q-2</span><h3>Is the photo's clock right?</h3><p>Camera time not yet checked against the log.</p></article>
+      </sb-board>
+      <div class="moves" data-for="flood"></div>
+    </section>
+
+    <section class="example">
+      <h2>Redesigning the 40 bus</h2>
+      <p>A brainstorm with drivers and riders, grouped into frames as it went. Most ideas gathered around the hospital loop, and the worries all sat together. The last two weren't placed yet, so the board sets them in a row below. Drag them into a frame.</p>
+      <sb-board id="bus" movable style="--sb-board-height: 420px">
+        <div class="idea idea--route" data-ref="I-1">Cut the hospital loop, run straight down Mill Road</div>
+        <div class="idea idea--route" data-ref="I-2">Loop only at visiting hours</div>
+        <div class="idea idea--route" data-ref="I-3">Swap the loop for a shuttle from the main stop</div>
+        <div class="idea" data-ref="I-4">Every 12 minutes instead of 15</div>
+        <div class="idea" data-ref="I-5">First bus at 05:30 for early shifts</div>
+        <div class="idea idea--worry" data-ref="W-1">Patients with walking frames can't manage the extra distance</div>
+        <div class="idea idea--worry" data-ref="W-2">Drivers lose their break at the hospital stand</div>
+        <div class="idea" data-ref="I-6">Real-time board at the station</div>
+        <div class="idea" data-ref="I-7">Tap-on at the back doors</div>
+      </sb-board>
+      <div class="moves" data-for="bus"></div>
+    </section>
+  </main>
+
+  <script>
+    const flood = document.getElementById('flood');
+    flood.layout = {
+      frames: [
+        { ref: 'F-READINGS', label: 'Readings', x: 0, y: 0, w: 260, h: 330 },
+        { ref: 'F-ACCOUNTS', label: 'Accounts', x: 680, y: 0, w: 280, h: 330 },
+        { ref: 'F-QUESTIONS', label: 'Open questions', x: 160, y: 370, w: 600, h: 180 }
+      ],
+      items: {
+        'GAUGE-2': { x: 20, y: 48, w: 220 },
+        'GAUGE-3': { x: 20, y: 188, w: 220 },
+        'IMG-1': { x: 300, y: 48, w: 340 },
+        'SRC-4': { x: 700, y: 48, w: 240 },
+        'SRC-6': { x: 700, y: 198, w: 240 },
+        'Q-1': { x: 180, y: 418, w: 260 },
+        'Q-2': { x: 480, y: 418, w: 260 }
+      },
+      marks: [
+        { ref: 'M-1', kind: 'arrow', from: 'GAUGE-2', to: 'SRC-4', label: 'which is right?' },
+        { ref: 'M-2', kind: 'underline', on: 'IMG-1.time', label: 'camera clock?' },
+        { ref: 'M-3', kind: 'box', on: 'GAUGE-3', label: 'the gap' }
+      ]
+    };
+
+    // What a viewer has moved, in words, with a way to put it all back.
+    function showMoves(board) {
+      const box = document.querySelector(`.moves[data-for="${board.id}"]`);
+      const changes = board.changes;
+      box.innerHTML = changes.length
+        ? '<h3>What you\'ve moved <button type="button">Put everything back</button></h3><ul></ul>'
+        : '<p>Nothing moved yet.</p>';
+      for (const change of changes) box.querySelector('ul').append(Object.assign(document.createElement('li'), { textContent: change.words }));
+      box.querySelector('button')?.addEventListener('click', () => { board.revert(); showMoves(board); });
+    }
+    for (const board of document.querySelectorAll('sb-board')) {
+      board.addEventListener('sb-moves', () => showMoves(board));
+    }
+
+    document.querySelectorAll('[data-reveal]').forEach((button) =>
+      button.addEventListener('click', () => flood.reveal(button.dataset.reveal)));
+    document.querySelector('[data-fit]').addEventListener('click', () => flood.fit());
+
+    document.getElementById('bus').layout = {
+      frames: [
+        { ref: 'F-LOOP', label: 'The hospital loop', x: 0, y: 0, w: 400, h: 260 },
+        { ref: 'F-TIMES', label: 'Frequency and hours', x: 440, y: 0, w: 240, h: 260 },
+        { ref: 'F-WORRIES', label: 'Worries', x: 0, y: 300, w: 400, h: 180 }
+      ],
+      items: {
+        'I-1': { x: 20, y: 48, w: 160 },
+        'I-2': { x: 210, y: 64, w: 160 },
+        'I-3': { x: 80, y: 160, w: 160 },
+        'I-4': { x: 460, y: 48, w: 160 },
+        'I-5': { x: 480, y: 160, w: 160 },
+        'W-1': { x: 20, y: 348, w: 170 },
+        'W-2': { x: 210, y: 360, w: 170 }
+      },
+      marks: [
+        { kind: 'arrow', from: 'W-1', to: 'I-1', label: 'against' },
+        { kind: 'circle', on: 'I-2', tone: 'good', label: 'drivers liked' },
+        { kind: 'label', on: { x: 440, y: 300 }, label: 'nothing on cost yet' }
+      ]
+    };
+    document.querySelectorAll('sb-board').forEach(showMoves);
+  </script>
+</body>
+</html>
