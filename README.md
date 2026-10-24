@@ -98,7 +98,7 @@ Sandkit's [sources practice](practices/sources.md) keeps this record. The materi
 
 ## What is in this repository
 
-Sandboxes for very different subjects tend to need the same kinds of pieces: logs, parameters, identifying codes, charts, diagrams. Sandkit provides these as ready-made parts, so each sandbox can concentrate on its subject rather than its scaffolding.
+Sandboxes for very different subjects tend to need the same kinds of pieces: logs, parameters, identifying codes, charts, diagrams. Sandkit provides these as ready-made parts, so each sandbox can concentrate on its subject rather than its scaffolding. An agent uses each part through its manifest, a short contract, rather than reading its code, so the work that went into a part is spent once and costs little each time it's reused.
 
 ```
 sandkit/
@@ -112,6 +112,7 @@ sandkit/
   test/             the test runner, and tests that span the whole library
   CHANGELOG.md      what changed in each release (components keep their own)
   DECISIONS.md      the decisions behind Sandkit, and why
+  STYLE.md          how components look, so they look like one kit
 ```
 
 **Components** are the parts you see and work with. They give you and the AI a shared, visual way to engage with a model, rather than exchanging only text. Each finished component has a demo that shows it at work and explains where it helps.

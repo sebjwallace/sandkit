@@ -68,7 +68,8 @@ The same principles as Sandkit's components, kept light:
 - **Driven by the model.** A domain component shows what it's given and reports what viewers do as events. Rules, checks and calculations stay in `model.js`, so the model remains the one source of truth.
 - **Built from anything.** Plain HTML, CSS and JavaScript, Sandkit components, or both (see above).
 - **Pointable and findable.** Give each part that stands for a thing `data-ref` with its id, so highlighting, locating, comments and trace mode reach it. Parts a function returns are the sandbox's own parts, covered by `pointable`; a custom element offers `highlight` and `reveal` where it needs them, like Sandkit's. See the [highlighting practice](highlighting.md#your-own-parts).
-- **Styled with the theme.** Colours from the `--sb-*` tokens, in `style.css` or the component's own file.
+- **Styled like Sandkit.** Colours from the `--sb-*` tokens, in `style.css` or the component's own file, with tones, lighting and corners as the [style guide](../STYLE.md) describes.
+- **A look of its own, never a borrowed material.** A thing in the subject should be recognisable at a glance, the same everywhere. Don't dress it in one of Sandkit's materials: paper means source material, and an order card on paper would read as one.
 - **Its own prefix, never `sb-`,** which belongs to Sandkit. A short prefix from the sandbox's name, the same for all of them: `wh-order-card` in a warehouse sandbox.
 
 ## Keeping track of them

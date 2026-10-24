@@ -48,9 +48,9 @@ const read = (sandbox, file) => readFileSync(join(sandbox, file), 'utf8');
 const scriptTags = (html, name) =>
   html.split('\n').filter((line) => line.trim() === `<script src="lib/sandkit/components/${name}/${name}.js"></script>`).length;
 
-test('a new sandbox starts from the template, with the shell, catalog and practices', (sandbox) => {
+test('a new sandbox starts from the template, with the shell, catalog, style guide and practices', (sandbox) => {
   assert(setup(sandbox).ok, 'setup succeeded');
-  for (const file of ['index.html', 'model.js', 'style.css', 'AGENTS.md', 'JOURNAL.md', 'lib/sandkit/CATALOG.md',
+  for (const file of ['index.html', 'model.js', 'style.css', 'AGENTS.md', 'JOURNAL.md', 'lib/sandkit/CATALOG.md', 'lib/sandkit/STYLE.md',
     'lib/sandkit/shell/sb-shell.js', 'lib/sandkit/shell/manifest.md', 'lib/sandkit/practices/building-a-sandbox.md', 'lib/sandkit/practices/journal.md']) {
     assert(existsSync(join(sandbox, file)), `missing ${file}`);
   }

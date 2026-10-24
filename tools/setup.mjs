@@ -5,7 +5,7 @@
 //   node tools/setup.mjs path/to/sandbox sb-log --page stock.html    tags go on another page
 //
 // - A folder without an index.html starts from the template. Existing files are never overwritten.
-// - Copies the shell, the catalog, the practices, the page template, the export, serve and sources tools, sb-comments
+// - Copies the shell, the catalog, the style guide, the practices, the page template, the export, serve and sources tools, sb-comments
 //   (the template's comment mode), and each named component (plus any the sandbox already has) into lib/sandkit/, keeping Sandkit's paths, with
 //   their changelogs.
 // - Adds a script tag to index.html, or the page named, for each component named that doesn't have one yet.
@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url';
 const SANDKIT = resolve(fileURLToPath(import.meta.url), '../..');
 const REPOSITORY = 'https://github.com/sebjwallace/sandkit';
 const EVERY_SANDBOX = ['sb-comments']; // components the template uses
-const ALWAYS_COPIED = ['CATALOG.md', 'CHANGELOG.md', 'shell/sb-theme-settings.js', 'shell/sb-shell.js', 'shell/sb-export.js', 'shell/manifest.md', 'shell/CHANGELOG.md', 'templates/page.html', 'tools/export.mjs', 'tools/serve.mjs', 'tools/sources.mjs'];
+const ALWAYS_COPIED = ['CATALOG.md', 'CHANGELOG.md', 'STYLE.md', 'shell/sb-theme-settings.js', 'shell/sb-shell.js', 'shell/sb-export.js', 'shell/manifest.md', 'shell/CHANGELOG.md', 'templates/page.html', 'tools/export.mjs', 'tools/serve.mjs', 'tools/sources.mjs'];
 
 function setup(folder, requested, page = 'index.html') {
   const sandbox = resolve(folder);

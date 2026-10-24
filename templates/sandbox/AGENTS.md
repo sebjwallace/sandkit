@@ -31,14 +31,14 @@ Where this sandbox is now, and how it is meant to grow. Rewrite it at the end of
 | `sources/` | The material this sandbox was built from, described in `catalogue.json`, with new arrivals in `inbox/`. See `lib/sandkit/practices/sources.md`. |
 | `data/` | Data the pages use, as scripts that set it on the model (never fetched), if any. |
 | `JOURNAL.md` | What changed and why, one entry per version, newest first. |
-| `style.css` | The sandbox's own styles, using the theme tokens (`--sb-*`). |
+| `style.css` | The sandbox's own styles, using the theme tokens (`--sb-*`) as `lib/sandkit/STYLE.md` describes. |
 | `lib/sandkit/` | Sandkit components, shell and practices, copied in. See `SOURCE.md` for where they came from. |
 | `parts.js` | Functions returning HTML for parts used on more than one page or chapter, if any. |
 | `components/` | Components this sandbox owns (ejected or written here), if any. |
 
 ## Sandkit components
 
-- **Use them through their manifests** (`lib/sandkit/components/<name>/manifest.md`, `lib/sandkit/shell/manifest.md`). You don't need to read their source.
+- **Use them through their manifests** (`lib/sandkit/components/<name>/manifest.md`, `lib/sandkit/shell/manifest.md`). Don't read their source: it costs about three times as much as the manifest, which says all you need to use them.
 - **Don't edit anything in `lib/`.** It is a copy, and may be replaced when Sandkit is updated.
 - **To change a component, eject it:** copy its folder into `components/`, rename it (replace every occurrence of its tag name, e.g. `sb-log`, with a new one), note where it came from at the top of the file, and point the pages that use it at the new copy. From then on it belongs to this sandbox.
 - **Combine components in the page,** never inside each other. Each manifest's "Works well with" section suggests pairings and how to wire them.

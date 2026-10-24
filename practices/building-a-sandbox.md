@@ -43,11 +43,11 @@ The sandbox lives in its own folder. Fetch Sandkit (for example `git clone --dep
 node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 ```
 
-**Otherwise, copy by hand:**
+**Otherwise, copy by hand,** with a copy command (`cp`) or the file manager. Never copy by reading each file and writing it out: that puts every script's source into your context, which is the reading Sandkit exists to save.
 
 1. **Copy the template.** Copy the contents of `templates/sandbox/` into the sandbox folder.
 2. **Copy what the sandbox uses into `lib/sandkit/`, keeping Sandkit's own paths.** Links between manifests and practices then still work.
-   - Always: `CATALOG.md`, `CHANGELOG.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`, and `sb-comments` (below), which the template uses.
+   - Always: `CATALOG.md`, `CHANGELOG.md`, `STYLE.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`, and `sb-comments` (below), which the template uses.
    - For each component used: `components/<name>/<name>.js`, `components/<name>/manifest.md` and `components/<name>/CHANGELOG.md`.
    - Every practice the sandbox follows, from `practices/`.
    - Not tests or demos. They stay in Sandkit.
@@ -62,7 +62,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
    - sb-log 0.1.0
 
    ## Files
-   - CATALOG.md, CHANGELOG.md, practices/building-a-sandbox.md, practices/journal.md, practices/identifiers.md
+   - CATALOG.md, CHANGELOG.md, STYLE.md, practices/building-a-sandbox.md, practices/journal.md, practices/identifiers.md
    - shell/sb-theme-settings.js, shell/sb-shell.js, shell/sb-export.js, shell/manifest.md, shell/CHANGELOG.md
    - templates/page.html, tools/export.mjs
    - components/sb-log/sb-log.js, components/sb-log/manifest.md, components/sb-log/CHANGELOG.md
@@ -73,7 +73,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 my-sandbox/
   index.html  sandbox.js  model.js  style.css  AGENTS.md  JOURNAL.md
   lib/sandkit/
-    SOURCE.md  CATALOG.md  CHANGELOG.md
+    SOURCE.md  CATALOG.md  CHANGELOG.md  STYLE.md
     shell/        sb-theme-settings.js  sb-shell.js  sb-export.js  manifest.md  CHANGELOG.md
     templates/    page.html
     tools/        export.mjs
@@ -81,9 +81,11 @@ my-sandbox/
     practices/    building-a-sandbox.md  journal.md  identifiers.md
 ```
 
-**Use components through their manifests. You don't need to read their source,** and doing so only spends effort. Never edit files in `lib/`. To change a component, eject it into the sandbox's own `components/` folder, as `AGENTS.md` describes.
+**Use components through their manifests. Don't read their source.** The work of building a component was done once, so a sandbox can reuse it cheaply; the manifest is the part you need, at about a third of the size, and reading the source spends the tokens Sandkit is meant to save. If a component seems not to do what its manifest says, check the manifest and its changelog first, and read the source only as a last resort. Never edit files in `lib/`. To change a component, eject it into the sandbox's own `components/` folder, as `AGENTS.md` describes.
 
 Components from other libraries work the same way: copy them into `lib/<library-name>/`, keeping that library's paths, and record them in its own `SOURCE.md`. Each library uses its own tag prefix, so names don't clash. If two ever do, the console says so, and renaming one is a find-and-replace of its tag in one file.
+
+**Sandkit's own examples and demos load its files directly.** They live inside Sandkit's repository, beside the components, so they link to them (`../../components/…`) rather than copying them. Don't follow that in a sandbox, which always has its own copy in `lib/sandkit/`, and don't read an example's code to learn a component: its manifest is shorter and says how to use it.
 
 ## 3. Write the goal
 
@@ -199,7 +201,7 @@ A sandbox starts as one page, and many stay that way. When it grows heavy, or a 
 Sandkit, the shell and each component have their own version, recorded in `lib/sandkit/SOURCE.md`, and their own changelog. Versions follow semantic versioning: until 1.0, a breaking change raises the minor version (0.1 to 0.2).
 
 1. **Note the installed versions** in `SOURCE.md`.
-2. **Re-copy the files** listed there from the latest Sandkit, keeping their paths, and update `SOURCE.md`. With Node, `node <sandkit>/tools/setup.mjs <sandbox-folder>` does this and lists everything that changed since the installed versions, breaking changes first.
+2. **Re-copy the files** listed there from the latest Sandkit, with a copy command as above, keeping their paths, and update `SOURCE.md`. With Node, `node <sandkit>/tools/setup.mjs <sandbox-folder>` does this and lists everything that changed since the installed versions, breaking changes first.
 3. **Read each changelog** for the entries newer than the installed version. Entries marked **Breaking** say how to migrate: apply them to the sandbox's own code.
 4. **Open the sandbox** to see it still works.
 

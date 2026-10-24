@@ -1,6 +1,6 @@
 # Working on Sandkit
 
-Sandkit is a toolkit for domain sandboxing. Read `README.md` for what it is, `DECISIONS.md` for every settled decision and why, `CATALOG.md` for what exists, and `CONTRIBUTING.md` for the principles each component holds to. Don't re-litigate settled decisions; propose changes to them openly.
+Sandkit is a toolkit for domain sandboxing. Read `README.md` for what it is, `DECISIONS.md` for every settled decision and why, `CATALOG.md` for what exists, `CONTRIBUTING.md` for the principles each component holds to, and `STYLE.md` before styling a component or changing how one looks. Don't re-litigate settled decisions; propose changes to them openly.
 
 `.agentics/` holds the author's private reference notes. Read it if useful; never edit it, and never put public material there.
 
@@ -17,12 +17,14 @@ Sandkit is a toolkit for domain sandboxing. Read `README.md` for what it is, `DE
 
 A component is done when it has all of these:
 
-1. `components/sb-name/sb-name.js`, first line `// Sandkit sb-name 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit`, the collision guard, prefixed classes, theme tokens with fallbacks.
+1. `components/sb-name/sb-name.js`, first line `// Sandkit sb-name 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit`, the collision guard, prefixed classes, theme tokens with fallbacks, styled as `STYLE.md` describes.
 2. `manifest.md` in the established layout (see `sb-log` or `sb-scrubber`), opening with "Use this component through the interface below…".
 3. `CHANGELOG.md`, newest first, `## x.y.z · yyyy-mm-dd`.
 4. `test.html`: the public contract, two instances side by side, text never rendered as markup.
 5. `demo.html`: **About** (the guide: where it helps, where something else fits, getting started, making it reveal) then **Examples** in two contrasting domains. It loads only its own component and the shell.
 6. A line in `CATALOG.md`, the tag added to `test/collisions/test.html` and `test/isolation/test.html`, and a decision in `DECISIONS.md` if one was made. Bump the component count in the root `CHANGELOG.md`.
+
+**Change only the component you're working on.** If keeping the look consistent would mean changing others (see `STYLE.md`), name each one and ask the author first; never update them unasked.
 
 **Changing a committed component:** add a changelog entry and bump the version (until 1.0: breaking changes raise the minor version, anything else the patch), and update the script's first line to match. `test/versions` checks they agree.
 
@@ -37,7 +39,7 @@ A component is done when it has all of these:
 
 ## Example sandboxes
 
-`examples/` holds full sandboxes built with Sandkit (supply chain, linear algebra, checkout architecture). They follow `practices/building-a-sandbox.md`: iterations, one chapter at a time, each ending with a handover offering 2–4 directions. Each has a `test.html` with model tests and a smoke test of its page.
+`examples/` holds full sandboxes built with Sandkit (supply chain, linear algebra, checkout architecture). They follow `practices/building-a-sandbox.md`: iterations, one chapter at a time, each ending with a handover offering 2–4 directions. Each has a `test.html` with model tests and a smoke test of its page. Examples and demos live inside Sandkit, so they load its files directly (`../../components/…`); a real sandbox copies them into `lib/sandkit/` instead, as the building guide says.
 
 ## Commits
 
