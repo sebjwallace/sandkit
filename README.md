@@ -103,6 +103,7 @@ Sandboxes for very different subjects tend to need the same kinds of pieces: log
 ```
 sandkit/
   CATALOG.md        everything on offer, one line each: start here
+  AGENTS.md         how agents work on Sandkit itself
   practices/        guides to doing things well, starting with building a sandbox
   components/       reusable building blocks, each in its own folder with a demo
   shell/            the environment around a sandbox: header, settings, theming
