@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.50 · 2026-10-24
+- Fifty-six components: added `sb-stamp`, a status pressed onto the page like a rubber stamp, set from the model and marked stale, with the reason, when the model has moved past it.
+
 ## 0.2.49 · 2026-10-22
 - Fifty-five components: added `sb-outliner`, everything on a page that can be pointed at, in a floating panel: pointing lights a whole trace across the page, and pins keep traces lit while people work, following the model, with a gentle glow.
 - The highlighting practice: `sb-highlight` can carry a trace in `refs`, and a new section, "Keeping things lit", covers `sb-pins`, the pinned classes, glow and a `pinnable` helper beside `pointable`. The locating practice's `announce` takes a trace.

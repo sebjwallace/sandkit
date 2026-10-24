@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-stamp tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-stamp.js"></script>
+  <script src="sb-stamp.js"></script>
+</head>
+<body>
+  <script>
+    const stamp = (attributes, content = '') => mount(`<sb-stamp ${attributes}>${content}</sb-stamp>`);
+    const text = (el, part) => el.querySelector(`.sb-stamp__${part}`)?.textContent ?? null;
+    const iconOf = (el) => el.querySelector('.sb-stamp__icon')?.innerHTML ?? null;
+    const iconFor = (attributes) => iconOf(stamp(attributes));
+
+    // ---- What goes on it ----
+
+    test('shows the label, and when only if given', () => {
+      const el = stamp('label="Approved"');
+      assertEqual(text(el, 'label'), 'Approved');
+      assertEqual(text(el, 'when'), null);
+      el.when = '24 Oct 2026';
+      assertEqual(text(el, 'when'), '24 Oct 2026');
+    });
+
+    test('text is never rendered as markup', () => {
+      const el = stamp('');
+      el.label = '<b>Approved</b>';
+      el.when = '<i>today</i>';
+      el.stale = '<script>x</' + 'script>';
+      assertEqual(el.querySelectorAll('.sb-stamp__ink b, .sb-stamp__ink i, script').length, 0);
+      assertEqual(text(el, 'label'), '<b>Approved</b>');
+      assertEqual(text(el, 'stale'), 'Stale: <script>x</' + 'script>');
+    });
+
+    test('puts detail and who inside the stamp', () => {
+      const el = stamp('label="Agreed"', '<span slot="detail">in workshop 2</span><b slot="who">Ana</b><b slot="who">Tom</b>');
+      assertEqual(text(el, 'detail'), 'in workshop 2');
+      assertEqual(text(el, 'who'), 'AnaTom');
+    });
+
+    test('keeps slotted content when it renders again', () => {
+      const el = stamp('label="Agreed"', '<b slot="who">Ana</b>');
+      const ana = el.querySelector('[slot="who"]');
+      el.label = 'Signed off';
+      el.tone = 'good';
+      assertEqual(el.querySelector('.sb-stamp__who > [slot="who"]'), ana);
+    });
+
+    test('moves content slotted later into place', async () => {
+      const el = stamp('label="Received"');
+      el.append(Object.assign(document.createElement('span'), { slot: 'detail', textContent: 'Trench B' }));
+      await waitFor(() => text(el, 'detail') === 'Trench B');
+    });
+
+    test('content removed by the sandbox stays removed', () => {
+      const el = stamp('label="Agreed"', '<b slot="who">Ana</b>');
+      el.querySelector('[slot="who"]').remove();
+      el.label = 'Void';
+      assertEqual(text(el, 'who'), '');
+    });
+
+    // ---- Tone, shape and icon ----
+
+    test('properties mirror their attributes, with defaults', () => {
+      const el = stamp('label="Draft"');
+      assertEqual([el.tone, el.shape, el.icon, el.stale], ['neutral', 'rect', 'none', null]);
+      el.tone = 'bad';
+      el.shape = 'seal';
+      assertEqual([el.getAttribute('tone'), el.getAttribute('shape')], ['bad', 'seal']);
+    });
+
+    test('each tone brings its icon, and neutral none', () => {
+      const tick = iconFor('label="a" icon="check"');
+      assertEqual(iconFor('label="a" tone="good"'), tick);
+      assertEqual(iconFor('label="a" tone="bad"'), iconFor('label="a" icon="cross"'));
+      assertEqual(iconFor('label="a" tone="warn"'), iconFor('label="a" icon="alert"'));
+      assertEqual(iconFor('label="a"'), null);
+    });
+
+    test('an icon can be chosen, or none, whatever the tone', () => {
+      const clock = iconFor('label="a" icon="clock"');
+      const el = stamp('label="Superseded" tone="warn" icon="clock"');
+      assertEqual(el.icon, 'clock');
+      assertEqual(iconOf(el), clock);
+      el.icon = 'none';
+      assertEqual(iconOf(el), null);
+      el.icon = null;
+      assertEqual(el.icon, 'alert');
+    });
+
+    test('an unknown icon draws nothing', () => {
+      assertEqual(iconFor('label="a" icon="sparkle"'), null);
+    });
+
+    // ---- Stale ----
+
+    test('a stale stamp says why, below the ink', () => {
+      const el = stamp('label="Approved" tone="good"');
+      el.stale = 'approved at 0.3, model now 0.5';
+      assert(el.classList.contains('sb-stamp--stale'));
+      assertEqual(text(el, 'stale'), 'Stale: approved at 0.3, model now 0.5');
+      assert(!el.querySelector('.sb-stamp__ink .sb-stamp__stale'), 'the reason is not part of the ink');
+    });
+
+    test('stale without a reason, and cleared', () => {
+      const el = stamp('label="Approved" stale');
+      assertEqual(text(el, 'stale'), 'Stale');
+      el.stale = null;
+      assert(!el.classList.contains('sb-stamp--stale'));
+      assertEqual(text(el, 'stale'), null);
+      assert(!el.hasAttribute('stale'));
+    });
+
+    // ---- Two on a page ----
+
+    test('two stamps side by side keep their own state', () => {
+      const [a, b] = mount('<div><sb-stamp label="Verified" tone="good"><i slot="detail">A</i></sb-stamp><sb-stamp label="Failing" tone="bad"><i slot="detail">B</i></sb-stamp></div>').children;
+      a.stale = 'old';
+      assertEqual([text(a, 'detail'), text(b, 'detail')], ['A', 'B']);
+      assertEqual([a.classList.contains('sb-stamp--stale'), b.classList.contains('sb-stamp--stale')], [true, false]);
+      assertEqual(document.querySelectorAll('#sb-stamp-style').length, 1);
+    });
+  </script>
+</body>
+</html>

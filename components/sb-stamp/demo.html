@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-stamp demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-stamp.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .gallery { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .card { position: relative; padding: 12px 14px 14px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); font-size: 13px; }
+    .card h3 { margin: 0 0 4px; font-size: 13px; }
+    .card p { margin: 0 0 8px; color: var(--sb-muted); }
+    .card sb-stamp { float: right; margin: 0 0 4px 8px; }
+    .who { font-weight: 600; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; font-size: 13px; }
+    button { font: inherit; padding: 4px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-stamp">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A status pressed onto the page like a rubber stamp, saying where a thing stands and who put it there.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Sandboxes are full of things whose standing changes: claims get verified, decisions get signed off, sources arrive and are later replaced. Shown as words or coloured pills, that standing looks like everything else on the page. A stamp is a different material. Ink pressed onto a card reads as an act, by someone, at a time, and stands apart from what it's pressed onto.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Trust.</strong> Which claims the model's tests verify, which are failing, and which are only assumptions or inferences waiting to be confirmed.</li>
+        <li><strong>Decisions.</strong> Approved, rejected, agreed in a workshop, signed off by someone.</li>
+        <li><strong>Material arriving and ageing.</strong> A source received on a date, a record superseded by a later one, a code retired.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>A code to point at.</strong> An identifying code people hover and click is better as a pill.</li>
+        <li><strong>The decision itself.</strong> The options, the reason and the people belong on a decision card; a stamp is the small mark pressed onto it.</li>
+        <li><strong>Many statuses at once.</strong> A stamp on every row of a long list is noise. Stamp the few things whose standing matters, and use a table column for the rest.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-stamp/sb-stamp.js"&gt;&lt;/script&gt;
+&lt;sb-stamp label="Approved" tone="good" when="24 Oct 2026"&gt;
+  &lt;span slot="detail"&gt;in workshop 2&lt;/span&gt;
+&lt;/sb-stamp&gt;</pre>
+      <p>Choose a <code>shape</code> (rect, seal or date) and a <code>tone</code> (good, warn, bad or neutral); each tone brings its icon, and <code>icon</code> picks another. Put who stamped it in the <code>who</code> slot. When the model moves past it, set <code>stale</code> to say why.</p>
+
+      <h3>Making it reveal, not just record</h3>
+      <ul>
+        <li><strong>Set stamps from the model, never by hand.</strong> A Verified stamp written once stays saying so after the model has changed. Run the model's tests on load and after every change, and set each stamp from the result.</li>
+        <li><strong>Mark what's gone stale.</strong> Stamp the version something was approved at, and when the model moves on, set <code>stale</code> with the reason, so an old sign-off can't pass for a current one.</li>
+        <li><strong>Say who and against what.</strong> "Confirmed by Dr Okafor" and "verified against SRC-3" are evidence; "Confirmed" alone is a claim.</li>
+        <li><strong>Pick the icon that's true.</strong> Each tone brings one, but a superseded record isn't a warning, it's out of date: <code>icon="clock"</code>.</li>
+      </ul>
+
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Shapes and tones</h2>
+      <p>Rectangles, round seals and date stamps, in each tone. Each tone has its own icon, or the sandbox chooses one.</p>
+      <div class="gallery">
+        <sb-stamp label="Verified" tone="good"></sb-stamp>
+        <sb-stamp label="Contested" tone="warn"></sb-stamp>
+        <sb-stamp label="Rejected" tone="bad" when="12 Sep 2026"></sb-stamp>
+        <sb-stamp label="Draft"></sb-stamp>
+        <sb-stamp label="Agreed" tone="good" shape="seal"><span slot="detail">Workshop 2</span></sb-stamp>
+        <sb-stamp label="Void" tone="bad" shape="seal"></sb-stamp>
+        <sb-stamp label="Received" shape="date" when="24 Oct 2026"><span slot="detail">Sources inbox</span></sb-stamp>
+        <sb-stamp label="Expires" tone="warn" icon="clock" shape="date" when="31 Dec 2026"></sb-stamp>
+      </div>
+    </section>
+
+    <section class="example">
+      <h2>A grid control room: claims the model tests</h2>
+      <p>Each claim's stamp is set from the model's tests, never by hand. Break the model and watch the stamps follow; move the model on and the sign-off goes stale.</p>
+      <div class="controls">
+        <button id="break">Break the reserve rule</button>
+        <button id="bump">Release model 0.5</button>
+        <button id="reset">Reset</button>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <sb-stamp id="claim-1"></sb-stamp>
+          <h3>Frequency stays above 49.5 Hz</h3>
+          <p>After the largest unit trips, reserve holds the fall above the statutory limit.</p>
+        </article>
+        <article class="card">
+          <sb-stamp id="claim-2"></sb-stamp>
+          <h3>Reserve covers the largest loss</h3>
+          <p>Fast reserve is at least the size of the largest single unit on the system.</p>
+        </article>
+        <article class="card">
+          <sb-stamp id="claim-3" label="Assumption" icon="question"></sb-stamp>
+          <h3>Wind output is steady over 10 s</h3>
+          <p>Taken as given; nothing in the model tests it yet.</p>
+        </article>
+        <article class="card">
+          <sb-stamp id="signoff" label="Signed off" tone="good" shape="seal" when="18 Sep 2026">
+            <span slot="who" class="who">Ana Ruiz</span>
+          </sb-stamp>
+          <h3>Operator screen design</h3>
+          <p>Approved by the control room lead against model 0.3.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="example">
+      <h2>An archaeological dig: finds arriving and being re-dated</h2>
+      <p>Date stamps mark when each record came in; a record replaced by a later one is stamped superseded, pointing to its replacement.</p>
+      <div class="cards">
+        <article class="card">
+          <sb-stamp label="Received" shape="date" when="3 Jun 2026"><span slot="detail">Trench B</span></sb-stamp>
+          <h3>Find 114: bronze pin</h3>
+          <p>Recorded in context 2041, sealed beneath the hearth.</p>
+        </article>
+        <article class="card">
+          <sb-stamp label="Superseded" tone="warn" icon="clock" when="20 Aug 2026"><span slot="detail">by REC-31</span></sb-stamp>
+          <h3>REC-12: hearth dated c. 900 BC</h3>
+          <p>From pottery style alone, before the radiocarbon results came back.</p>
+        </article>
+        <article class="card">
+          <sb-stamp label="Confirmed" tone="good" shape="seal"><span slot="detail">by expert</span><span slot="who" class="who">Dr Okafor</span></sb-stamp>
+          <h3>REC-31: hearth dated 1120–1010 BC</h3>
+          <p>Radiocarbon on charcoal from the hearth base, two samples agreeing.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // A tiny stand-in for a model: its version, one knob, and tests run after every change.
+    const model = { version: '0.3', reserve: 1320, largestUnit: 1260 };
+
+    const tests = {
+      'claim-1': () => model.reserve >= model.largestUnit * 0.95,
+      'claim-2': () => model.reserve >= model.largestUnit,
+    };
+
+    function stampClaims() {
+      for (const [id, passes] of Object.entries(tests)) {
+        const stamp = document.getElementById(id);
+        const ok = passes();
+        stamp.label = ok ? 'Verified' : 'Failing';
+        stamp.tone = ok ? 'good' : 'bad';
+        stamp.when = `model ${model.version}`;
+      }
+      document.getElementById('claim-3').tone = 'warn';
+      const signoff = document.getElementById('signoff');
+      signoff.stale = model.version === '0.3' ? null : `signed off at 0.3, model now ${model.version}`;
+    }
+
+    document.getElementById('break').addEventListener('click', () => { model.reserve = 900; stampClaims(); });
+    document.getElementById('bump').addEventListener('click', () => { model.version = '0.5'; stampClaims(); });
+    document.getElementById('reset').addEventListener('click', () => { Object.assign(model, { version: '0.3', reserve: 1320 }); stampClaims(); });
+
+    // ---- Start ----
+    stampClaims();
+  </script>
+</body>
+</html>
