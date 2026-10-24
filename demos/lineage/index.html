@@ -23,29 +23,30 @@
       <p class="try"><strong>Try:</strong> step along the trunk and watch the same twelve trains gain detail. Lines marked in amber look different from the version before, with what they showed then. At V4, look at Dover Priory: what's wrong with it, and how does V5 fix it?</p>
     </section>
 
-    <div class="workspace">
-      <div class="lineage">
-        <section class="card">
-          <div class="tree" id="tree"></div>
-          <sb-scrubber id="scrubber" step="1" duration="6" label="Version"></sb-scrubber>
-        </section>
+    <section class="card">
+      <div class="tree" id="tree"></div>
+      <sb-scrubber id="scrubber" step="1" duration="6" label="Version"></sb-scrubber>
+    </section>
 
-        <section class="card">
-          <h3 id="version-title"></h3>
-          <p class="cause" id="cause"></p>
-          <div class="growth" id="growth"></div>
-          <p class="summary" id="summary"></p>
-          <div class="board" id="board"></div>
-          <h4>What this version knows about each train</h4>
-          <div class="facts-scroll"><table class="facts" id="facts"></table></div>
-        </section>
-      </div>
+    <section class="card">
+      <h3 id="map-title"></h3>
+      <p class="map-intro">Each fact this version knows, then each part of the board, with every value once. A train's facts and what the board shows for it make a pathway across. Pathways that share a rule form a bundle, which fans out across every value of a fact the rule doesn't care about. Point at a tile, or at a train on the board, to light its pathways.</p>
+      <p class="map-focus" id="map-focus"></p>
+      <div class="map-scroll"><div class="map" id="map"></div></div>
+      <p class="map-detail" id="map-detail"></p>
+    </section>
 
-      <section class="card map-card">
-        <h3 id="map-title"></h3>
-        <p class="map-intro">Every combination of the facts this version knows, one band each, and what the board shows for it. Where what's shown doesn't depend on a fact, its tile is left whole. Point at any tile to light what passes through it.</p>
-        <div class="map-scroll"><div class="map" id="map"></div></div>
-        <p class="map-detail" id="map-detail"></p>
+    <div class="details">
+      <section class="card">
+        <h3 id="version-title"></h3>
+        <p class="cause" id="cause"></p>
+        <div class="growth" id="growth"></div>
+        <p class="summary" id="summary"></p>
+        <div class="board" id="board"></div>
+      </section>
+      <section class="card">
+        <h4>What this version knows about each train</h4>
+        <div class="facts-scroll"><table class="facts" id="facts"></table></div>
       </section>
     </div>
   </main>
@@ -134,7 +135,7 @@
       const changed = before && lineText(row) !== lineText(before);
       const classes = ['board-train', hidden(row) && 'is-hidden', changed && 'is-changed'].filter(Boolean).join(' ');
       return `
-        <div class="${classes}">
+        <div class="${classes}" data-train="${row.train.id}">
           <div class="board-row">
             <span>${row.train.time}</span>
             <span>${escapeHtml(row.train.destination)}</span>
@@ -182,92 +183,160 @@
       document.getElementById('facts').innerHTML = facts.length ? head + body : '<tr><td>Nothing yet: a train is only a time and a destination.</td></tr>';
     }
 
-    // The map: fact columns on the left, what the board shows on the right, a band of rows per region.
+    // The map, as a box: a column per fact, then one per part of the board, each value once as a tile.
+    // A region is a bundle of pathways: a straight line from every tile it covers in one column to every tile it
+    // covers in the next. Clicking a part's heading shows the bundles for that part alone.
 
     const PART_NAMES = { platform: 'Plat', expected: 'Expected', note: 'Message', show: 'Shown' };
-    let regions = [];
+    const PLACEHOLDERS = { expected: 'time', platform: 'plat', reason: 'reason', delay: 'n', wait: 'n' };
+    const BOX = { tile: 24, gap: 8, between: 56, head: 24, letter: 7 };
+    let box = null;          // what's drawn, for pointing: its regions and columns
+    let focusPart = null;    // a part of the board shown alone, or null for the whole board
 
-    const asShown = text => escapeHtml(text)
-      .replace('{expected}', '<i>time</i>').replace('{platform}', '<i>plat</i>').replace('{reason}', '<i>reason</i>')
-      .replace('{delay}', '<i>n</i>').replace('{wait}', '<i>n</i>');
+    const labelOf = text => text.replace(/\{(\w+)\}/g, (_, name) => `‹${PLACEHOLDERS[name]}›`) || '(blank)';
+    const thenKey = then => `${then.text}|${then.tone ?? 'plain'}`;
+    const isHidden = region => region.outcome.show?.text === 'hide';
 
-    function tile(className, row, size, column, content, span = 1) {
-      return `<div class="${className}" data-from="${row}" data-to="${row + size}"
-        style="grid-row: ${row + 2} / span ${size}; grid-column: ${column + 1} / span ${span}"><span>${content}</span></div>`;
+    // The box's columns, each with its tiles and which of them a region covers. A hidden line stops at Shown.
+    function columnsOf(parts) {
+      const facts = Object.entries(selected.facts).map(([fact, { values }]) => ({
+        name: fact,
+        tiles: values.map(value => ({ key: value, label: value })),
+        covers: region => region.facts[fact],
+      }));
+      const outputs = parts.map(part => ({
+        name: PART_NAMES[part],
+        part,
+        tiles: [...new Map(selected.rules[part].map(rule => [thenKey(rule.then), rule.then])).entries()]
+          .map(([key, then]) => ({ key, label: labelOf(then.text), tone: then.tone ?? 'plain' })),
+        covers: region => (part !== 'show' && isHidden(region) ? [] : [thenKey(region.outcome[part])]),
+      }));
+      return [...facts, ...outputs];
     }
 
-    // A fact's tiles: neighbouring regions that agree on this fact and every fact before it share one.
-    function factTiles(facts, column) {
-      const key = region => JSON.stringify(facts.slice(0, column + 1).map(fact => region.facts[fact]));
-      const tiles = [];
-      let row = 0;
-      regions.forEach((region, i) => {
-        if (i === 0 || key(region) !== key(regions[i - 1])) tiles.push({ row, size: 0, values: region.facts[facts[column]] });
-        tiles.at(-1).size += region.size;
-        row += region.size;
-      });
-      const fact = facts[column];
-      return tiles.map(({ row, size, values }) => {
-        const whole = values.length > 1;
-        return tile(`map-tile${whole ? ' is-whole' : ''}`, row, size, column, whole ? `any ${fact}` : values[0]);
-      });
+    // Places every column and tile: columns side by side, each as wide as its longest label, centred vertically.
+    function layOut(columns) {
+      const tallest = Math.max(...columns.map(column => column.tiles.length));
+      const heightOf = count => count * BOX.tile + (count - 1) * BOX.gap;
+      let x = 0;
+      for (const column of columns) {
+        column.x = x;
+        column.width = Math.max(64, ...column.tiles.map(tile => tile.label.length * BOX.letter + 16), column.name.length * BOX.letter + 8);
+        const top = BOX.head + (heightOf(tallest) - heightOf(column.tiles.length)) / 2;
+        column.tiles.forEach((tile, i) => { tile.y = top + i * (BOX.tile + BOX.gap); });
+        x += column.width + BOX.between;
+      }
+      return { width: x - BOX.between, height: BOX.head + heightOf(tallest) };
     }
 
-    function outcomeTiles(parts, column) {
-      let row = 0;
-      return regions.flatMap(region => {
-        const tiles = region.outcome.show?.text === 'hide'
-          ? [tile('map-out board-text is-hidden-text', row, region.size, column, 'hidden', parts.length)]
-          : parts.map((part, i) => {
-            const then = region.outcome[part];
-            return tile(`map-out board-text tone-${then.tone ?? 'plain'}`, row, region.size, column + i, asShown(then.text) || '&nbsp;');
-          });
-        row += region.size;
-        return tiles;
-      });
+    function pathsOf(region, r, columns) {
+      const lines = [];
+      for (let i = 0; i < columns.length - 1; i++) {
+        const [from, to] = [columns[i], columns[i + 1]];
+        const [starts, ends] = [from.covers(region), to.covers(region)];
+        if (!starts.length || !ends.length) break;
+        for (const start of starts) {
+          for (const end of ends) {
+            const y1 = from.tiles.find(tile => tile.key === start).y + BOX.tile / 2;
+            const y2 = to.tiles.find(tile => tile.key === end).y + BOX.tile / 2;
+            lines.push(`<line class="box-path" data-region="${r}" x1="${from.x + from.width}" y1="${y1}" x2="${to.x}" y2="${y2}"/>`);
+          }
+        }
+      }
+      return lines;
+    }
+
+    function tileSvg(column, i, tile) {
+      const kind = column.part ? `box-out tone-${tile.tone}` : 'box-fact';
+      return `
+        <g class="box-tile ${kind}" data-column="${i}" data-key="${escapeHtml(tile.key)}">
+          <rect x="${column.x}" y="${tile.y}" width="${column.width}" height="${BOX.tile}" rx="4"/>
+          <text x="${column.x + 8}" y="${tile.y + BOX.tile / 2 + 4}">${escapeHtml(tile.label)}</text>
+        </g>`;
+    }
+
+    function headSvg(column) {
+      const focused = column.part && column.part === focusPart;
+      return `<text class="box-head${column.part ? ' is-part' : ''}${focused ? ' is-focused' : ''}" ${column.part ? `data-part="${column.part}"` : ''}
+        x="${column.x}" y="14">${escapeHtml(column.name)}${column.part ? (focused ? ' ×' : ' ▸') : ''}</text>`;
     }
 
     function renderMap() {
-      regions = regionsOf(selected);
-      const facts = Object.keys(selected.facts);
-      const parts = Object.keys(selected.rules).filter(part => part !== 'show');
+      if (focusPart && !selected.rules[focusPart]) focusPart = null;
+      const all = ['show', 'expected', 'platform', 'note'].filter(part => selected.rules[part]);
+      const parts = focusPart ? [focusPart] : all;
+      const regions = regionsOf(selected, parts);
+      const columns = columnsOf(parts);
+      box = { regions, columns };
       const scenarios = regions.reduce((total, region) => total + region.size, 0);
       document.getElementById('map-title').textContent =
-        `The map of ${selected.id}: ${scenarios} scenario${scenarios === 1 ? '' : 's'} in ${regions.length} region${regions.length === 1 ? '' : 's'}`;
+        `The map of ${selected.id}: ${scenarios} scenario${scenarios === 1 ? '' : 's'} in ${regions.length} bundle${regions.length === 1 ? '' : 's'}`;
+      document.getElementById('map-focus').textContent = focusPart
+        ? `Showing ${PART_NAMES[focusPart]} alone: only the facts that reach it fan out. Click its heading again for the whole board.`
+        : 'Click a part of the board\'s heading to see the facts that reach it alone.';
       const map = document.getElementById('map');
-      map.style.setProperty('--facts', facts.length);
-      map.style.setProperty('--parts', parts.length);
-      const heads = [...facts, ...parts.map(part => PART_NAMES[part])].map(name => `<div class="map-head">${name}</div>`);
-      map.innerHTML = facts.length || parts.length
-        ? heads.join('') + facts.flatMap((_, column) => factTiles(facts, column)).join('') + outcomeTiles(parts, facts.length).join('')
-        : '<div class="map-empty">One scenario: every train is simply listed.</div>';
+      if (!columns.length) { map.innerHTML = '<p class="map-empty">One scenario: every train is simply listed.</p>'; showDetail(null); return; }
+      const { width, height } = layOut(columns);
+      map.innerHTML = `
+        <svg width="${width}" height="${height + 4}" viewBox="0 0 ${width} ${height + 4}" role="img" aria-label="The map as a box of pathways">
+          <g class="box-paths">${regions.flatMap((region, r) => pathsOf(region, r, columns)).join('')}</g>
+          ${columns.map(headSvg).join('')}
+          ${columns.map((column, i) => column.tiles.map(tile => tileSvg(column, i, tile)).join('')).join('')}
+        </svg>`;
       showDetail(null);
     }
 
-    // Pointing at a tile lights every tile its rows pass through, and says which trains land there.
+    // Pointing lights a set of bundles, and every tile and line they pass through, and says which trains take them.
 
-    function showDetail(target) {
+    function light(lit) {
       const map = document.getElementById('map');
-      const from = Number(target?.dataset.from);
-      const to = Number(target?.dataset.to);
-      for (const each of map.querySelectorAll('[data-from]')) {
-        each.classList.toggle('is-lit', Boolean(target) && Number(each.dataset.from) < to && Number(each.dataset.to) > from);
-      }
-      map.classList.toggle('is-pointing', Boolean(target));
+      const touched = new Set(lit.flatMap(r => box.columns.flatMap((column, i) => column.covers(box.regions[r]).map(key => `${i}|${key}`))));
+      for (const line of map.querySelectorAll('.box-path')) line.classList.toggle('is-lit', lit.includes(Number(line.dataset.region)));
+      for (const tile of map.querySelectorAll('.box-tile')) tile.classList.toggle('is-lit', touched.has(`${tile.dataset.column}|${tile.dataset.key}`));
+      map.classList.toggle('is-pointing', lit.length > 0);
+    }
+
+    function showDetail(lit) {
       const detail = document.getElementById('map-detail');
-      if (!target) { detail.textContent = 'Point at a tile.'; return; }
-      let row = 0;
-      const lit = regions.filter(region => { const inside = row >= from && row < to; row += region.size; return inside; });
-      const size = lit.reduce((total, region) => total + region.size, 0);
-      const trains = TRAINS.filter(train => lit.some(region => isIn(factsOf(selected, train), region)));
-      detail.textContent = `${size} scenario${size === 1 ? '' : 's'}. ` + (trains.length
+      if (!box || !lit) { if (box) light([]); detail.textContent = 'Point at a tile, or at a train on the board.'; return; }
+      light(lit);
+      const size = lit.reduce((total, r) => total + box.regions[r].size, 0);
+      const trains = TRAINS.filter(train => lit.some(r => isIn(factsOf(selected, train), box.regions[r])));
+      detail.textContent = `${lit.length} bundle${lit.length === 1 ? '' : 's'}, ${size} scenario${size === 1 ? '' : 's'}. ` + (trains.length
         ? `This afternoon: ${trains.map(train => `${train.time} ${train.destination}`).join(', ')}.`
-        : 'No train lands here this afternoon.');
+        : 'No train takes these pathways this afternoon.');
+    }
+
+    // The bundles through a tile, and the bundle a train takes.
+    function bundlesThrough(tile) {
+      const column = box.columns[Number(tile.dataset.column)];
+      return box.regions.map((region, r) => (column.covers(region).includes(tile.dataset.key) ? r : -1)).filter(r => r >= 0);
+    }
+
+    function bundleOf(trainId) {
+      const facts = factsOf(selected, TRAINS.find(train => train.id === trainId));
+      return box.regions.findIndex(region => isIn(facts, region));
     }
 
     const mapElement = document.getElementById('map');
-    mapElement.addEventListener('pointerover', event => showDetail(event.target.closest('[data-from]')));
+    mapElement.addEventListener('pointerover', event => {
+      const tile = event.target.closest('.box-tile');
+      showDetail(tile ? bundlesThrough(tile) : null);
+    });
     mapElement.addEventListener('pointerleave', () => showDetail(null));
+    mapElement.addEventListener('click', event => {
+      const head = event.target.closest('[data-part]');
+      if (!head) return;
+      focusPart = focusPart === head.dataset.part ? null : head.dataset.part;
+      renderMap();
+    });
+
+    const boardElement = document.getElementById('board');
+    boardElement.addEventListener('pointerover', event => {
+      const row = event.target.closest('[data-train]');
+      showDetail(row && box ? [bundleOf(row.dataset.train)] : null);
+    });
+    boardElement.addEventListener('pointerleave', () => showDetail(null));
 
     function render() {
       document.getElementById('version-title').textContent = `${selected.id} · ${selected.name}${selected.setAside ? ' (set aside)' : ''}`;

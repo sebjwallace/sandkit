@@ -501,9 +501,10 @@ function growthOf(version) {
 
 // The map: every combination of facts a version knows, grouped into regions that look the same on the board.
 
-// What a train with these facts shows: each part's rule, before it's filled from the train. Hidden lines all look alike.
-function outcomeOf(version, facts) {
-  return Object.fromEntries(Object.entries(version.rules).map(([part, rules]) => [part, rules.find(rule => matches(rule, facts)).then]));
+// What a train with these facts shows in the given parts of the board: each part's rule, before it's filled from the
+// train. Hidden lines all look alike.
+function outcomeOf(version, facts, parts = Object.keys(version.rules)) {
+  return Object.fromEntries(parts.map(part => [part, version.rules[part].find(rule => matches(rule, facts)).then]));
 }
 const outcomeKey = outcome => (outcome.show?.text === 'hide' ? 'hidden' : JSON.stringify(outcome));
 
@@ -512,20 +513,20 @@ function combinations(facts) {
 }
 
 // Splits the facts one at a time, in order. Wherever what's shown doesn't depend on a fact, it's left whole.
-// A region gives each fact its values: one, or all of them.
-function regionsOf(version) {
+// A region gives each fact its values: one, or all of them. Given some parts of the board, only they count.
+function regionsOf(version, parts = Object.keys(version.rules)) {
   const pick = region => Object.fromEntries(Object.entries(region).map(([fact, values]) => [fact, values[0]]));
   function split(region, rest) {
     if (!rest.length) return [region];
     const [[fact, { values }], ...later] = rest;
-    const shownBy = each => new Set(values.map(value => outcomeKey(outcomeOf(version, { ...pick(region), ...each, [fact]: value }))));
+    const shownBy = each => new Set(values.map(value => outcomeKey(outcomeOf(version, { ...pick(region), ...each, [fact]: value }, parts))));
     if (!combinations(later).some(each => shownBy(each).size > 1)) return split({ ...region, [fact]: values }, later);
     return values.flatMap(value => split({ ...region, [fact]: [value] }, later));
   }
   return split({}, Object.entries(version.facts)).map(facts => ({
     facts,
     size: Object.values(facts).reduce((product, values) => product * values.length, 1),
-    outcome: outcomeOf(version, pick(facts)),
+    outcome: outcomeOf(version, pick(facts), parts),
   }));
 }
 

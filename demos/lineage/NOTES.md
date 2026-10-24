@@ -54,3 +54,22 @@ What broke, or showed something:
 - **The rival V10b brings impossible combinations,** such as a running train with a replacement bus. The map draws them as ordinary regions, since nothing in the model says they can't happen. That's where invariants and hatching would earn their place.
 - **Hidden trains still run every rule:** Hastings, departed, works out "Doors closing". That's harmless, but the map merging hidden lines is what keeps departed as one tile.
 - **Writing each version out in full grows heavy.** V9 to V12 repeat long rule lists with one line changed. A version stored as its parent plus a change would read better, and would say exactly what each step did.
+
+## Step 4: the map as a box of pathways
+
+A correction from the author: the map was meant to be a morphological box, not rows. Now each fact is a column with every value once as a tile, then each part of the board (Shown, Expected, Plat, Message) with each thing it can show. A bundle (a region from `regionsOf`) draws a straight line from every tile it covers in one column to every tile it covers in the next. A hidden line stops at Shown. Pointing at a tile lights the bundles through it; pointing at a train on the board lights its own. Clicking a part's heading redraws the bundles for that part alone.
+
+What the box shows that the rows didn't:
+
+- **It doesn't grow with the scenarios.** V12 is about 250px tall, against over 10,000px as rows. The readability failure was the drawing, not the domain.
+- **Compression is visible as a fan.** Pointing at *cancelled* in V6 lights one bundle that fans from that tile across every delay and both platforms into one *show* and one *Cancelled*. "Whatever else" can be seen.
+- **Per-part strands appear as the brief predicted.** V6's platform column alone needs 5 bundles, not 10, and the delay column stops mattering to it.
+- **Tracing goes both ways from the same picture.** Point at a fact for what it affects, at an output for why it's shown, or at a train for its whole route.
+
+Where it struggles:
+
+- **Unlit, the lines are a lattice.** Between columns whose values all combine (delay to platform, due to length) every tile joins every tile, so the resting picture is a uniform mesh that says little. The box is read by pointing, not at rest. That's the case for the knots-and-fans drawing deferred in favour of straight lines: a bundle gathered at a knot would show as one strand.
+- **Output columns are put in a sequence they don't have.** Lines run Shown to Expected to Plat to Message as though each led to the next, but the parts are decided side by side. The links between output columns are an artefact.
+- **Width, not height, is the new limit.** At V12 the box is about 1,465px wide, so the board's columns scroll out of sight in half the page. Long messages ("Delayed by ‹n› min due to ‹reason›. Consider other routes") make the widest columns.
+- **The same text can be two tiles.** "Delayed" in amber and in red are different outputs, which is true to the rules but reads as a duplicate.
+- **Flashing signs had to stop flashing** in the map, or their tiles vanished half the time; they're marked with a dotted underline instead.

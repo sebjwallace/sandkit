@@ -10,13 +10,11 @@ main { max-width: 1600px; margin: 0 auto; padding: 16px 16px 48px; display: grid
 .cause { margin: 0 0 8px; max-width: 75ch; }
 .summary { margin: 8px 0 10px; font-size: 14px; color: var(--sb-muted); }
 
-/* The lineage on the left, the map beside it, kept in view while the lineage scrolls. */
-.workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
-.lineage { display: grid; gap: 16px; min-width: 0; }
-.map-card { position: sticky; top: 64px; }   /* below the shell's compact bar, which appears on scrolling */
+/* The lineage and the map full width, the version's board and facts side by side beneath. */
+.details { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.details h4:first-child { margin-top: 0; }
 @media (max-width: 1000px) {
-  .workspace { grid-template-columns: minmax(0, 1fr); }
-  .map-card { position: static; }
+  .details { grid-template-columns: minmax(0, 1fr); }
 }
 .chapter { max-width: 1100px; }
 
@@ -63,18 +61,30 @@ main { max-width: 1600px; margin: 0 auto; padding: 16px 16px 48px; display: grid
 .fact { display: inline-block; padding: 0 6px; border-radius: 9px; background: var(--sb-surface-2); font-size: 12px; }
 .fact.is-new { background: var(--sb-accent-soft); outline: 1px solid var(--sb-accent); }
 
-/* The map: fact tiles on the left, what the board shows on the right, a row per scenario. */
-.map-intro { margin: 0 0 10px; max-width: 75ch; font-size: 14px; color: var(--sb-muted); }
+/* The map, as a box: a column of tiles per fact and per part of the board, with straight pathways between. */
+.map-intro { margin: 0 0 6px; max-width: 75ch; font-size: 14px; color: var(--sb-muted); }
+.map-focus { margin: 0 0 10px; font-size: 13px; }
 .map-scroll { overflow-x: auto; }
-.map { display: grid; grid-template-columns: repeat(var(--facts), minmax(9ch, auto)) repeat(var(--parts), minmax(10ch, auto)); grid-auto-rows: minmax(20px, auto); gap: 2px; font-size: 12px; width: max-content; min-width: 100%; }
-.map-head { grid-row: 1; color: var(--sb-muted); font-weight: 600; padding: 0 6px 2px; }
-.map-tile, .map-out { display: flex; align-items: center; padding: 0 6px; border-radius: 4px; transition: opacity 0.1s; }
-.map-tile { background: var(--sb-surface-2); border: 1px solid var(--sb-border); }
-.map-tile.is-whole { justify-content: center; color: var(--sb-muted); font-style: italic; }
-.map-out { white-space: nowrap; font-size: 12px; }
-.map.is-pointing [data-from]:not(.is-lit) { opacity: 0.25; }
-.map .is-lit.map-tile { border-color: var(--sb-accent); }
+.map svg { display: block; font-size: 12px; }
 .map-empty { color: var(--sb-muted); }
 .map-detail { margin: 8px 0 0; font-size: 13px; min-height: 1.5em; }
+.box-path { stroke: var(--sb-muted); stroke-width: 1; opacity: 0.35; transition: opacity 0.1s; }
+.box-head { fill: var(--sb-muted); font-weight: 600; }
+.box-head.is-part { cursor: pointer; }
+.box-head.is-part:hover, .box-head.is-focused { fill: var(--sb-accent); }
+.box-tile { transition: opacity 0.1s; }
+.box-fact rect { fill: var(--sb-surface-2); stroke: var(--sb-border); }
+.box-fact text { fill: var(--sb-text); }
+.box-out rect { fill: #0b0b0b; stroke: #2a2a2a; }
+.box-out text { fill: #ffb000; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.box-out.tone-warn text { fill: #fff1c2; }
+.box-out.tone-bad text { fill: #ff6b5e; }
+.box-out.tone-flash { animation: none; }   /* a flashing sign would vanish from the map half the time */
+.box-out.tone-flash text { text-decoration: underline dotted; }
+.map.is-pointing .box-path { opacity: 0.05; }
+.map.is-pointing .box-path.is-lit { opacity: 1; stroke: var(--sb-accent); stroke-width: 1.5; }
+.map.is-pointing .box-tile:not(.is-lit) { opacity: 0.3; }
+.map .box-fact.is-lit rect { stroke: var(--sb-accent); }
+.board-train[data-train] { cursor: default; }
 .board-text { background: #0b0b0b; color: #ffb000; border: 1px solid #2a2a2a; font-family: ui-monospace, Menlo, Consolas, monospace; }
 .board-text.is-hidden-text { justify-content: center; opacity: 0.5; text-decoration: line-through; }

@@ -8,7 +8,7 @@ Open `index.html` by double-clicking it. `NOTES.md` records what each step taugh
 
 Everything that evolves starts small and simple, and grows step by step (Kenneth Stanley and Jeff Clune's work on open-ended evolution). So the departure board's model is kept as a **lineage**: a series of small, runnable versions, each one idea richer than its parent, each with a note on what caused it. Rivals that were tried and set aside stay visible as dead ends, the stepping stones not taken.
 
-Beside it, a **map** of the principled space: every combination of the facts a version knows, grouped into regions that look the same on the board, so few principles covering many cases show as big undivided tiles. It's redrawn as the lineage is stepped. Fog, showing how much of the space is known, comes next.
+Beside it, a **map** of the principled space, drawn as a box: a column per fact and per part of the board, each value once, with each train's route across as a pathway. Pathways sharing a rule form a bundle that fans out over the facts the rule ignores, so few principles covering many cases show as wide fans. It's redrawn as the lineage is stepped. Fog, showing how much of the space is known, comes next.
 
 ## What's here
 
