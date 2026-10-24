@@ -61,28 +61,38 @@ main { max-width: 1600px; margin: 0 auto; padding: 16px 16px 48px; display: grid
 .fact { display: inline-block; padding: 0 6px; border-radius: 9px; background: var(--sb-surface-2); font-size: 12px; }
 .fact.is-new { background: var(--sb-accent-soft); outline: 1px solid var(--sb-accent); }
 
-/* The map, as a box: a column of tiles per fact and per part of the board, with straight pathways between. */
+/* The map, as a box: a column of tiles per fact, the board as one column of groups, pathways between.
+   Fog: trodden lines solid, inferred ones faint and dashed; tiles shaded by traffic, untrodden ones dashed. */
 .map-intro { margin: 0 0 6px; max-width: 75ch; font-size: 14px; color: var(--sb-muted); }
 .map-focus { margin: 0 0 10px; font-size: 13px; }
 .map-scroll { overflow-x: auto; }
 .map svg { display: block; font-size: 12px; }
 .map-empty { color: var(--sb-muted); }
 .map-detail { margin: 8px 0 0; font-size: 13px; min-height: 1.5em; }
-.box-path { stroke: var(--sb-muted); stroke-width: 1; opacity: 0.35; transition: opacity 0.1s; }
+.box-path { stroke: var(--sb-muted); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.3; transition: opacity 0.1s; }
+.box-path.is-trodden { stroke: var(--sb-text); stroke-dasharray: none; stroke-width: 1.5; opacity: 0.55; }
+.box-knot { fill: var(--sb-muted); opacity: 0.4; }
+.box-knot.is-trodden { fill: var(--sb-text); opacity: 0.7; }
 .box-head { fill: var(--sb-muted); font-weight: 600; }
 .box-head.is-part { cursor: pointer; }
 .box-head.is-part:hover, .box-head.is-focused { fill: var(--sb-accent); }
 .box-tile { transition: opacity 0.1s; }
 .box-fact rect { fill: var(--sb-surface-2); stroke: var(--sb-border); }
+.box-fact.is-trodden rect { fill: color-mix(in srgb, var(--sb-accent) var(--traffic), var(--sb-surface-2)); }
 .box-fact text { fill: var(--sb-text); }
+.box-tile.is-fog rect { stroke-dasharray: 3 3; stroke: var(--sb-muted); }
+.box-fact.is-fog text { fill: var(--sb-muted); }
 .box-out rect { fill: #0b0b0b; stroke: #2a2a2a; }
+.box-out.is-trodden rect { stroke: color-mix(in srgb, #ffb000 var(--traffic), #2a2a2a); stroke-width: 2; }
 .box-out text { fill: #ffb000; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.box-out.is-fog text { opacity: 0.55; }
 .box-out.tone-warn text { fill: #fff1c2; }
 .box-out.tone-bad text { fill: #ff6b5e; }
 .box-out.tone-flash { animation: none; }   /* a flashing sign would vanish from the map half the time */
 .box-out.tone-flash text { text-decoration: underline dotted; }
-.map.is-pointing .box-path { opacity: 0.05; }
+.map.is-pointing .box-path, .map.is-pointing .box-knot { opacity: 0.05; }
 .map.is-pointing .box-path.is-lit { opacity: 1; stroke: var(--sb-accent); stroke-width: 1.5; }
+.map.is-pointing .box-knot.is-lit { opacity: 1; fill: var(--sb-accent); }
 .map.is-pointing .box-tile:not(.is-lit) { opacity: 0.3; }
 .map .box-fact.is-lit rect { stroke: var(--sb-accent); }
 .board-train[data-train] { cursor: default; }

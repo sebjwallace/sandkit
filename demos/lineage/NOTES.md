@@ -73,3 +73,27 @@ Where it struggles:
 - **Width, not height, is the new limit.** At V12 the box is about 1,465px wide, so the board's columns scroll out of sight in half the page. Long messages ("Delayed by ‹n› min due to ‹reason›. Consider other routes") make the widest columns.
 - **The same text can be two tiles.** "Delayed" in amber and in red are different outputs, which is true to the rules but reads as a duplicate.
 - **Flashing signs had to stop flashing** in the map, or their tiles vanished half the time; they're marked with a dotted underline instead.
+
+## Step 5: knots, the board as one column, and fog
+
+Three changes to the box, each from step 4's findings:
+
+1. **Knots and fans.** Where a bundle covers several tiles on either side of a gap, its lines gather at a knot halfway and fan out from there; where it covers one tile each side, it's a single line.
+2. **The board as one column.** The parts of the board (Shown, Expected, Plat, Message) are groups stacked in one column. Each bundle branches from the last fact into one tile per part, so the false links between output columns are gone. A hidden line reaches Shown only.
+3. **Fog.** A line is solid where one of the afternoon's trains goes that way, and faint and dashed where the route is only inferred. Tiles are shaded by how many trains cross them, and those no train crosses are dashed.
+
+The columns also spread to fill the width available.
+
+What it shows:
+
+- **A fan reads as one idea.** In V6, *cancelled* gathers at one knot, fans across all four delays, gathers again and fans across both platforms. "Whatever else" is now a shape.
+- **Fog shows inside a bundle, not just between them.** Lit, the cancelled fan is solid through *none* (Reading and Portsmouth Harbour weren't late) and dotted through minor, major and unknown. The rule covers routes nobody has walked.
+- **The unwalked parts of V12 stand out:** *closing* and *Doors closing* are in fog, as is *replaced* with anything but no delay. The title counts it: 12 of 72 bundles taken.
+- **The per-part view is where the box shines.** V12's Plat alone is 8 bundles: state and platform decide, and delay, due and length fan straight through.
+
+Where it struggles:
+
+- **The board column sets the height.** Stacked, its 25 tiles make the box about 870px tall at V12, and the fact columns sit centred low beside it. The message texts also make it the widest column.
+- **Everything converges on the board.** From the last fact, 72 bundles each branch to four parts, so the gap before the board is a dense white mass at rest. It reads by pointing, or one part at a time.
+- **Knots only calm wide fans.** Between facts that all combine (delay into platform, due into length), most bundles are single strands, so the mesh there is unchanged.
+- **Traffic is thin.** Twelve trains can light at most twelve pathways, so shading has a narrow range. A second set of trains (rush hour, last trains) would be the next set of photographs.

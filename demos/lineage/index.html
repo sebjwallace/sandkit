@@ -30,7 +30,7 @@
 
     <section class="card">
       <h3 id="map-title"></h3>
-      <p class="map-intro">Each fact this version knows, then each part of the board, with every value once. A train's facts and what the board shows for it make a pathway across. Pathways that share a rule form a bundle, which fans out across every value of a fact the rule doesn't care about. Point at a tile, or at a train on the board, to light its pathways.</p>
+      <p class="map-intro">Each fact this version knows, then the board, with every value once. A train's facts and what the board shows for it make a pathway across. Pathways that share a rule form a bundle, which gathers at a knot and fans out across every value of a fact the rule doesn't care about. Solid lines and shaded tiles are where this afternoon's trains went; faint, dashed ones rest on the rules alone. Point at a tile, or at a train on the board, to light its pathways.</p>
       <p class="map-focus" id="map-focus"></p>
       <div class="map-scroll"><div class="map" id="map"></div></div>
       <p class="map-detail" id="map-detail"></p>
@@ -183,82 +183,135 @@
       document.getElementById('facts').innerHTML = facts.length ? head + body : '<tr><td>Nothing yet: a train is only a time and a destination.</td></tr>';
     }
 
-    // The map, as a box: a column per fact, then one per part of the board, each value once as a tile.
-    // A region is a bundle of pathways: a straight line from every tile it covers in one column to every tile it
-    // covers in the next. Clicking a part's heading shows the bundles for that part alone.
+    // The map, as a box: a column per fact, each value once as a tile, then the board as one column with a group per
+    // part. A region is a bundle of pathways. Between two columns it runs tile to tile, or, where it covers several
+    // tiles on either side, gathers at a knot and fans out. From the last fact it branches to one tile in each part.
+    // Fog: lines a train has taken are solid, lines only inferred are faint, and tiles are shaded by their traffic.
 
     const PART_NAMES = { platform: 'Plat', expected: 'Expected', note: 'Message', show: 'Shown' };
     const PLACEHOLDERS = { expected: 'time', platform: 'plat', reason: 'reason', delay: 'n', wait: 'n' };
-    const BOX = { tile: 24, gap: 8, between: 56, head: 24, letter: 7 };
+    const BOX = { tile: 24, gap: 8, between: 72, head: 24, group: 22, letter: 7 };
     let box = null;          // what's drawn, for pointing: its regions and columns
     let focusPart = null;    // a part of the board shown alone, or null for the whole board
 
     const labelOf = text => text.replace(/\{(\w+)\}/g, (_, name) => `‹${PLACEHOLDERS[name]}›`) || '(blank)';
-    const thenKey = then => `${then.text}|${then.tone ?? 'plain'}`;
+    const thenKey = (part, then) => `${part}|${then.text}|${then.tone ?? 'plain'}`;
     const isHidden = region => region.outcome.show?.text === 'hide';
+    const average = numbers => numbers.reduce((total, n) => total + n, 0) / numbers.length;
 
-    // The box's columns, each with its tiles and which of them a region covers. A hidden line stops at Shown.
+    // The box's columns, each with its tiles, which of them a region covers, and which one a train lands on.
+    // A hidden line reaches only Shown.
     function columnsOf(parts) {
       const facts = Object.entries(selected.facts).map(([fact, { values }]) => ({
         name: fact,
         tiles: values.map(value => ({ key: value, label: value })),
         covers: region => region.facts[fact],
+        landsOn: train => factsOf(selected, train)[fact],
       }));
-      const outputs = parts.map(part => ({
-        name: PART_NAMES[part],
+      const groups = parts.map(part => ({
         part,
-        tiles: [...new Map(selected.rules[part].map(rule => [thenKey(rule.then), rule.then])).entries()]
-          .map(([key, then]) => ({ key, label: labelOf(then.text), tone: then.tone ?? 'plain' })),
-        covers: region => (part !== 'show' && isHidden(region) ? [] : [thenKey(region.outcome[part])]),
+        name: PART_NAMES[part],
+        tiles: [...new Map(selected.rules[part].map(rule => [thenKey(part, rule.then), rule.then])).entries()]
+          .map(([key, then]) => ({ key, label: labelOf(then.text), tone: then.tone ?? 'plain', part })),
       }));
-      return [...facts, ...outputs];
+      const coversBoard = region => parts
+        .filter(part => part === 'show' || !isHidden(region))
+        .map(part => thenKey(part, region.outcome[part]));
+      const board = { name: 'Board', groups, tiles: groups.flatMap(group => group.tiles), covers: coversBoard, landsOn: null };
+      return parts.length ? [...facts, board] : facts;
     }
 
-    // Places every column and tile: columns side by side, each as wide as its longest label, centred vertically.
-    function layOut(columns) {
-      const tallest = Math.max(...columns.map(column => column.tiles.length));
+    // Places every column and tile: fact columns side by side and centred on the board column, whose groups stack.
+    // The gaps between columns widen to fill the space there is, within reason.
+    function layOut(columns, available) {
       const heightOf = count => count * BOX.tile + (count - 1) * BOX.gap;
+      const board = columns.find(column => column.groups);
+      if (board) {
+        let y = BOX.head;
+        for (const group of board.groups) {
+          group.y = y;
+          group.tiles.forEach((tile, i) => { tile.y = y + BOX.group + i * (BOX.tile + BOX.gap); });
+          y += BOX.group + heightOf(group.tiles.length) + BOX.gap * 2;
+        }
+        board.height = y - BOX.gap * 2 - BOX.head;
+      }
+      const tallest = Math.max(board?.height ?? 0, ...columns.filter(column => !column.groups).map(column => heightOf(column.tiles.length)));
+      for (const column of columns) {
+        column.width = Math.max(64, ...column.tiles.map(tile => tile.label.length * BOX.letter + 16), column.name.length * BOX.letter + 8);
+      }
+      const spare = available - columns.reduce((total, column) => total + column.width, 0);
+      const between = Math.min(240, Math.max(BOX.between, spare / Math.max(1, columns.length - 1)));
       let x = 0;
       for (const column of columns) {
         column.x = x;
-        column.width = Math.max(64, ...column.tiles.map(tile => tile.label.length * BOX.letter + 16), column.name.length * BOX.letter + 8);
-        const top = BOX.head + (heightOf(tallest) - heightOf(column.tiles.length)) / 2;
-        column.tiles.forEach((tile, i) => { tile.y = top + i * (BOX.tile + BOX.gap); });
-        x += column.width + BOX.between;
+        if (!column.groups) {
+          const top = BOX.head + (tallest - heightOf(column.tiles.length)) / 2;
+          column.tiles.forEach((tile, i) => { tile.y = top + i * (BOX.tile + BOX.gap); });
+        }
+        x += column.width + between;
       }
-      return { width: x - BOX.between, height: BOX.head + heightOf(tallest) };
+      return { width: x - between, height: BOX.head + tallest };
     }
 
-    function pathsOf(region, r, columns) {
+    const centreOf = (column, key) => column.tiles.find(tile => tile.key === key).y + BOX.tile / 2;
+
+    function segment(r, x1, y1, x2, y2, trodden) {
+      return `<line class="box-path${trodden ? ' is-trodden' : ''}" data-region="${r}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+    }
+
+    // A bundle's lines between each pair of columns, solid where one of its trains goes that way.
+    function pathsOf(region, r, columns, trains) {
       const lines = [];
+      const taken = (column, key) => !column.landsOn || trains.some(train => column.landsOn(train) === key);
       for (let i = 0; i < columns.length - 1; i++) {
         const [from, to] = [columns[i], columns[i + 1]];
         const [starts, ends] = [from.covers(region), to.covers(region)];
         if (!starts.length || !ends.length) break;
-        for (const start of starts) {
-          for (const end of ends) {
-            const y1 = from.tiles.find(tile => tile.key === start).y + BOX.tile / 2;
-            const y2 = to.tiles.find(tile => tile.key === end).y + BOX.tile / 2;
-            lines.push(`<line class="box-path" data-region="${r}" x1="${from.x + from.width}" y1="${y1}" x2="${to.x}" y2="${y2}"/>`);
-          }
+        const [x1, x2] = [from.x + from.width, to.x];
+        if (starts.length === 1 && ends.length === 1) {
+          lines.push(segment(r, x1, centreOf(from, starts[0]), x2, centreOf(to, ends[0]), trains.length > 0));
+          continue;
         }
+        const knot = { x: (x1 + x2) / 2, y: average([...starts.map(key => centreOf(from, key)), ...ends.map(key => centreOf(to, key))]) };
+        for (const start of starts) lines.push(segment(r, x1, centreOf(from, start), knot.x, knot.y, taken(from, start)));
+        for (const end of ends) lines.push(segment(r, knot.x, knot.y, x2, centreOf(to, end), taken(to, end)));
+        lines.push(`<circle class="box-knot${trains.length ? ' is-trodden' : ''}" data-region="${r}" cx="${knot.x}" cy="${knot.y}" r="3"/>`);
       }
       return lines;
     }
 
-    function tileSvg(column, i, tile) {
-      const kind = column.part ? `box-out tone-${tile.tone}` : 'box-fact';
+    // A tile, shaded by how many of the afternoon's trains cross it; one none have crossed stays in the fog.
+    function tileSvg(column, i, tile, traffic) {
+      const kind = tile.part ? `box-out tone-${tile.tone}` : 'box-fact';
+      const shade = traffic ? ` style="--traffic: ${Math.round(15 + 70 * traffic / TRAINS.length)}%"` : '';
       return `
-        <g class="box-tile ${kind}" data-column="${i}" data-key="${escapeHtml(tile.key)}">
+        <g class="box-tile ${kind}${traffic ? ' is-trodden' : ' is-fog'}" data-column="${i}" data-key="${escapeHtml(tile.key)}"${shade}>
+          <title>${traffic} train${traffic === 1 ? '' : 's'} this afternoon</title>
           <rect x="${column.x}" y="${tile.y}" width="${column.width}" height="${BOX.tile}" rx="4"/>
           <text x="${column.x + 8}" y="${tile.y + BOX.tile / 2 + 4}">${escapeHtml(tile.label)}</text>
         </g>`;
     }
 
     function headSvg(column) {
-      const focused = column.part && column.part === focusPart;
-      return `<text class="box-head${column.part ? ' is-part' : ''}${focused ? ' is-focused' : ''}" ${column.part ? `data-part="${column.part}"` : ''}
-        x="${column.x}" y="14">${escapeHtml(column.name)}${column.part ? (focused ? ' ×' : ' ▸') : ''}</text>`;
+      if (!column.groups) return `<text class="box-head" x="${column.x}" y="14">${escapeHtml(column.name)}</text>`;
+      return column.groups.map(group => {
+        const focused = group.part === focusPart;
+        return `<text class="box-head is-part${focused ? ' is-focused' : ''}" data-part="${group.part}"
+          x="${column.x}" y="${group.y + 14}">${escapeHtml(group.name)} ${focused ? '×' : '▸'}</text>`;
+      }).join('');
+    }
+
+    // Which column and tile each train lands on, counted per tile.
+    function trafficOf(regions, columns) {
+      const traffic = new Map();
+      for (const train of TRAINS) {
+        const region = regions.find(each => isIn(factsOf(selected, train), each));
+        columns.forEach((column, i) => {
+          const keys = column.landsOn ? [column.landsOn(train)] : column.covers(region);
+          for (const key of keys) traffic.set(`${i}|${key}`, (traffic.get(`${i}|${key}`) ?? 0) + 1);
+        });
+      }
+      return traffic;
     }
 
     function renderMap() {
@@ -267,21 +320,24 @@
       const parts = focusPart ? [focusPart] : all;
       const regions = regionsOf(selected, parts);
       const columns = columnsOf(parts);
+      const trainsIn = regions.map(region => TRAINS.filter(train => isIn(factsOf(selected, train), region)));
       box = { regions, columns };
       const scenarios = regions.reduce((total, region) => total + region.size, 0);
+      const trodden = trainsIn.filter(trains => trains.length).length;
       document.getElementById('map-title').textContent =
-        `The map of ${selected.id}: ${scenarios} scenario${scenarios === 1 ? '' : 's'} in ${regions.length} bundle${regions.length === 1 ? '' : 's'}`;
+        `The map of ${selected.id}: ${scenarios} scenario${scenarios === 1 ? '' : 's'} in ${regions.length} bundle${regions.length === 1 ? '' : 's'}, ${trodden} taken by this afternoon's trains`;
       document.getElementById('map-focus').textContent = focusPart
         ? `Showing ${PART_NAMES[focusPart]} alone: only the facts that reach it fan out. Click its heading again for the whole board.`
         : 'Click a part of the board\'s heading to see the facts that reach it alone.';
       const map = document.getElementById('map');
       if (!columns.length) { map.innerHTML = '<p class="map-empty">One scenario: every train is simply listed.</p>'; showDetail(null); return; }
-      const { width, height } = layOut(columns);
+      const { width, height } = layOut(columns, map.parentElement.clientWidth);
+      const traffic = trafficOf(regions, columns);
       map.innerHTML = `
         <svg width="${width}" height="${height + 4}" viewBox="0 0 ${width} ${height + 4}" role="img" aria-label="The map as a box of pathways">
-          <g class="box-paths">${regions.flatMap((region, r) => pathsOf(region, r, columns)).join('')}</g>
+          <g class="box-paths">${regions.flatMap((region, r) => pathsOf(region, r, columns, trainsIn[r])).join('')}</g>
           ${columns.map(headSvg).join('')}
-          ${columns.map((column, i) => column.tiles.map(tile => tileSvg(column, i, tile)).join('')).join('')}
+          ${columns.map((column, i) => column.tiles.map(tile => tileSvg(column, i, tile, traffic.get(`${i}|${tile.key}`) ?? 0)).join('')).join('')}
         </svg>`;
       showDetail(null);
     }
@@ -291,7 +347,7 @@
     function light(lit) {
       const map = document.getElementById('map');
       const touched = new Set(lit.flatMap(r => box.columns.flatMap((column, i) => column.covers(box.regions[r]).map(key => `${i}|${key}`))));
-      for (const line of map.querySelectorAll('.box-path')) line.classList.toggle('is-lit', lit.includes(Number(line.dataset.region)));
+      for (const mark of map.querySelectorAll('[data-region]')) mark.classList.toggle('is-lit', lit.includes(Number(mark.dataset.region)));
       for (const tile of map.querySelectorAll('.box-tile')) tile.classList.toggle('is-lit', touched.has(`${tile.dataset.column}|${tile.dataset.key}`));
       map.classList.toggle('is-pointing', lit.length > 0);
     }
@@ -304,7 +360,7 @@
       const trains = TRAINS.filter(train => lit.some(r => isIn(factsOf(selected, train), box.regions[r])));
       detail.textContent = `${lit.length} bundle${lit.length === 1 ? '' : 's'}, ${size} scenario${size === 1 ? '' : 's'}. ` + (trains.length
         ? `This afternoon: ${trains.map(train => `${train.time} ${train.destination}`).join(', ')}.`
-        : 'No train takes these pathways this afternoon.');
+        : 'No train takes these pathways this afternoon: they rest on the rules alone.');
     }
 
     // The bundles through a tile, and the bundle a train takes.
