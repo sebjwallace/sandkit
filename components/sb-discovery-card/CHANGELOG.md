@@ -1,5 +1,8 @@
 # sb-discovery-card changelog
 
+## 0.1.2 · 2026-10-25
+- The element carries `data-ref`, `data-kind` and `data-status` as soon as it's given a card, before it's on the page, so a page can place it, on a board for instance, before it's drawn.
+
 ## 0.1.1 · 2026-10-25
 - Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
 

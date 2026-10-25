@@ -1,4 +1,4 @@
-// Sandkit sb-discovery-card 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-discovery-card 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // One card of domain discovery: a source, a claim, a question, a decision, a run, or any other
 // kind the practice names, each with its own icon and tone. Shown compact on a board, normal with
 // its folds closed, or expanded near full screen with every fold open. The sandbox works out every status and what's "as of" when; the card
@@ -392,6 +392,7 @@
     get card() { return this._card; }
     set card(value) {
       this._card = value;
+      this._mark();
       this.render();
     }
 
@@ -418,12 +419,10 @@
       this._keepSlotted();
       const card = this._card;
       this.classList.toggle('sb-discovery-card--expanded', this.variant === 'expanded');
-      for (const name of ['ref', 'kind', 'status']) delete this.dataset[name];
       if (!card) {
         this.replaceChildren();
         return;
       }
-      Object.assign(this.dataset, { ref: card.id, kind: card.kind }, card.status && { status: card.status });
       // A source is only ever compact: shown in full, it's the source itself, which the sandbox
       // opens in its own view (see the domain discovery practice).
       const isCompact = this.variant === 'compact' || card.kind === 'source';
@@ -461,6 +460,14 @@
       const foot = footer(card);
       if (foot) article.append(foot);
       return article;
+    }
+
+    // The card's code, kind and status on the element, set as soon as it has a card, drawn or not,
+    // so a page can find or place it before it's on the page.
+    _mark() {
+      for (const name of ['ref', 'kind', 'status']) delete this.dataset[name];
+      const card = this._card;
+      if (card) Object.assign(this.dataset, { ref: card.id, kind: card.kind }, card.status && { status: card.status });
     }
 
     // Children marked slot="…" are taken in once and placed wherever a fold names their slot.

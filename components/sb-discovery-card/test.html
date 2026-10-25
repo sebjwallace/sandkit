@@ -64,6 +64,14 @@
       assertEqual([element.dataset.ref, element.dataset.kind, element.dataset.status, element.children.length], [undefined, undefined, undefined, 0]);
     });
 
+    test('carries its code before it is on the page, so a page can place it first', () => {
+      const element = document.createElement('sb-discovery-card');
+      element.card = CLAIM;
+      assertEqual([element.dataset.ref, element.dataset.kind, element.dataset.status], ['CLM-1', 'claim', 'contested']);
+      element.card = { ...CLAIM, status: undefined };
+      assertEqual(element.dataset.status, undefined);
+    });
+
     test('names its kind on the icon, and draws a kind it doesn’t know with a plain one', () => {
       assertEqual(part(card(), 'icon').title, 'Claim');
       assertEqual(part(card({ id: 'X-1', kind: 'hunch' }), 'icon').title, 'hunch');
