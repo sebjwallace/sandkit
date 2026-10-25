@@ -82,8 +82,8 @@
     .card-icon--prediction { --tone: var(--sb-accent); }
     .card-icon--scenario { --tone: color-mix(in srgb, var(--sb-accent) 50%, var(--sb-good, #3f9142)); }
     .card-icon--rule { --tone: var(--sb-text); }
-    .status[data-status="passing"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="failing"] { --tone: var(--sb-bad, #c53030); }
+    .status[data-status="met"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="not met"] { --tone: var(--sb-bad, #c53030); }
     .flow-summary { margin: 0 0 10px; color: var(--sb-muted); font-size: 13px; }
 
     /* The prototype, the outliner set into the page beside it, and the object view. */
@@ -120,6 +120,7 @@
     .card-icon--entity { --tone: var(--sb-accent); }
     .card-icon--primitive { --tone: var(--sb-muted); }
     .status[data-status="proposed"] { --tone: var(--sb-accent); }
+    .status[data-status="trying"] { --tone: var(--sb-warn, #d69e2e); }
     .status[data-status="integrated"] { --tone: var(--sb-good, #3f9142); }
     .status[data-status="rejected"] { --tone: var(--sb-bad, #c53030); }
     .card-icon--investigation { --tone: var(--sb-accent); }
@@ -946,11 +947,37 @@
       }
     }
 
+    // Proposed for the model, not in it yet: tried in a candidate version (see CANDIDATES).
+    class Announcement {
+      static title = 'Announcement';
+      static properties = { train: Train, confirmedAt: ClockTime };
+      static behaviour = {
+        announcedAt: 'When the PA announces the change: two minutes after signalling confirms it.',
+        inTime: 'Whether it reaches passengers at least five minutes before the train leaves (CON-2).',
+      };
+      constructor(fields) { Object.assign(this, fields); }
+      announcedAt() {
+        const [hours, minutes] = this.confirmedAt.text.split(':').map(Number);
+        const at = hours * 60 + minutes + 2;
+        return new ClockTime(`${String(Math.floor(at / 60)).padStart(2, '0')}:${String(at % 60).padStart(2, '0')}`);
+      }
+      inTime() {
+        const minutesOf = time => { const [hours, minutes] = time.text.split(':').map(Number); return hours * 60 + minutes; };
+        return minutesOf(this.train.expected() ?? this.train.time) - minutesOf(this.announcedAt()) >= 5;
+      }
+    }
+
     // The model, one version per iteration: which class each part is, and what changed it.
     const MODEL = [
       { iteration: 1, parts: { 'PRM-1': Delay, 'PRM-2': Platform, 'PRM-3': ClockTime, 'ENT-1': Train, 'ENT-2': Board } },
       { iteration: 2, parts: { 'PRM-1': Delay, 'PRM-2': Platform, 'PRM-3': ClockTime, 'ENT-1': Train, 'ENT-2': BoardWithPlatformChanges },
         changedBy: { 'ENT-2': 'ACT-1' } },
+    ];
+
+    // Candidate versions of the model: a proposal tried in an iteration against every scenario and
+    // rule, beside the model as it stands. The difference between the two is the trial's verdict.
+    const CANDIDATES = [
+      { iteration: 2, tries: 'ENT-4', parts: { ...MODEL[1].parts, 'ENT-4': Announcement } },
     ];
 
     // Entities and domain primitives proposed for the model: a name, what it's for, and the cards
@@ -976,7 +1003,8 @@
 
     // The model's classes by name, as they stood by an iteration, so tests read naturally.
     const asClassName = name => name.split(/\s+/).map(word => word[0].toUpperCase() + word.slice(1)).join('');
-    const classesAt = k => Object.fromEntries(Object.entries(modelAt(k).parts).map(([id, cls]) => [asClassName(itemOf(id).name), cls]));
+    const classesOf = parts => Object.fromEntries(Object.entries(parts).map(([id, cls]) => [asClassName(itemOf(id).name), cls]));
+    const classesAt = k => classesOf(modelAt(k).parts);
 
     // A train for a test, its fields given plainly and turned into the model's primitives.
     function trainFor(M, fields) {
@@ -1079,8 +1107,11 @@
           { keyword: 'When', text: 'signalling confirms the change at 14:07' },
           { keyword: 'Then', text: 'the PA announces it by 14:10, five minutes before departure' }],
         play: M => {
-          if (!M.Announcement) throw new Error('The model has no Announcement yet: ENT-4 is only proposed.');
-          return [null, null, { ok: true }];
+          if (!M.Announcement) throw new Error('The model has no Announcement: ENT-4 isn’t in it.');
+          const train = trainFor(M, { time: '14:15', destination: 'Gatwick Airport', platform: 9, planned: 3 });
+          const announcement = new M.Announcement({ train, confirmedAt: new M.ClockTime('14:07') });
+          const at = announcement.announcedAt().text;
+          return [null, null, { ok: announcement.inTime() && at <= '14:10', actual: `announced at ${at}` }];
         } },
     ];
 
@@ -1399,11 +1430,41 @@ Not announced,0
     }
 
     // The model as it stood by an iteration, and a part's stage in it: integrated once a version
-    // of the model holds it, rejected once turned down, proposed until then.
+    // of the model holds it, rejected once turned down, trying once a candidate model tries it,
+    // proposed until then.
     const modelAt = k => MODEL.filter(version => version.iteration <= k).pop();
+    const candidateOf = (id, k) => CANDIDATES.find(c => c.tries === id && c.iteration <= k);
     function partStage(part, k = Infinity) {
       if (part.rejected && part.rejected.in <= k) return 'rejected';
-      return modelAt(k)?.parts[part.id] ? 'integrated' : 'proposed';
+      if (modelAt(k)?.parts[part.id]) return 'integrated';
+      return candidateOf(part.id, k) ? 'trying' : 'proposed';
+    }
+
+    // Whether a test passes against a set of parts, such as a candidate model.
+    function passesWith(test, parts) {
+      const M = classesOf(parts);
+      try {
+        return test.id.startsWith('SCN') ? test.play(M).every(r => !r || r.ok) : test.check(M).length === 0;
+      } catch {
+        return false;
+      }
+    }
+
+    // What a change of model does to the tests written by an iteration: those it newly meets,
+    // those it breaks, and how many parts it adds. One change meeting many is a sign of real structure.
+    function compare(before, after, k) {
+      const tests = [...SCENARIOS, ...RULES].filter(t => iterationOf(t.id) <= k);
+      return {
+        met: tests.filter(t => !passesWith(t, before) && passesWith(t, after)),
+        broken: tests.filter(t => passesWith(t, before) && !passesWith(t, after)),
+        added: Object.keys(after).length - Object.keys(before).length,
+      };
+    }
+    const trialOf = candidate => compare(modelAt(candidate.iteration).parts, candidate.parts, candidate.iteration);
+    function trialVerdict(trial) {
+      const ids = tests => tests.map(t => t.id).join(', ') || 'nothing';
+      const earns = trial.met.length > 0 && !trial.broken.length;
+      return `In a candidate model it newly meets ${ids(trial.met)} and breaks ${ids(trial.broken)}, for ${trial.added} more part${trial.added === 1 ? '' : 's'}. ${earns ? 'It earns its place.' : 'It doesn’t earn its place yet.'}`;
     }
     // The definition a part's name rests on: one it's founded on, defining that very word.
     const definitionOf = part => DEFINITIONS.find(d => part.foundedOn.includes(d.id) && d.term.toLowerCase() === part.name.toLowerCase());
@@ -1462,14 +1523,26 @@ Not announced,0
 
     // The tests that exercise a part by an iteration: for an entity, any that made it or called it;
     // for a primitive, only those that read its value, since every train is built from primitives.
+    const exercises = (part, touch) => touch && (part.startsWith('ENT') ? touch.made || touch.calls.size : touch.reads.size);
     function testsOf(part, k) {
       return [...SCENARIOS, ...RULES].filter(t => iterationOf(t.id) <= k).map(test => ({ test, touch: watchedRun(test, k).get(part) }))
-        .filter(({ touch }) => touch && (part.startsWith('ENT') ? touch.made || touch.calls.size : touch.reads.size));
+        .filter(({ touch }) => exercises(part, touch));
+    }
+
+    // The parts a test drives in an iteration: those it exercised, and those a trial says it would be
+    // met by.
+    function partsDrivenBy(test, k) {
+      const touched = [...watchedRun(test, k)].filter(([part, touch]) => exercises(part, touch)).map(([part]) => part);
+      const trying = CANDIDATES.filter(c => c.iteration <= k && trialOf(c).met.includes(test)).map(c => c.tries);
+      return [...touched, ...trying];
     }
     function testStatus(test, k = Infinity) {
       const failed = test.id.startsWith('SCN') ? scenarioResults(test, k).some(r => r && !r.ok) : ruleFailures(test, k).length > 0;
       return failed ? 'failing' : 'passing';
     }
+    // A test's status as the foundry says it: a specification the model has met, or not yet.
+    const testWord = test => (k = Infinity) => testStatus(test, k) === 'passing' ? 'met' : 'not met';
+
     // What a test said, in full, so a change in how it fails shows as a change too.
     const testOutcome = (test, k) => JSON.stringify(test.id.startsWith('SCN') ? scenarioResults(test, k) : ruleFailures(test, k));
 
@@ -1913,7 +1986,7 @@ Not announced,0
     // An entity: proposed with a name, a purpose and what it's founded on; once integrated, its
     // properties and behaviour come from its class in the model, with any later change noted.
     function entityCard(entity, k = Infinity) {
-      const cls = modelAt(k)?.parts[entity.id];
+      const cls = modelAt(k)?.parts[entity.id] ?? candidateOf(entity.id, k)?.parts[entity.id];
       const typeOf = type => typeof type === 'string' ? type
         : Array.isArray(type) ? `list of ${type[0].title} (${partOfClass(type[0], k)})` : `${type.title} (${partOfClass(type, k)})`;
       const changes = MODEL.filter(version => version.iteration <= k && version.changedBy?.[entity.id]);
@@ -1957,7 +2030,7 @@ Not announced,0
       view.scenario = { code: scenario.id, title: scenario.title, steps: scenario.steps };
       view.results = scenarioResults(scenario, k);
       return card(
-        cardHead('scenario', scenario.id, `Played against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(testStatus(scenario, k))]),
+        cardHead('scenario', scenario.id, `Played against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(testWord(scenario)(k))]),
         view,
         fold('Founded on', cardRows(scenario.foundedOn, k), 'options'),
       );
@@ -1973,7 +2046,7 @@ Not announced,0
       view.status = failures.length ? 'broken' : 'holds';
       const breaks = failures.length ? [strip('warn', 'Breaks for', failures.join('; ') + '.')] : [];
       return card(
-        cardHead('rule', rule.id, `Checked against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(testStatus(rule, k))]),
+        cardHead('rule', rule.id, `Checked against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(testWord(rule)(k))]),
         view,
         ...breaks,
         fold('Founded on', cardRows(rule.foundedOn, k), 'options'),
@@ -1986,6 +2059,7 @@ Not announced,0
       const stage = partStage(part, k);
       const undefinedName = definitionOf(part) ? [] : [strip('warn', 'No definition', `Nothing defines “${part.name}”. The model’s words should be the domain’s, each defined once.`)];
       if (stage === 'rejected') return [...undefinedName, strip('warn', 'Rejected', part.rejected.why)];
+      if (stage === 'trying') return [...undefinedName, strip('expect', 'Trial', trialVerdict(trialOf(candidateOf(part.id, k))))];
       if (stage === 'proposed') return [...undefinedName, strip('unresolved', 'Not in the model yet', 'Proposed; it becomes part of the model once integrated.')];
       return undefinedName;
     }
@@ -2120,9 +2194,10 @@ Not announced,0
         { title: 'Founded on', grounds: true, holds: id => !BUILDING.includes(kindOf(id))
           && links().some(([from, to]) => from === id && BUILDING.includes(kindOf(to))) },
         { title: 'Proposed', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'proposed' },
+        { title: 'Trying', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'trying' },
         { title: 'Integrated', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'integrated' },
-        { title: 'Passing', holds: (id, k) => TESTS.includes(kindOf(id)) && testStatus(itemOf(id), k) === 'passing' },
-        { title: 'Failing', holds: (id, k) => TESTS.includes(kindOf(id)) && testStatus(itemOf(id), k) === 'failing' },
+        { title: 'Met', holds: (id, k) => TESTS.includes(kindOf(id)) && testStatus(itemOf(id), k) === 'passing' },
+        { title: 'Not met yet', holds: (id, k) => TESTS.includes(kindOf(id)) && testStatus(itemOf(id), k) === 'failing' },
         { title: 'Rejected', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'rejected' },
       ] },
     ];
@@ -2292,8 +2367,8 @@ Not announced,0
       if (id.startsWith('PRD')) return { kind: 'prediction', text: item.text, status: predictionStatus(item, k) };
       if (id.startsWith('EXP')) return { kind: 'experiment', text: item.text, status: experimentStatus(item, k) };
       if (id.startsWith('INV')) return { kind: 'investigation', text: item.text, status: investigationStatus(item, k) };
-      if (id.startsWith('SCN')) return { kind: 'scenario', text: item.title, status: testStatus(item, k) };
-      if (id.startsWith('RUL')) return { kind: 'rule', text: item.title, status: testStatus(item, k) };
+      if (id.startsWith('SCN')) return { kind: 'scenario', text: item.title, status: testWord(item)(k) };
+      if (id.startsWith('RUL')) return { kind: 'rule', text: item.title, status: testWord(item)(k) };
       if (['ENT', 'PRM'].includes(id.slice(0, 3))) return { kind: id.startsWith('ENT') ? 'entity' : 'primitive',
         text: `${item.name}: ${item.purpose}`, status: partStage(item, k), note: definitionOf(item) ? undefined : 'no definition of its name' };
       if (id.startsWith('MET')) {
@@ -2330,6 +2405,9 @@ Not announced,0
             if (i && [itemOf(id).from, itemOf(id).prompt].includes(card)) continue; // what brought a card about links only where it did
             const version = latestBy(card, k);
             if (version > before || (!i && version)) found.push([keyOf(card, version), keyOf(id, k)]);
+          }
+          if (['SCN', 'RUL'].includes(id.slice(0, 3))) {
+            for (const part of partsDrivenBy(itemOf(id), k)) found.push([keyOf(part, latestBy(part, k)), keyOf(id, k)]);
           }
         });
       }
@@ -2382,13 +2460,19 @@ Not announced,0
       for (const button of document.querySelectorAll('[data-board]')) button.setAttribute('aria-pressed', Number(button.dataset.board) === shown.board);
     }
 
-    // The model in a line: how big it is, and how much of what it's asked to do it does. The start
-    // of the compression signal.
+    // The model in a line: how big it is, how much of what it's asked to do it does, what the last
+    // change did, and what trials found. The compression signal, so far.
     function modelSummary(k) {
       const parts = Object.keys(modelAt(k).parts).length;
       const tests = [...SCENARIOS, ...RULES].filter(t => iterationOf(t.id) <= k);
-      const passing = tests.filter(t => testStatus(t, k) === 'passing').length;
-      return `The model at iteration ${k}: ${parts} parts · ${passing} of ${tests.length} scenarios and rules passing`;
+      const met = tests.filter(t => testStatus(t, k) === 'passing').length;
+      const since = k > 1 ? compare(modelAt(k - 1).parts, modelAt(k).parts, k) : null;
+      const change = since ? ` · since iteration ${k - 1}: ${since.met.length} newly met, ${since.broken.length ? `${since.broken.map(t => t.id).join(', ')} broken` : 'nothing broken'}` : '';
+      const trials = CANDIDATES.filter(c => c.iteration === k).map(c => {
+        const trial = trialOf(c);
+        return ` · trying ${c.tries}: ${trial.met.length} newly met, ${trial.broken.length} broken, for ${trial.added} more part`;
+      }).join('');
+      return `The model at iteration ${k}: ${parts} parts · ${met} of ${tests.length} scenarios and rules met${change}${trials}`;
     }
 
     // A board: its columns of cards, and only the links between cards it shows.
@@ -2842,6 +2926,9 @@ Not announced,0
       if (kind(to) === 'MET') return 'reading of';
       if (kind(from) === 'INV' && kind(to) === 'SRC') return 'gathered';
       if (kind(from) === 'PRM' && kind(to) === 'ENT') return 'part of';
+      if (['ENT', 'PRM'].includes(kind(from)) && ['SCN', 'RUL'].includes(kind(to))) {
+        return modelAt(Infinity).parts[from] ? 'exercised by' : 'would meet';
+      }
       if (['ENT', 'PRM', 'SCN', 'RUL'].includes(kind(to))) return 'founds';
       if (kind(to) === 'INV') return 'prompts';
       if (kind(to) === 'EXP') return 'calls for';
