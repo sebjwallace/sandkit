@@ -4,7 +4,7 @@ The engine of domain discovery: the method's rules, written once. Give it the sa
 
 It draws nothing and knows no component; the practice says how a sandbox shows what it works out.
 
-So far it weighs claims and works out every status that follows from the records. Iterations, links and the model's runs are to come.
+So far it weighs claims, works out every status that follows from the records, and knows what rests on what: the links between records, and what each iteration shows. The model's versions and runs are to come; until then, what only the model knows is handed in.
 
 Use this engine through the interface below. You don't need to read its source.
 
@@ -22,6 +22,7 @@ In a page, as a classic script, beside the records it reads:
   // weighed.standing → 'contested', weighed.score → -7, weighed.basis → 'reported'
   discovery.status('DEC-1', { asOf: 2 });          // → 'review'
   discovery.reviewReasons('DEC-1', { asOf: 2 });   // → [{ ref: 'ASM-1', now: 'refuted', why: 'rests on' }]
+  discovery.iteration(2);                          // → { cards: [{ id: 'CLM-3', as: 'updated' }, …], links: [{ from, to }, …] }
 </script>
 ```
 
@@ -33,7 +34,7 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 
 ## What it takes
 
-`createDiscovery({ sources, claims, questions, assumptions, inferences, observations, predictions, outcomes, investigations, experiments, actions, decisions })`. Give it the kinds the sandbox has; any left out is empty. Each list is plain records, each saying the `iteration` it was raised in; the engine never changes them.
+`createDiscovery({ sources, claims, questions, assumptions, inferences, observations, predictions, outcomes, investigations, experiments, actions, decisions, goals, metrics, definitions, opinions, agreements, constraints, risks, awaited, entities, primitives, scenarios, rules, also })`. Give it the kinds the sandbox has; any left out is empty. Each list is plain records, each saying the `iteration` it was raised in; the engine never changes them.
 
 **A source**, as discovery weighs it, from its entry in the catalogue (see the [sources practice](../../practices/sources.md)):
 
@@ -64,6 +65,10 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 | action | `status`, as written, and `done`, the source or record showing it's done |
 | decision | `status`, as written, and `restsOn: [id, …]` |
 
+**What each kind rests on,** which makes the links: a claim on its passages' sources, and it informs questions (`informs`); a question on the source raising it (`raisedBy`) and those answering it; a decision on `restsOn` and its cited `sources`; an action and a risk on what brought them about (`from`) and their sources; a prediction and an experiment on `from`, an experiment also on its source (`setIn`); a goal, assumption, definition, agreement and constraint on the source setting them (`setIn`, `said` for an opinion), an agreement or constraint also on `from`; an inference on its `premises`; an observation on the source it was read from (`at`), and it bears on what it `tests`, its experiment (`resultOf`) and its `metric`; an outcome on `from` and its sources, and it bears on what it's measured `against`; an investigation on what prompted it (`prompt`), and a source on the investigation that gathered it (`gatheredBy`); entities, primitives, scenarios and rules on what they're `foundedOn`; awaited material on what it's `for`.
+
+**`also`**, what only the sandbox's model knows until the engine does: `records`, derived records to show, such as runs (`{ id, iteration }`); `inputs(id)`, more of what a record rests on (an entity's primitives, a run's changes); `appearances(id)`, more iterations it comes back in (a part's new version, a test's new result); `linksInto(id, k)`, records linking to it in iteration `k` alone (the runs showing a test).
+
 ## What it works out
 
 | Member | Gives |
@@ -71,6 +76,10 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 | `weigh(claim, { asOf?, reliedOn? })` | A claim, by its id or as a record, weighed on the sources that had arrived by iteration `asOf` (every source by default). `reliedOn`: whether anything rests on it, which tells an assumption from a conjecture when nothing backs it. Returns `{ standing, score, basis, passages }`. |
 | `strength(sourceId)` | A source's grade's value, 1 to 5; 3 when it isn't graded yet. |
 | `originOf(sourceId)` | The source it copies, all the way back, or itself. |
+| `links()` | Every link, `{ from, to }`, from what something rests on to what rests on it, each once. |
+| `inputsOf(id)` | What a record rests on: `{ sources, records }`. |
+| `appearances(id)` | The iterations it appears in: the one it was raised in, each later one bringing new material for it, and, for decisions, goals, predictions, experiments, metrics, assumptions and inferences, each one bringing back what they rest on, so they can be judged again; an investigation also when what it gathered arrives. |
+| `iteration(k)` | What iteration `k` shows: `{ cards, links }`. Each card is `{ id, as }`, `as` being `raised`, `updated` (back with new material) or `carried` (an earlier one this iteration's cards rest on, as it last stood, with `from`, the iteration it stood in). Links are those among the cards shown, each to the version of what it rests on that stood by then; what brought a record about links to it only in the iteration where it did. Which order cards stand in is the sandbox's to choose. |
 | `status(id, { asOf? })` | Any record's status as of an iteration, by its kind's rule (below). A kind without a rule keeps the `status` its record says. |
 | `reviewReasons(decisionId, { asOf? })` | Why a decision needs another look: `[{ ref, now, why }]`, where `why` is `rests on` (a claim or assumption it rests on that has turned since it was taken) or `predicted` (a prediction of its not borne out). Empty when it stands. Put them in words as the sandbox likes. |
 

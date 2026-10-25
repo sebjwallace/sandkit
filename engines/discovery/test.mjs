@@ -11,6 +11,7 @@ function test(name, fn) {
 const assertEqual = (actual, expected, message = '') => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`${message} expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
 };
+const assert = (condition, message) => { if (!condition) throw new Error(message); };
 const assertThrows = (fn, message) => {
   try { fn(); } catch { return; }
   throw new Error(message);
@@ -213,4 +214,80 @@ test('a kind without a rule keeps what its record says; an unknown record is nam
   assertEqual([status('OBS-1'), status('OUT-1')], [null, 'partly']);
   assertThrows(() => lake.status('XYZ-1'), 'an unknown record throws');
   assertThrows(() => lake.reviewReasons('DEC-404'), 'an unknown decision throws');
+});
+
+// ---- Links and iterations ----
+
+// The trust's discovery over three iterations: what rests on what, and what each iteration shows.
+const loop = createDiscovery({
+  sources: [
+    { id: 'SRC-1', iteration: 1, format: 'data', grade: grade(5, 'Counted on the banks.') },
+    { id: 'SRC-2', iteration: 2, format: 'data', gatheredBy: 'INV-1', grade: grade(4, 'Lab results.') },
+    { id: 'SRC-3', iteration: 1, format: 'document', speaksTo: 'what should be' },
+  ],
+  claims: [
+    { id: 'CLM-1', iteration: 1, assertions: { 'SRC-1': ['+', 'spraint at 4'], 'SRC-2': ['−', 'DNA at 9'] }, informs: ['QST-1'] },
+  ],
+  questions: [{ id: 'QST-1', iteration: 1, raisedBy: ['SRC-1', 'are they gone?'], answers: {} }],
+  investigations: [{ id: 'INV-1', iteration: 1, prompt: 'QST-1' }],
+  constraints: [{ id: 'CON-1', iteration: 1, setIn: ['SRC-3', 'no new hides'] }],
+  decisions: [{ id: 'DEC-1', iteration: 1, status: 'accepted', restsOn: ['CLM-1', 'CON-1'], sources: [] }],
+  actions: [{ id: 'ACT-1', iteration: 3, from: 'DEC-1', sources: [] }],
+  also: { records: [{ id: 'RUN-1', iteration: 3 }], inputs: (id) => (id === 'RUN-1' ? ['ACT-1'] : []) },
+});
+const linked = (from, to) => loop.links().some((l) => l.from === from && l.to === to);
+// What an iteration shows, in a fixed order: which order cards stand in is the sandbox's to choose.
+const shows = (k) => Object.fromEntries(loop.iteration(k).cards.map((c) => [c.id, c.as === 'carried' ? `carried from ${c.from}` : c.as]).sort());
+
+test('links run from what a record rests on to the record, and from a record to what it bears on', () => {
+  assert(linked('SRC-1', 'CLM-1') && linked('CLM-1', 'QST-1') && linked('QST-1', 'INV-1') && linked('INV-1', 'SRC-2'), 'passages, informs, prompts, gathers');
+  assert(linked('CLM-1', 'DEC-1') && linked('SRC-3', 'CON-1') && linked('DEC-1', 'ACT-1'), 'rests on, set in, brought about');
+});
+
+test('what the model knows is handed in, and links like any other', () => {
+  assert(linked('ACT-1', 'RUN-1'), 'a run rests on what it changed');
+});
+
+test('each link is listed once', () => {
+  const keys = loop.links().map((l) => `${l.from} ${l.to}`);
+  assertEqual(keys.length, new Set(keys).size);
+});
+
+test('what a record rests on: its sources and its records, apart', () => {
+  assertEqual(loop.inputsOf('DEC-1'), { sources: [], records: ['CLM-1', 'CON-1'] });
+  assertEqual(loop.inputsOf('CLM-1'), { sources: ['SRC-1', 'SRC-2'], records: [] });
+});
+
+test('a record appears where it was raised and again where new material reaches it; a decision comes back with its grounds', () => {
+  assertEqual([loop.appearances('CLM-1'), loop.appearances('DEC-1'), loop.appearances('CON-1')], [[1, 2], [1, 2], [1]]);
+});
+
+test('an investigation comes back when what it gathered arrives', () => {
+  assertEqual(loop.appearances('INV-1'), [1, 2]);
+});
+
+test('an iteration shows what was raised in it, what came back updated, and what its records rest on, carried in', () => {
+  assertEqual(shows(1), { 'CLM-1': 'raised', 'CON-1': 'raised', 'DEC-1': 'raised', 'INV-1': 'raised', 'QST-1': 'raised', 'SRC-1': 'raised', 'SRC-3': 'raised' });
+  assertEqual(shows(2), { 'CLM-1': 'updated', 'DEC-1': 'updated', 'INV-1': 'updated', 'SRC-2': 'raised' });
+  assertEqual(shows(3), { 'ACT-1': 'raised', 'DEC-1': 'carried from 2', 'RUN-1': 'raised' });
+});
+
+test('an iteration’s links are only those among the cards it shows, by id', () => {
+  const { links } = loop.iteration(2);
+  assertEqual(links.map((l) => `${l.from}→${l.to}`).sort(), ['CLM-1→DEC-1', 'INV-1→SRC-2', 'SRC-2→CLM-1']);
+});
+
+test('what brought a record about links to it only where it did', () => {
+  // The decision and its prediction both come back in iteration 2, but the decision brought the
+  // prediction about in iteration 1, so iteration 2 doesn't link them again.
+  const later = createDiscovery({
+    sources: [{ id: 'SRC-1', iteration: 2, format: 'data' }],
+    claims: [{ id: 'CLM-1', iteration: 1, assertions: { 'SRC-1': ['+', 'seen'] } }],
+    decisions: [{ id: 'DEC-1', iteration: 1, status: 'accepted', restsOn: ['CLM-1'], sources: [] }],
+    predictions: [{ id: 'PRD-1', iteration: 1, from: 'DEC-1' }],
+    observations: [{ id: 'OBS-1', iteration: 2, at: ['SRC-1', 'x'], tests: ['PRD-1', '+'] }],
+  });
+  assertEqual([later.appearances('DEC-1'), later.appearances('PRD-1')], [[1, 2], [1, 2]]);
+  assertEqual(later.iteration(1).links.some((l) => l.from === 'DEC-1' && l.to === 'PRD-1'), true);
+  assertEqual(later.iteration(2).links.some((l) => l.from === 'DEC-1' && l.to === 'PRD-1'), false);
 });

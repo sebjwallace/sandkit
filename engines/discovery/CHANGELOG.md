@@ -1,5 +1,8 @@
 # discovery changelog
 
+## 0.1.2 · 2026-10-25
+- Knows what rests on what: `links()`, from one table of what each kind's fields point at, `inputsOf(id)`, `appearances(id)`, and `iteration(k)`, what an iteration shows (each card raised, updated or carried) and the links among them. Takes every kind of record, and `also`, what only the sandbox's model knows until the engine does.
+
 ## 0.1.1 · 2026-10-25
 - Works out every status that follows from the records, as of any iteration: `status(id)` for questions, assumptions, inferences, predictions, investigations, experiments, actions, decisions and outcomes, and `reviewReasons(decisionId)` saying why a decision needs another look, as data. `createDiscovery` takes each kind's records.
 

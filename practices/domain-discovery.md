@@ -91,7 +91,7 @@ Every status below is worked out by the [discovery engine](../engines/discovery/
 
 ## Iterations
 
-- **An iteration lists the sources that arrived and the cards raised in it.** The first holds whatever no later one claims.
+- **Every source and record says the iteration it arrived in or was raised in.** The [discovery engine](../engines/discovery/manifest.md) works out what each iteration shows (`discovery.iteration(k)`): what was raised in it, what came back, and what was carried in, with the links among them.
 - **A card that changes appears again** in the iteration that brought new material for it, as its updated self: "updated: new material arrived".
 - **Cards an iteration's cards rest on are carried in** as they last stood: "carried from iteration 1".
 - **Every card is shown as of the iteration on screen.** A claim is weighed only on the sources that had arrived by then.
