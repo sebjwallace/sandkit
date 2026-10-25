@@ -249,6 +249,15 @@ test('the model’s runs are records too, and link like any other', () => {
   assert(linked('ENT-1', 'RUN-1'), 'a run rests on what it changed');
 });
 
+test('each link says what it means', () => {
+  const means = (from, to) => loop.links().find((l) => l.from === from && l.to === to)?.means;
+  assertEqual([means('SRC-1', 'CLM-1'), means('SRC-2', 'CLM-1'), means('SRC-1', 'QST-1'), means('CLM-1', 'QST-1')],
+    ['supports', 'disputes', 'asks', 'informs'], 'a passage’s stance; a question raised, a claim informing it');
+  assertEqual([means('QST-1', 'INV-1'), means('INV-1', 'SRC-2'), means('SRC-3', 'CON-1')], ['prompts', 'gathered', 'imposes']);
+  assertEqual([means('CLM-1', 'DEC-1'), means('CON-1', 'DEC-1'), means('DEC-1', 'ACT-1'), means('ENT-1', 'RUN-1')],
+    ['grounds', 'constrains', 'calls for', 'run in']);
+});
+
 test('each link is listed once', () => {
   const keys = loop.links().map((l) => `${l.from} ${l.to}`);
   assertEqual(keys.length, new Set(keys).size);
@@ -439,6 +448,13 @@ test('a run rests on what it changed, an entity on its primitives, and a test on
   const links = river.iteration(2).links.map((l) => `${l.from}→${l.to}`);
   assert(links.includes('RUN-2→SCN-3') && links.includes('RUN-3→SCN-3'), 'the model’s run, and the trial meeting it');
   assert(!links.includes('RUN-3→SCN-2'), 'a trial says nothing of a test it doesn’t newly meet');
+});
+
+test('a run meets a test or doesn’t, a trial is tried, and a part is founded on what defines it', () => {
+  const means = (from, to) => river.iteration(2).links.find((l) => l.from === from && l.to === to)?.means;
+  assertEqual([means('RUN-3', 'SCN-3'), means('RUN-2', 'SCN-3'), means('ENT-2', 'RUN-3')], ['meets', 'doesn’t meet', 'tried in']);
+  assertEqual([river.links().find((l) => l.from === 'PRM-1' && l.to === 'ENT-1').means, river.links().find((l) => l.from === 'DEF-1').means],
+    ['part of', 'founds']);
 });
 
 test('a part comes back when its version or stage changes, a test when what it says does', () => {

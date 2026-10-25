@@ -1,4 +1,4 @@
-// Sandkit discovery 0.2.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit discovery 0.2.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The engine of domain discovery: the method's rules, written once. Given the sandbox's records,
 // it works out what follows from them, the same way every time, so a record holds only what
 // someone wrote and never a conclusion. It draws nothing and knows no component.
@@ -250,7 +250,43 @@
       linksInto: (id, k) => (['scenario', 'rule'].includes(kindOf(id)) ? runsShowing(id, k).map((run) => run.id) : []),
     };
 
-    // Every link, from what something rests on to what rests on it, each once.
+    // What a link means, in the practice's words, from the kinds it joins and what their records say:
+    // a source supports or disputes a claim, a run meets a test or doesn't, a decision brings about
+    // an action. The sandbox chooses how to say it and how to tone it.
+    const FROM_SOURCE = { goal: 'sets', constraint: 'imposes', agreement: 'records', experiment: 'records', observation: 'captures',
+      assumption: 'states', definition: 'defines', opinion: 'voices' };
+    const INTO = { entity: 'founds', primitive: 'founds', scenario: 'founds', rule: 'founds', investigation: 'prompts',
+      experiment: 'calls for', inference: 'premise' };
+    const LATER_INTO = { outcome: 'shows', question: 'informs', action: 'calls for', constraint: 'brings about', agreement: 'brings about',
+      prediction: 'predicts', risk: 'raises' };
+    const RESULTS = { worked: 'meets', partly: 'partly meets', failed: 'fails' };
+    const isNo = (mark) => mark === '−' || mark === '-';
+    function meaningOf(from, to) {
+      const kind = (id) => (sourceOf.has(id) ? 'source' : kindOf(id)), [a, b] = [kind(from), kind(to)];
+      const record = (id) => recordOf.get(id)?.record;
+      if (b === 'awaited') return 'awaits';
+      if (a === 'source') {
+        if (b === 'claim') return isNo(record(to).assertions[from][0]) ? 'disputes' : 'supports';
+        if (b === 'question') return record(to).raisedBy?.[0] === from ? 'asks' : 'answers';
+        return FROM_SOURCE[b] ?? (sourceOf.get(from).role === 'decision' ? 'records' : 'informs');
+      }
+      if (a === 'outcome' && b === 'decision') return 'prompts';
+      if (b === 'assumption') return isNo(record(from).tests?.[1]) ? 'refutes' : 'bears out';
+      if (a === 'observation' && b === 'prediction') return isNo(record(from).tests[1]) ? 'doubts' : 'supports';
+      if (a === 'observation' && b === 'experiment') return 'result';
+      if (b === 'metric') return 'reading of';
+      if (a === 'investigation' && b === 'source') return 'gathered';
+      if (a === 'primitive' && b === 'entity') return 'part of';
+      if (b === 'run') return record(to).tries ? 'tried in' : 'run in';
+      if (a === 'run') return run(from).met.includes(to) ? 'meets' : 'doesn’t meet';
+      if (INTO[b]) return INTO[b];
+      if (a === 'inference' && b === 'outcome') return 'explains';
+      if (a === 'outcome') return RESULTS[record(from).result];
+      if (b === 'decision') return { goal: 'aims', constraint: 'constrains' }[a] ?? 'grounds';
+      return LATER_INTO[b] ?? 'rests on';
+    }
+
+    // Every link, from what something rests on to what rests on it, each once, with what it means.
     let allLinks = null;
     function links() {
       if (allLinks) return allLinks;
@@ -260,7 +296,8 @@
         ...[...recordOf.keys()].flatMap((id) => more.inputs(id).map((from) => [from, id])),
       ].filter(([from, to]) => from && to);
       const seen = new Set();
-      allLinks = pairs.filter(([from, to]) => !seen.has(`${from} ${to}`) && seen.add(`${from} ${to}`)).map(([from, to]) => ({ from, to }));
+      allLinks = pairs.filter(([from, to]) => !seen.has(`${from} ${to}`) && seen.add(`${from} ${to}`))
+        .map(([from, to]) => ({ from, to, means: meaningOf(from, to) }));
       return allLinks;
     }
 
@@ -327,7 +364,8 @@
       const idOf = (key) => key.slice(0, key.lastIndexOf('@'));
       return {
         cards: shown.map((n) => (n.k === k ? { id: n.id, as: n.as } : { id: n.id, as: 'carried', from: n.k })),
-        links: found.filter(([from, to]) => keys.has(from) && keys.has(to)).map(([from, to]) => ({ from: idOf(from), to: idOf(to) })),
+        links: found.filter(([from, to]) => keys.has(from) && keys.has(to))
+          .map(([from, to]) => ({ from: idOf(from), to: idOf(to), means: meaningOf(idOf(from), idOf(to)) })),
       };
     }
 

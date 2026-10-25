@@ -1,5 +1,8 @@
 # discovery changelog
 
+## 0.2.2 · 2026-10-25
+- Every link says what it means (`means`: `supports`, `founds`, `meets`, …), in `links()` and `iteration(k)`, so a sandbox no longer works it out to label its boards.
+
 ## 0.2.1 · 2026-10-25
 - Counting a class's decisions no longer runs its getters, which threw without an object to run on.
 

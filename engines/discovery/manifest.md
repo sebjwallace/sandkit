@@ -92,10 +92,10 @@ The parts, scenarios and rules it reads:
 | `weigh(claim, { asOf?, reliedOn? })` | A claim, by its id or as a record, weighed on the sources that had arrived by iteration `asOf` (every source by default). `reliedOn`: whether anything rests on it, which tells an assumption from a conjecture when nothing backs it. Returns `{ standing, score, basis, passages }`. |
 | `strength(sourceId)` | A source's grade's value, 1 to 5; 3 when it isn't graded yet. |
 | `originOf(sourceId)` | The source it copies, all the way back, or itself. |
-| `links()` | Every link, `{ from, to }`, from what something rests on to what rests on it, each once. |
+| `links()` | Every link, `{ from, to, means }`, from what something rests on to what rests on it, each once. `means` says what it means, in words (below). |
 | `inputsOf(id)` | What a record rests on: `{ sources, records }`. |
 | `appearances(id)` | The iterations it appears in: the one it was raised in, each later one bringing new material for it, and, for decisions, goals, predictions, experiments, metrics, assumptions and inferences, each one bringing back what they rest on, so they can be judged again; an investigation also when what it gathered arrives. |
-| `iteration(k)` | What iteration `k` shows: `{ cards, links }`. Each card is `{ id, as }`, `as` being `raised`, `updated` (back with new material) or `carried` (an earlier one this iteration's cards rest on, as it last stood, with `from`, the iteration it stood in). Links are those among the cards shown, each to the version of what it rests on that stood by then; what brought a record about links to it only in the iteration where it did. Which order cards stand in is the sandbox's to choose. |
+| `iteration(k)` | What iteration `k` shows: `{ cards, links }`. Each card is `{ id, as }`, `as` being `raised`, `updated` (back with new material) or `carried` (an earlier one this iteration's cards rest on, as it last stood, with `from`, the iteration it stood in). Links, `{ from, to, means }`, are those among the cards shown, each to the version of what it rests on that stood by then; what brought a record about links to it only in the iteration where it did. Which order cards stand in is the sandbox's to choose. |
 | `status(id, { asOf? })` | Any record's status as of an iteration, by its kind's rule (below). A kind without a rule keeps the `status` its record says. |
 | `model(k?)` | The model as it stood by iteration `k` (the latest by default): `{ iteration, parts, classes, decisions, busiest }`. `classes` are by name, as tests use them; `decisions`, the compression signal, counts the choices in its code; `busiest` is the method with the most, `{ name, decisions }`. |
 | `runs()` | Every run's id, versions first, then candidates. |
@@ -107,6 +107,28 @@ The parts, scenarios and rules it reads:
 | `primitivesOf(entityId)` | The primitives an entity's class is made of, in any version. |
 | `definitionOf(partId)` | The definition its name rests on: one it's founded on, defining that word; `null` if none. |
 | `reviewReasons(decisionId, { asOf? })` | Why a decision needs another look: `[{ ref, now, why }]`, where `why` is `rests on` (a claim or assumption it rests on that has turned since it was taken) or `predicted` (a prediction of its not borne out). Empty when it stands. Put them in words as the sandbox likes. |
+
+**What a link means** (`means`), from the kinds it joins and what their records say:
+
+| Link | Means |
+|---|---|
+| a source to a claim | `supports` or `disputes`, by its passage's stance |
+| a source to a question | `asks` (raising it) or `answers` |
+| a source to a goal, constraint, agreement, experiment, observation, assumption, definition or opinion | `sets`, `imposes`, `records`, `records`, `captures`, `states`, `defines`, `voices` |
+| a source to anything else | `records` if its catalogue `role` is `decision`, else `informs` |
+| an observation to an assumption | `bears out` or `refutes`; to a prediction, `supports` or `doubts`; to an experiment, `result` |
+| into a metric; an investigation to a source | `reading of`; `gathered` |
+| a primitive to an entity | `part of` |
+| into a run; a run to a test | `run in`, or `tried in` for a trial; `meets` or `doesn’t meet` |
+| into an entity, primitive, scenario or rule | `founds` |
+| into an investigation, experiment or inference | `prompts`, `calls for`, `premise` |
+| an outcome to a decision; to what it's against | `prompts`; `meets`, `partly meets` or `fails`, by its result |
+| an inference to an outcome; into an outcome | `explains`; `shows` |
+| into a decision | `aims` from a goal, `constrains` from a constraint, else `grounds` |
+| into a question, action, constraint or agreement, prediction, risk | `informs`, `calls for`, `brings about`, `predicts`, `raises` |
+| into awaited material | `awaits` |
+
+Anything else `rests on`. Use the words as they are, or say them the sandbox's way.
 
 **Standing:** `corroborated` (two or more independent yeses), `single source`, `contested` (yeses and noes), `refuted` (only noes), `unbacked`. Only sources that speak to how things are count, and a copy counts as the source it copies.
 
