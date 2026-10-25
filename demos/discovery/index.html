@@ -3,14 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Weighing Evidence</title>
+  <title>Domain Discovery Engine</title>
   <script src="../../shell/sb-theme-settings.js"></script>
   <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-modal/sb-modal.js"></script>
+  <script src="../../components/sb-source/sb-source.js"></script>
+  <script src="../../components/sb-rule/sb-rule.js"></script>
+  <script src="../../components/sb-scenario/sb-scenario.js"></script>
 
   <style>
     body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
     main { max-width: var(--sb-page-width, 1100px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
-    .chapter, .card { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .chapter, .card { min-width: 0; background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
     h2 { margin: 0 0 6px; font-size: 18px; }
     h3 { margin: 0 0 10px; font-size: 15px; }
     .chapter p { margin: 0 0 8px; max-width: 75ch; }
@@ -23,9 +27,9 @@
     /* Claim, question and decision cards, in the look of sb-choice: a header band and a dropped body. */
     .claims { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; align-items: start; }
     .claim { overflow: hidden; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); font-size: 13px; line-height: 1.45; }
-    .claim-head { display: flex; align-items: flex-start; gap: 8px; padding: 10px 14px; background: var(--sb-surface-2, rgba(127,127,127,0.08)); border-bottom: 1px solid var(--sb-border); }
-    .raised { flex: 1; min-width: 0; align-self: center; color: var(--sb-muted); font-size: 12px; }
-    .claim-badges { flex: none; display: flex; gap: 6px; }
+    .claim-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; padding: 10px 14px; background: var(--sb-surface-2, rgba(127,127,127,0.08)); border-bottom: 1px solid var(--sb-border); }
+    .raised { flex: 1 1 120px; min-width: 0; align-self: center; color: var(--sb-muted); font-size: 12px; }
+    .claim-badges { flex: none; display: flex; flex-wrap: wrap; gap: 6px; }
     .claim-id { flex: none; padding: 1px 7px; border-radius: 999px; background: var(--sb-surface); color: var(--sb-muted); font: 600 11px/1.6 ui-monospace, Menlo, Consolas, monospace; }
     .status { --tone: var(--sb-muted); margin-left: auto; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; color: var(--tone); background: color-mix(in srgb, var(--tone) 16%, transparent); }
     .status[data-status="corroborated"] { --tone: var(--sb-good, #3f9142); }
@@ -62,6 +66,45 @@
     .card-icon--claim { --tone: var(--sb-accent); }
     .card-icon--question { --tone: var(--sb-warn, #b7791f); }
     .card-icon--decision { --tone: var(--sb-good, #3f9142); }
+    .card-icon--constraint { --tone: color-mix(in srgb, var(--sb-accent) 50%, var(--sb-bad, #c53030)); }
+    .status[data-status="holds"] { --tone: var(--sb-muted); }
+    .card-icon--outcome { --tone: var(--sb-text); }
+    .card-icon--prediction { --tone: var(--sb-accent); }
+    .card-icon--scenario { --tone: color-mix(in srgb, var(--sb-accent) 50%, var(--sb-good, #3f9142)); }
+    .card-icon--rule { --tone: var(--sb-text); }
+    .status[data-status="passing"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="failing"] { --tone: var(--sb-bad, #c53030); }
+    .flow-summary { margin: 0 0 10px; color: var(--sb-muted); font-size: 13px; }
+    .card-icon--entity { --tone: var(--sb-accent); }
+    .card-icon--primitive { --tone: var(--sb-muted); }
+    .status[data-status="proposed"] { --tone: var(--sb-accent); }
+    .status[data-status="integrated"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="rejected"] { --tone: var(--sb-bad, #c53030); }
+    .card-icon--investigation { --tone: var(--sb-accent); }
+    .status[data-status="under way"] { --tone: var(--sb-accent); }
+    .card-icon--metric { --tone: var(--sb-accent); }
+    .card-icon--experiment { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="planned"] { --tone: var(--sb-accent); }
+    .status[data-status="in doubt"] { --tone: var(--sb-warn, #d69e2e); }
+    .status[data-status="supported"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="pending"] { --tone: var(--sb-muted); }
+    .status[data-status="borne out"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="not borne out"] { --tone: var(--sb-bad, #c53030); }
+    .card-icon--observation { --tone: var(--sb-text); }
+    .card-icon--assumption { --tone: var(--sb-warn, #d69e2e); }
+    .card-icon--inference { --tone: var(--sb-accent); }
+    .card-icon--definition { --tone: var(--sb-muted); }
+    .card-icon--opinion { --tone: color-mix(in srgb, var(--sb-warn, #d69e2e) 60%, var(--sb-bad, #c53030)); }
+    .status[data-status="untested"] { --tone: var(--sb-warn, #d69e2e); }
+    .status[data-status="sound"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="shaken"] { --tone: var(--sb-warn, #d69e2e); }
+    .card-icon--agreement { --tone: color-mix(in srgb, var(--sb-accent) 50%, var(--sb-good, #3f9142)); }
+    .status[data-status="in force"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="worked"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="failed"] { --tone: var(--sb-bad, #c53030); }
+    .status[data-status="partly"] { --tone: var(--sb-warn, #d69e2e); }
+    .firmness { padding: 1px 8px; border: 1px solid currentColor; border-radius: 999px; color: var(--sb-muted); font-size: 11px; font-style: italic; white-space: nowrap; }
+    .firmness[data-firmness="soft"] { border-style: dashed; }
     .card-icon--goal { --tone: var(--sb-accent); }
     .card-icon--source { --tone: var(--sb-text); }
     .status[data-status="accepted"] { --tone: var(--sb-good, #3f9142); }
@@ -97,7 +140,7 @@
     .slip .who { font: 600 14px/1.35 Georgia, "Iowan Old Style", "Times New Roman", serif; }
     .quote { flex-basis: 100%; color: var(--sb-text); font: italic 13px/1.5 Georgia, "Iowan Old Style", "Times New Roman", serif; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
     .has-stance .quote, .has-stance .pills { padding-left: 30px; }
-    .assertion.is-open .quote { display: block; }
+    .claim--open .quote { display: block; }
     .assertion.is-repeat { margin-left: 22px; opacity: 0.7; }
     .assertion .role { margin-left: auto; }
     .repeats { color: var(--sb-muted); font-size: 12px; }
@@ -122,6 +165,8 @@
     .source { --sheet: color-mix(in srgb, var(--sb-surface) 94%, #f3e2b8); position: relative; display: flex; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12)) drop-shadow(0 3px 7px rgba(0,0,0,0.14)); }
     .source::after { content: ''; position: absolute; top: 0; right: 0; width: var(--fold); height: var(--fold); border-left: 1px solid var(--edge); border-bottom: 1px solid var(--edge); border-bottom-left-radius: 2px; background: linear-gradient(to top right, color-mix(in srgb, var(--sheet) 84%, var(--sb-text)) 50%, transparent 50%); }
     .paper { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 10px 14px 10px 13px; border: 1px solid var(--edge); border-radius: 2px; clip-path: polygon(0 0, calc(100% - var(--fold)) 0, 100% var(--fold), 100% 100%, 0 100%); background: linear-gradient(135deg, color-mix(in srgb, var(--sheet) 97%, #fff), var(--sheet) 45%, color-mix(in srgb, var(--sheet) 93%, #000)); }
+    .paper { cursor: pointer; }
+    .paper:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: -3px; }
     .source.is-lit { outline: none; }
     .source.is-lit .paper { background: color-mix(in srgb, var(--sb-accent) 14%, var(--sheet)); }
     .paper-head { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; padding-right: 10px; }
@@ -141,10 +186,41 @@
     .flow-hint { margin: -4px 0 12px; color: var(--sb-muted); font-size: 13px; }
     .flow { position: relative; display: grid; gap: 22px; }
     .flow-iteration { display: grid; gap: 30px; padding: 12px 14px 16px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background-image: linear-gradient(var(--sb-drop), var(--sb-drop)); }
-    .flow-iteration-title { margin: 0; font-size: 13px; font-weight: 600; }
+    .flow-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    .steps { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+    .step { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); color: var(--sb-text); font: inherit; cursor: pointer; }
+    .step:disabled { opacity: 0.4; cursor: default; }
+    .step:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+    .node.is-carried { background: none; }
+    .flow-defs { position: absolute; }
+    #flow-arrow path { fill: var(--sb-accent); }
+    .flow-bands { display: grid; gap: 30px; }
     .flow-band { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }
     .flow-band .flow-title { margin: 6px 0 0; }
     .flow-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+    /* Across: each band a column, with room between them for links to turn and be labelled. */
+    .flow.is-across { width: max-content; min-width: 100%; }
+    .flow.is-across .flow-bands { grid-auto-flow: column; grid-auto-columns: max-content; gap: 72px; align-items: start; }
+    .flow.is-across .flow-band { width: 170px; }
+    .flow.is-across .flow-band.is-collapsed { width: 96px; }
+    /* A folded band: each card down to its icon and code. */
+    .flow-band.is-collapsed .node > :not(.node-head), .flow-band.is-collapsed .node-head > :not(.card-icon, .claim-id) { display: none; }
+    .flow-band.is-collapsed .flow-cards { grid-template-columns: repeat(auto-fill, minmax(96px, max-content)); }
+    .flow.is-across .flow-band.is-collapsed .flow-cards { grid-template-columns: 1fr; }
+    .flow-toggle { display: inline-flex; align-items: baseline; gap: 5px; padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; cursor: pointer; }
+    .flow-toggle::before { content: '▾'; font-size: 11px; }
+    .flow-band.is-collapsed .flow-toggle::before { content: '▸'; }
+    .flow-toggle:hover { color: var(--sb-text); }
+    .flow-toggle:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 2px; }
+    .flow.is-across .flow-band { grid-template-columns: 1fr; gap: 8px; }
+    .flow.is-across .flow-band .flow-title { margin: 0; }
+    .flow.is-across .flow-cards { grid-template-columns: 1fr; }
+    .flow-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+    .flow-head h3 { margin: 0; }
+    .flip { display: flex; padding: 2px; border-radius: var(--sb-radius); background: var(--sb-surface-2); }
+    .flip button { padding: 3px 10px; border: 0; border-radius: calc(var(--sb-radius) - 2px); background: none; color: var(--sb-muted); font: inherit; font-size: 12px; cursor: pointer; }
+    .flip button[aria-pressed="true"] { background: var(--sb-surface); color: var(--sb-text); box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+    .flip button:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
     .node--awaited { border-style: dashed; background: none; color: var(--sb-muted); }
     .node-note { color: var(--sb-muted); font-size: 11px; font-style: italic; }
     .node-file { color: var(--sb-muted); font: 10px ui-monospace, Menlo, Consolas, monospace; }
@@ -157,23 +233,44 @@
     .node-head .card-icon { width: 20px; height: 20px; }
     .node-head .card-icon svg { width: 13px; height: 13px; }
     .node-head .status { padding: 1px 7px; font-size: 10px; }
+    .node-head .format { margin-left: auto; padding: 0 5px; border-color: color-mix(in srgb, var(--sb-text) 24%, transparent); color: var(--sb-muted); letter-spacing: 0.04em; }
     .node-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
     .flow.is-tracing .node:not(.is-lit) { opacity: 0.25; }
     .node.is-lit { outline: none; }
     .node.is-focus { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
     .flow-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-    .flow-lines path { fill: none; stroke: var(--sb-accent); stroke-width: 1.5; stroke-linejoin: round; opacity: 0.7; }
+    .flow-lines path { fill: none; stroke: var(--sb-accent); stroke-width: 1.5; stroke-linejoin: round; opacity: 0.7; marker-end: url(#flow-arrow); }
     .flow-lines text { fill: var(--sb-accent); font: 600 10px var(--sb-font); paint-order: stroke; stroke: var(--sb-surface); stroke-width: 4px; stroke-linejoin: round; }
-    .is-arrived { outline: 3px solid var(--sb-accent); outline-offset: 3px; transition: outline-color 0.4s; }
     /* The key: scope, grade and standing. */
     .parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
     .parts dl { margin: 0; font-size: 14px; }
     .parts dt { font-weight: 600; margin-top: 6px; }
     .parts dd { margin: 0; color: var(--sb-muted); }
+    #source-modal { --sb-modal-width: 860px; }
+    #source-view { max-height: min(70vh, 640px); }
+    #source-modal[size="full"] #source-view { max-height: none; height: 100%; }
+    #card-modal { --sb-modal-width: 980px; }
+
+    /* A card opened in full: what it says on the left, its folds on the right, stacked when narrow. */
+    .claim--open .claim-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px 20px; align-items: start; }
+    .claim--open .claim-body > * + * { margin-top: 0; }
+    .card-main, .card-side { display: grid; gap: 12px; }
+
+    /* Each format its own colour, shared by its icon and its badge so the two read together.
+       Mixed from the theme's colours, away from the plain tones so a format never reads as a status. */
+    [data-format] { --format: var(--sb-muted); }
+    [data-format="document"] { --format: var(--sb-accent); }
+    [data-format="notes"] { --format: color-mix(in srgb, var(--sb-warn, #d69e2e) 75%, var(--sb-bad, #c53030)); }
+    [data-format="data"] { --format: color-mix(in srgb, var(--sb-good, #3f9142) 85%, var(--sb-warn, #d69e2e)); }
+    [data-format="image"] { --format: color-mix(in srgb, var(--sb-bad, #c53030) 70%, var(--sb-accent)); }
+    [data-format="web"] { --format: color-mix(in srgb, var(--sb-accent) 60%, var(--sb-bad, #c53030)); }
+    [data-format="analysis"] { --format: color-mix(in srgb, var(--sb-accent) 40%, var(--sb-good, #3f9142)); }
+    .card-icon[data-format] { --tone: var(--format); }
+    .format[data-format] { color: var(--format); border-color: color-mix(in srgb, var(--format) 45%, transparent); }
   </style>
 </head>
 <body>
-  <sb-shell heading="Weighing Evidence">
+  <sb-shell heading="Domain Discovery Engine">
     <sb-theme-settings slot="settings"></sb-theme-settings>
     <p><strong>Goal:</strong> see what's true, what's assumed and what's in dispute, from what each source asserts and how well it can speak to it.</p>
   </sb-shell>
@@ -183,13 +280,34 @@
       <h2>Claims and their sources</h2>
       <p>Usually called sensemaking, or evidence synthesis. Everything here is source material, the agent's own analyses included, and each passage that speaks to a claim is an assertion: yes or no. A claim is a group of assertions that say the same thing, under a line someone wrote for them. Its standing is worked out from its assertions, never labelled by hand.</p>
       <p>Questions and decisions have cards of their own, since each does a different job: a question gathers the passages that answer it, and a decision records what was chosen and why.</p>
-      <p class="try"><strong>Try:</strong> click a passage to read all of it. Point at one to find its source below, or at a source to light every passage it gives.</p>
+      <p class="try"><strong>Try:</strong> click a passage or a source to open the source in full. Point at a passage to find its source below, or at a source to light every passage it gives.</p>
     </section>
 
     <section class="card">
-      <h3>How it connects</h3>
-      <p class="flow-hint">The loop unrolled downwards, one block per iteration: what arrived from the world, then the sandbox’s own records made from it (each one a file among the sources). A card that changes appears again, updated, in the iteration that changed it. Point at a card to see what it rests on and what rests on it; click to go to it.</p>
+      <div class="flow-head">
+        <h3>How it connects</h3>
+        <div class="flip" role="group" aria-label="Direction">
+          <button type="button" data-direction="across" aria-pressed="true">→ Left to right</button>
+          <button type="button" data-direction="down" aria-pressed="false">↓ Top to bottom</button>
+        </div>
+      </div>
+      <p class="flow-hint">One iteration of the loop, on three boards, each laid out by the part a card plays. What we know: the investigations that gathered sources, the values captured from them, what was interpreted, reasoned and assumed, what is still open, and what is still being looked into. Where we’re going: what was in force, what was decided, and what that brought about. What we’re building: entities and domain primitives proposed for the model, integrated into it, or rejected, and the scenarios and rules that test it, passing or failing as they run against the model; each is founded on cards from the other boards, and what an integrated part is comes from its class in the model’s code. No card is ever edited: later cards test or supersede it, and what follows is worked out for each iteration. Point at a card to see what it rests on and what rests on it; click to open it. Click a column’s title to fold it down to its codes.</p>
+      <div class="flow-bar">
+        <div class="steps">
+          <button type="button" class="step" data-step="-1" aria-label="Previous iteration">←</button>
+          <span id="iteration-title"></span>
+          <button type="button" class="step" data-step="1" aria-label="Next iteration">→</button>
+        </div>
+        <div class="flip" role="group" aria-label="Board">
+          <button type="button" data-board="0" aria-pressed="true">What we know</button>
+          <button type="button" data-board="1" aria-pressed="false">Where we’re going</button>
+          <button type="button" data-board="2" aria-pressed="false">What we’re building</button>
+        </div>
+      </div>
       <div class="scroll" id="flow"></div>
+      <svg class="flow-defs" width="0" height="0" aria-hidden="true">
+        <defs><marker id="flow-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 1 10 5 0 9z"/></marker></defs>
+      </svg>
     </section>
 
     <section class="card">
@@ -198,9 +316,37 @@
     </section>
 
     <section class="card">
-      <h3>Goals, questions, decisions, actions and risks</h3>
+      <h3>Entities, domain primitives, scenarios and rules</h3>
       <div class="asked">
+        <div id="entities"></div>
+        <div id="primitives"></div>
+        <div id="scenarios"></div>
+        <div id="rules"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Investigations, observations, metrics, assumptions, inferences, definitions and opinions</h3>
+      <div class="asked">
+        <div id="investigations"></div>
+        <div id="observations"></div>
+        <div id="metrics"></div>
+        <div id="assumptions"></div>
+        <div id="inferences"></div>
+        <div id="definitions"></div>
+        <div id="opinions"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Outcomes, predictions, experiments, goals, agreements, constraints, questions, decisions, actions and risks</h3>
+      <div class="asked">
+        <div id="outcomes"></div>
+        <div id="predictions"></div>
+        <div id="experiments"></div>
         <div id="goals"></div>
+        <div id="agreements"></div>
+        <div id="constraints"></div>
         <div id="questions"></div>
         <div id="decisions"></div>
         <div id="actions"></div>
@@ -243,84 +389,99 @@
 
     <section class="card parts">
       <div>
-        <h3>Kinds: what a thing is</h3>
+        <h3>What we know</h3>
         <dl>
-          <dt>Question</dt><dd>Something open, with rival answers under it.</dd>
-          <dt>Claim</dt><dd>A possible answer; true or not, depending on its evidence.</dd>
-          <dt>Decision</dt><dd>Choosing one claim. Made true by deciding, so it can be made on weak ground.</dd>
-          <dt>Source</dt><dd>Where evidence comes from, with what kind it is and its track record.</dd>
+          <dt>Investigation</dt><dd>Finding what’s already there; it gathers sources.</dd>
+          <dt>Source</dt><dd>Material from the world, never edited.</dd>
+          <dt>Observation</dt><dd>A value captured from a source.</dd>
+          <dt>Metric</dt><dd>A quantity tracked over time; observations are its readings.</dd>
+          <dt>Claim</dt><dd>Something said about the world, weighed on its sources.</dd>
+          <dt>Definition</dt><dd>What a word means here.</dd>
+          <dt>Opinion</dt><dd>What someone thinks should be, and why.</dd>
+          <dt>Inference</dt><dd>Reasoned from other cards; as sound as its premises.</dd>
+          <dt>Assumption</dt><dd>Held without evidence; tested by later cards.</dd>
+          <dt>Question</dt><dd>Something open.</dd>
         </dl>
       </div>
       <div>
-        <h3>Standing: how sure, worked out</h3>
+        <h3>Where we’re going</h3>
         <dl>
-          <dt><span class="status" data-status="corroborated">corroborated</span></dt><dd>Two or more independent sources for, none against.</dd>
-          <dt><span class="status" data-status="single source">single source</span></dt><dd>One independent source for, none against.</dd>
-          <dt><span class="status" data-status="contested">contested</span></dt><dd>Sources for and against.</dd>
-          <dt><span class="status" data-status="refuted">refuted</span></dt><dd>Only sources against.</dd>
-          <dt><span class="status" data-status="assumption">assumption</span></dt><dd>No evidence at all, yet still in play.</dd>
+          <dt>Outcome</dt><dd>What happened, measured against a goal or a prediction.</dd>
+          <dt>Goal</dt><dd>A target on a metric.</dd>
+          <dt>Prediction</dt><dd>A decision’s bet on what it will bring about.</dd>
+          <dt>Agreement</dt><dd>Terms between parties, changed only with them.</dd>
+          <dt>Constraint</dt><dd>A limit to work within: where it comes from, what it protects.</dd>
+          <dt>Decision</dt><dd>What was chosen, and why.</dd>
+          <dt>Experiment</dt><dd>A test run on purpose, on the world or on the model.</dd>
+          <dt>Action</dt><dd>Something that has to happen.</dd>
+          <dt>Risk</dt><dd>Something that could go wrong.</dd>
         </dl>
       </div>
       <div>
-        <h3>Relations: how things connect</h3>
+        <h3>What we’re building</h3>
         <dl>
-          <dt>For / against</dt><dd>The cells: a source's evidence on a claim.</dd>
-          <dt>How it knows</dt><dd>Measured, saw, told or inferred: from empirical to anecdotal and second-hand.</dd>
-          <dt>Answers</dt><dd>The grouping: a claim under its question.</dd>
-          <dt>Depends on</dt><dd>A claim that's only true if another is.</dd>
-          <dt>Copies</dt><dd>A source repeating another; it agrees, but counts once.</dd>
+          <dt>Entity</dt><dd>A thing in the domain with properties and behaviour; a class in the model.</dd>
+          <dt>Domain primitive</dt><dd>A value with constraints and no behaviour, such as a delay.</dd>
+          <dt>Scenario</dt><dd>Given, When, Then, played against the model.</dd>
+          <dt>Rule</dt><dd>A mandate or conditional, checked against the model.</dd>
         </dl>
       </div>
     </section>
   </main>
 
+  <sb-modal id="card-modal" expandable>
+    <div id="card-view"></div>
+  </sb-modal>
+
+  <sb-modal id="source-modal" expandable>
+    <sb-source id="source-view"></sb-source>
+  </sb-modal>
+
   <script>
-    // Harrow Ridge, a 32-turbine wind farm on a non-firm grid connection, curtailed on its
-    // windiest days whenever the Tarn Lane 132 kV line reaches its limit.
+    // Ashford International's departure board, and how it decides what to show. Trains come in
+    // from the data feed; the board's controller turns each one into a line on the board.
     const SOURCES = [
-      { id: 'SRC-1', name: 'SCADA log', title: 'Farm SCADA log, February', summary: 'Setpoints, availability and output for every turbine, every ten minutes.', format: 'data', role: 'record', asOf: '28 Feb 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-2', name: 'Grid operator', title: 'Constraint notice, 4 February', summary: 'The network operator’s notice limiting the farm’s output, and why.', format: 'document', role: 'record', asOf: '4 Feb 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-3', name: 'Site manager', title: 'Maintenance log, February', summary: 'Alarms, faults and site visits, in the site manager’s notes.', format: 'notes', role: 'record', asOf: '28 Feb 2026', grade: { distance: 2, trust: 3, clarity: 2 } },
-      { id: 'SRC-4', name: 'Local paper', title: '“Turbines idle on windiest day”', summary: 'The local paper’s story, written from the campaign blog.', format: 'web', role: 'record', asOf: '6 Feb 2026', copies: 'SRC-5', grade: { distance: 1, trust: 2, clarity: 3 } },
-      { id: 'SRC-5', name: 'Campaign blog', title: 'Ridge Watch blog post', summary: 'A local campaign group says the turbines were iced up.', format: 'web', role: 'opinion', asOf: '5 Feb 2026', grade: { distance: 1, trust: 1, clarity: 2 } },
-      { id: 'SRC-6', name: 'Network plan', title: 'Network development plan 2026', summary: 'The grid operator’s plan for reinforcing the Tarn Lane circuit.', format: 'document', role: 'plan', asOf: '10 Jan 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-7', name: 'Agent', title: 'Curtailment in February', summary: 'The agent’s reading of the SCADA log against the wind and day-ahead prices.', format: 'analysis', role: 'record', asOf: '1 Mar 2026', derivedFrom: 'SRC-1', grade: { distance: 2, trust: 2, clarity: 3 } },
-      { id: 'SRC-8', name: 'Contractor', title: 'Reinforcement progress report, February', summary: 'The cable contractor’s monthly report on the second circuit.', format: 'document', role: 'record', asOf: '24 Feb 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
-      { id: 'SRC-9', name: 'Community fund', title: 'Email from the community fund', summary: 'The fund’s trustees ask how curtailment affects their payments.', format: 'email', role: 'opinion', asOf: '12 Feb 2026', grade: { distance: 2, trust: 3, clarity: 3 } },
-      { id: 'SRC-10', name: 'Board', title: 'Board minute, 26 February', summary: 'The Harrow Ridge board’s resolutions on curtailment.', format: 'document', role: 'decision', asOf: '26 Feb 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-11', name: 'Brackley Hydrogen', title: 'Flexibility offer', summary: 'A nearby electrolyser offers to buy power during constraint periods.', format: 'document', role: 'plan', asOf: '18 Feb 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
-      { id: 'SRC-12', name: 'Brackley Hydrogen', title: 'March statement', summary: 'What the electrolyser took during constraint periods in March, and paid.', format: 'document', role: 'record', asOf: '31 Mar 2026', grade: { distance: 3, trust: 2, clarity: 3 } },
-      { id: 'SRC-13', name: 'SCADA log', title: 'Farm SCADA log, March', summary: 'Setpoints, availability and output for every turbine, every ten minutes.', format: 'data', role: 'record', asOf: '31 Mar 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-1', gatheredBy: 'INV-3', name: 'Display supplier', title: 'Board controller manual, v4.2', summary: 'How the supplier says the board decides what to show, and how its rules are set up.', path: 'sources/supplier/controller-manual-v4.2.pdf', format: 'document', role: 'plan', asOf: '2019', grade: { distance: 2, trust: 3, clarity: 3 } },
+      { id: 'SRC-2', gatheredBy: 'INV-1', name: 'Station camera', title: 'Board stills, Tuesday afternoon', summary: 'A photo of the main board every minute, from 14:00 to 15:00.', path: 'sources/board/stills-2026-10-06.png', format: 'image', role: 'record', asOf: '6 Oct 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-3', gatheredBy: 'INV-2', name: 'Dispatcher', title: 'Talk with a platform dispatcher', summary: 'Notes from twenty minutes on platform 4 with the afternoon dispatcher.', path: 'sources/interviews/dispatcher.md', format: 'notes', role: 'record', asOf: '7 Oct 2026', grade: { distance: 2, trust: 3, clarity: 2 } },
+      { id: 'SRC-4', gatheredBy: 'INV-4', name: 'Commuter newsletter', title: '“The board that cries On time”', summary: 'The commuter group’s newsletter, retelling a forum post.', path: 'sources/web/commuter-newsletter.html', format: 'web', role: 'record', asOf: '3 Oct 2026', copies: 'SRC-5', grade: { distance: 1, trust: 2, clarity: 3 } },
+      { id: 'SRC-5', gatheredBy: 'INV-4', name: 'Passenger forum', title: '“Board said On time, train never came”', summary: 'A passenger says the board showed On time for a train with no estimate.', path: 'sources/web/forum-on-time.html', format: 'web', role: 'opinion', asOf: '1 Oct 2026', grade: { distance: 1, trust: 1, clarity: 2 } },
+      { id: 'SRC-6', name: 'Agent', title: 'The board against the feed', summary: 'The agent’s reading of the stills against the train data feed for the same hour.', path: 'sources/analyses/board-against-feed.md', format: 'analysis', role: 'record', asOf: '7 Oct 2026', derivedFrom: 'SRC-2', grade: { distance: 2, trust: 2, clarity: 3 } },
+      { id: 'SRC-7', gatheredBy: 'INV-3', name: 'Customer services', title: 'Complaints log, September', summary: 'Every complaint made to the station in September, with its category.', path: 'sources/data/complaints-2026-09.csv', format: 'data', role: 'record', asOf: '30 Sep 2026', grade: { distance: 3, trust: 3, clarity: 2 } },
+      { id: 'SRC-8', gatheredBy: 'INV-3', name: 'Station team', title: 'Station team minute, 9 October', summary: 'The station team’s resolutions on the departure board.', path: 'sources/minutes/station-team-2026-10-09.pdf', format: 'document', role: 'decision', asOf: '9 Oct 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-9', name: 'Board controller', title: 'Message log, 19 to 25 October', summary: 'Every message the board showed in the week after the new rule, with the train it was for.', path: 'sources/board/message-log-2026-10-25.csv', format: 'data', role: 'record', asOf: '25 Oct 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-10', name: 'Customer services', title: 'Complaints log, October', summary: 'Every complaint made to the station in October, with its category.', path: 'sources/data/complaints-2026-10.csv', format: 'data', role: 'record', asOf: '31 Oct 2026', grade: { distance: 3, trust: 3, clarity: 2 } },
+      { id: 'SRC-11', name: 'Survey team', title: 'Passenger survey on the board', summary: 'Two hundred passengers asked which parts of the board they read before heading for a train.', path: 'sources/data/passenger-survey-2026-10.csv', format: 'data', role: 'record', asOf: '28 Oct 2026', grade: { distance: 2, trust: 3, clarity: 2 } },
+      { id: 'SRC-12', gatheredBy: 'INV-5', name: 'Duty manager', title: 'Notes from a busy morning', summary: 'The duty manager watched the main board through the morning peak.', path: 'sources/interviews/morning-peak.md', format: 'notes', role: 'record', asOf: '29 Oct 2026', grade: { distance: 2, trust: 3, clarity: 2 } },
+      { id: 'SRC-13', name: 'Station team', title: 'Station team minute, 6 November', summary: 'The station team’s resolutions after October’s results.', path: 'sources/minutes/station-team-2026-11-06.pdf', format: 'document', role: 'decision', asOf: '6 Nov 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-14', name: 'Signalling control', title: 'Letter of agreement, platform-change notice', summary: 'Signalling control and the station team agree how much notice of a platform change each gives.', path: 'sources/agreements/platform-change-notice.pdf', format: 'document', role: 'decision', asOf: '5 Nov 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
+      { id: 'SRC-15', name: 'Sandbox model', title: 'Model run: October’s platform changes, replayed', summary: 'The board’s model replaying every platform change in October with PA announcements and seven minutes’ notice from signalling.', path: 'sources/runs/replay-2026-10.csv', format: 'data', role: 'record', asOf: '7 Nov 2026', grade: { distance: 2, trust: 2, clarity: 3 } },
     ];
 
     // Each assertion: what the passage says to the claim, '+' (yes) or '−' (no), and its words.
     const CLAIMS = [
-      { id: 'CLM-1', text: 'On 4 February the farm was curtailed because the Tarn Lane line reached its thermal limit, not because of any fault at the farm.', summary: 'The grid operator’s notice, the SCADA log and the agent’s reading of it all point to a network limit: every turbine was available, and output sat on the 40 MW cap for nine hours. Well backed.', assertions: {
-        'SRC-2': ['+', 'Constraint applied 14:05–23:10: Harrow Ridge limited to 40 MW to keep the Tarn Lane 132 kV circuit within its thermal rating.'],
-        'SRC-1': ['+', '14:10: active power setpoint cut from 96 MW to 40 MW by network instruction NI-0412. Turbines available: 32 of 32. No faults logged.'],
-        'SRC-7': ['+', 'Output followed the 40 MW limit to within 1 MW for nine hours, while the wind would have supported about 90 MW. That is a network limit, not a farm fault.'],
+      { id: 'CLM-1', text: 'A train is taken off the board as soon as it has departed.', summary: 'The stills show it, and the agent’s reading of them agrees. The manual says the same, though a manual says how the board should work, not how it does. Well backed.', assertions: {
+        'SRC-2': ['+', '13:58 Hastings: on the board at 13:57, gone at 13:59, the minute the feed marked it departed.'],
+        'SRC-6': ['+', 'Every departed train left the board within a minute of the feed marking it departed. None stayed on.'],
+        'SRC-1': ['+', 'Departed services are removed from display.'],
       } },
-      { id: 'CLM-2', text: 'The turbines were iced up on 4 February, and the grid limit was a cover story.', summary: 'Only the campaign blog says so, and the paper repeats it. The site manager logged no icing alarms all month, and the SCADA log shows every turbine available. This leans false.', assertions: {
-        'SRC-5': ['+', 'The blades were iced up on the 4th, and they’re hiding behind the grid. Nobody turns turbines off on the windiest day of the year.'],
-        'SRC-4': ['+', 'Campaigners say the turbines were iced up, and that the grid limit was a cover story.'],
-        'SRC-3': ['−', 'No icing alarms on any turbine in February; blade heaters not called on once.'],
+      { id: 'CLM-2', text: 'Any delay, even a minute, shows an expected time instead of On time.', summary: 'The stills and the agent’s reading agree. The manual says delays under five minutes show On time, but it describes how the board was meant to work; the board itself does otherwise.', assertions: {
+        'SRC-2': ['+', '14:05 Cambridge, three minutes late in the feed: shown as Exp 14:08.'],
+        'SRC-6': ['+', 'All four delayed trains showed an expected time, whether one minute late or twelve.'],
+        'SRC-1': ['−', 'Delays of under five minutes are shown as On time.'],
       } },
-      { id: 'CLM-3', text: 'Curtailment falls sharply once the second Tarn Lane circuit is energised in June.', summary: 'Only the grid operator’s plan says so, and a plan says what should happen, not what will. RSK-1 rests on it, so it’s an assumption, and the contractor’s report already puts the circuit months later.', assertions: {
-        'SRC-6': ['+', 'Tarn Lane reinforcement: second 132 kV circuit, energisation planned for June 2026. Non-firm curtailment in the zone expected to fall by about 80%.'],
+      { id: 'CLM-3', text: 'When a train has no estimate, the board shows it as On time.', summary: 'Only the forum post says so, and the newsletter repeats it. The stills and the dispatcher both say such a train shows as Delayed. This leans false.', assertions: {
+        'SRC-5': ['+', 'No estimate on the app, and the board said On time right up until it vanished. Never came.'],
+        'SRC-4': ['+', 'One commuter reports the board showing On time for a train that had no estimate at all.'],
+        'SRC-2': ['−', '14:12 Dover Priory, no estimate in the feed: shown as Delayed, platform –.'],
+        'SRC-3': ['−', 'If there’s no estimate it says Delayed. I’ve never seen it say On time for one of those.'],
       } },
-      { id: 'CLM-4', text: 'The second circuit won’t be energised before November.', summary: 'The contractor’s forecast, after a fourteen-week delay to the cable. Nobody else has updated the date yet.', assertions: {
-        'SRC-8': ['+', 'Cable delivery delayed by 14 weeks. Energisation now forecast for November at the earliest.'],
+      { id: 'CLM-4', text: 'Until a platform is confirmed, the board shows a dash.', summary: 'The stills show it, and the dispatcher sees it every day. Well backed.', assertions: {
+        'SRC-2': ['+', '14:20 Bedford, platform unconfirmed in the feed: platform column shows –.'],
+        'SRC-3': ['+', 'Until signalling confirms a platform we get a dash, and people crowd the concourse waiting for it.'],
       } },
-      { id: 'CLM-5', informs: ['QST-1'], text: 'Curtailment cost the farm about £180,000 in February.', summary: 'The agent’s figure, from the curtailed energy and the month’s average day-ahead price. Nothing disputes it, but nothing else checks it either.', assertions: {
-        'SRC-7': ['+', 'About 1,900 MWh curtailed in February, at an average day-ahead price of £95/MWh: about £180,000 of lost revenue.'],
-      } },
-      { id: 'CLM-6', informs: ['QST-2'], text: 'The farm lost about 1,900 MWh to curtailment in February.', summary: 'The SCADA log’s own count and the agent’s reading of it agree. Well backed.', assertions: {
-        'SRC-1': ['+', 'February curtailed energy (setpoint below available): 1,912 MWh.'],
-        'SRC-7': ['+', 'About 1,900 MWh curtailed in February, mostly on six windy days.'],
-      } },
-      { id: 'CLM-7', text: 'Curtailment carries on at about February’s level until the second circuit is in.', summary: 'The board’s own belief, which no record backed: an assumption DEC-1 rests on. March’s SCADA log goes against it, with curtailment down to a third of February’s. Now refuted.', assertions: {
-        'SRC-10': ['+', 'On the basis that curtailment continues at around February’s level, the flexibility contract pays back within its first year.'],
-        'SRC-13': ['−', 'March curtailed energy: 640 MWh, a third of February’s. The Tarn Lane line was rarely at its limit.'],
+      { id: 'CLM-5', informs: ['QST-1'], text: 'A changed platform shows only in the platform column, with no message.', summary: 'The agent’s reading of the stills. Nothing disputes it, but nothing else checks it either.', assertions: {
+        'SRC-6': ['+', 'Gatwick Airport moved from platform 3 to 9: the platform column showed 9, and the message line stayed blank.'],
       } },
     ];
 
@@ -329,78 +490,298 @@
 
     // A question is raised by a passage, and answered by passages from any source.
     const QUESTIONS = [
-      { id: 'QST-1', text: 'Is the farm paid for the energy it’s told not to generate?',
-        answer: 'No. The farm has a non-firm connection, so the network operator pays nothing for curtailment. February’s loss of about £180,000 falls on the farm, and on the community fund’s share.',
-        raisedBy: ['SRC-9', 'Our payments follow the farm’s output. When the farm is told to turn down, is it paid for the energy it would have made?'],
+      { id: 'QST-1', text: 'Why does a changed platform get no message?',
+        answer: 'Because no rule covers it. The board has message rules for cancellations and delays only; a new platform shows in the platform column and nowhere else.',
+        raisedBy: ['SRC-3', 'Platform changes are the worst. The number changes and nothing else does, so half of them miss it.'],
         answers: {
-          'SRC-2': 'Harrow Ridge holds a non-firm connection: constraint under it is not compensated.',
-          'SRC-7': 'Under the non-firm terms, February’s loss of about £180,000 falls on the farm; nothing is paid back.',
+          'SRC-1': 'Messages: cancellation, with reason; delay, with reason. Further message rules may be added in configuration.',
+          'SRC-6': 'None of the board’s message rules mentions the platform, so a change shows only in the platform column.',
         } },
-      { id: 'QST-2', text: 'Would a battery on site pay back by storing the energy that’s curtailed?',
-        raisedBy: ['SRC-10', 'The board asks whether a battery on site could store the energy now curtailed, and at what size it would pay back.'],
-        answers: {} },
+      { id: 'QST-2', text: 'Does the board change anything as a train becomes due?',
+        answer: 'No. Nothing on a train’s line changes as it becomes due; the board never says Boarding.',
+        raisedBy: ['SRC-8', 'The team asks whether the board ever says Boarding, or marks a train about to leave.'],
+        answers: {
+          'SRC-12': 'Between 07:30 and 09:00 the board never said Boarding; nothing on a train’s line changed as it became due.',
+        } },
+    ];
+
+    // No card is ever edited, only superseded or tested by a later one, so every iteration can be
+    // read as it was. What follows from the cards, such as an assumption being refuted, is worked
+    // out for each iteration rather than written into them.
+
+    // An investigation: learning on purpose by finding what's already there (watching, an
+    // interview, desk research, a web search), where an experiment makes something happen. A
+    // question, an assumption or a prediction may prompt it; what it gathers is source material,
+    // even when the agent fetched it, and the cards written from it come after. It's done once
+    // something it gathered has arrived.
+    const INVESTIGATIONS = [
+      { id: 'INV-1', form: 'watching', by: 'Agent',
+        text: 'See what the board actually shows, minute by minute.',
+        how: 'Ask for a photo of the main board every minute through a Tuesday afternoon.' },
+      { id: 'INV-2', form: 'interview', by: 'Station team',
+        text: 'Hear how the board behaves from someone who works under it.',
+        how: 'Twenty minutes on platform 4 with the afternoon dispatcher, notes taken on the spot.' },
+      { id: 'INV-3', form: 'desk research', by: 'Agent',
+        text: 'Find how the board is meant to work, and what the station has decided about it.',
+        how: 'Gather the supplier’s manual, the complaints log and the station team’s minutes.' },
+      { id: 'INV-4', form: 'web search', by: 'Agent',
+        text: 'Find what passengers say about the board.',
+        how: 'Search the passenger forum and local commuter groups for posts about the board.' },
+      { id: 'INV-5', prompt: 'QST-2', form: 'watching', by: 'Duty manager',
+        text: 'Find whether anything on the board changes as a train becomes due.',
+        how: 'Watch the main board through a morning peak, noting what changes in each train’s last minutes.' },
+      { id: 'INV-6', prompt: 'PRD-2', form: 'desk research', by: 'Agent',
+        text: 'Find how stations that already announce platform changes on the PA have fared.',
+        how: 'Search rail industry reports, and other stations’ published complaint figures from before and after they began announcing changes.' },
+    ];
+
+    // A metric: a quantity tracked over time, what's counted, from where and how often. Goals set
+    // targets on it, predictions forecast it, and observations are its readings.
+    const METRICS = [
+      { id: 'MET-1', name: 'Missed trains after a platform change', unit: 'passengers', every: 'month',
+        counted: 'Complaints from passengers who missed a train after a platform change.',
+        from: 'The customer services complaints log' },
+      { id: 'MET-2', name: 'Passengers who read the message line', unit: 'percent', every: 'survey',
+        counted: 'The share of surveyed passengers who say they read the message line under each train before heading for it.',
+        from: 'The passenger survey' },
+    ];
+
+    // An experiment: a test run on purpose, somewhere safe, rather than waiting for the world to
+    // answer: on the world (a survey, a trial) or on the model (a simulation in the sandbox,
+    // instant and free of risk, but only as good as the model). What would bear it out is written
+    // before it runs. Its results arrive as observations, so it's done once one has.
+    const EXPERIMENTS = [
+      { id: 'EXP-1', from: 'DEC-1', form: 'survey', on: 'world', tests: ['ASM-1'],
+        text: 'Ask two hundred passengers which parts of the board they read before heading for a train.',
+        method: 'The survey team on the concourse over three days, at the morning peak, midday and the evening peak.',
+        keeps: 'The board as it is, so the answers describe the board passengers know.',
+        counts: 'The share of passengers who read each part of the board.',
+        bearsOutIf: 'Most passengers say they read the message line.',
+        setIn: ['SRC-8', 'The team asks for a survey of which parts of the board passengers read.'] },
+      { id: 'EXP-2', from: 'DEC-2', form: 'trial', on: 'world', tests: ['PRD-2'],
+        text: 'Announce platform changes on the PA for one week, on platforms 3 and 9 only.',
+        method: 'Every platform change for a train from platforms 3 or 9 is announced on the PA as soon as signalling confirms it.',
+        keeps: 'The board’s message on every platform, and the other platforms without PA announcements.',
+        counts: 'Passengers missing a train after a platform change, on platforms 3 and 9 against the rest.',
+        bearsOutIf: 'Platforms 3 and 9 miss fewer trains than the rest, at a rate that would reach two or fewer a month station-wide.',
+        setIn: ['SRC-13', 'Before the whole station, the PA announcements run for a week on platforms 3 and 9 only.'] },
+      { id: 'EXP-3', from: 'DEC-2', form: 'simulation', on: 'model', tests: ['PRD-2'],
+        text: 'Replay October’s platform changes through the board’s model, with PA announcements and seven minutes’ notice from signalling.',
+        method: 'The sandbox runs every platform change in October’s feed through the model, as DEC-2, AGR-1 and CON-3 would have it.',
+        keeps: 'October’s trains and platform changes, exactly as they were.',
+        counts: 'Changes announced at least five minutes before departure, as CON-2 asks.',
+        bearsOutIf: 'Every change is announced in time.',
+        setIn: ['SRC-13', 'First, the sandbox replays October\'s platform changes with the new arrangement.'] },
+    ];
+
+    // An observation: a value captured from source material, exactly where it sits and when it
+    // held, with no interpretation. One that reads a metric names it, one that tests an assumption
+    // or a prediction says which way, and one an experiment produced names it.
+    const OBSERVATIONS = [
+      { id: 'OBS-1', metric: 'MET-1', value: '12', of: 'Missed trains after a platform change', when: 'September 2026',
+        at: ['SRC-7', 'Missed train after platform change,12'] },
+      { id: 'OBS-2', metric: 'MET-1', value: '5', of: 'Missed trains after a platform change', when: 'October 2026',
+        at: ['SRC-10', 'Missed train after platform change,5'] },
+      { id: 'OBS-3', metric: 'MET-2', value: '38%', of: 'Passengers who read the message line under each train', when: 'October 2026',
+        at: ['SRC-11', 'Message line under each train,38%'], tests: ['ASM-1', '−'], resultOf: 'EXP-1' },
+      { id: 'OBS-4', value: '3 of 34', of: 'Platform changes that would still be announced under five minutes before departure', when: 'October 2026, replayed',
+        at: ['SRC-15', 'Announced under five minutes before departure,3'], tests: ['PRD-2', '−'], resultOf: 'EXP-3' },
+    ];
+
+    // An assumption: something held without evidence, which decisions may rest on. Its parts are
+    // its exposure: how it could be tested, and what follows if it's wrong. Tests come as later
+    // cards, never as edits to it.
+    const ASSUMPTIONS = [
+      { id: 'ASM-1', heldBy: 'Station team', text: 'Passengers read the message line under each train.',
+        testBy: 'Ask passengers which parts of the board they read before heading for a train.',
+        ifWrong: 'A message alone won’t reach most passengers, so DEC-1 can’t bring the goal much closer.',
+        setIn: ['SRC-8', 'The team expects passengers to see a message under the train, as they do for delays.'] },
+    ];
+
+    // An inference: reasoned from other cards rather than read in a source. It holds only as well
+    // as its premises do.
+    const INFERENCES = [
+      { id: 'INF-1', raisedBy: 'Agent', premises: ['CLM-5', 'OBS-1'],
+        text: 'Passengers miss trains after a platform change because nothing but the platform number tells them.',
+        step: 'A changed platform shows only as a new number in the platform column (CLM-5), and twelve passengers missed trains after a change in September (OBS-1).' },
+    ];
+
+    // A definition: what a term means here, so everyone reads it the same way. Every name in the
+    // model should be founded on one, so the model speaks the domain's own words.
+    const DEFINITIONS = [
+      { id: 'DEF-1', term: 'Delay', meaning: 'How late a train is, in whole minutes. Five minutes or more is a major delay; anything less is a minor one.',
+        example: 'A train three minutes late has a minor delay; the board still shows its expected time (CLM-2).',
+        setIn: ['SRC-1', 'A delay of five minutes or more is a major delay; anything less is a minor delay.'] },
+      { id: 'DEF-2', term: 'Train', meaning: 'A service scheduled to leave the station for a destination at a set time.',
+        example: 'The 14:05 to Cambridge.',
+        setIn: ['SRC-1', 'A service is a train scheduled to leave the station for a destination at a set time.'] },
+      { id: 'DEF-3', term: 'Board', meaning: 'The main departure board: one line per train, in order of scheduled departure.',
+        example: 'The board on the concourse, above the ticket gates.',
+        setIn: ['SRC-1', 'The display shows one line per service, in order of scheduled departure.'] },
+      { id: 'DEF-4', term: 'Platform', meaning: 'Where a train leaves from: one of the station’s platforms, numbered 1 to 12.',
+        example: 'Platform 9, where the Gatwick Airport train moved from platform 3.',
+        setIn: ['SRC-3', 'Platforms run from 1 to 12. Three and nine are the ones that swap most.'] },
+      { id: 'DEF-5', term: 'Clock time', meaning: 'A time of day by the station clock, in hours and minutes on the 24-hour clock.',
+        example: '14:05.',
+        setIn: ['SRC-1', 'All times are shown on the 24-hour clock, by the station clock.'] },
+    ];
+
+    // An opinion: what someone thinks should be, and why. It voices a view, so it bears on goals
+    // and decisions without being evidence of how things are.
+    const OPINIONS = [
+      { id: 'OPN-1', heldBy: 'Dispatcher', text: 'The board, not staff, should tell passengers about a platform change.',
+        because: 'Staff walking the platform reach too few people, and too late.',
+        said: ['SRC-3', 'The board should be telling them, not us running up and down the platform.'] },
     ];
 
     // A decision: the question, what was decided and why, the options weighed, and the
     // passages behind it.
-    const DECISION = {
+    const DECISIONS = [{
       id: 'DEC-1',
-      title: 'How does the farm cut its curtailment losses until the second circuit is in?',
+      title: 'How should the board tell passengers about a platform change?',
       status: 'accepted',
-      when: '2026-02-26',
-      deciders: ['Harrow Ridge board'],
+      when: '2026-10-09',
+      deciders: ['Station team'],
       options: [
-        { id: 'a', title: 'Accept curtailment until the circuit is in', pros: ['No cost, no new contract'], cons: ['About £180,000 lost in a windy month'] },
-        { id: 'b', title: 'Sell curtailed hours to Brackley Hydrogen', source: 'SRC-11', pros: ['Earns from the hours lost now'], cons: ['A new counterparty to rely on'] },
-        { id: 'c', title: 'Build a 20 MW battery on site', pros: ['Keeps the energy for later'], cons: ['£9m, and 18 months to build'] },
+        { id: 'a', title: 'Leave the board as it is', pros: ['No work'], cons: ['Twelve missed trains a month'] },
+        { id: 'b', title: 'Add a message: “Platform changed to 9”', source: 'SRC-1', pros: ['A change of settings, no new hardware'], cons: ['Only works if people read the message line'] },
+        { id: 'c', title: 'Flash the platform number', pros: ['Hard to miss'], cons: ['Needs a supplier upgrade'] },
       ],
       chosen: 'b',
-      restsOn: ['GOL-1', 'CLM-1', 'CLM-4', 'CLM-5', 'CLM-7', 'QST-1'],
-      decided: 'We sign a two-year flexibility contract with Brackley Hydrogen for our curtailed hours.',
-      reason: 'It earns from the hours we lose now, at no capital cost, and its extension option covers a late circuit. A battery would take longer to build than the circuit is likely to slip.',
-      // What the decision predicts, so the next iteration's material can bear it out or not.
-      expects: 'Selling curtailed hours earns back about £60,000 in a windy month, bringing losses to about £120,000: closer to the goal, not there. The second circuit has to close the rest.',
-      // Material that bears on what it expects: '+' bears it out, '−' goes against it.
-      checks: {
-        'SRC-12': ['−', 'March: 410 MWh taken during constraint periods; £17,200 paid. Constraint periods were short, with the line rarely at its limit.'],
-      },
+      restsOn: ['GOL-1', 'CON-1', 'CON-2', 'CLM-5', 'ASM-1', 'QST-1'],
+      decided: 'We add a message rule: when a train’s platform changes, the message line says “Platform changed to” and the new number.',
+      reason: 'It answers QST-1 directly, needs only a change of settings, and can be in place this week, well before trains leave. Flashing would need a supplier upgrade, which CON-1 rules out.',
       sources: [
-        { source: 'SRC-10', quote: 'Resolved: sign the two-year flexibility contract with Brackley Hydrogen for curtailed hours.' },
-        { source: 'SRC-11', quote: 'We will take up to 35 MW during any constraint period at £42/MWh, for two years, with an option to extend by one.' },
-        { source: 'SRC-7', quote: 'About 1,900 MWh curtailed in February, at an average day-ahead price of £95/MWh: about £180,000 of lost revenue.' },
+        { source: 'SRC-8', quote: 'Resolved: add a message to the board whenever a train’s platform changes.' },
+        { source: 'SRC-1', quote: 'Further message rules may be added in configuration.' },
+        { source: 'SRC-6', quote: 'None of the board’s message rules mentions the platform, so a change shows only in the platform column.' },
       ],
-    };
+    }, {
+      id: 'DEC-2',
+      title: 'How do platform changes reach the passengers who don’t read the message line?',
+      status: 'accepted',
+      when: '2026-11-06',
+      deciders: ['Station team'],
+      options: [
+        { id: 'a', title: 'Keep the message alone', pros: ['No more work'], cons: ['Five missed trains a month'] },
+        { id: 'b', title: 'Announce platform changes on the PA too', pros: ['Reaches people who never read the message line'], cons: ['Signalling has to confirm changes earlier'] },
+        { id: 'c', title: 'Flash the platform number', pros: ['Hard to miss'], cons: ['Needs a supplier upgrade, which CON-1 rules out'] },
+      ],
+      chosen: 'b',
+      restsOn: ['OUT-2', 'GOL-1', 'CON-1', 'CON-2', 'OBS-3'],
+      decided: 'We announce every platform change on the PA as well as the board.',
+      reason: 'Fewer than four in ten passengers read the message line (OBS-3), so the message alone can’t reach the goal. The PA reaches everyone on the concourse, and needs no change to the board.',
+      sources: [
+        { source: 'SRC-13', quote: 'Resolved: announce every platform change on the PA as well as the board.' },
+        { source: 'SRC-11', quote: 'Message line under each train,38%' },
+      ],
+    }];
 
 
-    // A goal: where the sandbox is trying to get to, how that's measured, and where things stand
-    // against it. Decisions are made towards it, and judged by whether they bring it closer.
+    // A goal: where the sandbox is trying to get to, as a target on a metric, and where things
+    // stand against it. Decisions are made towards it, and judged by whether they bring it closer.
     const GOALS = [
-      { id: 'GOL-1', text: 'Cut curtailment losses to under £50,000 a month by next winter.', status: 'off track',
-        measuredBy: 'Revenue lost to curtailment each month: curtailed energy from the SCADA log, at that month’s day-ahead price.',
-        now: 'About £180,000 in February (CLM-5): more than three times the target.',
-        from: ['CLM-5'],
-        setIn: ['SRC-10', 'Target: bring curtailment losses under £50,000 a month by next winter, and review against it at every board.'] },
+      { id: 'GOL-1', text: 'No more than two missed trains a month from platform changes, by January.', status: 'off track',
+        metric: 'MET-1', target: 'Two or fewer a month, by January.',
+        setIn: ['SRC-8', 'Target: no more than two missed-train complaints a month from platform changes, by January.'] },
+    ];
+
+    // A prediction: what a decision says will happen, by when, and how it will be measured. A goal
+    // is where we want to be; a prediction is a decision's own bet on what it will bring about. An
+    // outcome measured against it later says whether it was borne out.
+    const PREDICTIONS = [
+      { id: 'PRD-1', from: 'DEC-1', by: 'October 2026',
+        text: 'Missed trains after a platform change fall from twelve to a handful.',
+        metric: 'MET-1' },
+      { id: 'PRD-2', from: 'DEC-2', by: 'December 2026',
+        text: 'Missed trains after a platform change fall to two or fewer.',
+        metric: 'MET-1' },
+    ];
+
+    // An outcome: feedback from the world. What happened, measured against a goal or a
+    // prediction, so it says whether things worked; and what it teaches, which shapes what comes
+    // next. Failures tend to bring constraints, successes the practices worth keeping.
+    const OUTCOMES = [
+      { id: 'OUT-1', result: 'failed', against: 'GOL-1', from: ['OBS-1', 'INF-1'],
+        text: 'Passengers miss trains when a platform changes: twelve in September.',
+        teaches: 'A platform change shown only in the platform column goes unseen. Passengers need telling some other way.',
+        sources: [
+          { source: 'SRC-7', quote: 'Missed train after platform change,12' },
+          { source: 'SRC-3', quote: 'Platform changes are the worst. The number changes and nothing else does, so half of them miss it.' },
+        ] },
+      { id: 'OUT-2', result: 'partly', against: 'GOL-1', from: ['OBS-2'],
+        text: 'Missed trains after a platform change fell from twelve to five in October.',
+        teaches: 'The message helps, but it doesn’t reach everyone: more than half the misses went, but not enough to meet the goal.',
+        sources: [{ source: 'SRC-10', quote: 'Missed train after platform change,5' }] },
+      { id: 'OUT-3', result: 'worked', against: 'PRD-1', from: ['OBS-2'],
+        text: 'Missed trains after a platform change fell to five in October: the handful DEC-1 predicted.',
+        teaches: 'The message did what was predicted of it. The prediction was too modest for the goal, not wrong.',
+        sources: [{ source: 'SRC-10', quote: 'Missed train after platform change,5' }] },
+    ];
+
+    // A constraint: a limit the system has to work within, as goals pull it forward. Hard ones can't
+    // be moved; soft ones could be, at a cost. What it rules out says how it shapes decisions.
+    // Where it comes from names its cause, and what it protects names whose goal it serves, so
+    // it can be traced to a purpose, and moved by serving that purpose another way. One brought
+    // about in this step names what brought it about as its from; without one, it was in force.
+    // Causes: nature, scarcity, the unknown, someone's goal, a past decision, an agreement, a
+    // failure, values, or the system's own structure.
+    const CONSTRAINTS = [
+      { id: 'CON-1', text: 'The board’s logic can only change through its message rules; anything else needs a supplier upgrade.', firmness: 'hard', status: 'holds',
+        rulesOut: 'Flashing the platform number, or changing how the platform column shows a change.',
+        comesFrom: { cause: 'a past decision', text: 'The supplier’s design: everything but the message rules was fixed in the controller’s firmware when the board was bought.' },
+        protects: 'The supplier’s goal of a board it can support, so every deeper change goes through an upgrade it has tested.',
+        setIn: ['SRC-1', 'Display logic other than message rules is fixed in firmware, and changes to it need a supplier upgrade.'] },
+      { id: 'CON-2', text: 'A platform change must reach passengers at least five minutes before departure.', firmness: 'soft', status: 'holds',
+        rulesOut: 'Relying on staff calling out the change along the platform, which often comes too late.',
+        comesFrom: { cause: 'values', text: 'The station’s accessibility policy. The station team set it, and could change it.' },
+        protects: 'Passengers with reduced mobility, who need time to reach a new platform.',
+        setIn: ['SRC-8', 'As station policy, platform changes must reach passengers at least five minutes before departure, so those with reduced mobility can reach the new platform.'] },
+      { id: 'CON-3', from: 'AGR-1', text: 'Signalling must confirm a platform change at least seven minutes before departure.', firmness: 'soft', status: 'holds',
+        rulesOut: 'Late platform changes, made with no time left to announce them.',
+        comesFrom: { cause: 'an agreement', text: 'AGR-1, the station’s agreement with signalling control.' },
+        protects: 'CON-2’s five minutes’ notice for passengers: announcing takes about two, so signalling must confirm seven ahead.',
+        setIn: ['SRC-14', 'Signalling control will confirm every platform change at Ashford International at least seven minutes before the train\'s departure.'] },
+    ];
+
+    // An agreement: terms between parties, such as a standard, a protocol, a convention or a
+    // contract. Decided between several parties, it stands in force from then on, a common
+    // cause of constraints, and can only be changed with the parties to it.
+    const AGREEMENTS = [
+      { id: 'AGR-1', from: 'DEC-2', status: 'in force', parties: ['Signalling control', 'Station team'],
+        text: 'Signalling confirms every platform change at least seven minutes before departure, and the station announces it at once.',
+        sides: 'Signalling control confirms each change seven minutes ahead. The station team announces it on the PA and the board straight away.',
+        changedBy: 'Either side asking to review the terms, at three months’ notice.',
+        setIn: ['SRC-14', 'Either side may ask to review these terms at three months\' notice.'] },
     ];
 
     // An action: something that has to happen, who owns it, and how anyone can tell it's done.
+    // done names the source that shows it was, so it counts as done from when that arrives.
     const ACTIONS = [
-      { id: 'ACT-1', from: 'DEC-1', text: 'Agree metering with Brackley Hydrogen, so curtailed hours are counted the same way on both sides.', status: 'to do',
-        owner: 'Commercial manager', due: '2026-03-20',
-        doneWhen: 'Both sides sign a metering schedule matching the farm’s constraint periods half-hour by half-hour.',
-        why: 'DEC-1 is only worth what can be billed, and billing rests on both sides counting the same hours.',
-        sources: [{ source: 'SRC-11', quote: 'Payment is against metered import at our site, matched half-hourly to the farm’s constraint periods.' }] },
+      { id: 'ACT-1', from: 'DEC-1', text: 'Add the platform-change message rule on the board controller.', status: 'to do',
+        owner: 'Station systems lead', due: '2026-10-16',
+        doneWhen: 'The board’s message log shows “Platform changed to …” for the next train whose platform changes.',
+        why: 'DEC-1 only helps once the board shows it.',
+        done: 'SRC-9',
+        sources: [
+          { source: 'SRC-1', quote: 'Message rules are added under Configuration › Messages, and apply from the next refresh.' },
+          { source: 'SRC-9', quote: '2026-10-20 14:15,Gatwick Airport,Platform changed to 9' },
+        ] },
+      { id: 'ACT-2', from: 'DEC-2', text: 'Set the PA to announce every platform change as soon as signalling confirms it.', status: 'to do',
+        owner: 'Station systems lead', due: '2026-11-20',
+        doneWhen: 'The PA log shows an announcement for every platform change over a week.',
+        why: 'DEC-2 only helps if every change is announced, not just the ones staff notice.',
+        sources: [{ source: 'SRC-13', quote: 'Resolved: announce every platform change on the PA as well as the board.' }] },
     ];
 
     // A risk: something that could go wrong, how likely and how bad, and how it's handled.
     const RISKS = [
-      { id: 'RSK-1', from: ['DEC-1', 'CLM-3', 'CLM-4'], text: 'The second circuit slips past the flexibility contract, and curtailment returns at full cost.', status: 'open',
-        raisedBy: 'Agent', likelihood: 'possible', impact: 'severe',
-        ifItHappens: 'Windy months cost the farm around £180,000 again, with nothing earned back from the lost hours.',
-        handling: 'The contract can be extended by a year. Watch the contractor’s monthly report: the circuit has already moved from June to November.',
+      { id: 'RSK-1', from: ['DEC-1', 'ASM-1'], text: 'Passengers don’t read the message line, so a changed platform still goes unseen.', status: 'open',
+        raisedBy: 'Agent', likelihood: 'possible', impact: 'serious',
+        ifItHappens: 'Complaints stay near twelve a month, and the goal stays off track.',
+        handling: 'Watch October’s complaints. If they don’t fall, look again at flashing the platform number.',
         sources: [
-          { source: 'SRC-8', quote: 'Cable delivery delayed by 14 weeks. Energisation now forecast for November at the earliest.' },
-          { source: 'SRC-6', quote: 'Tarn Lane reinforcement: second 132 kV circuit, energisation planned for June 2026.' },
-          { source: 'SRC-11', quote: 'We will take up to 35 MW during any constraint period at £42/MWh, for two years, with an option to extend by one.' },
+          { source: 'SRC-3', quote: 'On a busy platform people glance up for the number and go.' },
         ] },
     ];
 
@@ -409,10 +790,384 @@
     // it's done, a risk for what to watch, a question for what would answer it, an assumption
     // for what would test it. When it arrives it becomes a source, and the loop turns once.
     const AWAITED = [
-      { id: 'NEXT-2', title: 'Signed metering schedule', for: 'ACT-1', why: 'shows it’s done' },
-      { id: 'NEXT-3', title: 'Contractor’s April report', for: 'RSK-1', why: 'to watch' },
-      { id: 'NEXT-4', title: 'Battery supplier’s quote', for: 'QST-2', why: 'would answer it' },
+      { id: 'NEXT-1', title: 'Board message log after the new rule', for: 'ACT-1', why: 'shows it’s done' },
+      { id: 'NEXT-2', title: 'Complaints log, October', for: 'RSK-1', why: 'to watch' },
+      { id: 'NEXT-3', title: 'Notes from a busy morning', for: 'INV-5', why: 'what it finds' },
+      { id: 'NEXT-4', title: 'Passenger survey on the board', for: 'EXP-1', why: 'its result' },
+      { id: 'NEXT-5', title: 'PA announcement log, one week', for: 'ACT-2', why: 'shows it’s done' },
+      { id: 'NEXT-6', title: 'Complaints log, December', for: 'PRD-2', why: 'would bear it out or not' },
+      { id: 'NEXT-7', title: 'Trial log, platforms 3 and 9', for: 'EXP-2', why: 'its result' },
+      { id: 'NEXT-8', title: 'Reports from stations that announce changes', for: 'INV-6', why: 'what it finds' },
     ];
+
+    // The domain model, as code. Domain primitives check their constraints when made and have no
+    // behaviour; entities have properties typed by primitives, and behaviour. The cards on What
+    // we're building draw what an integrated part is from these classes, never from prose.
+    class Delay {
+      static title = 'Delay';
+      static constraints = ['Whole minutes, from 0 up; unknown when there is no estimate.', 'Minor from 1 to 4 minutes, major from 5 (DEF-1).'];
+      constructor(minutes) {
+        if (minutes !== null && !(Number.isInteger(minutes) && minutes >= 0)) throw new RangeError(`Not a delay: ${minutes}`);
+        this.minutes = minutes;
+        Object.freeze(this);
+      }
+    }
+
+    class Platform {
+      static title = 'Platform';
+      static constraints = ['A whole number from 1 to 12: the station’s platforms.'];
+      constructor(number) {
+        if (!(Number.isInteger(number) && number >= 1 && number <= 12)) throw new RangeError(`Not a platform: ${number}`);
+        this.number = number;
+        Object.freeze(this);
+      }
+    }
+
+    class ClockTime {
+      static title = 'Clock time';
+      static constraints = ['Hours and minutes on the 24-hour clock, by the station’s clock.'];
+      constructor(text) {
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(text)) throw new RangeError(`Not a time: ${text}`);
+        this.text = text;
+        Object.freeze(this);
+      }
+    }
+
+    class Train {
+      static title = 'Train';
+      static properties = { time: ClockTime, destination: 'text', delay: Delay, platform: Platform, planned: Platform,
+        confirmed: 'yes or no', cancelled: 'yes or no', departed: 'yes or no', reason: 'text' };
+      static behaviour = {
+        expected: 'Its expected time: the scheduled time plus its delay.',
+        platformChanged: 'Whether it leaves from a platform other than the one planned.',
+      };
+      constructor(fields) { Object.assign(this, fields); }
+      expected() {
+        if (this.delay.minutes === null) return null;
+        const [hours, minutes] = this.time.text.split(':').map(Number);
+        const at = (hours * 60 + minutes + this.delay.minutes) % (24 * 60);
+        return new ClockTime(`${String(Math.floor(at / 60)).padStart(2, '0')}:${String(at % 60).padStart(2, '0')}`);
+      }
+      platformChanged() { return this.platform.number !== this.planned.number; }
+    }
+
+    class Board {
+      static title = 'Board';
+      static properties = { trains: 'trains', clock: ClockTime };
+      static behaviour = {
+        shows: 'Whether a train is on the board: every train until it departs.',
+        messageFor: 'The message line under a train: its cancellation, or a long or unknown delay, with the reason.',
+      };
+      constructor(trains, clock) { Object.assign(this, { trains, clock }); }
+      shows(train) { return !train.departed; }
+      messageFor(train) {
+        if (train.cancelled) return `Cancelled due to ${train.reason}`;
+        if (train.delay.minutes === null || train.delay.minutes >= 5) return `Delayed due to ${train.reason}`;
+        return '';
+      }
+    }
+
+    class BoardWithPlatformChanges extends Board {
+      static behaviour = {
+        ...Board.behaviour,
+        messageFor: 'The message line under a train: its cancellation, a long or unknown delay, or a change of platform.',
+      };
+      messageFor(train) {
+        return super.messageFor(train) || (train.platformChanged() ? `Platform changed to ${train.platform.number}` : '');
+      }
+    }
+
+    // The model, one version per iteration: which class each part is, and what changed it.
+    const MODEL = [
+      { iteration: 1, parts: { 'PRM-1': Delay, 'PRM-2': Platform, 'PRM-3': ClockTime, 'ENT-1': Train, 'ENT-2': Board } },
+      { iteration: 2, parts: { 'PRM-1': Delay, 'PRM-2': Platform, 'PRM-3': ClockTime, 'ENT-1': Train, 'ENT-2': BoardWithPlatformChanges },
+        changedBy: { 'ENT-2': 'ACT-1' } },
+    ];
+
+    // Entities and domain primitives proposed for the model: a name, what it's for, and the cards
+    // it's founded on. That's all anyone writes; once integrated, the rest is drawn from its class.
+    // A proposal that doesn't earn its place is rejected, with why, and stays on record.
+    const ENTITIES = [
+      { id: 'ENT-1', name: 'Train', proposedBy: 'Agent', foundedOn: ['DEF-2', 'CLM-1', 'CLM-2', 'CLM-4', 'INV-3'],
+        purpose: 'A service leaving the station: when, where to, from which platform, and how late.' },
+      { id: 'ENT-2', name: 'Board', proposedBy: 'Agent', foundedOn: ['DEF-3', 'CLM-1', 'CLM-3', 'CON-1', 'QST-1'],
+        purpose: 'The departure board: which trains it shows, and the line it shows for each.' },
+      { id: 'ENT-3', name: 'Platform', proposedBy: 'Agent', foundedOn: ['DEF-4', 'CLM-4', 'CLM-5'],
+        purpose: 'A platform as a thing in its own right.',
+        rejected: { in: 1, why: 'It has no state or behaviour of its own: every rule about platforms needs only its number. The Platform primitive (PRM-2) does the job with one less moving part.' } },
+      { id: 'ENT-4', name: 'Announcement', proposedBy: 'Agent', foundedOn: ['DEC-2', 'CON-2', 'CON-3'],
+        purpose: 'A PA announcement of a platform change: for which train, and how long before it leaves.' },
+    ];
+
+    const PRIMITIVES = [
+      { id: 'PRM-1', name: 'Delay', proposedBy: 'Agent', foundedOn: ['DEF-1', 'CLM-2', 'CLM-3'], purpose: 'How late a train is.' },
+      { id: 'PRM-2', name: 'Platform', proposedBy: 'Agent', foundedOn: ['DEF-4', 'CLM-4', 'CLM-5'], purpose: 'Which platform a train leaves from.' },
+      { id: 'PRM-3', name: 'Clock time', proposedBy: 'Agent', foundedOn: ['DEF-5', 'CLM-1'], purpose: 'A time of day at the station.' },
+    ];
+
+    // The model's classes by name, as they stood by an iteration, so tests read naturally.
+    const asClassName = name => name.split(/\s+/).map(word => word[0].toUpperCase() + word.slice(1)).join('');
+    const classesAt = k => Object.fromEntries(Object.entries(modelAt(k).parts).map(([id, cls]) => [asClassName(itemOf(id).name), cls]));
+
+    // A train for a test, its fields given plainly and turned into the model's primitives.
+    function trainFor(M, fields) {
+      return new M.Train({
+        destination: '', confirmed: true, cancelled: false, departed: false, reason: '', ...fields,
+        time: new M.ClockTime(fields.time),
+        delay: new M.Delay('delay' in fields ? fields.delay : 0),
+        platform: new M.Platform(fields.platform),
+        planned: new M.Platform(fields.planned ?? fields.platform),
+      });
+    }
+
+    // The afternoon's trains, from the board stills and the feed, that rules are checked across.
+    const AFTERNOON = [
+      { time: '14:02', destination: 'Brighton', platform: 4 },
+      { time: '14:05', destination: 'Cambridge', delay: 3, platform: 2, reason: 'a late-running freight train' },
+      { time: '14:08', destination: 'Oxford', delay: 12, platform: 7, reason: 'a signal fault' },
+      { time: '14:10', destination: 'Reading', cancelled: true, platform: 5, reason: 'a shortage of train crew' },
+      { time: '14:12', destination: 'Dover Priory', delay: null, platform: 3, reason: 'a broken-down train' },
+      { time: '14:15', destination: 'Gatwick Airport', platform: 9, planned: 3 },
+      { time: '14:25', destination: 'Ely', delay: 6, platform: 11, planned: 10, reason: 'an earlier fault' },
+      { time: '13:58', destination: 'Hastings', platform: 1, departed: true },
+    ];
+
+    // A scenario: Given, When and Then steps, founded on cards, and the code that plays them against
+    // the model, giving each step's result (null where it isn't checked).
+    const SCENARIOS = [
+      { id: 'SCN-1', title: 'A departed train leaves the board', foundedOn: ['CLM-1'],
+        steps: [{ keyword: 'Given', text: 'the 13:58 to Hastings has departed' }, { keyword: 'Then', text: 'the board doesn’t show it' }],
+        play: M => {
+          const train = trainFor(M, { time: '13:58', destination: 'Hastings', platform: 1, departed: true });
+          return [null, { ok: !new M.Board([train]).shows(train), actual: 'it is still shown' }];
+        } },
+      { id: 'SCN-2', title: 'A cancelled train shows why', foundedOn: ['QST-1'],
+        steps: [{ keyword: 'Given', text: 'the 14:10 to Reading is cancelled due to a shortage of train crew' },
+          { keyword: 'Then', text: 'its message line says "Cancelled due to a shortage of train crew"' }],
+        play: M => {
+          const train = trainFor(M, { time: '14:10', destination: 'Reading', platform: 5, cancelled: true, reason: 'a shortage of train crew' });
+          const message = new M.Board([train]).messageFor(train);
+          return [null, { ok: message === 'Cancelled due to a shortage of train crew', actual: message || 'an empty message line' }];
+        } },
+      { id: 'SCN-3', title: 'A major delay shows why', foundedOn: ['DEF-1', 'QST-1'],
+        steps: [{ keyword: 'Given', text: 'the 14:08 to Oxford is 12 minutes late because of a signal fault' },
+          { keyword: 'Then', text: 'its message line says "Delayed due to a signal fault"' }],
+        play: M => {
+          const train = trainFor(M, { time: '14:08', destination: 'Oxford', platform: 7, delay: 12, reason: 'a signal fault' });
+          const message = new M.Board([train]).messageFor(train);
+          return [null, { ok: message === 'Delayed due to a signal fault', actual: message || 'an empty message line' }];
+        } },
+      { id: 'SCN-4', title: 'A minor delay shows its expected time', foundedOn: ['CLM-2', 'DEF-1'],
+        steps: [{ keyword: 'Given', text: 'the 14:05 to Cambridge is 3 minutes late' },
+          { keyword: 'Then', text: 'its expected time is "14:08"' }, { keyword: 'And', text: 'its message line is empty' }],
+        play: M => {
+          const train = trainFor(M, { time: '14:05', destination: 'Cambridge', platform: 2, delay: 3 });
+          const expected = train.expected()?.text, message = new M.Board([train]).messageFor(train);
+          return [null, { ok: expected === '14:08', actual: expected ?? 'no expected time' }, { ok: message === '', actual: message }];
+        } },
+      { id: 'SCN-5', title: 'A changed platform shows a message', foundedOn: ['CLM-5', 'DEC-1'],
+        steps: [{ keyword: 'Given', text: 'the 14:15 to Gatwick Airport was planned for platform 3' },
+          { keyword: 'And', text: 'it now leaves from platform 9' }, { keyword: 'Then', text: 'its message line says "Platform changed to 9"' }],
+        play: M => {
+          const train = trainFor(M, { time: '14:15', destination: 'Gatwick Airport', platform: 9, planned: 3 });
+          const message = new M.Board([train]).messageFor(train);
+          return [null, null, { ok: message === 'Platform changed to 9', actual: message || 'an empty message line' }];
+        } },
+      { id: 'SCN-6', title: 'A platform change is announced in time', foundedOn: ['DEC-2', 'CON-2', 'CON-3'],
+        steps: [{ keyword: 'Given', text: 'the 14:15 to Gatwick Airport is moved from platform 3 to 9' },
+          { keyword: 'When', text: 'signalling confirms the change at 14:07' },
+          { keyword: 'Then', text: 'the PA announces it by 14:10, five minutes before departure' }],
+        play: M => {
+          if (!M.Announcement) throw new Error('The model has no Announcement yet: ENT-4 is only proposed.');
+          return [null, null, { ok: true }];
+        } },
+    ];
+
+    // A rule: in sb-rule's grammar, a mandate or a conditional, founded on cards, and the code that
+    // checks it across the afternoon's trains.
+    const RULES = [
+      { id: 'RUL-1', kind: 'MANDATE', title: 'Departed trains leave the board', foundedOn: ['CLM-1'],
+        lines: [{ text: 'a departed train MUST NOT be shown on the board' }],
+        check: M => {
+          const board = new M.Board([]);
+          return AFTERNOON.map(f => trainFor(M, f)).filter(t => t.departed && board.shows(t)).map(t => `the ${t.time.text} to ${t.destination}`);
+        } },
+      { id: 'RUL-2', kind: 'CONDITIONAL', title: 'A changed platform is always told', foundedOn: ['CLM-5', 'DEC-1', 'OPN-1'],
+        lines: [{ keyword: 'Given', text: 'a running train on the board' }, { keyword: 'If', text: 'its platform has changed' },
+          { keyword: 'Then', text: 'its message line MUST say so', depth: 1 }],
+        check: M => {
+          const board = new M.Board([]);
+          return AFTERNOON.map(f => trainFor(M, f))
+            .filter(t => !t.departed && !t.cancelled && t.platformChanged() && !board.messageFor(t).startsWith('Platform changed'))
+            .map(t => `the ${t.time.text} to ${t.destination}, whose message reads “${board.messageFor(t) || 'nothing'}”`);
+        } },
+    ];
+
+    // What each source's file holds, as it would be read from disk. A demo opened straight from
+    // the computer can't read files, so the text lives here. The board stills are drawn below.
+    const SOURCE_TEXT = {
+      'SRC-1': `Departure Display Controller DX-400
+Operator manual, version 4.2
+
+3. What the display shows
+
+3.1 Services
+A service is a train scheduled to leave the station for a destination at a set time.
+The display shows one line per service, in order of scheduled departure.
+All times are shown on the 24-hour clock, by the station clock.
+Each service is shown with its scheduled time, destination, platform and expected time. Departed services are removed from display.
+
+3.2 Expected time
+A delay of five minutes or more is a major delay; anything less is a minor delay.
+Services running to time are shown as On time. Delays of under five minutes are shown as On time. Delays of five minutes or more are shown as an expected time. Where no estimate is available, the service is shown as Delayed.
+
+3.3 Platform
+The platform is shown once confirmed by signalling. Until then, a dash is shown.
+
+3.4 Messages
+A message line may be shown beneath each service.
+Messages: cancellation, with reason; delay, with reason. Further message rules may be added in configuration.
+
+5. Configuration
+Message rules are added under Configuration › Messages, and apply from the next refresh.
+Display logic other than message rules is fixed in firmware, and changes to it need a supplier upgrade.
+`,
+      'SRC-3': `# Platform 4, afternoon dispatcher
+
+7 October, 15:10 to 15:30. Notes taken on the platform.
+
+## The board
+
+- "If there’s no estimate it says Delayed. I’ve never seen it say On time for one of those."
+- "Until signalling confirms a platform we get a dash, and people crowd the concourse waiting for it."
+
+## Platform changes
+
+- "Platform changes are the worst. The number changes and nothing else does, so half of them miss it."
+- "On a busy platform people glance up for the number and go."
+- "Platforms run from 1 to 12. Three and nine are the ones that swap most."
+- Staff end up walking the platform calling out the change.
+- "The board should be telling them, not us running up and down the platform."
+`,
+      'SRC-4': `<article>
+  <h1>The board that cries On time</h1>
+  <p class="byline">Ashford Commuters, October newsletter</p>
+  <p>One commuter reports the board showing On time for a train that had no estimate at all.
+  Writing on the passenger forum, they say the train never came.</p>
+  <p>Have you been caught out by the board? Tell us at the next meeting.</p>
+</article>
+`,
+      'SRC-5': `<div class="post">
+  <h2>Board said On time, train never came</h2>
+  <p class="meta">Posted by late_again, 1 October</p>
+  <p>Waited for the 14:12 to Dover Priory. No estimate on the app, and the board said On time right up until it vanished. Never came.</p>
+  <p>Does anyone else trust that board?</p>
+</div>
+`,
+      'SRC-6': `# The board against the feed
+
+The board stills (SRC-2) read minute by minute against the train data feed for the same hour, Tuesday 6 October, 14:00 to 15:00.
+
+## Departed trains
+
+Every departed train left the board within a minute of the feed marking it departed. None stayed on.
+
+## Delays
+
+All four delayed trains showed an expected time, whether one minute late or twelve. The manual says delays under five minutes show On time; the board doesn't do that.
+
+## Platform changes
+
+Gatwick Airport moved from platform 3 to 9: the platform column showed 9, and the message line stayed blank.
+
+None of the board’s message rules mentions the platform, so a change shows only in the platform column.
+`,
+      'SRC-7': `category,count
+Delay information,31
+Missed train after platform change,12
+Ticket machines,9
+Accessibility,7
+Cleanliness,5
+Staff,4
+Other,6
+`,
+      'SRC-8': `Ashford International station team
+Minute of meeting, 9 October 2026
+
+1. Departure board: platform changes
+The team went through the agent's findings on the departure board, and September's complaints.
+Target: no more than two missed-train complaints a month from platform changes, by January.
+Resolved: add a message to the board whenever a train’s platform changes.
+The team expects passengers to see a message under the train, as they do for delays.
+The team asks for a survey of which parts of the board passengers read.
+As station policy, platform changes must reach passengers at least five minutes before departure, so those with reduced mobility can reach the new platform.
+
+2. Departure board: trains about to leave
+The team asks whether the board ever says Boarding, or marks a train about to leave. To be looked at on a busy morning.
+`,
+      'SRC-9': `time,train,message
+2026-10-19 08:12,Ely,Delayed due to an earlier fault
+2026-10-20 14:15,Gatwick Airport,Platform changed to 9
+2026-10-22 17:40,Bedford,Platform changed to 6
+2026-10-24 09:05,Dover Priory,Cancelled due to flooding
+`,
+      'SRC-10': `category,count
+Delay information,27
+Missed train after platform change,5
+Ticket machines,11
+Accessibility,6
+Cleanliness,4
+Staff,3
+Other,5
+`,
+      'SRC-11': `part of the board,share who read it
+Destination,96%
+Platform column,91%
+Expected column,74%
+Message line under each train,38%
+`,
+      'SRC-12': `# Morning peak on the concourse
+
+29 October, 07:30 to 09:00. Watching the main board.
+
+- Between 07:30 and 09:00 the board never said Boarding; nothing on a train’s line changed as it became due.
+- People bunch under the board in the last two minutes, waiting for something to change.
+`,
+      'SRC-13': `Ashford International station team
+Minute of meeting, 6 November 2026
+
+1. Platform changes: October's results
+Missed trains after a platform change fell from twelve to five. The survey found that fewer than four in ten passengers read the message line.
+Resolved: announce every platform change on the PA as well as the board.
+Signalling must confirm a platform change at least seven minutes before departure, so the PA and the board can announce it in time.
+Before the whole station, the PA announcements run for a week on platforms 3 and 9 only.
+First, the sandbox replays October's platform changes with the new arrangement.
+`,
+      'SRC-14': `Letter of agreement: notice of platform changes
+Between Signalling control, Kent area, and the Ashford International station team.
+From 9 November 2026.
+
+1. Signalling control will confirm every platform change at Ashford International at least seven minutes before the train's departure.
+2. The station team will announce each confirmed change on the PA and the departure board at once.
+3. Either side may ask to review these terms at three months' notice.
+`,
+      'SRC-15': `result,platform changes
+Announced at least five minutes before departure,31
+Announced under five minutes before departure,3
+Not announced,0
+`,
+    };
+
+    // The board stills: two photos of the board a minute apart, as the board showed them.
+    const STILLS = [
+      { clock: '13:57', rows: [['13:58', 'Hastings', '1', 'On time'], ['14:02', 'Brighton', '4', 'On time'], ['14:05', 'Cambridge', '2', 'Exp 14:08'],
+        ['14:12', 'Dover Priory', '–', 'Delayed'], ['14:15', 'Gatwick Airport', '9', 'On time'], ['14:20', 'Bedford', '–', 'On time']] },
+      { clock: '13:59', rows: [['14:02', 'Brighton', '4', 'On time'], ['14:05', 'Cambridge', '2', 'Exp 14:08'], ['14:12', 'Dover Priory', '–', 'Delayed'],
+        ['14:15', 'Gatwick Airport', '9', 'On time'], ['14:20', 'Bedford', '–', 'On time']] },
+    ];
+
+    // Where each card's passage sits on the stills: [still, row].
+    const STILL_PASSAGES = { 'CLM-1': [0, 0], 'CLM-2': [1, 1], 'CLM-3': [0, 3], 'CLM-4': [1, 4] };
     // Each grade's words, from low (1) to high (3).
     const GRADES = {
       distance: ['second-hand', 'first-hand', 'direct'],
@@ -451,18 +1206,19 @@
       return 'unbacked';
     }
 
-    // What holds a claim up, from its counted yeses: observed when data backs it, reported when
+    // What holds a claim up, from its counted yeses: observed when data or an image backs it, reported when
     // someone says so first-hand, inferred when only an analysis does. With nothing behind it, a
     // claim is a conjecture, or an assumption once something rests on it.
     function basis(claim) {
       const backers = Object.keys(claim.assertions).filter(id => says(claim, id) === '+' && inScope(id)).map(sourceById);
-      if (backers.some(source => source.format === 'data')) return 'observed';
+      if (backers.some(source => ['data', 'image'].includes(source.format))) return 'observed';
       if (backers.some(source => !source.derivedFrom)) return 'reported';
       if (backers.length) return 'inferred';
       return reliedOnBy(claim).length ? 'assumption' : 'conjecture';
     }
 
-    const reliedOnBy = claim => links().filter(([from]) => from === claim.id).map(([, to]) => to);
+    // What rests on a card. Awaited material only waits on it, so it doesn't count.
+    const reliedOnBy = card => links().filter(([from, to]) => from === card.id && !to.startsWith('NEXT')).map(([, to]) => to);
 
     const isCopy = (claim, id) => sourceById(id).copies && claim.assertions[originOf(id)] && says(claim, originOf(id)) === says(claim, id);
 
@@ -490,20 +1246,95 @@
     }
 
     // Why a decision needs reviewing by an iteration: a claim it rests on has turned against
-    // it, or what it expected hasn't been borne out. None means it stands.
+    // it since it was made, or what it predicted hasn't been borne out. None means it stands. A
+    // claim already refuted when the decision was made is part of its grounds, not a reason.
     function reviewReasons(decision, k = Infinity) {
       const reasons = [];
+      const doubted = standing => standing === 'refuted' || standing === 'contested';
       for (const claim of CLAIMS.filter(c => decision.restsOn.includes(c.id))) {
-        const now = standing(claimAsOf(claim, k));
-        if (now === 'refuted' || now === 'contested') reasons.push(`${claim.id}, which it rests on, is now ${now}.`);
+        const then = standing(claimAsOf(claim, iterationOf(decision.id))), now = standing(claimAsOf(claim, k));
+        if (doubted(now) && !doubted(then)) reasons.push(`${claim.id}, which it rests on, is now ${now}.`);
       }
-      for (const [source, [mark]] of Object.entries(decision.checks ?? {})) {
-        if (mark === '−' && iterationOf(source) <= k) reasons.push(`${source} goes against what it expects.`);
+      for (const assumption of ASSUMPTIONS.filter(a => decision.restsOn.includes(a.id))) {
+        const then = assumptionStatus(assumption, iterationOf(decision.id)), now = assumptionStatus(assumption, k);
+        if (now === 'refuted' && then !== 'refuted') reasons.push(`${assumption.id}, which it rests on, is now refuted.`);
+      }
+      for (const prediction of PREDICTIONS.filter(p => p.from === decision.id)) {
+        if (predictionStatus(prediction, k) === 'not borne out') reasons.push(`${prediction.id}, what it predicted, was not borne out.`);
       }
       return reasons;
     }
 
     const decisionStatus = (decision, k) => reviewReasons(decision, k).length ? 'review' : decision.status;
+
+    // A question is answered once a source that answers it has arrived, and an action done once
+    // the source that shows it has.
+    const questionStatus = (question, k = Infinity) =>
+      question.answer && Object.keys(question.answers).some(source => iterationOf(source) <= k) ? 'answered' : 'unresolved';
+    // An assumption is refuted or confirmed by the observations that test it, once they arrive;
+    // untested until then. An inference is shaken once any premise is in doubt.
+    function assumptionStatus(assumption, k = Infinity) {
+      const verdicts = OBSERVATIONS.filter(o => o.tests?.[0] === assumption.id && iterationOf(o.id) <= k).map(o => o.tests[1]);
+      return verdicts.includes('−') ? 'refuted' : verdicts.includes('+') ? 'confirmed' : 'untested';
+    }
+
+    function inferenceStatus(inference, k = Infinity) {
+      const doubted = id => {
+        if (id.startsWith('CLM')) return ['refuted', 'contested'].includes(standing(claimAsOf(itemOf(id), k)));
+        if (id.startsWith('ASM')) return assumptionStatus(itemOf(id), k) === 'refuted';
+        if (id.startsWith('INF')) return inferenceStatus(itemOf(id), k) === 'shaken';
+        return false;
+      };
+      return inference.premises.some(doubted) ? 'shaken' : 'sound';
+    }
+
+    // A prediction is borne out, or not, by the latest outcome measured against it.
+    // Until an outcome measures it, an experiment's results can support it or put it in doubt.
+    function predictionStatus(prediction, k = Infinity) {
+      const latest = OUTCOMES.filter(o => o.against === prediction.id && iterationOf(o.id) <= k).pop();
+      if (latest) return { worked: 'borne out', partly: 'partly', failed: 'not borne out' }[latest.result];
+      const verdicts = OBSERVATIONS.filter(o => o.tests?.[0] === prediction.id && iterationOf(o.id) <= k).map(o => o.tests[1]);
+      return verdicts.includes('−') ? 'in doubt' : verdicts.includes('+') ? 'supported' : 'pending';
+    }
+
+    // The model as it stood by an iteration, and a part's stage in it: integrated once a version
+    // of the model holds it, rejected once turned down, proposed until then.
+    const modelAt = k => MODEL.filter(version => version.iteration <= k).pop();
+    function partStage(part, k = Infinity) {
+      if (part.rejected && part.rejected.in <= k) return 'rejected';
+      return modelAt(k)?.parts[part.id] ? 'integrated' : 'proposed';
+    }
+    // The definition a part's name rests on: one it's founded on, defining that very word.
+    const definitionOf = part => DEFINITIONS.find(d => part.foundedOn.includes(d.id) && d.term.toLowerCase() === part.name.toLowerCase());
+    const partOfClass = (cls, k) => Object.entries(modelAt(k)?.parts ?? {}).find(([, c]) => c === cls)?.[0];
+    // The primitives an entity's properties are made of, in any version of the model.
+    const primitivesOf = id => [...new Set(MODEL.flatMap(version => Object.values(version.parts[id]?.properties ?? {})
+      .map(type => typeof type === 'string' ? null : partOfClass(type, version.iteration)).filter(Boolean)))];
+
+    // A test run against the model of an iteration: a scenario's step results, or the trains a rule
+    // fails for. A scenario the model can't even play fails every step it checks, saying why.
+    function scenarioResults(scenario, k = Infinity) {
+      try {
+        return scenario.play(classesAt(k));
+      } catch (error) {
+        return scenario.steps.map(step => step.keyword === 'Given' ? null : { ok: false, actual: error.message });
+      }
+    }
+    const ruleFailures = (rule, k = Infinity) => rule.check(classesAt(k));
+    function testStatus(test, k = Infinity) {
+      const failed = test.id.startsWith('SCN') ? scenarioResults(test, k).some(r => r && !r.ok) : ruleFailures(test, k).length > 0;
+      return failed ? 'failing' : 'passing';
+    }
+    // What a test said, in full, so a change in how it fails shows as a change too.
+    const testOutcome = (test, k) => JSON.stringify(test.id.startsWith('SCN') ? scenarioResults(test, k) : ruleFailures(test, k));
+
+    const gatheredBy = (investigation, k = Infinity) => SOURCES.filter(s => s.gatheredBy === investigation.id && iterationOf(s.id) <= k);
+    const investigationStatus = (investigation, k = Infinity) => gatheredBy(investigation, k).length ? 'done' : 'under way';
+
+    const resultsOf = (experiment, k = Infinity) => OBSERVATIONS.filter(o => o.resultOf === experiment.id && iterationOf(o.id) <= k);
+    const experimentStatus = (experiment, k = Infinity) => resultsOf(experiment, k).length ? 'done' : 'planned';
+
+    const actionStatus = (action, k = Infinity) => action.done && iterationOf(action.done) <= k ? 'done' : action.status;
     // Drawing
 
     function el(tag, className, text) {
@@ -538,7 +1369,8 @@
     }
 
     // A slip of the source's paper holding one passage, so it reads as the material it comes from.
-    // Its words show on one line; clicking the slip opens it to the full passage, and again closes it.
+    // Its words show on one line; clicking the slip opens the source in full, at this passage,
+    // named by the card it sits in.
     function passage(sourceId, quote, { mark, after = [] } = {}) {
       const source = sourceById(sourceId);
       const item = el('li', 'assertion');
@@ -549,7 +1381,7 @@
         slip.append(mark);
       }
       slip.append(el('span', 'paper-id', source.id), el('span', 'who', source.name), el('span', 'role', source.role), el('q', 'quote', quote), ...after);
-      makeToggle(slip, item);
+      opensSource(slip, () => openSource(sourceId, slip.closest('.claim').dataset.ref));
       item.append(slip);
       return item;
     }
@@ -567,16 +1399,15 @@
       return item;
     }
 
-    function makeToggle(handle, target) {
+    // A slip or a source card opens its source, from a click or the keyboard.
+    function opensSource(handle, open) {
       handle.tabIndex = 0;
       handle.setAttribute('role', 'button');
-      handle.setAttribute('aria-expanded', 'false');
-      const toggle = () => handle.setAttribute('aria-expanded', target.classList.toggle('is-open'));
-      handle.addEventListener('click', toggle);
+      handle.addEventListener('click', open);
       handle.addEventListener('keydown', event => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
-        toggle();
+        open();
       });
     }
 
@@ -591,13 +1422,59 @@
       risk: '<path d="M8 2 14.5 13.5h-13z"/><path d="M8 6.5v3.25M8 11.6v.1"/>',
       goal: '<circle cx="8" cy="8" r="6.25"/><circle cx="8" cy="8" r="3.25"/><circle cx="8" cy="8" r="0.6" fill="currentColor"/>',
       decision: '<path d="M8 14.5V9l4.5-5.5"/><path d="M9.75 3.5h2.75v2.75"/><path d="M8 9 3.5 3.5" opacity="0.35"/>',
+      scenario: '<rect x="2.25" y="2.25" width="11.5" height="11.5" rx="2"/><path d="m6.5 5.25 4.25 2.75-4.25 2.75z"/>',
+      rule: '<path d="M3 3.5h10M3 8h10M3 12.5h5"/><path d="m10 12.25 1.5 1.5 2.5-2.75"/>',
+      entity: '<path d="M8 1.75 13.5 4.75v6.5L8 14.25 2.5 11.25v-6.5z"/><path d="M2.5 4.75 8 7.75l5.5-3M8 7.75v6.5"/>',
+      primitive: '<path d="M8 3 12.5 8 8 13 3.5 8z"/>',
+      investigation: '<circle cx="7" cy="7" r="4.5"/><path d="m10.25 10.25 3.5 3.5"/>',
+      metric: '<rect x="1.75" y="5.25" width="12.5" height="5.5" rx="1"/><path d="M4.5 5.25v2M7 5.25v2.75M9.5 5.25v2M12 5.25v2.75"/>',
+      experiment: '<path d="M6 2h4M6.5 2v4.5L3 13a.75.75 0 0 0 .65 1.1h8.7A.75.75 0 0 0 13 13L9.5 6.5V2"/><path d="M4.75 10.5h6.5"/>',
+      prediction: '<path d="M2.5 13.5 10.5 5.5" stroke-dasharray="2 1.8"/><path d="M6.5 4.5h5v5"/>',
+      observation: '<circle cx="8" cy="8" r="4.25"/><path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3"/>',
+      assumption: '<path d="M3 3.5h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.5L4.5 14v-2.5H3a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" stroke-dasharray="2 1.6"/>',
+      inference: '<circle cx="8" cy="4" r="1.25" fill="currentColor"/><circle cx="4.25" cy="11.5" r="1.25" fill="currentColor"/><circle cx="11.75" cy="11.5" r="1.25" fill="currentColor"/>',
+      definition: '<path d="M2.5 2.5h5.25L13.5 8.25 8.25 13.5 2.5 7.75z"/><circle cx="5.5" cy="5.5" r="0.9" fill="currentColor"/>',
+      opinion: '<circle cx="6" cy="5.5" r="2.5"/><path d="M1.75 13.75a4.25 4.25 0 0 1 8.5 0"/><path d="M11 2.5h3.5v3h-1.25L12 6.75V5.5h-1z"/>',
+      agreement: '<path d="M6.5 9.5 9.5 6.5"/><path d="M7 4.5 8.25 3.25a2.5 2.5 0 0 1 3.5 3.5L10.5 8"/><path d="M5.5 8 4.25 9.25a2.5 2.5 0 0 0 3.5 3.5L9 11.5"/>',
+      outcome: '<path d="M13.5 3.5v4a2 2 0 0 1-2 2h-8"/><path d="m6 6.5-3 3 3 3"/>',
+      constraint: '<path d="M2.5 2.5v11M13.5 2.5v11"/><path d="M5 8h6"/><path d="m7 6-2 2 2 2M9 6l2 2-2 2"/>',
     };
 
-    function icon(kind) {
+    function icon(kind, drawing = ICONS[kind], title = capitalised(kind)) {
       const holder = el('span', `card-icon card-icon--${kind}`);
-      holder.title = capitalised(kind);
-      holder.innerHTML = `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[kind]}</svg>`;
+      holder.title = title;
+      holder.innerHTML = `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${drawing}</svg>`;
       return holder;
+    }
+
+    // Source material is the same sheet of paper, marked with what's on it: lines of text, notes,
+    // a table of data, a picture, a web page's globe, or an analysis's bars. Marks are drawn
+    // finer than the page, so they stay legible small.
+    const PAGE = '<path d="M4 1.75h5.5L12.5 4.75v9a.5.5 0 0 1-.5.5H4a.5.5 0 0 1-.5-.5v-11.5a.5.5 0 0 1 .5-.5z"/><path d="M9.5 1.75v3h3"/>';
+    const FORMAT_MARKS = {
+      document: '<path d="M5.75 8h4.5M5.75 10.5h4.5"/>',
+      notes: '<path d="M5.75 8h.01M7.75 8h2.5M5.75 10.75h.01M7.75 10.75h2.5"/>',
+      data: '<rect x="5.5" y="7.25" width="5" height="5" rx="0.5"/><path d="M5.5 9.75h5M8 7.25v5"/>',
+      image: '<path d="m5.25 12.25 1.75-2.25 1.25 1.25 1-1 1.5 2"/><circle cx="9.5" cy="7.75" r="0.5" fill="currentColor"/>',
+      web: '<circle cx="8" cy="9.75" r="2.6"/><path d="M5.4 9.75h5.2M8 7.15c-1.1 1.4-1.1 3.8 0 5.2M8 7.15c1.1 1.4 1.1 3.8 0 5.2"/>',
+      analysis: '<path d="M6 12.5v-2M8 12.5v-4.5M10 12.5v-3"/>',
+    };
+    function sourceIcon(source) {
+      const holder = icon('source', `${PAGE}<g stroke-width="1.1">${FORMAT_MARKS[source.format] ?? FORMAT_MARKS.document}</g>`, capitalised(source.format));
+      holder.dataset.format = source.format;
+      return holder;
+    }
+
+    function formatBadge(source) {
+      const badge = el('span', 'format', formatOf(source));
+      badge.dataset.format = source.format;
+      return badge;
+    }
+
+    // What kind of material a source is, and its file's type, as sb-sources shows them: "notes · md".
+    function formatOf(source) {
+      const type = (source.path ?? '').match(/\.(\w+)$/)?.[1]?.toLowerCase();
+      return [source.format, type !== source.format && type].filter(Boolean).join(' · ');
     }
 
     // The header every card shares: its code, who raised or decided it, and its badges.
@@ -645,11 +1522,6 @@
 
     const sources = (items, empty) => items.length ? fold('Sources', items) : el('p', 'nobody', empty);
 
-    // A claim's header line: who raised it, and what rests on it.
-    function byline(claim) {
-      const relied = reliedOnBy(claim);
-      return `Raised by ${claim.raisedBy}` + (relied.length ? ` · relied on by ${relied.join(', ')}` : '');
-    }
 
     function basisBadge(claim) {
       const name = basis(claim);
@@ -659,46 +1531,52 @@
       return badge;
     }
 
-    function claimCard(claim) {
+    // Every card shows how things stood by an iteration k, the latest when none is given: only
+    // the material that had arrived by then, and the standing and status that follow from it.
+    const arrivedBy = k => ({ source }) => iterationOf(source) <= k;
+
+    function claimCard(claim, k = Infinity) {
+      const then = claimAsOf(claim, k);
       return card(
-        cardHead('claim', claim.id, byline(claim), [basisBadge(claim), statusBadge(standing(claim)), scoreBadge(claim)]),
+        cardHead('claim', claim.id, `Raised by ${claim.raisedBy}`, [basisBadge(then), statusBadge(standing(then)), scoreBadge(then)]),
         strip('main', 'Claim', claim.text),
         strip('note', 'Summary', claim.summary),
-        sources(orderedSources(claim).map(id => assertionItem(claim, id)), 'No sources'),
+        ...(reliedOnBy(claim).length ? [strip('note', 'Relied on by', reliedOnBy(claim).join(', '))] : []),
+        sources(orderedSources(then).map(id => assertionItem(then, id)), 'No sources'),
       );
     }
 
     // A question: asked in a passage, its answer written up, and the passages that answer it.
-    function questionCard(question) {
+    function questionCard(question, k = Infinity) {
       const [askedIn, asking] = question.raisedBy;
       const asked = passage(askedIn, asking, { mark: el('span', 'question-mark', '?'), after: [pills(sourceById(askedIn))] });
-      const answers = Object.entries(question.answers).map(([id, quote]) => passage(id, quote, { after: [pills(sourceById(id))] }));
+      const answers = Object.entries(question.answers).filter(([id]) => iterationOf(id) <= k)
+        .map(([id, quote]) => passage(id, quote, { after: [pills(sourceById(id))] }));
+      const status = questionStatus(question, k);
       return card(
-        cardHead('question', question.id, `Raised by ${sourceById(askedIn).name}, ${askedIn}`, [statusBadge(question.answer ? 'answered' : 'unresolved')]),
+        cardHead('question', question.id, `Raised by ${sourceById(askedIn).name}, ${askedIn}`, [statusBadge(status)]),
         strip('main', 'Question', question.text),
-        question.answer ? strip('answer', 'Answer', question.answer) : strip('unresolved', 'Unresolved', 'No answer yet. Nothing in the sources settles this question.'),
+        status === 'answered' ? strip('answer', 'Answer', question.answer) : strip('unresolved', 'Unresolved', 'No answer yet. Nothing in the sources settles this question.'),
         sources([asked, ...answers], 'No answers yet'),
       );
     }
-    // A decision: the question faced, what was decided and why, what it expects, and whether it
-    // needs reviewing; then the options weighed, as many as there were, and the sources behind
-    // them, including what has since borne on its expectation.
-    function decisionCard(decision) {
+    // A decision: the question faced, what was decided and why, what it predicts and how that
+    // stands, and whether it needs reviewing; then the options weighed, as many as there were,
+    // and the sources behind them.
+    function decisionCard(decision, k = Infinity) {
       const options = decision.options.map(option => optionItem(option, option.id === decision.chosen));
-      const checks = Object.entries(decision.checks ?? {});
-      const checked = checks.map(([source, [mark, quote]]) => passage(source, quote, {
-        mark: el('span', `stance ${mark === '+' ? 'yes' : 'no'}`, mark === '+' ? '✓' : '✗'), after: [pills(sourceById(source))] }));
-      const notBorneOut = checks.some(([, [mark]]) => mark === '−');
-      const reasons = reviewReasons(decision);
+      const predicts = PREDICTIONS.filter(p => p.from === decision.id)
+        .map(p => strip('expect', `Predicts · ${p.id} · ${predictionStatus(p, k)}`, `${p.text} By ${p.by}.`));
+      const reasons = reviewReasons(decision, k);
       return card(
-        cardHead('decision', decision.id, `Decided by ${decision.deciders.join(', ')}, ${formatDate(decision.when)}`, [statusBadge(decisionStatus(decision))]),
+        cardHead('decision', decision.id, `Decided by ${decision.deciders.join(', ')}, ${formatDate(decision.when)}`, [statusBadge(decisionStatus(decision, k))]),
         strip('main', 'Question', decision.title),
         strip('answer', 'Decision', decision.decided),
         strip('note', 'Reason', decision.reason),
-        strip('expect', notBorneOut ? 'Expects · not borne out' : 'Expects', decision.expects),
+        ...predicts,
         ...(reasons.length ? [strip('warn', 'Review', reasons.join(' '))] : []),
         fold('Options', options, 'options'),
-        sources([...cite(decision.sources), ...checked], 'No sources'),
+        sources(cite(decision.sources), 'No sources'),
       );
     }
 
@@ -721,26 +1599,288 @@
     const cite = list => list.map(({ source, quote }) => passage(source, quote, { after: [pills(sourceById(source))] }));
 
 
-    // A goal: where we're trying to get to, how we'll know, and where we stand now.
-    function goalCard(goal) {
+    // A goal: where we're trying to get to, how we'll know, and where we stand: the latest
+    // outcome measured against it.
+    function goalCard(goal, k = Infinity) {
       const [setIn, words] = goal.setIn;
+      const latest = OUTCOMES.filter(o => o.against === goal.id && iterationOf(o.id) <= k).pop();
       return card(
         cardHead('goal', goal.id, `Set by ${sourceById(setIn).name}, ${setIn}`, [statusBadge(goal.status)]),
         strip('main', 'Goal', goal.text),
-        strip('note', 'Measured by', goal.measuredBy),
-        strip(goal.status === 'on track' ? 'answer' : 'warn', 'Where we are', goal.now),
+        strip('note', `Target on ${goal.metric}`, `${goal.target} ${itemOf(goal.metric).name}, counted each ${itemOf(goal.metric).every}.`),
+        strip(goal.status === 'on track' ? 'answer' : 'warn', 'Where we are', latest ? `${latest.text} (${latest.id})` : 'Not measured yet.'),
+        sources(cite([{ source: setIn, quote: words }]), 'No sources'),
+      );
+    }
+
+    // An outcome: what happened, what it was measured against, and what it teaches.
+    function outcomeCard(outcome) {
+      const target = itemOf(outcome.against);
+      return card(
+        cardHead('outcome', outcome.id, `Measured against ${outcome.against}`, [statusBadge(outcome.result)]),
+        strip('main', 'Outcome', outcome.text),
+        strip('note', `Against ${outcome.against}`, target.text),
+        strip(outcome.result === 'worked' ? 'answer' : 'warn', 'What it teaches', outcome.teaches),
+        sources(cite(outcome.sources), 'No sources'),
+      );
+    }
+
+    // An observation: the value and what it measures, when it held, and the passage it was captured
+    // from; and what it tests, if anything.
+    function observationCard(observation) {
+      const [at, words] = observation.at;
+      const tested = observation.tests && strip(observation.tests[1] === '−' ? 'warn' : 'answer',
+        `${observation.tests[1] === '−' ? 'Goes against' : 'Bears out'} ${observation.tests[0]}`, itemOf(observation.tests[0]).text);
+      return card(
+        cardHead('observation', observation.id, `Captured from ${sourceById(at).name}, ${at}`, []),
+        strip('main', 'Observation', `${observation.value}: ${observation.of}`),
+        strip('note', 'When', observation.when),
+        ...(tested ? [tested] : []),
+        sources(cite([{ source: at, quote: words }]), 'No sources'),
+      );
+    }
+
+    // An assumption: what's assumed, what rests on it, how to test it and what follows if it's
+    // wrong; then the observations that have tested it, by the iteration shown.
+    function assumptionCard(assumption, k = Infinity) {
+      const [setIn, words] = assumption.setIn;
+      const relied = reliedOnBy(assumption);
+      const tests = OBSERVATIONS.filter(o => o.tests?.[0] === assumption.id && iterationOf(o.id) <= k);
+      return card(
+        cardHead('assumption', assumption.id, `Held by ${assumption.heldBy}`, [statusBadge(assumptionStatus(assumption, k))]),
+        strip('main', 'Assumption', assumption.text),
+        strip('note', 'Relied on by', relied.length ? relied.join(', ') : 'Nothing yet.'),
+        strip('expect', 'Tested by', EXPERIMENTS.filter(e => e.tests.includes(assumption.id)).map(e => `${e.id}: ${e.text}`).join(' ') || assumption.testBy),
+        strip('warn', 'If it’s wrong', assumption.ifWrong),
+        ...tests.map(o => strip(o.tests[1] === '−' ? 'warn' : 'answer', `Tested · ${o.id}`, `${o.value}: ${o.of}, ${o.when}.`)),
+        sources(cite([{ source: setIn, quote: words }]), 'No sources'),
+      );
+    }
+
+    // An inference: what follows, the step from the premises, and the premises themselves.
+    // Other cards as rows: each one's code and what it says, as it stood by an iteration.
+    const cardRows = (ids, k) => ids.map(id => {
+      const row = el('li', 'option');
+      const head = el('div', 'option-head');
+      head.append(el('span', 'paper-id', id), el('span', 'option-title', asOf(id, k).text));
+      row.append(head);
+      return row;
+    });
+
+    function inferenceCard(inference, k = Infinity) {
+      const premises = cardRows(inference.premises, k);
+      return card(
+        cardHead('inference', inference.id, `Reasoned by ${inference.raisedBy}`, [statusBadge(inferenceStatus(inference, k))]),
+        strip('main', 'Inference', inference.text),
+        strip('note', 'Because', inference.step),
+        fold('Premises', premises, 'options'),
+      );
+    }
+
+    // A definition: the term, what it means, and an example of it in use.
+    function definitionCard(definition) {
+      const [setIn, words] = definition.setIn;
+      return card(
+        cardHead('definition', definition.id, `Defined in ${sourceById(setIn).name}, ${setIn}`, []),
+        strip('main', 'Term', definition.term),
+        strip('note', 'Means', definition.meaning),
+        strip('expect', 'For example', definition.example),
+        sources(cite([{ source: setIn, quote: words }]), 'No sources'),
+      );
+    }
+
+    // An opinion: the view, who holds it and why.
+    function opinionCard(opinion) {
+      const [said, words] = opinion.said;
+      return card(
+        cardHead('opinion', opinion.id, `Held by ${opinion.heldBy}`, []),
+        strip('main', 'Opinion', opinion.text),
+        strip('note', 'Because', opinion.because),
+        sources(cite([{ source: said, quote: words }]), 'No sources'),
+      );
+    }
+
+    // An investigation: what it seeks, how, who looks and in what form, and what it has found, by
+    // the iteration shown.
+    function investigationCard(investigation, k = Infinity) {
+      const found = gatheredBy(investigation, k);
+      const facet = text => el('span', 'basis', text);
+      return card(
+        cardHead('investigation', investigation.id, investigation.prompt ? `Prompted by ${investigation.prompt}` : 'Part of the first look',
+          [facet(investigation.form), facet(`by ${investigation.by}`), statusBadge(investigationStatus(investigation, k))]),
+        strip('main', 'Investigation', investigation.text),
+        strip('note', 'How', investigation.how),
+        found.length ? strip('answer', 'Found', found.map(s => `${s.id}: ${s.name}, ${s.title}`).join(' · '))
+          : strip('unresolved', 'Nothing found yet', 'Still under way.'),
+      );
+    }
+
+    // A metric: what's counted and from where, its readings so far, and the targets and forecasts
+    // set on it, by the iteration shown.
+    function metricCard(metric, k = Infinity) {
+      const readings = OBSERVATIONS.filter(o => o.metric === metric.id && iterationOf(o.id) <= k);
+      const targets = GOALS.filter(g => g.metric === metric.id);
+      const forecasts = PREDICTIONS.filter(p => p.metric === metric.id && iterationOf(p.id) <= k);
+      return card(
+        cardHead('metric', metric.id, `${metric.from}, each ${metric.every}`, [el('span', 'basis', metric.unit)]),
+        strip('main', 'Metric', metric.name),
+        strip('note', 'Counts', metric.counted),
+        strip('answer', 'Readings', readings.length ? readings.map(o => `${o.value} in ${o.when} (${o.id})`).join(' · ') : 'None yet.'),
+        ...(targets.length ? [strip('expect', 'Targets', targets.map(g => `${g.id}: ${g.target}`).join(' · '))] : []),
+        ...(forecasts.length ? [strip('expect', 'Forecasts', forecasts.map(p => `${p.id}: ${p.text} By ${p.by}, ${predictionStatus(p, k)}.`).join(' · '))] : []),
+      );
+    }
+
+    // An experiment: what's done and how, what's kept the same, what's counted, and what would
+    // bear it out, all written before it runs; then its results, by the iteration shown.
+    function experimentCard(experiment, k = Infinity) {
+      const [setIn, words] = experiment.setIn;
+      const facet = text => el('span', 'basis', text);
+      return card(
+        cardHead('experiment', experiment.id, `Called for by ${experiment.from} · tests ${experiment.tests.join(', ')}`,
+          [facet(experiment.form), facet(experiment.on === 'model' ? 'on the model' : 'in the world'), statusBadge(experimentStatus(experiment, k))]),
+        strip('main', 'Experiment', experiment.text),
+        strip('note', 'How', experiment.method),
+        strip('note', 'Kept the same', experiment.keeps),
+        strip('note', 'Counts', experiment.counts),
+        strip('expect', 'Bears it out if', experiment.bearsOutIf),
+        ...resultsOf(experiment, k).map(o => strip(o.tests?.[1] === '−' ? 'warn' : 'answer', `Result · ${o.id}`, `${o.value}: ${o.of}.`)),
+        sources(cite([{ source: setIn, quote: words }]), 'No sources'),
+      );
+    }
+
+    // A prediction: what will happen and by when, how it will be measured, and the outcome that
+    // has measured it, by the iteration shown.
+    function predictionCard(prediction, k = Infinity) {
+      const latest = OUTCOMES.filter(o => o.against === prediction.id && iterationOf(o.id) <= k).pop();
+      const status = predictionStatus(prediction, k);
+      return card(
+        cardHead('prediction', prediction.id, `Predicted by ${prediction.from}, for ${prediction.by}`, [statusBadge(status)]),
+        strip('main', 'Prediction', prediction.text),
+        strip('note', `Forecasts ${prediction.metric}`, `${itemOf(prediction.metric).name}, counted each ${itemOf(prediction.metric).every}.`),
+        ...OBSERVATIONS.filter(o => o.tests?.[0] === prediction.id && iterationOf(o.id) <= k).map(o =>
+          strip(o.tests[1] === '−' ? 'warn' : 'answer', `${o.tests[1] === '−' ? 'In doubt' : 'Supported'} · ${o.id}${o.resultOf ? ` from ${o.resultOf}` : ''}`, `${o.value}: ${o.of}.`)),
+        latest ? strip(status === 'borne out' ? 'answer' : 'warn', `Outcome · ${latest.id}`, latest.text)
+          : strip('unresolved', 'Not measured yet', `No outcome has measured it. It falls due by ${prediction.by}.`),
+      );
+    }
+
+    // An entity: proposed with a name, a purpose and what it's founded on; once integrated, its
+    // properties and behaviour come from its class in the model, with any later change noted.
+    function entityCard(entity, k = Infinity) {
+      const cls = modelAt(k)?.parts[entity.id];
+      const typeOf = type => typeof type === 'string' ? type : `${type.title} (${partOfClass(type, k)})`;
+      const changes = MODEL.filter(version => version.iteration <= k && version.changedBy?.[entity.id]);
+      return card(
+        cardHead('entity', entity.id, `Proposed by ${entity.proposedBy}${definitionOf(entity) ? ` · defined by ${definitionOf(entity).id}` : ''}${cls ? ` · class ${cls.name}` : ''}`, [statusBadge(partStage(entity, k))]),
+        strip('main', 'Entity', entity.name),
+        strip('note', 'Purpose', entity.purpose),
+        ...(cls ? [
+          strip('note', 'Properties', Object.entries(cls.properties).map(([name, type]) => `${name}: ${typeOf(type)}`).join(' · ')),
+          strip('answer', 'Behaviour', Object.entries(cls.behaviour).map(([name, does]) => `${name}: ${does}`).join(' · ')),
+          ...changes.map(version => strip('expect', `Changed in iteration ${version.iteration}`, `By ${version.changedBy[entity.id]}.`)),
+        ] : []),
+        ...partEnding(entity, k),
+        fold('Founded on', cardRows(entity.foundedOn, k), 'options'),
+      );
+    }
+
+    // A domain primitive: proposed the same way; once integrated, its constraints come from its
+    // class, and the entities it's part of from theirs.
+    function primitiveCard(primitive, k = Infinity) {
+      const cls = modelAt(k)?.parts[primitive.id];
+      const partOf = ENTITIES.filter(e => modelAt(k)?.parts[e.id] && primitivesOf(e.id).includes(primitive.id)).map(e => `${e.id}: ${e.name}`);
+      return card(
+        cardHead('primitive', primitive.id, `Proposed by ${primitive.proposedBy}${definitionOf(primitive) ? ` · defined by ${definitionOf(primitive).id}` : ''}${cls ? ` · class ${cls.name}` : ''}`, [statusBadge(partStage(primitive, k))]),
+        strip('main', 'Domain primitive', primitive.name),
+        strip('note', 'Purpose', primitive.purpose),
+        ...(cls ? [
+          strip('answer', 'Constraints', cls.constraints.join(' ')),
+          strip('note', 'Part of', partOf.join(' · ') || 'No entity yet.'),
+        ] : []),
+        ...partEnding(primitive, k),
+        fold('Founded on', cardRows(primitive.foundedOn, k), 'options'),
+      );
+    }
+
+    // A scenario: the scenario itself in sb-scenario, played against the model of the iteration
+    // shown, every step marked as it played out; and what it's founded on.
+    function scenarioCard(scenario, k = Infinity) {
+      const view = document.createElement('sb-scenario');
+      view.className = 'in-main';
+      view.scenario = { code: scenario.id, title: scenario.title, steps: scenario.steps };
+      view.results = scenarioResults(scenario, k);
+      return card(
+        cardHead('scenario', scenario.id, `Played against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(testStatus(scenario, k))]),
+        view,
+        fold('Founded on', cardRows(scenario.foundedOn, k), 'options'),
+      );
+    }
+
+    // A rule: the rule itself in sb-rule, holding or broken against the model of the iteration
+    // shown, with the trains it breaks for; and what it's founded on.
+    function ruleCard(rule, k = Infinity) {
+      const view = document.createElement('sb-rule');
+      view.className = 'in-main';
+      view.rule = { kind: rule.kind, code: rule.id, title: rule.title, lines: rule.lines };
+      const failures = ruleFailures(rule, k);
+      view.status = failures.length ? 'broken' : 'holds';
+      const breaks = failures.length ? [strip('warn', 'Breaks for', failures.join('; ') + '.')] : [];
+      return card(
+        cardHead('rule', rule.id, `Checked against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(testStatus(rule, k))]),
+        view,
+        ...breaks,
+        fold('Founded on', cardRows(rule.foundedOn, k), 'options'),
+      );
+    }
+
+    // How a proposal stands: flagged if nothing defines its name, then still proposed, or rejected
+    // and why, when it isn't in the model.
+    function partEnding(part, k) {
+      const stage = partStage(part, k);
+      const undefinedName = definitionOf(part) ? [] : [strip('warn', 'No definition', `Nothing defines “${part.name}”. The model’s words should be the domain’s, each defined once.`)];
+      if (stage === 'rejected') return [...undefinedName, strip('warn', 'Rejected', part.rejected.why)];
+      if (stage === 'proposed') return [...undefinedName, strip('unresolved', 'Not in the model yet', 'Proposed; it becomes part of the model once integrated.')];
+      return undefinedName;
+    }
+
+    // An agreement: its terms, what each side does, and how it can change.
+    function agreementCard(agreement) {
+      const [setIn, words] = agreement.setIn;
+      return card(
+        cardHead('agreement', agreement.id, `Between ${agreement.parties.join(' and ')}`, [statusBadge(agreement.status)]),
+        strip('main', 'Agreement', agreement.text),
+        strip('note', 'Each side', agreement.sides),
+        strip('expect', 'Changed by', agreement.changedBy),
+        sources(cite([{ source: setIn, quote: words }]), 'No sources'),
+      );
+    }
+
+    // A constraint: the limit, what it rules out, where it comes from and what it protects. Hard or
+    // soft is a word, as likelihood and impact are for a risk.
+    function constraintCard(constraint) {
+      const [setIn, words] = constraint.setIn;
+      const firmness = el('span', 'firmness', constraint.firmness);
+      firmness.dataset.firmness = constraint.firmness;
+      firmness.title = constraint.firmness === 'hard' ? 'Hard: can’t be moved' : 'Soft: could be moved, at a cost';
+      return card(
+        cardHead('constraint', constraint.id, `Imposed by ${sourceById(setIn).name}, ${setIn}`, [firmness, statusBadge(constraint.status)]),
+        strip('main', 'Constraint', constraint.text),
+        strip('warn', 'Rules out', constraint.rulesOut),
+        strip('note', `Comes from · ${constraint.comesFrom.cause}`, constraint.comesFrom.text),
+        strip('answer', 'Protects', constraint.protects),
         sources(cite([{ source: setIn, quote: words }]), 'No sources'),
       );
     }
 
     // An action: what has to happen, how anyone can tell it's done, and why.
-    function actionCard(action) {
+    function actionCard(action, k = Infinity) {
       return card(
-        cardHead('action', action.id, `Owned by ${action.owner} · due ${formatDate(action.due)}`, [statusBadge(action.status)]),
+        cardHead('action', action.id, `Owned by ${action.owner} · due ${formatDate(action.due)}`, [statusBadge(actionStatus(action, k))]),
         strip('main', 'Action', action.text),
         strip('answer', 'Done when', action.doneWhen),
         strip('note', 'Why', action.why),
-        sources(cite(action.sources), 'No sources'),
+        sources(cite(action.sources.filter(arrivedBy(k))), 'No sources'),
       );
     }
 
@@ -770,7 +1910,7 @@
       card.dataset.source = source.id;
       card.dataset.ref = source.id;
       const head = el('div', 'paper-head');
-      head.append(icon('source'), el('span', 'paper-id', source.id), el('span', 'role', source.role), el('span', 'format', source.format));
+      head.append(sourceIcon(source), el('span', 'paper-id', source.id), el('span', 'role', source.role), formatBadge(source));
 
       const fields = el('dl', 'fields');
       field(fields, 'As of', source.asOf);
@@ -781,6 +1921,7 @@
 
       const paper = el('div', 'paper');
       paper.append(head, el('h4', 'paper-title', source.title), el('div', 'paper-summary', source.summary), fields);
+      opensSource(paper, () => openSource(source.id));
       card.append(paper);
       return card;
     }
@@ -790,13 +1931,54 @@
     // Nothing is joined at rest. Pointing at a card lights everything it rests on and everything
     // that rests on it, draws those links, and fades the rest; clicking goes to the card in full.
 
-    const COLUMNS = [
-      { title: 'From the world', prefix: /^(NEXT|SRC)/ },
-      { title: 'Claims', prefix: 'CLM' },
-      { title: 'Questions', prefix: 'QST' },
-      { title: 'Goals', prefix: 'GOL' },
-      { title: 'Decisions', prefix: 'DEC' },
-      { title: 'Actions and risks', prefix: /^(ACT|RSK)/ },
+    // Each iteration on three boards, every card placed by the part it plays, not by its kind.
+    // What we know: gathered by investigations, captured from sources, interpreted, reasoned,
+    // assumed, still open, or still being looked into. Where we're going: in force (the outcomes,
+    // goals and standing constraints that shape the decisions), decided, and brought about (what
+    // the decisions set going, which stands in force from the next step on), so every link
+    // answers what shaped a decision or what it brought about. What we're building: parts of the
+    // model, proposed, integrated or rejected. The later boards rest on the first, so each starts
+    // with the cards it cites from elsewhere, folded to their codes; links among those stay put.
+    const kindOf = id => id.slice(0, 3);
+    const awaitedFor = kinds => id => id.startsWith('NEXT') && kinds.includes(kindOf(itemOf(id).for));
+    const KNOWING = ['INV', 'OBS', 'MET', 'CLM', 'DEF', 'OPN', 'INF', 'ASM', 'QST'];
+    const PARTS = ['ENT', 'PRM'];
+    const TESTS = ['SCN', 'RUL'];
+    const BUILDING = [...PARTS, ...TESTS];
+    const DIRECTION = ['OUT', 'GOL', 'PRD', 'AGR', 'CON', 'DEC', 'EXP', 'ACT', 'RSK'];
+    // A card brought about by another counts as brought about only in the iteration that made it;
+    // from then on it stands in force.
+    const broughtAbout = (id, k) => ['PRD', 'AGR', 'CON'].includes(kindOf(id)) && Boolean(itemOf(id).from) && iterationOf(id) === k;
+    const restedOnByDirection = id => KNOWING.includes(kindOf(id))
+      && DIRECTION.some(kind => links().some(([from, to]) => from === id && kindOf(to) === kind));
+
+    const BOARDS = [
+      { title: 'What we know', columns: [
+        { title: 'Gathered', holds: (id, k) => kindOf(id) === 'SRC' || (kindOf(id) === 'INV' && investigationStatus(itemOf(id), k) === 'done') },
+        { title: 'Captured', holds: id => kindOf(id) === 'OBS' },
+        { title: 'Interpreted', holds: id => ['MET', 'CLM', 'DEF', 'OPN'].includes(kindOf(id)) },
+        { title: 'Reasoned', holds: id => kindOf(id) === 'INF' },
+        { title: 'Assumed', holds: id => kindOf(id) === 'ASM' },
+        { title: 'Open', holds: id => kindOf(id) === 'QST' },
+        { title: 'Under way', holds: (id, k) => kindOf(id) === 'INV' && investigationStatus(itemOf(id), k) === 'under way' },
+        { title: 'Awaited', holds: awaitedFor(KNOWING) },
+      ] },
+      { title: 'Where we’re going', columns: [
+        { title: 'Rests on', grounds: true, holds: restedOnByDirection },
+        { title: 'In force', holds: (id, k) => ['OUT', 'GOL', 'PRD', 'AGR', 'CON'].includes(kindOf(id)) && !broughtAbout(id, k) },
+        { title: 'Decided', holds: id => kindOf(id) === 'DEC' },
+        { title: 'Brought about', holds: (id, k) => ['EXP', 'ACT', 'RSK'].includes(kindOf(id)) || broughtAbout(id, k) },
+        { title: 'Awaited', holds: awaitedFor(DIRECTION) },
+      ] },
+      { title: 'What we’re building', columns: [
+        { title: 'Founded on', grounds: true, holds: id => !BUILDING.includes(kindOf(id))
+          && links().some(([from, to]) => from === id && BUILDING.includes(kindOf(to))) },
+        { title: 'Proposed', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'proposed' },
+        { title: 'Integrated', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'integrated' },
+        { title: 'Passing', holds: (id, k) => TESTS.includes(kindOf(id)) && testStatus(itemOf(id), k) === 'passing' },
+        { title: 'Failing', holds: (id, k) => TESTS.includes(kindOf(id)) && testStatus(itemOf(id), k) === 'failing' },
+        { title: 'Rejected', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'rejected' },
+      ] },
     ];
 
     // Every link, from what something rests on to what rests on it.
@@ -812,13 +1994,43 @@
         add(question.raisedBy[0], question.id);
         Object.keys(question.answers).forEach(id => add(id, question.id));
       }
-      DECISION.restsOn.forEach(id => add(id, DECISION.id));
-      cited(DECISION, DECISION.sources);
+      for (const decision of DECISIONS) {
+        decision.restsOn.forEach(id => add(id, decision.id));
+        cited(decision, decision.sources);
+      }
       for (const action of ACTIONS) { add(action.from, action.id); cited(action, action.sources); }
       for (const risk of RISKS) { risk.from.forEach(id => add(id, risk.id)); cited(risk, risk.sources); }
       for (const awaited of AWAITED) add(awaited.for, awaited.id);
-      for (const goal of GOALS) { add(goal.setIn[0], goal.id); goal.from.forEach(id => add(id, goal.id)); }
-      Object.keys(DECISION.checks ?? {}).forEach(id => add(id, DECISION.id));
+      for (const goal of GOALS) add(goal.setIn[0], goal.id);
+      for (const prediction of PREDICTIONS) add(prediction.from, prediction.id);
+      for (const part of [...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES]) part.foundedOn.forEach(id => add(id, part.id));
+      for (const entity of ENTITIES) primitivesOf(entity.id).forEach(id => add(id, entity.id));
+      for (const investigation of INVESTIGATIONS) if (investigation.prompt) add(investigation.prompt, investigation.id);
+      for (const source of SOURCES) if (source.gatheredBy) add(source.gatheredBy, source.id);
+      for (const experiment of EXPERIMENTS) add(experiment.from, experiment.id);
+      for (const observation of OBSERVATIONS) {
+        add(observation.at[0], observation.id);
+        if (observation.tests) add(observation.id, observation.tests[0]);
+        if (observation.resultOf) add(observation.id, observation.resultOf);
+        if (observation.metric) add(observation.id, observation.metric);
+      }
+      for (const assumption of ASSUMPTIONS) add(assumption.setIn[0], assumption.id);
+      for (const inference of INFERENCES) inference.premises.forEach(id => add(id, inference.id));
+      for (const definition of DEFINITIONS) add(definition.setIn[0], definition.id);
+      for (const opinion of OPINIONS) add(opinion.said[0], opinion.id);
+      for (const outcome of OUTCOMES) {
+        outcome.from.forEach(id => add(id, outcome.id));
+        cited(outcome, outcome.sources);
+        add(outcome.id, outcome.against);
+      }
+      for (const agreement of AGREEMENTS) {
+        add(agreement.setIn[0], agreement.id);
+        if (agreement.from) add(agreement.from, agreement.id);
+      }
+      for (const constraint of CONSTRAINTS) {
+        add(constraint.setIn[0], constraint.id);
+        if (constraint.from) add(constraint.from, constraint.id);
+      }
       return found;
     }
 
@@ -839,37 +2051,53 @@
 
     // Everything below the sources is the sandbox's own record, kept as a file among the
     // source material; only what comes from the world sits in the sources band.
-    const FOLDERS = { GOL: 'goals', CLM: 'claims', QST: 'questions', DEC: 'decisions', ACT: 'actions', RSK: 'risks' };
+    const FOLDERS = { SCN: 'scenarios', RUL: 'rules', ENT: 'entities', PRM: 'primitives', INV: 'investigations', MET: 'metrics', EXP: 'experiments', PRD: 'predictions', OBS: 'observations', ASM: 'assumptions', INF: 'inferences', DEF: 'definitions', OPN: 'opinions', AGR: 'agreements', OUT: 'outcomes', GOL: 'goals', CON: 'constraints', CLM: 'claims', QST: 'questions', DEC: 'decisions', ACT: 'actions', RSK: 'risks' };
     const fileOf = id => `${FOLDERS[id.slice(0, 3)]}/${id}.md`;
 
-    // The loop unrolled: each iteration a block of its own, flowing downwards. Its sources are
-    // what arrived from the world in that turn, and its cards what was raised in it. Nothing
-    // points back up: a card that changes later appears again, as its updated self.
+    // The loop, one iteration at a time. Its sources are what arrived from the world in that
+    // turn, and its cards what was raised in it. Nothing points back: a card that changes later
+    // appears again, as its updated self. The first iteration holds whatever no later one claims.
+    const LATER = [
+      { title: 'Iteration 2 · feedback from October, early November',
+        sources: ['SRC-9', 'SRC-10', 'SRC-11', 'SRC-12', 'SRC-13', 'SRC-14', 'SRC-15', 'NEXT-5', 'NEXT-6', 'NEXT-7', 'NEXT-8'],
+        cards: ['SCN-6', 'ENT-4', 'INV-6', 'OBS-2', 'OBS-3', 'OBS-4', 'OUT-2', 'OUT-3', 'AGR-1', 'CON-3', 'DEC-2', 'PRD-2', 'EXP-2', 'EXP-3', 'ACT-2'] },
+    ];
+    const claimedLater = id => LATER.some(it => it.sources.includes(id) || it.cards.includes(id));
     const ITERATIONS = [
-      { title: 'Iteration 1 · the first curtailment, early February',
-        sources: ['SRC-2', 'SRC-3', 'SRC-4', 'SRC-5', 'SRC-9'], cards: ['CLM-1', 'CLM-2', 'QST-1'] },
-      { title: 'Iteration 2 · counting the cost and deciding, late February',
-        sources: ['SRC-1', 'SRC-6', 'SRC-7', 'SRC-8', 'SRC-10', 'SRC-11'], cards: ['GOL-1', 'CLM-3', 'CLM-4', 'CLM-5', 'CLM-6', 'CLM-7', 'QST-2', 'DEC-1', 'ACT-1', 'RSK-1'] },
-      { title: 'Iteration 3 · first results, March',
-        sources: ['SRC-12', 'SRC-13'], cards: [] },
-      { title: 'Iteration 4 · awaited from the world, April',
-        sources: AWAITED.map(a => a.id), cards: [] },
+      { title: 'Iteration 1 · how the board decides, early October',
+        sources: [...SOURCES, ...AWAITED].map(item => item.id).filter(id => !claimedLater(id)),
+        cards: [...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id).filter(id => !claimedLater(id)) },
+      ...LATER,
     ];
 
     const iterationOf = id => ITERATIONS.findIndex(it => it.sources.includes(id) || it.cards.includes(id)) + 1;
 
     function itemOf(id) {
-      return [...SOURCES, ...AWAITED, ...GOALS, ...CLAIMS, ...QUESTIONS, DECISION, ...ACTIONS, ...RISKS].find(item => item.id === id);
+      return [...SOURCES, ...AWAITED, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].find(item => item.id === id);
     }
 
     // What a card is built from: the sources it cites, and the cards it rests on.
     function inputsOf(id) {
       const item = itemOf(id), cited = list => list.map(({ source }) => source);
       switch (id.slice(0, 3)) {
-        case 'GOL': return { sources: [item.setIn[0]], cards: item.from };
+        case 'OUT': return { sources: cited(item.sources), cards: item.from };
+        case 'GOL': return { sources: [item.setIn[0]], cards: OUTCOMES.filter(o => o.against === id).map(o => o.id) };
+        case 'CON': case 'AGR': return { sources: [item.setIn[0]], cards: item.from ? [item.from] : [] };
+        case 'OBS': return { sources: [item.at[0]], cards: [] };
+        case 'ASM': return { sources: [item.setIn[0]], cards: OBSERVATIONS.filter(o => o.tests?.[0] === id).map(o => o.id) };
+        case 'INF': return { sources: [], cards: item.premises };
+        case 'DEF': return { sources: [item.setIn[0]], cards: [] };
+        case 'OPN': return { sources: [item.said[0]], cards: [] };
         case 'CLM': return { sources: Object.keys(item.assertions), cards: [] };
         case 'QST': return { sources: [item.raisedBy[0], ...Object.keys(item.answers)], cards: CLAIMS.filter(c => c.informs?.includes(id)).map(c => c.id) };
-        case 'DEC': return { sources: [...cited(item.sources), ...Object.keys(item.checks ?? {})], cards: item.restsOn };
+        case 'DEC': return { sources: cited(item.sources), cards: item.restsOn };
+        case 'PRD': return { sources: [], cards: [item.from, ...OUTCOMES.filter(o => o.against === id).map(o => o.id), ...OBSERVATIONS.filter(o => o.tests?.[0] === id).map(o => o.id)] };
+        case 'SRC': return { sources: [], cards: item.gatheredBy ? [item.gatheredBy] : [] };
+        case 'ENT': return { sources: [], cards: [...item.foundedOn, ...primitivesOf(id)] };
+        case 'PRM': case 'SCN': case 'RUL': return { sources: [], cards: item.foundedOn };
+        case 'INV': return { sources: [], cards: item.prompt ? [item.prompt] : [] };
+        case 'MET': return { sources: [], cards: OBSERVATIONS.filter(o => o.metric === id).map(o => o.id) };
+        case 'EXP': return { sources: [item.setIn[0]], cards: [item.from, ...OBSERVATIONS.filter(o => o.resultOf === id).map(o => o.id)] };
         case 'ACT': return { sources: cited(item.sources), cards: [item.from] };
         case 'RSK': return { sources: cited(item.sources), cards: item.from };
         case 'NEX': return { sources: [], cards: [item.for] };
@@ -879,11 +2107,23 @@
 
     // The iterations a card appears in: where it was raised, and each later one that brought
     // new material for it. A decision also comes back when anything it rests on changes, so
-    // it can be reviewed against its new grounds.
+    // it can be reviewed against its new grounds, a goal when a new outcome measures it, an
+    // assumption when it's tested, an inference when a premise changes, and an investigation
+    // when what it gathered arrives, a part of the model when its version or stage changes, and a
+    // test when what it says against the model changes.
     function appearancesOf(id) {
       const first = iterationOf(id), { sources, cards } = inputsOf(id);
       const later = sources.map(iterationOf);
-      if (id.startsWith('DEC')) later.push(...cards.flatMap(appearancesOf));
+      if (['DEC', 'GOL', 'PRD', 'EXP', 'MET', 'ASM', 'INF'].includes(id.slice(0, 3))) later.push(...cards.flatMap(appearancesOf));
+      if (id.startsWith('INV')) later.push(...gatheredBy(itemOf(id)).map(s => iterationOf(s.id)));
+      if (['SCN', 'RUL'].includes(id.slice(0, 3))) {
+        later.push(...MODEL.filter((version, i) => i && testOutcome(itemOf(id), version.iteration) !== testOutcome(itemOf(id), MODEL[i - 1].iteration))
+          .map(version => version.iteration));
+      }
+      if (['ENT', 'PRM'].includes(id.slice(0, 3))) {
+        later.push(...MODEL.filter((version, i) => i && version.parts[id] !== MODEL[i - 1].parts[id]).map(version => version.iteration));
+        if (itemOf(id).rejected) later.push(itemOf(id).rejected.in);
+      }
       return [...new Set([first, ...later.filter(k => k > first)])].sort((a, b) => a - b);
     }
 
@@ -891,36 +2131,57 @@
     const latestBy = (id, k) => appearancesOf(id).filter(at => at <= k).pop();
 
     // A card as it stood in one iteration: a claim weighed on what had arrived by then.
-    function asOf(id, k, isLatest) {
+    function asOf(id, k) {
       const item = itemOf(id);
-      if (id.startsWith('SRC')) return { kind: 'source', text: `${item.name}: ${item.title}` };
+      if (id.startsWith('SRC')) return { kind: 'source', source: item, text: `${item.name}: ${item.title}` };
       if (id.startsWith('NEXT')) return { kind: 'awaited', text: item.title, note: `for ${item.for} · ${item.why}` };
       if (id.startsWith('CLM')) {
         const then = claimAsOf(item, k);
         return { kind: 'claim', text: item.text, status: standing(then), assumed: basis(then) === 'assumption' };
       }
       if (id.startsWith('GOL')) return { kind: 'goal', text: item.text, status: item.status };
-      if (id.startsWith('QST')) return { kind: 'question', text: item.text, status: item.answer && isLatest ? 'answered' : 'unresolved' };
-      const kind = { DEC: 'decision', ACT: 'action', RSK: 'risk' }[id.slice(0, 3)];
-      return { kind, text: kind === 'decision' ? item.decided : item.text, status: kind === 'decision' ? decisionStatus(item, k) : item.status };
+      if (id.startsWith('CON')) return { kind: 'constraint', text: item.text, status: item.status };
+      if (id.startsWith('OUT')) return { kind: 'outcome', text: item.text, status: item.result };
+      if (id.startsWith('AGR')) return { kind: 'agreement', text: item.text, status: item.status };
+      if (id.startsWith('PRD')) return { kind: 'prediction', text: item.text, status: predictionStatus(item, k) };
+      if (id.startsWith('EXP')) return { kind: 'experiment', text: item.text, status: experimentStatus(item, k) };
+      if (id.startsWith('INV')) return { kind: 'investigation', text: item.text, status: investigationStatus(item, k) };
+      if (id.startsWith('SCN')) return { kind: 'scenario', text: item.title, status: testStatus(item, k) };
+      if (id.startsWith('RUL')) return { kind: 'rule', text: item.title, status: testStatus(item, k) };
+      if (['ENT', 'PRM'].includes(id.slice(0, 3))) return { kind: id.startsWith('ENT') ? 'entity' : 'primitive',
+        text: `${item.name}: ${item.purpose}`, status: partStage(item, k), note: definitionOf(item) ? undefined : 'no definition of its name' };
+      if (id.startsWith('MET')) {
+        const latest = OBSERVATIONS.filter(o => o.metric === id && iterationOf(o.id) <= k).pop();
+        return { kind: 'metric', text: latest ? `${item.name}: ${latest.value} in ${latest.when}` : item.name };
+      }
+      if (id.startsWith('OBS')) return { kind: 'observation', text: `${item.value}: ${item.of}, ${item.when}` };
+      if (id.startsWith('ASM')) return { kind: 'assumption', text: item.text, status: assumptionStatus(item, k) };
+      if (id.startsWith('INF')) return { kind: 'inference', text: item.text, status: inferenceStatus(item, k) };
+      if (id.startsWith('DEF')) return { kind: 'definition', text: `${item.term}: ${item.meaning}` };
+      if (id.startsWith('OPN')) return { kind: 'opinion', text: item.text };
+      if (id.startsWith('QST')) return { kind: 'question', text: item.text, status: questionStatus(item, k) };
+      if (id.startsWith('DEC')) return { kind: 'decision', text: item.decided, status: decisionStatus(item, k) };
+      if (id.startsWith('ACT')) return { kind: 'action', text: item.text, status: actionStatus(item, k) };
+      return { kind: 'risk', text: item.text, status: item.status };
     }
 
     // Every card in every iteration it appears in, and the links between them, all downwards:
     // from an earlier version, from new sources, and from new versions of the cards it rests on.
     function unrolled() {
       const nodes = [], found = [];
-      const ids = [...SOURCES, ...AWAITED, ...GOALS, ...CLAIMS, ...QUESTIONS, DECISION, ...ACTIONS, ...RISKS].map(item => item.id);
+      const ids = [...INVESTIGATIONS, ...SOURCES, ...AWAITED, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id);
       for (const id of ids) {
         const at = appearancesOf(id), { sources, cards } = inputsOf(id);
         at.forEach((k, i) => {
           const before = i ? at[i - 1] : 0;
-          nodes.push({ key: keyOf(id, k), id, k, updated: i > 0, ...asOf(id, k, i === at.length - 1) });
+          nodes.push({ key: keyOf(id, k), id, k, updated: i > 0, ...asOf(id, k) });
           if (i) found.push([keyOf(id, before), keyOf(id, k)]);
           for (const source of sources) {
             const arrived = iterationOf(source);
             if (arrived > before && arrived <= k) found.push([keyOf(source, arrived), keyOf(id, k)]);
           }
           for (const card of cards) {
+            if (i && [itemOf(id).from, itemOf(id).prompt].includes(card)) continue; // what brought a card about links only where it did
             const version = latestBy(card, k);
             if (version > before || (!i && version)) found.push([keyOf(card, version), keyOf(id, k)]);
           }
@@ -930,42 +2191,77 @@
     }
 
     function flowNode(node) {
-      const item = el('button', `node node--${node.kind}${node.assumed ? ' is-assumed' : ''}`);
+      const item = el('button', `node node--${node.kind}${node.assumed ? ' is-assumed' : ''}${node.carried ? ' is-carried' : ''}`);
       item.type = 'button';
       item.dataset.node = node.key;
       const head = el('span', 'node-head');
       const awaited = node.kind === 'awaited';
-      head.append(icon(awaited ? 'source' : node.kind), el('span', 'claim-id', awaited ? 'awaited' : node.id));
+      head.append(node.source ? sourceIcon(node.source) : icon(awaited ? 'source' : node.kind), el('span', 'claim-id', awaited ? 'awaited' : node.id));
       if (node.status) head.append(statusBadge(node.status));
+      if (node.source) head.append(formatBadge(node.source));
       item.append(head, el('span', 'node-text', node.text));
       if (node.note) item.append(el('span', 'node-note', node.note));
       if (node.updated) item.append(el('span', 'node-note', 'updated: new material arrived'));
+      if (node.carried) item.append(el('span', 'node-note', `carried from iteration ${node.k}`));
       if (FOLDERS[node.id.slice(0, 3)]) item.append(el('span', 'node-file', fileOf(node.id)));
-      item.addEventListener('click', () => goTo(node.id));
+      item.addEventListener('click', () => node.source ? openSource(node.id) : openCard(node.id));
       return item;
     }
 
+    // What the flow shows: one iteration, one of its boards, running across or down.
+    const shown = { iteration: ITERATIONS.length, board: 0, across: true };
+
+    // The shown board of the shown iteration. Cards from earlier iterations that this one's cards
+    // rest on, such as a constraint still in force, are carried in as they last stood.
     function drawFlow(root) {
-      const { nodes, links: all } = unrolled();
-      const flow = el('div', 'flow');
-      ITERATIONS.forEach((iteration, i) => {
-        const block = el('section', 'flow-iteration');
-        block.append(el('h4', 'flow-iteration-title', iteration.title));
-        for (const band of COLUMNS) {
-          const here = nodes.filter(n => n.k === i + 1 && inColumn(band, n.id));
-          if (!here.length) continue;
-          const row = el('div', 'flow-band');
-          const cards = el('div', 'flow-cards');
-          cards.append(...here.map(flowNode));
-          row.append(el('h5', 'flow-title', band.title), cards);
-          block.append(row);
-        }
-        flow.append(block);
-      });
+      const k = shown.iteration;
+      const { nodes, links: found } = unrolled();
+      const keys = new Set(nodes.filter(n => n.k === k).map(n => n.key));
+      const restedOn = n => found.some(([from, to]) => from === n.key && keys.has(to) && !to.startsWith(`${n.id}@`));
+      const here = nodes.filter(n => n.k === k || (n.k < k && restedOn(n)))
+        .map(n => n.k < k ? { ...n, carried: true } : n);
+      const summary = BOARDS[shown.board].title === 'What we’re building' ? [el('p', 'flow-summary', modelSummary(k))] : [];
+      root.replaceChildren(...summary, drawBoard(BOARDS[shown.board], here, found));
+      document.getElementById('iteration-title').textContent = ITERATIONS[k - 1].title;
+      document.querySelector('[data-step="-1"]').disabled = k === 1;
+      document.querySelector('[data-step="1"]').disabled = k === ITERATIONS.length;
+      for (const button of document.querySelectorAll('[data-board]')) button.setAttribute('aria-pressed', Number(button.dataset.board) === shown.board);
+    }
+
+    // The model in a line: how big it is, and how much of what it's asked to do it does. The start
+    // of the compression signal.
+    function modelSummary(k) {
+      const parts = Object.keys(modelAt(k).parts).length;
+      const tests = [...SCENARIOS, ...RULES].filter(t => iterationOf(t.id) <= k);
+      const passing = tests.filter(t => testStatus(t, k) === 'passing').length;
+      return `The model at iteration ${k}: ${parts} parts · ${passing} of ${tests.length} scenarios and rules passing`;
+    }
+
+    // A board: its columns of cards, and only the links between cards it shows.
+    function drawBoard(board, nodes, found) {
+      const flow = el('div', shown.across ? 'flow is-across' : 'flow');
+      const block = el('section', 'flow-iteration');
+      const bands = el('div', 'flow-bands');
+      const placed = board.columns.map(column => ({ column, here: nodes.filter(n => column.holds(n.id, shown.iteration)) }));
+      // A grounding card shows only if it links to a card the board shows for itself.
+      const ownKeys = new Set(placed.filter(p => !p.column.grounds).flatMap(p => p.here.map(n => n.key)));
+      for (const p of placed.filter(p => p.column.grounds)) p.here = p.here.filter(n => found.some(([from, to]) => from === n.key && ownKeys.has(to)));
+      const columnOf = new Map();
+      for (const { column, here } of placed) {
+        if (!here.length) continue;
+        here.forEach(n => columnOf.set(n.key, column));
+        const row = el('div', column.grounds ? 'flow-band is-collapsed' : 'flow-band');
+        const cards = el('div', 'flow-cards');
+        cards.append(...here.map(flowNode));
+        row.append(bandTitle(column.title, row), cards);
+        bands.append(row);
+      }
+      const isGrounds = key => columnOf.get(key)?.grounds;
+      const all = found.filter(([from, to]) => columnOf.has(from) && columnOf.has(to) && !(isGrounds(from) && isGrounds(to)));
+      block.append(bands);
       const lines = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       lines.classList.add('flow-lines');
-      flow.append(lines);
-      root.replaceChildren(flow);
+      flow.append(block, lines);
 
       for (const node of flow.querySelectorAll('.node')) {
         node.addEventListener('mouseenter', () => lightChain(flow, lines, node.dataset.node, all));
@@ -973,11 +2269,37 @@
         node.addEventListener('focus', () => lightChain(flow, lines, node.dataset.node, all));
         node.addEventListener('blur', () => clearChain(flow, lines));
       }
+      return flow;
     }
 
-    function inColumn(column, id) {
-      return typeof column.prefix === 'string' ? id.startsWith(column.prefix) : column.prefix.test(id);
+    // Stepping between iterations, and choosing a board.
+    function wireSteps(root) {
+      for (const button of document.querySelectorAll('[data-step]')) {
+        button.addEventListener('click', () => {
+          shown.iteration += Number(button.dataset.step);
+          drawFlow(root);
+        });
+      }
+      for (const button of document.querySelectorAll('[data-board]')) {
+        button.addEventListener('click', () => {
+          shown.board = Number(button.dataset.board);
+          drawFlow(root);
+        });
+      }
     }
+
+    // A band's title folds it: its cards shrink to their icon and code, still there for links to
+    // reach, and unfold again.
+    function bandTitle(text, band) {
+      const toggle = el('button', 'flow-toggle', text);
+      toggle.type = 'button';
+      toggle.setAttribute('aria-expanded', !band.classList.contains('is-collapsed'));
+      toggle.addEventListener('click', () => toggle.setAttribute('aria-expanded', !band.classList.toggle('is-collapsed')));
+      const title = el('h5', 'flow-title');
+      title.append(toggle);
+      return title;
+    }
+
 
     function lightChain(flow, lines, id, all) {
       const back = reach(id, 0, all), on = reach(id, 1, all);
@@ -1003,44 +2325,77 @@
         if (kind(to) === 'CLM') return itemOf(to).assertions[from][0] === '−' ? 'disputes' : 'supports';
         if (kind(to) === 'QST') return itemOf(to).raisedBy[0] === from ? 'asks' : 'answers';
         if (kind(to) === 'GOL') return 'sets';
-        if (kind(to) === 'DEC' && DECISION.checks?.[from]) return DECISION.checks[from][0] === '−' ? 'contradicts' : 'bears out';
+        if (kind(to) === 'CON') return 'imposes';
+        if (kind(to) === 'AGR') return 'records';
+        if (kind(to) === 'EXP') return 'records';
+        if (kind(to) === 'OBS') return 'captures';
+        if (kind(to) === 'ASM') return 'states';
+        if (kind(to) === 'DEF') return 'defines';
+        if (kind(to) === 'OPN') return 'voices';
         return sourceById(from).role === 'decision' ? 'records' : 'informs';
       }
-      if (kind(to) === 'DEC') return kind(from) === 'GOL' ? 'aims' : 'grounds';
+      if (kind(from) === 'OUT' && kind(to) === 'DEC') return 'prompts';
+      if (kind(to) === 'ASM') return itemOf(from).tests?.[1] === '−' ? 'refutes' : 'bears out';
+      if (kind(from) === 'OBS' && kind(to) === 'PRD') return itemOf(from).tests[1] === '−' ? 'doubts' : 'supports';
+      if (kind(from) === 'OBS' && kind(to) === 'EXP') return 'result';
+      if (kind(to) === 'MET') return 'reading of';
+      if (kind(from) === 'INV' && kind(to) === 'SRC') return 'gathered';
+      if (kind(from) === 'PRM' && kind(to) === 'ENT') return 'part of';
+      if (['ENT', 'PRM', 'SCN', 'RUL'].includes(kind(to))) return 'founds';
+      if (kind(to) === 'INV') return 'prompts';
+      if (kind(to) === 'EXP') return 'calls for';
+      if (kind(to) === 'INF') return 'premise';
+      if (kind(from) === 'INF' && kind(to) === 'OUT') return 'explains';
+      if (kind(from) === 'OUT') return { worked: 'meets', failed: 'fails', partly: 'partly meets' }[itemOf(from).result];
+      if (kind(to) === 'OUT') return 'shows';
+      if (kind(to) === 'DEC') return { GOL: 'aims', CON: 'constrains' }[kind(from)] ?? 'grounds';
       if (kind(to) === 'QST') return 'informs';
       if (kind(to) === 'GOL') return 'measures';
       if (kind(to) === 'ACT') return 'calls for';
+      if (kind(to) === 'CON' || kind(to) === 'AGR') return 'brings about';
+      if (kind(to) === 'PRD') return 'predicts';
       return 'raises';
     }
 
-    // Links reaching a card meet it at one point per kind of link, spread along its top edge and
-    // labelled there, where links of one kind have gathered and other kinds have parted. Labels
-    // by the target never pile up the way they would where links leave a card together.
+    // The flow runs down, each band a row, or across, each band a column.
+    const isAcross = flow => flow.classList.contains('is-across');
+
+    // Links reaching a card meet it at one point per kind of link, spread along the edge they
+    // arrive at (the top going down, the left going across) and labelled there, where links of
+    // one kind have gathered and other kinds have parted. Labels by the target never pile up the
+    // way they would where links leave a card together.
     function drawLinks(flow, shown) {
-      const box = flow.getBoundingClientRect();
+      const box = flow.getBoundingClientRect(), across = isAcross(flow);
       const rect = key => flow.querySelector(`[data-node="${key}"]`).getBoundingClientRect();
-      const middle = key => { const r = rect(key); return r.left + r.width / 2 - box.left; };
+      // Where a card sits along the arriving edge, so kinds meet it in the order they come from.
+      const along = key => { const r = rect(key); return across ? r.top + r.height / 2 - box.top : r.left + r.width / 2 - box.left; };
       const drawn = [];
       for (const [to, links] of groupBy(shown, ([, target]) => target)) {
         const kinds = [...groupBy(links, ([from]) => relation(from, to))]
-          .sort(([, p], [, q]) => average(p.map(([from]) => middle(from))) - average(q.map(([from]) => middle(from))));
+          .sort(([, p], [, q]) => average(p.map(([from]) => along(from))) - average(q.map(([from]) => along(from))));
         const target = rect(to);
         kinds.forEach(([name, group], i) => {
-          const entry = target.left - box.left + target.width * (i + 1) / (kinds.length + 1);
-          const top = target.top - box.top;
-          // With more than two kinds, labels alternate between two heights so neighbours don't touch.
+          const share = (i + 1) / (kinds.length + 1);
+          const left = target.left - box.left, top = target.top - box.top;
+          const entry = across ? top + target.height * share : left + target.width * share;
+          // Going down, with more than two kinds, labels alternate between two heights so neighbours don't touch.
           const lift = kinds.length > 2 && i % 2 ? 12 : 0;
-          drawn.push(...group.map(link => curve(flow, link, entry)), label(name, entry, top - 12 - lift));
+          // Going across, links from the same column come in on the right, where there's room for the label.
+          const sameColumn = across && group.every(([from]) => rect(from).right > target.left);
+          const right = target.right - box.left;
+          const tag = !across ? label(name, entry, top - 12 - lift)
+            : sameColumn ? label(name, right + 4, entry - 4, 'start') : label(name, left - 4, entry - 4, 'end');
+          drawn.push(...group.map(link => curve(flow, link, entry)), tag);
         });
       }
       return drawn;
     }
 
-    function label(text, x, y) {
+    function label(text, x, y, anchor = 'middle') {
       const node = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       node.setAttribute('x', x);
       node.setAttribute('y', y);
-      node.setAttribute('text-anchor', 'middle');
+      node.setAttribute('text-anchor', anchor);
       node.textContent = text;
       return node;
     }
@@ -1058,18 +2413,46 @@
       lines.replaceChildren();
     }
 
-    // A route from the bottom of one card to a point on the top of the other, drawn like a
-    // transit map: down, a 45° corner, across in the gap above the target's band, another
-    // corner, and down into the card. Down runs pass behind the cards between.
+    // A route from one card to a point on the other, drawn like a transit map. Going down: from
+    // the bottom, a 45° corner, across in the gap above the target's band, another corner, and
+    // down into the top. Going across, the same turned on its side, turning far enough from the
+    // target to leave room for the label on the last run. Long runs pass behind the cards between.
     function curve(flow, [from, to], entry) {
       const box = flow.getBoundingClientRect();
       const a = flow.querySelector(`[data-node="${from}"]`).getBoundingClientRect();
       const b = flow.querySelector(`[data-node="${to}"]`).getBoundingClientRect();
-      const x1 = a.left + a.width / 2 - box.left, x2 = entry;
-      const y1 = a.bottom - box.top, y2 = b.top - box.top, turn = y2 - 8;
+      // A link to a card in the same column runs down the column's right-hand gap and comes in on
+      // the right; one in the same band, going down, leaves from the top and turns just above.
+      let route;
+      if (isAcross(flow)) {
+        const y1 = a.top + a.height / 2 - box.top;
+        if (b.left >= a.right) {
+          const x2 = b.left - box.left, turn = x2 - 52;
+          route = [[a.right - box.left, y1], [turn, y1], [turn, entry], [x2, entry]];
+        } else {
+          const turn = Math.max(a.right, b.right) - box.left + 14;
+          route = [[a.right - box.left, y1], [turn, y1], [turn, entry], [b.right - box.left, entry]];
+        }
+      } else {
+        const ahead = b.top >= a.bottom;
+        const x1 = a.left + a.width / 2 - box.left, y1 = (ahead ? a.bottom : a.top) - box.top, y2 = b.top - box.top, turn = y2 - 8;
+        route = [[x1, y1], [x1, turn], [entry, turn], [entry, y2]];
+      }
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M' + chamfer([[x1, y1], [x1, turn], [x2, turn], [x2, y2]], 6).map(([x, y]) => `${x},${y}`).join(' L'));
+      path.setAttribute('d', 'M' + chamfer(route, 6).map(([x, y]) => `${x},${y}`).join(' L'));
       return path;
+    }
+
+    // The toggle flips the board between running down and running across.
+    function wireDirection(root) {
+      const buttons = document.querySelectorAll('[data-direction]');
+      for (const button of buttons) {
+        button.addEventListener('click', () => {
+          shown.across = button.dataset.direction === 'across';
+          root.querySelector('.flow').classList.toggle('is-across', shown.across);
+          for (const other of buttons) other.setAttribute('aria-pressed', other === button);
+        });
+      }
     }
 
     // Cuts each corner of a route of straight runs at 45°, never by more than half a run.
@@ -1087,14 +2470,125 @@
       return cut;
     }
 
-    // Going to a card in full: scrolled into view and briefly marked.
-    function goTo(id) {
-      const target = document.querySelector(`[data-ref="${id}"]`);
-      if (!target) return;
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      target.classList.add('is-arrived');
-      setTimeout(() => target.classList.remove('is-arrived'), 1600);
+    // Opening a card from the board, in sb-modal, with everything in it open: what it says on the
+    // left, and on the right its folds, every passage read in full. Awaited material has no card.
+    function openCard(id) {
+      const card = cardOf(id, shown.iteration);
+      if (!card) return;
+      for (const fold of card.querySelectorAll('details')) fold.open = true;
+      const body = card.querySelector('.claim-body');
+      const main = el('div', 'card-main'), side = el('div', 'card-side');
+      main.append(...body.querySelectorAll(':scope > .strip, :scope > .in-main'));
+      side.append(...body.children);
+      body.replaceChildren(main, side);
+      card.classList.add('claim--open');
+      const modal = document.getElementById('card-modal');
+      document.getElementById('card-view').replaceChildren(card);
+      modal.setAttribute('heading', `${capitalised(asOf(id, shown.iteration).kind)} ${id} · as of iteration ${shown.iteration}`);
+      modal.show();
     }
+
+    function cardOf(id, k) {
+      const item = itemOf(id);
+      switch (id.slice(0, 3)) {
+        case 'CLM': return claimCard(item, k);
+        case 'QST': return questionCard(item, k);
+        case 'GOL': return goalCard(item, k);
+        case 'CON': return constraintCard(item);
+        case 'AGR': return agreementCard(item);
+        case 'PRD': return predictionCard(item, k);
+        case 'EXP': return experimentCard(item, k);
+        case 'MET': return metricCard(item, k);
+        case 'INV': return investigationCard(item, k);
+        case 'ENT': return entityCard(item, k);
+        case 'PRM': return primitiveCard(item, k);
+        case 'SCN': return scenarioCard(item, k);
+        case 'RUL': return ruleCard(item, k);
+        case 'OBS': return observationCard(item);
+        case 'ASM': return assumptionCard(item, k);
+        case 'INF': return inferenceCard(item, k);
+        case 'DEF': return definitionCard(item);
+        case 'OPN': return opinionCard(item);
+        case 'OUT': return outcomeCard(item);
+        case 'DEC': return decisionCard(item, k);
+        case 'ACT': return actionCard(item, k);
+        case 'RSK': return riskCard(item);
+      }
+    }
+
+    // Opening a source: the whole of it in sb-source, inside sb-modal, with every passage the
+    // sandbox cites from it marked and named by the card that cites it, and, opened from a
+    // passage, that card's passage gone to.
+    function openSource(id, current = null) {
+      const source = sourceById(id);
+      const view = document.getElementById('source-view');
+      view.source = {
+        id, title: source.title, summary: source.summary, format: source.format, path: source.path,
+        author: source.name, authored: source.asOf, role: source.role, derivedFrom: source.derivedFrom && [source.derivedFrom],
+      };
+      const passages = citationsOf(id);
+      if (SOURCE_TEXT[id]) {
+        view.content = SOURCE_TEXT[id];
+        view.passages = passages;
+      } else {
+        view.content = null;
+        view.url = `data:image/svg+xml,${encodeURIComponent(stillsImage())}`;
+        view.passages = passages.map(({ id }) => ({ id, region: stillRegion(STILL_PASSAGES[id]) }));
+      }
+      view.current = current;
+      const modal = document.getElementById('source-modal');
+      modal.setAttribute('heading', `${source.name}, ${source.asOf}`);
+      modal.show();
+    }
+
+    // Every passage the sandbox cites from a source, named by the card that cites it.
+    function citationsOf(sourceId) {
+      const found = [];
+      const add = (card, source, quote) => { if (source === sourceId) found.push({ id: card, quote }); };
+      for (const claim of CLAIMS) {
+        for (const [source, [, quote]] of Object.entries(claim.assertions)) add(claim.id, source, quote);
+      }
+      for (const question of QUESTIONS) {
+        add(question.id, ...question.raisedBy);
+        for (const [source, quote] of Object.entries(question.answers)) add(question.id, source, quote);
+      }
+      for (const item of [...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...ASSUMPTIONS, ...DEFINITIONS, ...EXPERIMENTS]) add(item.id, ...item.setIn);
+      for (const observation of OBSERVATIONS) add(observation.id, ...observation.at);
+      for (const opinion of OPINIONS) add(opinion.id, ...opinion.said);
+      for (const item of [...OUTCOMES, ...DECISIONS, ...ACTIONS, ...RISKS]) {
+        for (const { source, quote } of item.sources) add(item.id, source, quote);
+      }
+      return found;
+    }
+
+    // The stills' layout: each still a board side by side, its rows below a header.
+    const STILL = { width: 960, height: 340, left: 20, gap: 40, boardWidth: 440, top: 20, rowsTop: 90, row: 36 };
+
+    function stillsImage() {
+      const boards = STILLS.map(({ clock, rows }, i) => {
+        const x = STILL.left + i * (STILL.boardWidth + STILL.gap);
+        const lines = rows.map(([time, destination, platform, expected], r) => {
+          const y = STILL.rowsTop + r * STILL.row + 24;
+          return `<text x="${x + 12}" y="${y}">${time}</text><text x="${x + 72}" y="${y}">${destination}</text>`
+            + `<text x="${x + 300}" y="${y}">${platform}</text><text x="${x + 340}" y="${y}">${expected}</text>`;
+        }).join('');
+        return `<rect x="${x}" y="${STILL.top}" width="${STILL.boardWidth}" height="300" rx="6" fill="#111"/>`
+          + `<text x="${x + 12}" y="${STILL.top + 25}" fill="#eee">Ashford International</text>`
+          + `<text x="${x + STILL.boardWidth - 12}" y="${STILL.top + 25}" fill="#eee" text-anchor="end">${clock}</text>`
+          + `<text x="${x + 12}" y="76" font-size="11" fill="#999">TIME</text><text x="${x + 72}" y="76" font-size="11" fill="#999">DESTINATION</text>`
+          + `<text x="${x + 300}" y="76" font-size="11" fill="#999">PLAT</text><text x="${x + 340}" y="76" font-size="11" fill="#999">EXPECTED</text>`
+          + `<g fill="#f5b301">${lines}</g>`;
+      }).join('');
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${STILL.width} ${STILL.height}" width="${STILL.width}" height="${STILL.height}" font-family="Menlo, monospace" font-size="16">`
+        + `<rect width="100%" height="100%" fill="#2a2d31"/>${boards}</svg>`;
+    }
+
+    // A row of a still, as fractions of the image.
+    function stillRegion([still, row]) {
+      const x = STILL.left + still * (STILL.boardWidth + STILL.gap), y = STILL.rowsTop + row * STILL.row;
+      return [x / STILL.width, y / STILL.height, STILL.boardWidth / STILL.width, STILL.row / STILL.height];
+    }
+
     // Pointing at a passage lights its source, and pointing at a source lights its passages.
     function lightTogether(root) {
       const sharing = node => root.querySelectorAll(`[data-source="${node.dataset.source}"]`);
@@ -1104,21 +2598,50 @@
       }
     }
 
+    // The claims in a line: how many stand each way, leaving out any none do. An assumption is
+    // a claim relied on with nothing behind it; one the evidence has refuted counts as refuted.
     function summary() {
-      const count = name => CLAIMS.filter(c => standing(c) === name).length;
-      return `${CLAIMS.length} claims · ${count('corroborated')} corroborated, ${count('contested')} contested, ${count('single source')} on a single source, ${CLAIMS.filter(c => basis(c) === 'assumption').length} assumptions`;
+      const count = test => CLAIMS.filter(test).length;
+      const parts = [
+        [count(c => standing(c) === 'corroborated'), 'corroborated'],
+        [count(c => standing(c) === 'single source'), 'on a single source'],
+        [count(c => standing(c) === 'contested'), 'contested'],
+        [count(c => standing(c) === 'refuted'), 'refuted'],
+        [count(c => standing(c) === 'unbacked' && basis(c) === 'assumption'), 'assumption'],
+      ].filter(([n]) => n).map(([n, words]) => words === 'assumption' && n > 1 ? `${n} assumptions` : `${n} ${words}`);
+      return `${CLAIMS.length} claims · ${parts.join(', ')}`;
     }
 
+
     document.getElementById('summary').textContent = summary();
-    document.getElementById('claims').replaceChildren(...CLAIMS.map(claimCard));
-    document.getElementById('goals').replaceChildren(...GOALS.map(goalCard));
-    document.getElementById('questions').replaceChildren(...QUESTIONS.map(questionCard));
-    document.getElementById('decisions').replaceChildren(decisionCard(DECISION));
-    document.getElementById('actions').replaceChildren(...ACTIONS.map(actionCard));
+    // Cards that take an iteration get one argument here: map would pass its index as the second.
+    document.getElementById('claims').replaceChildren(...CLAIMS.map(item => claimCard(item)));
+    document.getElementById('entities').replaceChildren(...ENTITIES.map(item => entityCard(item)));
+    document.getElementById('primitives').replaceChildren(...PRIMITIVES.map(item => primitiveCard(item)));
+    document.getElementById('scenarios').replaceChildren(...SCENARIOS.map(item => scenarioCard(item)));
+    document.getElementById('rules').replaceChildren(...RULES.map(item => ruleCard(item)));
+    document.getElementById('investigations').replaceChildren(...INVESTIGATIONS.map(item => investigationCard(item)));
+    document.getElementById('observations').replaceChildren(...OBSERVATIONS.map(observationCard));
+    document.getElementById('metrics').replaceChildren(...METRICS.map(item => metricCard(item)));
+    document.getElementById('assumptions').replaceChildren(...ASSUMPTIONS.map(item => assumptionCard(item)));
+    document.getElementById('inferences').replaceChildren(...INFERENCES.map(item => inferenceCard(item)));
+    document.getElementById('definitions').replaceChildren(...DEFINITIONS.map(definitionCard));
+    document.getElementById('opinions').replaceChildren(...OPINIONS.map(opinionCard));
+    document.getElementById('outcomes').replaceChildren(...OUTCOMES.map(outcomeCard));
+    document.getElementById('predictions').replaceChildren(...PREDICTIONS.map(item => predictionCard(item)));
+    document.getElementById('experiments').replaceChildren(...EXPERIMENTS.map(item => experimentCard(item)));
+    document.getElementById('goals').replaceChildren(...GOALS.map(item => goalCard(item)));
+    document.getElementById('agreements').replaceChildren(...AGREEMENTS.map(agreementCard));
+    document.getElementById('constraints').replaceChildren(...CONSTRAINTS.map(constraintCard));
+    document.getElementById('questions').replaceChildren(...QUESTIONS.map(item => questionCard(item)));
+    document.getElementById('decisions').replaceChildren(...DECISIONS.map(item => decisionCard(item)));
+    document.getElementById('actions').replaceChildren(...ACTIONS.map(item => actionCard(item)));
     document.getElementById('risks').replaceChildren(...RISKS.map(riskCard));
     document.getElementById('sources').replaceChildren(...SOURCES.map(sourceCard));
     lightTogether(document.querySelector('main'));
     drawFlow(document.getElementById('flow'));
+    wireDirection(document.getElementById('flow'));
+    wireSteps(document.getElementById('flow'));
   </script>
 </body>
 </html>
