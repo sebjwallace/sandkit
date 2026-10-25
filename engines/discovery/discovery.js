@@ -1,14 +1,16 @@
-// Sandkit discovery 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit discovery 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The engine of domain discovery: the method's rules, written once. Given the sandbox's records,
 // it works out what follows from them, the same way every time, so a record holds only what
 // someone wrote and never a conclusion. It draws nothing and knows no component.
 //
-// So far it weighs claims: which passages count, and a claim's standing, score and basis, as of
-// any iteration, from each source's authored grade.
+// So far it weighs claims (which passages count, and a claim's standing, score and basis, from each
+// source's authored grade) and works out every status that follows from the records, as of any
+// iteration: a question answered, an assumption refuted, a decision under review.
 //
-//   const discovery = createDiscovery({ sources, claims });
-//   discovery.weigh('CLM-3', { asOf: 2, reliedOn: true });
-//   // → { standing: 'contested', score: -12, basis: 'reported', passages: [...] }
+//   const discovery = createDiscovery({ sources, claims, questions, decisions, … });
+//   discovery.weigh('CLM-3', { asOf: 2, reliedOn: true });   // → { standing, score, basis, passages }
+//   discovery.status('DEC-1', { asOf: 2 });                   // → 'review'
+//   discovery.reviewReasons('DEC-1', { asOf: 2 });            // → [{ ref: 'CLM-3', now: 'contested', why: 'rests on' }]
 //
 // See manifest.md for the full contract.
 (function () {
@@ -23,7 +25,11 @@
   // A stance as records write it: yes, or no ('−', or '-' typed plainly).
   const stanceOf = (mark) => (mark === '+' ? '+' : '−');
 
-  function createDiscovery({ sources = [], claims = [] } = {}) {
+  // A claim in doubt: some of what speaks to how things are says no.
+  const DOUBTED = ['refuted', 'contested'];
+
+  function createDiscovery({ sources = [], claims = [], questions = [], assumptions = [], inferences = [], observations = [],
+    predictions = [], outcomes = [], investigations = [], experiments = [], actions = [], decisions = [] } = {}) {
     const sourceOf = new Map(sources.map((source) => [source.id, source]));
     const claimOf = new Map(claims.map((claim) => [claim.id, claim]));
 
@@ -91,7 +97,81 @@
       return { standing, score, basis, passages: order };
     }
 
-    return { weigh, strength, originOf };
+    // ---- Statuses ----
+
+    // Every record by its id, with its kind.
+    const lists = { claim: claims, question: questions, assumption: assumptions, inference: inferences, observation: observations,
+      prediction: predictions, outcome: outcomes, investigation: investigations, experiment: experiments, action: actions, decision: decisions };
+    const recordOf = new Map(Object.entries(lists).flatMap(([kind, list]) => list.map((record) => [record.id, { kind, record }])));
+    const kindOf = (id) => recordOf.get(id)?.kind;
+
+    // Whether a source or record had arrived, or been raised, by an iteration. One without an
+    // iteration always had.
+    const arrived = (thing, asOf) => (thing.iteration ?? 0) <= asOf;
+    const arrivedById = (id, asOf) => arrived(sourceOf.get(id) ?? recordOf.get(id)?.record ?? {}, asOf);
+
+    // What the observations testing a record say of it, by an iteration: any no outweighs every yes.
+    const tested = (id, asOf, [against, borne, untested]) => {
+      const verdicts = observations.filter((o) => o.tests?.[0] === id && arrived(o, asOf)).map((o) => stanceOf(o.tests[1]));
+      return verdicts.includes('−') ? against : verdicts.includes('+') ? borne : untested;
+    };
+
+    // Each kind's rule. A kind without one keeps what its record says.
+    const RULES = {
+      claim: (claim, asOf) => weigh(claim, { asOf }).standing,
+      // Answered once a source that answers it has arrived, and the answer is written up.
+      question: (question, asOf) => (question.answer && Object.keys(question.answers ?? {}).some((id) => arrivedById(id, asOf)) ? 'answered' : 'unresolved'),
+      assumption: (assumption, asOf) => tested(assumption.id, asOf, ['refuted', 'confirmed', 'untested']),
+      // Shaken once any premise is in doubt.
+      inference: (inference, asOf) => ((inference.premises ?? []).some((id) => inDoubt(id, asOf)) ? 'shaken' : 'sound'),
+      // Measured by the latest outcome against it; until then, supported or put in doubt by results.
+      prediction: (prediction, asOf) => {
+        const latest = outcomes.filter((o) => o.against === prediction.id && arrived(o, asOf)).pop();
+        if (latest) return { worked: 'borne out', partly: 'partly', failed: 'not borne out' }[latest.result];
+        return tested(prediction.id, asOf, ['in doubt', 'supported', 'pending']);
+      },
+      // Done once a source it gathered has arrived; an experiment, once a result has.
+      investigation: (investigation, asOf) => (sources.some((s) => s.gatheredBy === investigation.id && arrived(s, asOf)) ? 'done' : 'under way'),
+      experiment: (experiment, asOf) => (observations.some((o) => o.resultOf === experiment.id && arrived(o, asOf)) ? 'done' : 'planned'),
+      // Done once what shows it's done has arrived.
+      action: (action, asOf) => (action.done && arrivedById(action.done, asOf) ? 'done' : action.status),
+      decision: (decision, asOf) => (reviewReasons(decision.id, { asOf }).length ? 'review' : decision.status),
+      outcome: (outcome) => outcome.result,
+    };
+
+    // A record's status as of an iteration (by default, everything), by its kind's rule.
+    function status(id, { asOf = Infinity } = {}) {
+      if (!recordOf.has(id)) throw new Error(`No record ${id}.`);
+      const { kind, record } = recordOf.get(id);
+      return RULES[kind] ? RULES[kind](record, asOf) : record.status ?? null;
+    }
+
+    function inDoubt(id, asOf) {
+      if (kindOf(id) === 'claim') return DOUBTED.includes(status(id, { asOf }));
+      if (kindOf(id) === 'assumption') return status(id, { asOf }) === 'refuted';
+      if (kindOf(id) === 'inference') return status(id, { asOf }) === 'shaken';
+      return false;
+    }
+
+    // Why a decision needs another look, as of an iteration: a claim it rests on has turned against
+    // it, or an assumption it rests on been refuted, since it was taken; or what it predicted wasn't
+    // borne out. Grounds already in doubt when it was taken were part of its reasoning, not a reason.
+    function reviewReasons(id, { asOf = Infinity } = {}) {
+      const decision = recordOf.get(id)?.record;
+      if (!decision) throw new Error(`No record ${id}.`);
+      const restsOn = decision.restsOn ?? [], taken = decision.iteration ?? 0;
+      const turned = (list, isDoubted) => list.filter((r) => restsOn.includes(r.id)).flatMap((r) => {
+        const then = status(r.id, { asOf: taken }), now = status(r.id, { asOf });
+        return isDoubted(now) && !isDoubted(then) ? [{ ref: r.id, now, why: 'rests on' }] : [];
+      });
+      return [
+        ...turned(claims, (s) => DOUBTED.includes(s)),
+        ...turned(assumptions, (s) => s === 'refuted'),
+        ...predictions.filter((p) => p.from === id && status(p.id, { asOf }) === 'not borne out').map((p) => ({ ref: p.id, now: 'not borne out', why: 'predicted' })),
+      ];
+    }
+
+    return { weigh, strength, originOf, status, reviewReasons };
   }
 
   if (typeof module !== 'undefined') module.exports = { createDiscovery };

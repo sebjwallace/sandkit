@@ -40,13 +40,15 @@ records/   what was written inside, from it: one script per kind
 ```
 
 - **A record holds only what someone wrote:** the claim and the passages for and against it, the options a decision weighed and what it rests on, a scenario's steps and code. Never a standing, a status or anything else that follows: those are worked out (see "Weighing claims" and the statuses in "The kinds").
-- **Every record carries its making:** `created` (`yyyy-mm-ddThh:mm`), `by` (`Agent` or the person) and `iteration`, and anything else worth keeping in `meta`.
+- **Every record carries its making:** `created` (`yyyy-mm-ddThh:mm`), `by` (`Agent` or the person) and `iteration`, and anything else worth keeping in `meta`. These names are reserved: a kind's own fields use others (a prediction's deadline is `due`, an investigation's investigator `who`).
 - **One script per kind,** each setting its list, as the [pages practice](pages.md) keeps data, so a page opened from disk reads them; a page includes the kinds it shows.
 - **Records are never edited.** A record that's wrong or out of date is superseded by a new one, which names it.
 
 ## The kinds
 
 **What we know**
+
+Every status below is worked out by the [discovery engine](../engines/discovery/manifest.md) (`discovery.status`), never written in a record.
 
 | Prefix | Kind | What it is | Status, worked out |
 |---|---|---|---|
