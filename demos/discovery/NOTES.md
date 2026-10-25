@@ -10,6 +10,7 @@ The Domain Discovery Engine demo models discovering how Ashford International's 
 - **A new kind of card earns its place** by having parts or connections the others don't.
 - **Loosely inspired by domain-driven design:** borrow pieces where they fit, never think in its terms. Parts of the model (entities, domain primitives, events, scenarios, rules) aren't cards; cards are their precursors, traced back by "founded on".
 - **The model speaks the domain's words.** Every entity, domain primitive (and later event) is founded on a definition of its name; a part without one is flagged.
+- **The prototype draws; the model decides.** In this domain what the board shows is domain behaviour, so it's in the model; the prototype's layout and colours aren't, and nothing like a view model is modelled. Ported to production, the model goes and the prototype stays behind.
 - **The sandbox is where experiments run.** Experiments on the model are instant and free of risk, so a prediction can be put in doubt before the world has to answer. That is the principal idea behind the whole toolkit.
 - **What brought a card about is linked only in the iteration where it did.** Later, the card stands in force and that history stays on the card.
 
@@ -22,27 +23,29 @@ The Domain Discovery Engine demo models discovering how Ashford International's 
 
 ### To pick up
 
-3. **Supersedes.** How a card is superseded, and how that shows on the boards and on the superseded card (struck through, as `sb-sources` does). A modified proposal for the model returns as a new one superseding it.
-4. **A connections view.** Clicking a card opens another kind of modal showing how it connects to every other card, not just along the board: a knowledge graph around it. Supersedes is one of its connections.
-5. **Passages as objects with their own ids.** Claims, observations and the rest rest on passages, not on whole sources. A source card could list its passages. Settles the overlap between a claim citing a data row and an observation of the same row.
-6. **Source material versus cards.** Source material is what people gather while investigating; whatever the agent writes is a card, never a source. Investigations now gather sources, but the agent's analysis (SRC-6) and the model run (SRC-15) still pose as sources; they'd become cards (inferences, observations, an experiment's results).
-7. **A basis pill on claims on the board** (observed, reported, inferred), and fact or cause as claim variants.
-8. **Constraints carry standing like claims.** "Fixed in firmware" could be wrong, so a constraint might rest on evidence and be tested.
-9. **Risks that come true.** RSK-1 (passengers don't read the message line) happened when the survey arrived; nothing on the board says so yet.
-10. **Awaited material arriving.** Link each awaited card to the source it arrives as in the next iteration.
-11. **Force field view of a decision** (after Kurt Lewin): what drives the change on one side, what restrains it on the other. Perhaps inside the decision's modal.
-12. **Parties.** Not a card, but part of the engine with its own look, composed wherever needed: who wants what, who holds which views, who is bound by which agreements, whose interests a constraint protects. Making `sb-person` represent a party (a person, a team, an organisation) is a component change for the author to schedule.
-13. **Scenarios without a When.** Most of the board's scenarios are Given … Then. Perhaps the scenario card could show an empty When, saying none is needed; or it may be fine as it is.
-14. **One card component,** once the kinds settle: the page prepares a plain view of each card (kind, id, byline, badges, strips, folds), and the component only draws it.
+3. **Trace.** Click any card, or any part of the prototype, to trace it back to its sources: `sb-trace-mode` with `sb-source-trace` in a modal. Every card's links (founded on, cites, rests on) already exist. Overlaps with the connections view (a trace is the connections running back to the sources).
+
+4. **Supersedes.** How a card is superseded, and how that shows on the boards and on the superseded card (struck through, as `sb-sources` does). A modified proposal for the model returns as a new one superseding it.
+5. **A connections view.** Clicking a card opens another kind of modal showing how it connects to every other card, not just along the board: a knowledge graph around it. Supersedes is one of its connections.
+6. **Passages as objects with their own ids.** Claims, observations and the rest rest on passages, not on whole sources. A source card could list its passages. Settles the overlap between a claim citing a data row and an observation of the same row.
+7. **Source material versus cards.** Source material is what people gather while investigating; whatever the agent writes is a card, never a source. Investigations now gather sources, but the agent's analysis (SRC-6) and the model run (SRC-15) still pose as sources; they'd become cards (inferences, observations, an experiment's results).
+8. **A basis pill on claims on the board** (observed, reported, inferred), and fact or cause as claim variants.
+9. **Constraints carry standing like claims.** "Fixed in firmware" could be wrong, so a constraint might rest on evidence and be tested.
+10. **Risks that come true.** RSK-1 (passengers don't read the message line) happened when the survey arrived; nothing on the board says so yet.
+11. **Awaited material arriving.** Link each awaited card to the source it arrives as in the next iteration.
+12. **Force field view of a decision** (after Kurt Lewin): what drives the change on one side, what restrains it on the other. Perhaps inside the decision's modal.
+13. **Parties.** Not a card, but part of the engine with its own look, composed wherever needed: who wants what, who holds which views, who is bound by which agreements, whose interests a constraint protects. Making `sb-person` represent a party (a person, a team, an organisation) is a component change for the author to schedule.
+14. **Scenarios without a When.** Most of the board's scenarios are Given … Then. Perhaps the scenario card could show an empty When, saying none is needed; or it may be fine as it is.
+15. **One card component,** once the kinds settle: the page prepares a plain view of each card (kind, id, byline, badges, strips, folds), and the component only draws it.
 
 ### Tidying
 
-15. **The sections below the boards** repeat what the boards and their modals now show; decide what the page keeps.
+16. **The sections below the boards** repeat what the boards and their modals now show; decide what the page keeps.
 
 ### Sandkit, beyond this demo
 
-16. **`sb-scenario` splits times:** "14:15" is marked as two numbers, 14 and 15. A component change, for the author to schedule.
-17. **A faster test runner:** a path filter and pages run in parallel, so one component's tests run alone. The author's to schedule.
+17. **`sb-scenario` splits times:** "14:15" is marked as two numbers, 14 and 15. A component change, for the author to schedule.
+18. **A faster test runner:** a path filter and pages run in parallel, so one component's tests run alone. The author's to schedule.
 
 ## Done
 
@@ -55,3 +58,4 @@ The Domain Discovery Engine demo models discovering how Ashford International's 
 - **Scenarios and rules** (2026-10-25): written beside the model and run against it each iteration, passing or failing; opened in `sb-scenario` and `sb-rule`. What we're building gained Passing and Failing columns and a summary line. SCN-5 fails against iteration 1's model and passes against iteration 2's; RUL-2 found a real gap (Ely); SCN-6 fails until there's an Announcement.
 - **What we know by role** (2026-10-25): Gathered, Captured, Interpreted, Reasoned, Assumed, Open, Under way, Awaited.
 - **Tidying** (2026-10-25): claim headers no longer cramped (what rests on a claim moved into its body); the key below the boards lists every kind of card by board; links within a column run down its right-hand gap, labels in view.
+- **The prototype** (2026-10-26): the departure board run by each iteration's model on the afternoon's trains, scrubbed through the feed's updates (`sb-scrubber`); the board's objects in `sb-outliner`, set into the page, lighting the prototype both ways; double-click any line, cell or entry for the object view: its instance now and its class, with the code that ran. Board gained expectedFor and platformFor.

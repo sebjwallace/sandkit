@@ -10,6 +10,8 @@
   <script src="../../components/sb-source/sb-source.js"></script>
   <script src="../../components/sb-rule/sb-rule.js"></script>
   <script src="../../components/sb-scenario/sb-scenario.js"></script>
+  <script src="../../components/sb-outliner/sb-outliner.js"></script>
+  <script src="../../components/sb-scrubber/sb-scrubber.js"></script>
 
   <style>
     body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
@@ -75,6 +77,32 @@
     .status[data-status="passing"] { --tone: var(--sb-good, #3f9142); }
     .status[data-status="failing"] { --tone: var(--sb-bad, #c53030); }
     .flow-summary { margin: 0 0 10px; color: var(--sb-muted); font-size: 13px; }
+
+    /* The prototype, the outliner set into the page beside it, and the object view. */
+    .prototype { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(220px, 1fr) minmax(0, 1.4fr); gap: 14px; align-items: start; }
+    .prototype > * { min-width: 0; }
+    @media (max-width: 960px) { .prototype { grid-template-columns: 1fr; } }
+    #objects { position: static; z-index: auto; width: auto; max-height: 560px; box-shadow: none; }
+    #objects [data-action="close"] { display: none; }
+    /* The prototype depicts a physical display, so its colours are the display's, not the theme's. */
+    #prototype-board { --board-bg: #121417; --board-ink: #f5b301; --board-label: #9aa0a6; }
+    .departures-frame { padding: 10px 12px 12px; border-radius: var(--sb-radius); background: var(--board-bg); color: var(--board-ink); font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .departures-head { display: flex; justify-content: space-between; margin-bottom: 6px; color: #eee; }
+    .departures-line { display: grid; grid-template-columns: 52px minmax(0, 1fr) 42px 84px; gap: 4px 8px; padding: 3px 4px; border-radius: 4px; }
+    .departures-labels { color: var(--board-label); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .departures-destination { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .departures-message { grid-column: 2 / -1; font-size: 12px; }
+    .departures-frame [data-ref] { cursor: default; border-radius: 3px; }
+    .departures-frame .is-lit { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+    .departures-frame .is-selected { box-shadow: inset 0 0 0 1px var(--board-ink); }
+    .departures-frame .is-pinned-fill { background: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 40%), transparent); }
+    .departures-frame .is-pinned-outline { outline: 2px solid color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 100%), transparent); }
+    .object-view { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 12px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); font-size: 13px; }
+    .object-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .object-class { margin-left: auto; color: var(--sb-muted); font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .object-section > .label { margin-bottom: 4px; color: var(--sb-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+    .object-section p { margin: 0; }
+    .object-code { max-height: 240px; margin: 0 0 6px; padding: 8px 10px; overflow: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 11.5px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space: pre; }
     .card-icon--entity { --tone: var(--sb-accent); }
     .card-icon--primitive { --tone: var(--sb-muted); }
     .status[data-status="proposed"] { --tone: var(--sb-accent); }
@@ -308,6 +336,18 @@
       <svg class="flow-defs" width="0" height="0" aria-hidden="true">
         <defs><marker id="flow-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 1 10 5 0 9z"/></marker></defs>
       </svg>
+    </section>
+
+    <section class="card">
+      <h3>The prototype</h3>
+      <p class="flow-hint">The departure board, run by the model of the iteration shown above on the afternoon’s trains. Scrub through the afternoon as the feed’s updates arrive. Point at anything to light what it decides and what decided it; double-click a line, a cell or an outline entry to see the object behind it, as it is now and as its class.</p>
+      <sb-scrubber id="afternoon" min="0" max="40" step="1" duration="20" label="The afternoon"></sb-scrubber>
+      <p class="flow-summary"><span id="prototype-model"></span> <span id="feed-latest"></span></p>
+      <div class="prototype">
+        <div id="prototype-board"></div>
+        <sb-outliner id="objects" heading="Objects"></sb-outliner>
+        <div id="object-view" class="object-view"></div>
+      </div>
     </section>
 
     <section class="card">
@@ -856,10 +896,21 @@
       static properties = { trains: 'trains', clock: ClockTime };
       static behaviour = {
         shows: 'Whether a train is on the board: every train until it departs.',
+        expectedFor: 'Its expected column: On time, its expected time when late, Delayed with no estimate, or Cancelled.',
+        platformFor: 'Its platform column: the platform once confirmed, a dash until then, and nothing once cancelled.',
         messageFor: 'The message line under a train: its cancellation, or a long or unknown delay, with the reason.',
       };
       constructor(trains, clock) { Object.assign(this, { trains, clock }); }
       shows(train) { return !train.departed; }
+      expectedFor(train) {
+        if (train.cancelled) return 'Cancelled';
+        if (train.delay.minutes === null) return 'Delayed';
+        return train.delay.minutes === 0 ? 'On time' : `Exp ${train.expected().text}`;
+      }
+      platformFor(train) {
+        if (train.cancelled) return '';
+        return train.confirmed ? String(train.platform.number) : '–';
+      }
       messageFor(train) {
         if (train.cancelled) return `Cancelled due to ${train.reason}`;
         if (train.delay.minutes === null || train.delay.minutes >= 5) return `Delayed due to ${train.reason}`;
@@ -930,6 +981,38 @@
       { time: '14:15', destination: 'Gatwick Airport', platform: 9, planned: 3 },
       { time: '14:25', destination: 'Ely', delay: 6, platform: 11, planned: 10, reason: 'an earlier fault' },
       { time: '13:58', destination: 'Hastings', platform: 1, departed: true },
+    ];
+
+    // The afternoon at the station, for the prototype: the timetable as it stood at 13:55, and the
+    // feed's updates as they arrived, the ones worth finding again marked on the scrubber. The
+    // model is run on the trains as they stand at any minute.
+    const TIMETABLE = [
+      { id: 'T1', time: '13:58', destination: 'Hastings', platform: 1 },
+      { id: 'T2', time: '14:02', destination: 'Brighton', platform: 4 },
+      { id: 'T3', time: '14:05', destination: 'Cambridge', platform: 2 },
+      { id: 'T4', time: '14:08', destination: 'Oxford', platform: 7 },
+      { id: 'T5', time: '14:10', destination: 'Reading', platform: 5 },
+      { id: 'T6', time: '14:12', destination: 'Dover Priory', platform: 3 },
+      { id: 'T7', time: '14:15', destination: 'Gatwick Airport', platform: 3 },
+      { id: 'T8', time: '14:20', destination: 'Bedford', platform: 8, confirmed: false },
+      { id: 'T9', time: '14:25', destination: 'Ely', platform: 10 },
+    ];
+
+    const FEED = [
+      { at: '13:58', train: 'T1', set: { departed: true }, says: 'The 13:58 to Hastings leaves', short: 'Hastings leaves' },
+      { at: '14:01', train: 'T3', set: { delay: 3, reason: 'a late-running freight train' }, says: 'The 14:05 to Cambridge is 3 minutes late', short: 'Cambridge late' },
+      { at: '14:02', train: 'T2', set: { departed: true }, says: 'The 14:02 to Brighton leaves', short: 'Brighton leaves' },
+      { at: '14:03', train: 'T4', set: { delay: 12, reason: 'a signal fault' }, says: 'The 14:08 to Oxford is 12 minutes late, after a signal fault', short: 'Oxford 12 late' },
+      { at: '14:04', train: 'T5', set: { cancelled: true, reason: 'a shortage of train crew' }, says: 'The 14:10 to Reading is cancelled for lack of crew', short: 'Reading cancelled' },
+      { at: '14:06', train: 'T6', set: { delay: null, confirmed: false, reason: 'a broken-down train' }, says: 'The 14:12 to Dover Priory has no estimate, and its platform is unconfirmed', short: 'Dover no estimate' },
+      { at: '14:07', train: 'T7', set: { platform: 9 }, says: 'The 14:15 to Gatwick Airport moves from platform 3 to 9', short: 'Gatwick to 9', marked: true },
+      { at: '14:08', train: 'T3', set: { departed: true }, says: 'The 14:05 to Cambridge leaves, 3 minutes late', short: 'Cambridge leaves' },
+      { at: '14:09', train: 'T9', set: { delay: 6, platform: 11, reason: 'an earlier fault' }, says: 'The 14:25 to Ely is 6 minutes late and moves from platform 10 to 11', short: 'Ely late, to 11' },
+      { at: '14:12', train: 'T8', set: { confirmed: true }, says: 'The 14:20 to Bedford is confirmed for platform 8', short: 'Bedford confirmed' },
+      { at: '14:15', train: 'T7', set: { departed: true }, says: 'The 14:15 to Gatwick Airport leaves from platform 9', short: 'Gatwick leaves', marked: true },
+      { at: '14:20', train: 'T4', set: { departed: true }, says: 'The 14:08 to Oxford leaves, 12 minutes late', short: 'Oxford leaves' },
+      { at: '14:21', train: 'T8', set: { departed: true }, says: 'The 14:20 to Bedford leaves', short: 'Bedford leaves' },
+      { at: '14:31', train: 'T9', set: { departed: true }, says: 'The 14:25 to Ely leaves from platform 11', short: 'Ely leaves', marked: true },
     ];
 
     // A scenario: Given, When and Then steps, founded on cards, and the code that plays them against
@@ -2272,12 +2355,195 @@ Not announced,0
       return flow;
     }
 
+    // The prototype: the departure board drawn by running the model of the iteration shown on the
+    // trains as they stand at the scrubber's minute. The drawing only asks the model what to show;
+    // the model decides it. Every part carries a ref, and the objects behind them are kept, so the
+    // outliner can list them and the object view can show any one.
+    const START = 13 * 60 + 55;
+    const clockAt = minute => `${String(Math.floor((START + minute) / 60)).padStart(2, '0')}:${String((START + minute) % 60).padStart(2, '0')}`;
+    const minuteOf = clock => { const [h, m] = clock.split(':').map(Number); return h * 60 + m - START; };
+    const prototype = { minute: 15, objects: {}, selected: 'T7' };
+
+    // The trains as they stand at a time: the timetable, its platforms as planned, with every update
+    // arrived by then applied.
+    const trainsAt = clock => TIMETABLE.map(entry => FEED.filter(u => u.train === entry.id && u.at <= clock)
+      .reduce((train, update) => ({ ...train, ...update.set }), { ...entry, planned: entry.platform }));
+
+    // What feeds what on a train's line, so pointing at a value lights what it decides, and pointing
+    // at what the board shows lights what decided it.
+    const FEEDS_INTO = {
+      time: ['board.expected'], delay: ['board.expected', 'board.message'],
+      platform: ['board.platform', 'board.message'], planned: ['board.message'],
+      confirmed: ['board.platform'], cancelled: ['board.expected', 'board.platform', 'board.message'],
+    };
+    function traceOf(ref) {
+      const [train, ...rest] = ref.split('.'), part = rest.join('.');
+      if (!part) return train === 'BOARD' ? [ref] : [ref, ...Object.keys(FEEDS_INTO).map(p => `${train}.${p}`), 'board.expected', 'board.platform', 'board.message'].map(r => r.startsWith('board') ? `${train}.${r}` : r);
+      if (FEEDS_INTO[part]) return [ref, train, ...FEEDS_INTO[part].map(p => `${train}.${p}`)];
+      return [ref, train, ...Object.keys(FEEDS_INTO).filter(p => FEEDS_INTO[p].includes(part)).map(p => `${train}.${p}`)];
+    }
+
+    // A value as the model holds it: a primitive by its class and contents, anything else plainly.
+    function describe(value) {
+      if (value === null || value === undefined) return 'none';
+      if (typeof value === 'object' && value.constructor?.title) {
+        const inside = Object.values(value).map(v => v === null ? 'unknown' : v).join(', ');
+        return `${value.constructor.title} (${inside})`;
+      }
+      if (typeof value === 'boolean') return value ? 'yes' : 'no';
+      if (Array.isArray(value)) return `${value.length} items`;
+      return String(value);
+    }
+
+    function drawPrototype() {
+      const k = shown.iteration, M = classesAt(k), clock = clockAt(prototype.minute);
+      const trains = trainsAt(clock).map(fields => trainFor(M, fields));
+      const board = new M.Board(trains, new M.ClockTime(clock));
+      const lines = trains.filter(t => board.shows(t)).sort((a, b) => a.time.text.localeCompare(b.time.text));
+      const partOf = cls => partOfClass(cls, k);
+      const objects = { BOARD: { instance: board, cls: M.Board } };
+      for (const t of lines) {
+        objects[t.id] = { instance: t, cls: M.Train };
+        objects[`${t.id}.time`] = { instance: t.time, cls: M.ClockTime };
+        objects[`${t.id}.delay`] = { instance: t.delay, cls: M.Delay };
+        objects[`${t.id}.platform`] = { instance: t.platform, cls: M.Platform };
+        objects[`${t.id}.planned`] = { instance: t.planned, cls: M.Platform };
+        for (const [part, method] of [['board.expected', 'expectedFor'], ['board.platform', 'platformFor'], ['board.message', 'messageFor']]) {
+          objects[`${t.id}.${part}`] = { instance: board, cls: M.Board, call: method, train: t, value: board[method](t) };
+        }
+      }
+      for (const object of Object.values(objects)) object.part = partOf(object.cls);
+      prototype.objects = objects;
+
+      const cell = (ref, text, className) => { const c = el('span', className, text); c.dataset.ref = ref; return c; };
+      const frame = el('div', 'departures-frame');
+      frame.dataset.ref = 'BOARD';
+      const head = el('div', 'departures-head');
+      head.append(el('span', null, 'Ashford International'), el('span', 'departures-clock', clock));
+      const labels = el('div', 'departures-line departures-labels');
+      labels.append(...['Time', 'Destination', 'Plat', 'Expected'].map(text => el('span', null, text)));
+      frame.append(head, labels, ...lines.map(t => {
+        const line = el('div', 'departures-line');
+        line.dataset.ref = t.id;
+        line.append(cell(`${t.id}.time`, t.time.text), el('span', 'departures-destination', t.destination),
+          cell(`${t.id}.board.platform`, board.platformFor(t)), cell(`${t.id}.board.expected`, board.expectedFor(t)));
+        const message = board.messageFor(t);
+        if (message) line.append(cell(`${t.id}.board.message`, message, 'departures-message'));
+        return line;
+      }));
+      document.getElementById('prototype-board').replaceChildren(frame);
+      document.getElementById('prototype-model').textContent = `Running the model of iteration ${k} at ${clock}.`;
+      const latest = FEED.filter(u => u.at <= clock).pop();
+      document.getElementById('feed-latest').textContent = latest ? `Latest from the feed, ${latest.at}: ${latest.says}.` : 'Nothing from the feed yet.';
+
+      document.getElementById('objects').items = [{ heading: `On the board at ${clock}` }, ...lines.map(t => ({
+        ref: t.id, label: `${t.time.text} ${t.destination}`, parts: [
+          { heading: 'The train' },
+          ...['time', 'delay', 'platform', 'planned', 'confirmed', 'cancelled'].map(p => ({ ref: `${t.id}.${p}`, label: `${p}: ${describe(t[p])}` })),
+          { heading: 'On the board' },
+          { ref: `${t.id}.board.platform`, label: `platform: ${board.platformFor(t) || 'nothing'}` },
+          { ref: `${t.id}.board.expected`, label: `expected: ${board.expectedFor(t)}` },
+          { ref: `${t.id}.board.message`, label: `message: ${board.messageFor(t) || 'nothing'}` },
+        ] }))];
+      showObject(prototype.selected);
+    }
+
+    // The object behind a ref: what it is now (its values, and what its behaviour gives), and its
+    // class (its properties, behaviour or constraints, and its code, the very code that ran).
+    function showObject(ref) {
+      const view = document.getElementById('object-view');
+      const object = prototype.objects[ref];
+      prototype.selected = ref;
+      if (!object) {
+        view.replaceChildren(el('p', 'nobody', 'Double-click a line, a cell or an outline entry to see the object behind it.'));
+        return;
+      }
+      const { instance, cls, part } = object;
+      const card = itemOf(part);
+      const head = el('div', 'object-head');
+      head.append(icon(part.startsWith('ENT') ? 'entity' : 'primitive'), el('span', 'claim-id', part), el('strong', null, card.name), el('span', 'object-class', `class ${cls.name}`));
+      const rows = (pairs) => {
+        const list = el('dl', 'fields');
+        for (const [name, value] of pairs) field(list, name, value);
+        return list;
+      };
+      const section = (title, ...content) => { const box = el('div', 'object-section'); box.append(el('div', 'label', title), ...content); return box; };
+      const now = object.call
+        ? [section('Now', rows([[`${object.call}(${object.train.time.text} ${object.train.destination})`, object.value || 'nothing']]))]
+        : [section('Now', rows(Object.entries(instance).map(([name, value]) => [name, describe(value)]))),
+           ...behaviourNow(instance, cls)];
+      const schema = cls.constraints
+        ? [section('Constraints', el('p', null, cls.constraints.join(' ')))]
+        : [section('Properties', rows(Object.entries(cls.properties).map(([name, type]) => [name, typeof type === 'string' ? type : type.title]))),
+           section('Behaviour', rows(Object.entries(cls.behaviour)))];
+      const chain = [];
+      for (let c = cls; c && c.toString().startsWith('class'); c = Object.getPrototypeOf(c)) chain.unshift(c);
+      const code = section('Code', ...chain.map(c => el('pre', 'object-code', dedent(c.toString()))));
+      view.replaceChildren(head, ...now, ...schema, code);
+      for (const node of document.querySelectorAll('#prototype-board [data-ref]')) node.classList.toggle('is-selected', node.dataset.ref === ref);
+    }
+
+    // Code as it stands in the page keeps the page's indentation after its first line; take it off.
+    function dedent(code) {
+      const [first, ...rest] = code.split('\n');
+      const indent = Math.min(...rest.filter(line => line.trim()).map(line => line.match(/^ */)[0].length));
+      return [first, ...rest.map(line => line.slice(indent))].join('\n');
+    }
+
+    // What an entity's behaviour gives now, for the behaviour that needs nothing more to ask.
+    function behaviourNow(instance, cls) {
+      const asked = Object.keys(cls.behaviour ?? {}).filter(name => instance[name]?.length === 0);
+      if (!asked.length) return [];
+      const list = el('dl', 'fields');
+      for (const name of asked) field(list, `${name}()`, describe(instance[name]()));
+      const box = el('div', 'object-section');
+      box.append(el('div', 'label', 'Its behaviour now'), list);
+      return [box];
+    }
+
+    // Pointing at the prototype announces what it lights, as the outliner does; both light the
+    // prototype's own parts. Pins stay lit until the outliner says otherwise.
+    function wirePrototype() {
+      const boardView = document.getElementById('prototype-board');
+      const outliner = document.getElementById('objects');
+      const announce = ref => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref, refs: ref ? traceOf(ref) : [] } }));
+      outliner.trace = traceOf;
+      outliner.open = true;
+      boardView.addEventListener('pointerover', e => announce(e.target.closest('[data-ref]')?.dataset.ref ?? null));
+      boardView.addEventListener('pointerleave', () => announce(null));
+      document.addEventListener('sb-highlight', e => {
+        const lit = new Set(e.detail.ref ? e.detail.refs ?? [e.detail.ref] : []);
+        for (const node of boardView.querySelectorAll('[data-ref]')) node.classList.toggle('is-lit', lit.has(node.dataset.ref));
+      });
+      document.addEventListener('sb-pins', e => {
+        for (const node of boardView.querySelectorAll('[data-ref]')) {
+          node.classList.toggle('is-pinned-fill', e.detail.fill.includes(node.dataset.ref));
+          node.classList.toggle('is-pinned-outline', e.detail.outline.includes(node.dataset.ref));
+        }
+      });
+      for (const area of [boardView, outliner]) {
+        area.addEventListener('dblclick', e => {
+          const ref = e.target.closest('[data-ref]')?.dataset.ref;
+          if (ref && prototype.objects[ref]) showObject(ref);
+        });
+      }
+      const scrubber = document.getElementById('afternoon');
+      scrubber.format = minute => clockAt(minute);
+      scrubber.marks = FEED.filter(u => u.marked).map(u => ({ value: minuteOf(u.at), label: u.short }));
+      scrubber.value = prototype.minute;
+      scrubber.addEventListener('sb-change', e => {
+        prototype.minute = Math.round(e.detail.value);
+        drawPrototype();
+      });
+    }
+
     // Stepping between iterations, and choosing a board.
     function wireSteps(root) {
       for (const button of document.querySelectorAll('[data-step]')) {
         button.addEventListener('click', () => {
           shown.iteration += Number(button.dataset.step);
           drawFlow(root);
+          drawPrototype();
         });
       }
       for (const button of document.querySelectorAll('[data-board]')) {
@@ -2642,6 +2908,8 @@ Not announced,0
     drawFlow(document.getElementById('flow'));
     wireDirection(document.getElementById('flow'));
     wireSteps(document.getElementById('flow'));
+    wirePrototype();
+    drawPrototype();
   </script>
 </body>
 </html>
