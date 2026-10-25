@@ -4,13 +4,12 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
 
 ## The page, top to bottom
 
-1. **Styles:** the source cards, cards on a board (`.flow-node`, folded bands through `sb-discovery-card`'s classes), the flow, the prototype and the object view. Theme tokens with fallbacks throughout.
+1. **Styles:** the flow, the board's folded columns (through `sb-discovery-card`'s classes), the prototype and the object view. Theme tokens with fallbacks throughout.
 2. **Markup:**
    - the iteration stepper and the board toggles;
    - the flow;
    - the prototype section (`sb-scrubber#afternoon`, the board, `sb-outliner#objects`);
    - the versions mock-up (`sb-chart`s, `sb-table#versions-table`);
-   - the older sections below the boards;
    - three modals: `#card-modal`, `#source-modal` (holding `sb-source#source-view`) and `#object-modal` (`size="full"`).
 3. **Sources and records,** the only things written by hand:
    - **the sources:** `SOURCES`, the catalogue, in the page, each with its authored `grade`, what it `speaksTo` and the `iteration` it arrived in;
@@ -28,7 +27,7 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
    - **claims:** weighed by the discovery engine (`engines/discovery`): `discovery()` makes it from the sources and claims, `weighed(claim, k)` asks it how a claim stood as of an iteration;
    - **derived statuses:** the engine's too: `statusOf(item, k)` asks it for any record's status, and `reviewReasons(decision, k)` puts its reasons for reviewing a decision into words. So is a part's stage and whether a test is met;
    - **the model:** the engine's too: `model(k)` (its parts, classes by name, decisions and busiest method), `runs()` and `runOf(id)` (what each run found, and the change it made), `trialOf(part, k)`, and `trialVerdict(change)`, which puts a trial into words. Test results, what each test exercised, a part's primitives and definition, and the decisions in a class are asked for where they're shown (`discovery().results`, `exercisedBy`, `primitivesOf`, `definitionOf`, `decisionsIn`).
-8. **Card helpers,** which prepare a card's data for `sb-discovery-card` and draw nothing: `cardHead`, `strip`, `statusBadge`, `facet`, `fold`, `viewFold` (a fold holding a component, slotted in), `sources`, `cite`, `passage`, `assertionItem`, `basisBadge`, `scoreBadge`, and `card`, which adds the iteration the card was raised in. Plus `el`, and `icon`, `sourceIcon` and `formatBadge` for the source cards and the object view.
+8. **Card helpers,** which prepare a card's data for `sb-discovery-card` and draw nothing: `cardHead`, `strip`, `statusBadge`, `facet`, `fold`, `viewFold` (a fold holding a component, slotted in), `sources`, `cite`, `passage`, `assertionItem`, `basisBadge`, `scoreBadge`, and `card`, which adds the iteration the card was raised in. Plus `el`, and `icon` for the object view.
 9. **Card builders:** one per kind, `claimCard(item, k)` … `riskCard(item)`, each returning the card's data, and `cardOf(id, k)`, which dispatches on the prefix.
 10. **Boards and iterations:**
     - kinds and boards: the prefix lists (`KNOWING`, `PARTS`, `TESTS`, `BUILDING`, `DIRECTION`) and `BOARDS`;

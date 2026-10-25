@@ -56,11 +56,8 @@
     h2 { margin: 0 0 6px; font-size: 18px; }
     h3 { margin: 0 0 10px; font-size: 15px; }
     .chapter p { margin: 0 0 8px; max-width: 75ch; }
-    .try { padding: 8px 12px; border-left: 3px solid var(--sb-accent); background: var(--sb-accent-soft); border-radius: 0 var(--sb-radius) var(--sb-radius) 0; }
     .is-lit { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
 
-    .role, .format { padding: 1px 7px; border: 1px solid var(--sb-border); border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
-    .role { border-color: transparent; color: var(--sb-accent); background: var(--sb-accent-soft); }
 
     /* Claim, question and decision cards, in the look of sb-choice: a header band and a dropped body. */
     .claims { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; align-items: start; }
@@ -108,30 +105,7 @@
     .tested-by-used { color: var(--sb-muted); font: 11.5px ui-monospace, Menlo, Consolas, monospace; }
     .card-icon--entity { --tone: var(--sb-accent); }
     .card-icon--primitive { --tone: var(--sb-muted); }
-    .card-icon--source { --tone: var(--sb-text); }
 
-    /* Slips: a passage of source material, on the source's paper. */
-
-    /* Questions and decisions side by side. */
-    .asked { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; align-items: start; }
-    .asked > div { display: grid; gap: 12px; }
-
-    /* Source cards, in the look of sb-sources: paper with a folded corner. */
-    .sources { --fold: 16px; --edge: color-mix(in srgb, var(--sb-text) 24%, transparent); display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
-    .source { --sheet: color-mix(in srgb, var(--sb-surface) 94%, #f3e2b8); position: relative; display: flex; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12)) drop-shadow(0 3px 7px rgba(0,0,0,0.14)); }
-    .source::after { content: ''; position: absolute; top: 0; right: 0; width: var(--fold); height: var(--fold); border-left: 1px solid var(--edge); border-bottom: 1px solid var(--edge); border-bottom-left-radius: 2px; background: linear-gradient(to top right, color-mix(in srgb, var(--sheet) 84%, var(--sb-text)) 50%, transparent 50%); }
-    .paper { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 10px 14px 10px 13px; border: 1px solid var(--edge); border-radius: 2px; clip-path: polygon(0 0, calc(100% - var(--fold)) 0, 100% var(--fold), 100% 100%, 0 100%); background: linear-gradient(135deg, color-mix(in srgb, var(--sheet) 97%, #fff), var(--sheet) 45%, color-mix(in srgb, var(--sheet) 93%, #000)); }
-    .paper { cursor: pointer; }
-    .paper:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: -3px; }
-    .source.is-lit { outline: none; }
-    .source.is-lit .paper { background: color-mix(in srgb, var(--sb-accent) 14%, var(--sheet)); }
-    .paper-head { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; padding-right: 10px; }
-    .paper-head > :nth-child(2) { margin-right: auto; }
-    .paper-id { flex: none; white-space: nowrap; padding: 0 6px; border-radius: 4px; background: color-mix(in srgb, var(--sb-text) 8%, transparent); color: var(--sb-muted); font: 600 11px/1.6 ui-monospace, Menlo, Consolas, monospace; }
-
-    .paper .format { border-color: var(--edge); }
-    .paper-title { margin: 0; font: 600 15px/1.35 Georgia, 'Iowan Old Style', 'Times New Roman', serif; }
-    .paper-summary { flex: 1; color: var(--sb-muted); font: 13px/1.5 Georgia, 'Iowan Old Style', 'Times New Roman', serif; }
     .fields { display: grid; grid-template-columns: max-content 1fr; align-items: center; gap: 3px 10px; margin: 2px 0 0; padding-top: 7px; border-top: 1px solid var(--edge); font-size: 12px; }
     .fields dt { color: var(--sb-muted); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
     .fields dd { margin: 0; display: flex; align-items: center; gap: 8px; }
@@ -153,43 +127,19 @@
     .flip button { padding: 3px 10px; border: 0; border-radius: calc(var(--sb-radius) - 2px); background: none; color: var(--sb-muted); font: inherit; font-size: 12px; cursor: pointer; }
     .flip button[aria-pressed="true"] { background: var(--sb-surface); color: var(--sb-text); box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
     .flip button:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
-    /* The key: scope, grade and standing. */
-    .parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-    .parts dl { margin: 0; font-size: 14px; }
-    .parts dt { font-weight: 600; margin-top: 6px; }
-    .parts dd { margin: 0; color: var(--sb-muted); }
-    #source-modal { --sb-modal-width: 860px; }
-    #source-view { max-height: min(70vh, 640px); }
-    #source-modal[size="full"] #source-view { max-height: none; height: 100%; }
-    #card-modal { --sb-modal-width: 980px; }
-
-    /* A card opened in full: what it says on the left, its folds on the right, stacked when narrow. */
-
-    /* Each format its own colour, shared by its icon and its badge so the two read together.
-       Mixed from the theme's colours, away from the plain tones so a format never reads as a status. */
-    [data-format] { --format: var(--sb-muted); }
-    [data-format="document"] { --format: var(--sb-accent); }
-    [data-format="notes"] { --format: color-mix(in srgb, var(--sb-warn, #d69e2e) 75%, var(--sb-bad, #c53030)); }
-    [data-format="data"] { --format: color-mix(in srgb, var(--sb-good, #3f9142) 85%, var(--sb-warn, #d69e2e)); }
-    [data-format="image"] { --format: color-mix(in srgb, var(--sb-bad, #c53030) 70%, var(--sb-accent)); }
-    [data-format="web"] { --format: color-mix(in srgb, var(--sb-accent) 60%, var(--sb-bad, #c53030)); }
-    [data-format="analysis"] { --format: color-mix(in srgb, var(--sb-accent) 40%, var(--sb-good, #3f9142)); }
-    .card-icon[data-format] { --tone: var(--format); }
-    .format[data-format] { color: var(--format); border-color: color-mix(in srgb, var(--format) 45%, transparent); }
   </style>
 </head>
 <body>
   <sb-shell heading="Domain Discovery Engine">
     <sb-theme-settings slot="settings"></sb-theme-settings>
-    <p><strong>Goal:</strong> see what's true, what's assumed and what's in dispute, from what each source asserts and how well it can speak to it.</p>
+    <p><strong>Goal:</strong> learn how the departure board decides what to show, and build a model of it that meets what was learnt.</p>
   </sb-shell>
 
   <main>
     <section class="chapter">
-      <h2>Claims and their sources</h2>
-      <p>Usually called sensemaking, or evidence synthesis. Everything here is source material, the agent's own analyses included, and each passage that speaks to a claim is an assertion: yes or no. A claim is a group of assertions that say the same thing, under a line someone wrote for them. Its standing is worked out from its assertions, never labelled by hand.</p>
-      <p>Questions and decisions have cards of their own, since each does a different job: a question gathers the passages that answer it, and a decision records what was chosen and why.</p>
-      <p class="try"><strong>Try:</strong> click a passage or a source to open the source in full. Point at a passage to find its source below, or at a source to light every passage it gives.</p>
+      <h2>Discovering how the board decides</h2>
+      <p>How Ashford International's departure board decides what to show, discovered one iteration at a time. Material is gathered from the world and read into cards: what we know, where we're going, and the model we're building, as real code tested against scenarios and rules drawn from the same material. No card is ever edited, and every status and link is worked out from the cards and the model.</p>
+      <p>Below the boards, the prototype runs the model on the afternoon's trains, and a mock-up imagines how the model might grow over many versions. For how it all works, look at the practices.</p>
     </section>
 
     <section class="card">
@@ -241,122 +191,6 @@
       <sb-table id="versions-table"></sb-table>
     </section>
 
-    <section class="card">
-      <h3 id="summary"></h3>
-      <div class="claims" id="claims"></div>
-    </section>
-
-    <section class="card">
-      <h3>Entities, domain primitives, scenarios and rules</h3>
-      <div class="asked">
-        <div id="entities"></div>
-        <div id="primitives"></div>
-        <div id="scenarios"></div>
-        <div id="rules"></div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h3>Investigations, observations, metrics, assumptions, inferences, definitions and opinions</h3>
-      <div class="asked">
-        <div id="investigations"></div>
-        <div id="observations"></div>
-        <div id="metrics"></div>
-        <div id="assumptions"></div>
-        <div id="inferences"></div>
-        <div id="definitions"></div>
-        <div id="opinions"></div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h3>Outcomes, predictions, experiments, goals, agreements, constraints, questions, decisions, actions and risks</h3>
-      <div class="asked">
-        <div id="outcomes"></div>
-        <div id="predictions"></div>
-        <div id="experiments"></div>
-        <div id="goals"></div>
-        <div id="agreements"></div>
-        <div id="constraints"></div>
-        <div id="questions"></div>
-        <div id="decisions"></div>
-        <div id="actions"></div>
-        <div id="risks"></div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h3>Sources</h3>
-      <ul class="sources" id="sources"></ul>
-    </section>
-
-    <section class="card parts">
-      <div>
-        <h3>Scope: what a source can speak to</h3>
-        <dl>
-          <dt>Speaks to</dt><dd><b>How things are</b>, as a record or an opinion does, which counts for a claim; or <b>what should be</b>, as a plan or a decision does, which shows but doesn't count.</dd>
-          <dt>As of</dt><dd>Which moment it describes. An old source isn't worse; it speaks to an earlier time.</dd>
-        </dl>
-      </div>
-      <div>
-        <h3>Grade: how far to trust it</h3>
-        <dl>
-          <dt>Value</dt><dd>From 1 (weak) to 5 (strong), 3 ordinary, judged by whoever catalogued it. A claim's score adds up the grades of the sources for it, less those against.</dd>
-          <dt>Why</dt><dd>The reason, always written down, with any aspects that matter here, such as how far it is from what happened. A source not graded yet counts as 3, and says so.</dd>
-        </dl>
-      </div>
-      <div>
-        <h3>Standing: worked out from assertions</h3>
-        <dl>
-          <dt><span class="status" data-status="corroborated">corroborated</span></dt><dd>Two or more independent sources for, none against.</dd>
-          <dt><span class="status" data-status="single source">single source</span></dt><dd>One independent source for, none against.</dd>
-          <dt><span class="status" data-status="contested">contested</span></dt><dd>Sources for and against.</dd>
-          <dt><span class="status" data-status="refuted">refuted</span></dt><dd>Only sources against.</dd>
-          <dt><span class="status" data-status="unbacked">unbacked</span></dt><dd>Nothing that speaks to the world backs it: a conjecture, or an assumption once something rests on it.</dd>
-        </dl>
-      </div>
-    </section>
-
-    <section class="card parts">
-      <div>
-        <h3>What we know</h3>
-        <dl>
-          <dt>Investigation</dt><dd>Finding what’s already there; it gathers sources.</dd>
-          <dt>Source</dt><dd>Material from the world, never edited.</dd>
-          <dt>Observation</dt><dd>A value captured from a source.</dd>
-          <dt>Metric</dt><dd>A quantity tracked over time; observations are its readings.</dd>
-          <dt>Claim</dt><dd>Something said about the world, weighed on its sources.</dd>
-          <dt>Definition</dt><dd>What a word means here.</dd>
-          <dt>Opinion</dt><dd>What someone thinks should be, and why.</dd>
-          <dt>Inference</dt><dd>Reasoned from other cards; as sound as its premises.</dd>
-          <dt>Assumption</dt><dd>Held without evidence; tested by later cards.</dd>
-          <dt>Question</dt><dd>Something open.</dd>
-        </dl>
-      </div>
-      <div>
-        <h3>Where we’re going</h3>
-        <dl>
-          <dt>Outcome</dt><dd>What happened, measured against a goal or a prediction.</dd>
-          <dt>Goal</dt><dd>A target on a metric.</dd>
-          <dt>Prediction</dt><dd>A decision’s bet on what it will bring about.</dd>
-          <dt>Agreement</dt><dd>Terms between parties, changed only with them.</dd>
-          <dt>Constraint</dt><dd>A limit to work within: where it comes from, what it protects.</dd>
-          <dt>Decision</dt><dd>What was chosen, and why.</dd>
-          <dt>Experiment</dt><dd>A test run on purpose, on the world or on the model.</dd>
-          <dt>Action</dt><dd>Something that has to happen.</dd>
-          <dt>Risk</dt><dd>Something that could go wrong.</dd>
-        </dl>
-      </div>
-      <div>
-        <h3>What we’re building</h3>
-        <dl>
-          <dt>Entity</dt><dd>A thing in the domain with properties and behaviour; a class in the model.</dd>
-          <dt>Domain primitive</dt><dd>A value with constraints and no behaviour, such as a delay.</dd>
-          <dt>Scenario</dt><dd>Given, When, Then, played against the model.</dd>
-          <dt>Rule</dt><dd>A mandate or conditional, checked against the model.</dd>
-        </dl>
-      </div>
-    </section>
   </main>
 
   <sb-modal id="object-modal" size="full" expandable>
@@ -937,20 +771,8 @@ Not announced,0
       return passage(p.source, p.quote, { stance: p.stance === '+' ? '+' : '-', counted });
     }
 
-    // A slip or a source card opens its source, from a click or the keyboard.
-    function opensSource(handle, open) {
-      handle.tabIndex = 0;
-      handle.setAttribute('role', 'button');
-      handle.addEventListener('click', open);
-      handle.addEventListener('keydown', event => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        open();
-      });
-    }
-
-    // The icons the page still draws itself, for a domain object's view and the source cards; cards
-    // of discovery draw their own.
+    // The icons the page still draws itself, for a domain object's view; cards of discovery draw
+    // their own.
     const ICONS = {
       entity: '<path d="M8 1.75 13.5 4.75v6.5L8 14.25 2.5 11.25v-6.5z"/><path d="M2.5 4.75 8 7.75l5.5-3M8 7.75v6.5"/>',
       primitive: '<path d="M8 3 12.5 8 8 13 3.5 8z"/>',
@@ -966,33 +788,6 @@ Not announced,0
     // Source material is the same sheet of paper, marked with what's on it: lines of text, notes,
     // a table of data, a picture, a web page's globe, or an analysis's bars. Marks are drawn
     // finer than the page, so they stay legible small.
-    const PAGE = '<path d="M4 1.75h5.5L12.5 4.75v9a.5.5 0 0 1-.5.5H4a.5.5 0 0 1-.5-.5v-11.5a.5.5 0 0 1 .5-.5z"/><path d="M9.5 1.75v3h3"/>';
-    const FORMAT_MARKS = {
-      document: '<path d="M5.75 8h4.5M5.75 10.5h4.5"/>',
-      notes: '<path d="M5.75 8h.01M7.75 8h2.5M5.75 10.75h.01M7.75 10.75h2.5"/>',
-      data: '<rect x="5.5" y="7.25" width="5" height="5" rx="0.5"/><path d="M5.5 9.75h5M8 7.25v5"/>',
-      image: '<path d="m5.25 12.25 1.75-2.25 1.25 1.25 1-1 1.5 2"/><circle cx="9.5" cy="7.75" r="0.5" fill="currentColor"/>',
-      web: '<circle cx="8" cy="9.75" r="2.6"/><path d="M5.4 9.75h5.2M8 7.15c-1.1 1.4-1.1 3.8 0 5.2M8 7.15c1.1 1.4 1.1 3.8 0 5.2"/>',
-      analysis: '<path d="M6 12.5v-2M8 12.5v-4.5M10 12.5v-3"/>',
-    };
-    function sourceIcon(source) {
-      const holder = icon('source', `${PAGE}<g stroke-width="1.1">${FORMAT_MARKS[source.format] ?? FORMAT_MARKS.document}</g>`, capitalised(source.format));
-      holder.dataset.format = source.format;
-      return holder;
-    }
-
-    function formatBadge(source) {
-      const badge = el('span', 'format', formatOf(source));
-      badge.dataset.format = source.format;
-      return badge;
-    }
-
-    // What kind of material a source is, and its file's type, as sb-sources shows them: "notes · md".
-    function formatOf(source) {
-      const type = (source.path ?? '').match(/\.(\w+)$/)?.[1]?.toLowerCase();
-      return [source.format, type !== source.format && type].filter(Boolean).join(' · ');
-    }
-
     // Every card as sb-discovery-card takes it: plain data, prepared by the builders below as of an
     // iteration. The component draws it; nothing here draws.
     function cardHead(kind, id, byline, badges) {
@@ -1393,28 +1188,6 @@ Not announced,0
       dd.append(value);
       list.append(el('dt', null, label), dd);
     }
-
-    function sourceCard(source) {
-      const card = el('li', 'source');
-      card.dataset.source = source.id;
-      card.dataset.ref = source.id;
-      const head = el('div', 'paper-head');
-      head.append(sourceIcon(source), el('span', 'paper-id', source.id), el('span', 'role', source.role), formatBadge(source));
-
-      const fields = el('dl', 'fields');
-      field(fields, 'As of', source.asOf);
-      if (source.copies) field(fields, 'Repeats', source.copies);
-      if (source.derivedFrom) field(fields, 'Derived from', source.derivedFrom);
-      field(fields, 'Grade', source.grade ? `${source.grade.value} of 5` : 'not graded yet');
-      if (source.grade) field(fields, 'Why', source.grade.why);
-
-      const paper = el('div', 'paper');
-      paper.append(head, el('h4', 'paper-title', source.title), el('div', 'paper-summary', source.summary), fields);
-      opensSource(paper, () => openSource(source.id));
-      card.append(paper);
-      return card;
-    }
-
 
     // The flow: every card in a column, left to right in the order things depend on each other.
     // Nothing is joined at rest. Pointing at a card lights everything it rests on and everything
@@ -2150,8 +1923,7 @@ Not announced,0
 
     // Opening from any card: a source, or a passage of one, opens the source there; any other card
     // opens in full. Pointing at a card, a passage or a source lights it wherever else it appears.
-    function wireCards(root) {
-      const announce = ref => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+    function wireCards() {
       document.addEventListener('sb-open', e => {
         if (e.target.localName !== 'sb-discovery-card') return;
         const { ref, quote } = e.detail;
@@ -2162,57 +1934,10 @@ Not announced,0
         const refs = e.detail.ref ? [e.detail.ref] : [];
         for (const card of document.querySelectorAll('sb-discovery-card')) card.highlight = refs;
         board.highlight = refs;
-        for (const source of root.querySelectorAll('.source')) source.classList.toggle('is-lit', refs.includes(source.dataset.ref));
       });
-      for (const source of root.querySelectorAll('.source')) {
-        source.addEventListener('mouseenter', () => announce(source.dataset.ref));
-        source.addEventListener('mouseleave', () => announce(null));
-      }
     }
 
-    // The claims in a line: how many stand each way, leaving out any none do. An assumption is
-    // a claim relied on with nothing behind it; one the evidence has refuted counts as refuted.
-    function summary() {
-      const count = test => CLAIMS.filter(test).length;
-      const parts = [
-        [count(c => weighed(c).standing === 'corroborated'), 'corroborated'],
-        [count(c => weighed(c).standing === 'single source'), 'on a single source'],
-        [count(c => weighed(c).standing === 'contested'), 'contested'],
-        [count(c => weighed(c).standing === 'refuted'), 'refuted'],
-        [count(c => weighed(c).standing === 'unbacked' && weighed(c).basis === 'assumption'), 'assumption'],
-      ].filter(([n]) => n).map(([n, words]) => words === 'assumption' && n > 1 ? `${n} assumptions` : `${n} ${words}`);
-      return `${CLAIMS.length} claims · ${parts.join(', ')}`;
-    }
-
-
-    document.getElementById('summary').textContent = summary();
-    // Every card of a kind, drawn in full, as it stands now. One argument each: map would pass its
-    // index as the iteration.
-    const drawAll = (id, list, build) => document.getElementById(id).replaceChildren(...list.map(item => drawCard(build(item))));
-    drawAll('claims', CLAIMS, item => claimCard(item));
-    drawAll('entities', ENTITIES, item => entityCard(item));
-    drawAll('primitives', PRIMITIVES, item => primitiveCard(item));
-    drawAll('scenarios', SCENARIOS, item => scenarioCard(item));
-    drawAll('rules', RULES, item => ruleCard(item));
-    drawAll('investigations', INVESTIGATIONS, item => investigationCard(item));
-    drawAll('observations', OBSERVATIONS, observationCard);
-    drawAll('metrics', METRICS, item => metricCard(item));
-    drawAll('assumptions', ASSUMPTIONS, item => assumptionCard(item));
-    drawAll('inferences', INFERENCES, item => inferenceCard(item));
-    drawAll('definitions', DEFINITIONS, definitionCard);
-    drawAll('opinions', OPINIONS, opinionCard);
-    drawAll('outcomes', OUTCOMES, outcomeCard);
-    drawAll('predictions', PREDICTIONS, item => predictionCard(item));
-    drawAll('experiments', EXPERIMENTS, item => experimentCard(item));
-    drawAll('goals', GOALS, item => goalCard(item));
-    drawAll('agreements', AGREEMENTS, agreementCard);
-    drawAll('constraints', CONSTRAINTS, constraintCard);
-    drawAll('questions', QUESTIONS, item => questionCard(item));
-    drawAll('decisions', DECISIONS, item => decisionCard(item));
-    drawAll('actions', ACTIONS, item => actionCard(item));
-    drawAll('risks', RISKS, riskCard);
-    document.getElementById('sources').replaceChildren(...SOURCES.map(sourceCard));
-    wireCards(document.querySelector('main'));
+    wireCards();
     drawFlow(document.getElementById('flow'));
     wireDirection();
     wireSteps(document.getElementById('flow'));

@@ -128,14 +128,6 @@ Inspired by OpenTelemetry: instrument the classes so every run records **spans**
 
 ---
 
-## Tidying
-
-### 18. The sections below the boards
-
-The page still has older sections below the boards ("Claims and their sources" and the like) that repeat what the boards and their modals now show. Decide what the page keeps: probably the prototype and the versions mock-up, with the rest removed or folded into the boards.
-
----
-
 ## Sandkit, beyond this demo
 
 These are component or toolkit changes. **The author schedules them.**

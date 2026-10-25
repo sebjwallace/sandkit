@@ -46,10 +46,6 @@ This file is the short running log. The full account is in `README.md` (every co
 
 17. **Runtime traces of the model,** inspired by OpenTelemetry: instrument the classes so every run records spans (each method's inputs, outputs and the mutations it makes) as pathways through the objects. Stepped through like a debugger (`sb-code` already steps a trace), it shows how the model really works, not just what the prototype shows. Builds on item 16.
 
-### Tidying
-
-18. **The sections below the boards** repeat what the boards and their modals now show; decide what the page keeps.
-
 ### Sandkit, beyond this demo
 
 19. **`sb-scenario` splits times:** "14:15" is marked as two numbers, 14 and 15. A component change, for the author to schedule.
@@ -57,6 +53,7 @@ This file is the short running log. The full account is in `README.md` (every co
 
 ## Done
 
+- **The sections below the boards** (2026-10-25): the page keeps the boards, the prototype and the versions mock-up. The lists of every card, the source list and the two keys went, since the boards, their modals and the practice say the same; with them went the page's own source cards and their helpers. The intro now introduces the boards.
 - **The discovery engine, the model** (2026-10-25): versions, candidates, runs, trials, test results and the compression signal are `engines/discovery` 0.2.0's; the page hands it `MODEL` and `CANDIDATES` and nothing else, so `also` and `modelAppearances` are gone, with `RUNS`, `partStage`, `testStatus`, `testWord`, `runResults`, `compare`, `changeKind`, the decision counting, watched runs and the rest. A trial's verdict is still put into words here. Dead weight gone: a comment orphaned when the proposals moved into `records/`. Every card, board, summary line and object view tab in both iterations comes out as before.
 - **The discovery engine, links and iterations** (2026-10-25): what rests on what is `engines/discovery` 0.1.2's, from one table where the page had two that had drifted (`links()` and `inputsOf()`); `iteration(k)` gives what an iteration shows, raised, updated or carried, and its links. The page hands it the runs and what only the model knows. Dead weight gone: `unrolled()` and its `id@k` keys (from the old unrolled page), `appearancesOf`, `inputsOf`, `keyOf`, `latestBy`, and `FOLDERS`/`fileOf`, whose file paths never existed. Every board in both iterations comes out as before; provenance traces gain the links the old `links()` missed (an experiment's source, a run's changes).
 - **The discovery engine, statuses** (2026-10-25): every status of the records (questions, assumptions, inferences, predictions, investigations, experiments, actions, decisions and their review reasons) is `engines/discovery` 0.1.1's; the page asks with `statusOf` and puts review reasons into words. Predictions' deadline is now `due` and investigations' investigator `who`, since `by` names who wrote a record. Every card on every board comes out as before.
