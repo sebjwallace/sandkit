@@ -1,5 +1,8 @@
 # sb-source-trace changelog
 
+## 0.1.3 · 2026-10-25
+- Demo: what's derived from a source is a readable copy of it (a recording's transcript, a spreadsheet's table), never the agent's analysis, which lives in the items, as the sources practice now says.
+
 ## 0.1.2 · 2026-10-26
 - Added `drawNode`, so a sandbox can draw sources and items in its own look while the trace lays them out, joins, lights and follows them; and `nodeSize`, the size they're drawn at.
 
