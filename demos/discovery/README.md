@@ -10,7 +10,6 @@ This README is the full account of the ideas. The other documents beside it:
 |---|---|
 | `README.md` | Every concept and principle: what the engine is and why it's shaped this way. |
 | `NEXT-STEPS.md` | The plan, each item explained in enough detail to pick up cold. |
-| `CARDS-SPEC.md` | How the cards become one Sandkit card component, with a variant per kind. |
 | `ENGINE.md` | How `index.html` is organised, and how to add a card, an iteration, a model part or a test. |
 | `NOTES.md` | The short running log: principles in one line each, the numbered plan, and what was done when. |
 
@@ -160,7 +159,7 @@ These are settled. Don't re-litigate them; propose changes openly.
 12. **The compression signal is evidence for people, never a target** (see §9).
 13. **Parties aren't cards.** Who wants what and who is bound by what is part of the engine, with its own look, composed where needed (see the plan).
 14. **Source material versus cards.** What people gather is source material. Whatever the agent writes is a card, never a source. Two old exceptions remain to fix: SRC-6 and SRC-15.
-15. **Components render; models compute.** The engine prepares every view; Sandkit components only draw. This is why a card component (see `CARDS-SPEC.md`) takes a plain description of a card and never works anything out.
+15. **Components render; models compute.** The engine prepares every view; Sandkit components only draw. This is why the card component, `sb-discovery-card`, takes a plain description of a card and never works anything out.
 
 ## 7. The model
 
@@ -252,7 +251,7 @@ Every tab is derived.
   - **Definition**.
   - **Provenance**.
 
-These are the first steps towards an `sb-entity` and an `sb-primitive` that take these views through slots (see `CARDS-SPEC.md` §8).
+These are the first steps towards an `sb-entity` and an `sb-primitive` that take these views through slots (whether they earn components of their own is decided when they're built).
 
 ## 11. Opening things
 
@@ -262,7 +261,7 @@ These are the first steps towards an `sb-entity` and an `sb-primitive` that take
 
 ## 12. Sandkit components this demo uses or changed
 
-It uses `sb-modal`, `sb-source`, `sb-rule`, `sb-scenario`, `sb-outliner`, `sb-scrubber`, `sb-tabs`, `sb-json`, `sb-code`, `sb-erd`, `sb-timeline`, `sb-bars`, `sb-callout`, `sb-source-trace`, `sb-chart` and `sb-table`, and the shell.
+It uses `sb-discovery-card` for every card, `sb-modal`, `sb-source`, `sb-rule`, `sb-scenario`, `sb-outliner`, `sb-scrubber`, `sb-tabs`, `sb-json`, `sb-code`, `sb-erd`, `sb-timeline`, `sb-bars`, `sb-callout`, `sb-source-trace`, `sb-chart` and `sb-table`, and the shell.
 
 Changed for it:
 

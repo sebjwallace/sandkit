@@ -2,7 +2,7 @@
 
 The Domain Discovery Engine demo models discovering how Ashford International's departure board decides what to show (the domain from `../departure-board`), as iterations of a loop, each on three boards: What we know, Where we're going, and What we're building (the foundry).
 
-This file is the short running log. The full account is in `README.md` (every concept and principle), `NEXT-STEPS.md` (each plan item in detail), `CARDS-SPEC.md` (the cards as one Sandkit component) and `ENGINE.md` (how `index.html` is built and extended). Keep them in step: a principle or plan item added here goes there in full.
+This file is the short running log. The full account is in `README.md` (every concept and principle), `NEXT-STEPS.md` (each plan item in detail), `ENGINE.md` (how `index.html` is built and extended). Keep them in step: a principle or plan item added here goes there in full.
 
 ## Principles settled so far
 
@@ -32,7 +32,7 @@ This file is the short running log. The full account is in `README.md` (every co
 
 4. **Supersedes.** How a card is superseded, and how that shows on the boards and on the superseded card (struck through, as `sb-sources` does). A modified proposal for the model returns as a new one superseding it.
 5. **A connections view.** Clicking a card opens another kind of modal showing how it connects to every other card, not just along the board: a knowledge graph around it. Supersedes is one of its connections.
-6. **Passages as objects with their own ids.** Claims, observations and the rest rest on passages, not on whole sources. A source card could list its passages. Settles the overlap between a claim citing a data row and an observation of the same row.
+6. **Passages as objects with their own ids** (`SRC-2#p3`), belonging to their source, never cards of their own. Cards cite them by id instead of copying the words, which settles the claim-and-observation overlap; source cards show their passages in every variant. Reaches `sb-discovery-card`, `sb-source`, `sb-source-trace`, the sources practice's citations and `tools/sources.mjs`, so the author schedules it.
 7. **Source material versus cards.** Source material is what people gather while investigating; whatever the agent writes is a card, never a source. Investigations now gather sources, but the agent's analysis (SRC-6) and the model run (SRC-15) still pose as sources; they'd become cards (inferences, observations, an experiment's results).
 8. **A basis pill on claims on the board** (observed, reported, inferred), and fact or cause as claim variants.
 9. **Constraints carry standing like claims.** "Fixed in firmware" could be wrong, so a constraint might rest on evidence and be tested.
@@ -41,7 +41,6 @@ This file is the short running log. The full account is in `README.md` (every co
 12. **Force field view of a decision** (after Kurt Lewin): what drives the change on one side, what restrains it on the other. Perhaps inside the decision's modal.
 13. **Parties.** Not a card, but part of the engine with its own look, composed wherever needed: who wants what, who holds which views, who is bound by which agreements, whose interests a constraint protects. Making `sb-person` represent a party (a person, a team, an organisation) is a component change for the author to schedule.
 14. **Scenarios without a When.** Most of the board's scenarios are Given … Then. Perhaps the scenario card could show an empty When, saying none is needed; or it may be fine as it is.
-15. **One card component,** once the kinds settle: the page prepares a plain view of each card (kind, id, byline, badges, strips, folds), and the component only draws it.
 
 16. **Classes written to be described.** Raw JavaScript gives the code, the values, the class it extends and its method names; types, behaviour descriptions and constraints are declared as statics, since JavaScript keeps no types. Primitives' constraints exist twice (their words, and the constructor's check), which could drift: declare each with its words and its check (`{ says, holds }`), and have the constructor enforce exactly those, so the Constraints tab shows the checks that run. Types might later be read from JSDoc or TypeScript instead of declared.
 
@@ -58,6 +57,7 @@ This file is the short running log. The full account is in `README.md` (every co
 
 ## Done
 
+- **One card component** (2026-10-25): every card is drawn by Sandkit's `sb-discovery-card`, compact on the boards, in traces and in runs, normal below the boards, expanded in the modal. The builders return each card's data, as of the iteration shown; a scenario's or rule's component sits in a fold through a slot; one listener answers every card's `sb-open`. Cards carry their iteration and file; `created` and `by` wait until the records hold them. The method is now `practices/domain-discovery.md`.
 - **Prediction card** (2026-10-25): a decision's bet on what it will bring about, by when, measured by a later outcome. Replaced decisions' Expects.
 - **Experiment card** (2026-10-25): a test run on purpose, on the world (survey, trial) or on the model (simulation), with what would bear it out written before it runs. Results arrive as observations; predictions can be supported or in doubt before an outcome measures them.
 - **Metric card** (2026-10-25): a quantity tracked over time. Goals set targets on it, predictions forecast it, observations are its readings. Replaced the repeated "Measured by" text.

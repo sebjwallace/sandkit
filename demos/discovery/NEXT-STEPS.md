@@ -63,11 +63,14 @@ Clicking a card opens another kind of modal showing how it connects to **every**
 
 ### 6. Passages as objects with ids
 
-Claims, observations and the rest rest on **passages**, not whole sources. Today a passage is a quote inside an assertion.
+Claims, observations and the rest rest on **passages**, not whole sources. Today a passage is a quote copied into each card that cites it, so two cards citing the same words hold two copies of them.
 
-- Give passages ids (`SRC-2#p3`), so a source card can list its passages and every card resting on each.
-- This settles the overlap between a claim citing a data row and an observation of the same row: both would point at one passage.
-- `sb-source` already marks cited passages, so ids would let it name them stably.
+- **A passage is its own thing in the engine,** with an id (`SRC-2#p3`): the source, the words (or a page, a region of an image, a row of data), and nothing more. It belongs to its source.
+- **No card of its own.** A passage isn't something the agent wrote, so it isn't a card: it's part of the source material, and shows within it.
+- **Cards cite passages by id,** rather than copying the words: a claim's assertion becomes the passage id and a stance. One passage cited by a claim and an observation is one thing, which settles the overlap between a claim citing a data row and an observation of the same row.
+- **Source cards show their passages, in every variant:** compact, how many of its passages are cited (perhaps as small marks along the paper); in full, which is the source view, each passage marked where it is and named by its id and the cards resting on it. A passage in a card's fold shows its id beside its source's.
+- **Sources stay compact cards.** Passages change what a source card shows, not whether it opens in full.
+- **It reaches several components,** so it's for the author to schedule: `sb-discovery-card` (passage ids in folds, passages on a compact source), `sb-source` (naming passages by id rather than by the citing card), `sb-source-trace` (a trace that can run through passages), and the sources practice's citation format (`{ source, quote }` today), with `tools/sources.mjs` checking it. Decide the id format and where passages are recorded (the catalogue, or beside each source) first.
 
 ### 7. Source material versus cards
 
@@ -105,10 +108,6 @@ Not a card, but part of the engine with its own look, composed wherever needed: 
 ### 14. Scenarios without a When
 
 Most of the board's scenarios are Given … Then. Perhaps the scenario card shows an empty When, saying none is needed ("nothing happens: the board works from state"). It may also be fine as it is. Events (item 2) may settle it: a When is an event.
-
-### 15. One card component
-
-Once the kinds settle, the page prepares a plain view of each card (kind, id, byline, badges, strips, folds), and a Sandkit component only draws it. The full specification is in `CARDS-SPEC.md`.
 
 ### 16. Classes written to be described
 

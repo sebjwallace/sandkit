@@ -22,6 +22,7 @@
   <script src="../../components/sb-source-trace/sb-source-trace.js"></script>
   <script src="../../components/sb-chart/sb-chart.js"></script>
   <script src="../../components/sb-table/sb-table.js"></script>
+  <script src="../../components/sb-discovery-card/sb-discovery-card.js"></script>
 
   <style>
     body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
@@ -38,57 +39,14 @@
 
     /* Claim, question and decision cards, in the look of sb-choice: a header band and a dropped body. */
     .claims { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; align-items: start; }
-    .claim { overflow: hidden; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); font-size: 13px; line-height: 1.45; }
-    .claim-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; padding: 10px 14px; background: var(--sb-surface-2, rgba(127,127,127,0.08)); border-bottom: 1px solid var(--sb-border); }
-    .raised { flex: 1 1 120px; min-width: 0; align-self: center; color: var(--sb-muted); font-size: 12px; }
-    .claim-badges { flex: none; display: flex; flex-wrap: wrap; gap: 6px; }
     .claim-id { flex: none; padding: 1px 7px; border-radius: 999px; background: var(--sb-surface); color: var(--sb-muted); font: 600 11px/1.6 ui-monospace, Menlo, Consolas, monospace; }
     .status { --tone: var(--sb-muted); margin-left: auto; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; color: var(--tone); background: color-mix(in srgb, var(--tone) 16%, transparent); }
     .status[data-status="corroborated"] { --tone: var(--sb-good, #3f9142); }
     .status[data-status="single source"] { --tone: var(--sb-accent); }
     .status[data-status="contested"] { --tone: var(--sb-warn, #b7791f); }
     .status[data-status="refuted"] { --tone: var(--sb-bad, #c53030); }
-    .status[data-status="answered"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="unresolved"] { --tone: var(--sb-warn, #b7791f); }
-    .basis { padding: 1px 8px; border-radius: 999px; color: var(--sb-muted); font-size: 11px; font-style: italic; white-space: nowrap; box-shadow: inset 0 0 0 1px var(--sb-border); }
-    .basis[data-basis="assumption"], .basis[data-basis="conjecture"] { color: var(--sb-warn, #b7791f); box-shadow: none; border: 1px dashed currentColor; }
-    .status[data-status="held"] { --tone: var(--sb-muted); }
-    .status[data-status="confirmed"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="broken"] { --tone: var(--sb-bad, #c53030); }
-    .claim-body { padding: 12px 14px; background-image: linear-gradient(var(--sb-drop), var(--sb-drop)); }
-    .assertions { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
     .nobody { color: var(--sb-muted); font-style: italic; }
-    .passages > summary { margin: 0; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; }
-    .passages > summary::-webkit-details-marker { display: none; }
-    .passages > summary::before { content: "▸"; font-size: 10px; transition: transform 0.15s; }
-    .passages[open] > summary::before { transform: rotate(90deg); }
-    .passages > summary:hover { color: var(--sb-text); }
-    .passages[open] > .assertions { margin-top: 8px; }
-    .options { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
-    .option { padding: 6px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); opacity: 0.65; }
-    .option.is-chosen { opacity: 1; border: 2px solid var(--sb-good, #3f9142); padding: 5px 9px; }
-    .option-head { display: flex; align-items: center; gap: 6px; }
-    .option-title { font-weight: 600; }
-    .chosen { margin-left: auto; padding: 1px 7px; border-radius: 999px; background: var(--sb-good, #3f9142); color: #fff; font-size: 11px; white-space: nowrap; }
-    .points { display: flex; flex-wrap: wrap; gap: 0 14px; margin: 2px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--sb-muted); }
-    .points li::before { display: inline-block; width: 1em; font-weight: 700; }
-    .points .pro::before { content: "+"; color: var(--sb-good, #3f9142); }
-    .points .con::before { content: "−"; color: var(--sb-bad, #c53030); }
     .card-icon { flex: none; display: grid; place-items: center; width: 24px; height: 24px; margin: -1px 0; border-radius: 6px; color: var(--tone); background: color-mix(in srgb, var(--tone) 16%, transparent); }
-    .card-icon--claim { --tone: var(--sb-accent); }
-    .card-icon--question { --tone: var(--sb-warn, #b7791f); }
-    .card-icon--decision { --tone: var(--sb-good, #3f9142); }
-    .card-icon--constraint { --tone: color-mix(in srgb, var(--sb-accent) 50%, var(--sb-bad, #c53030)); }
-    .status[data-status="holds"] { --tone: var(--sb-muted); }
-    .card-icon--outcome { --tone: var(--sb-text); }
-    .card-icon--prediction { --tone: var(--sb-accent); }
-    .card-icon--run { --tone: var(--sb-accent); }
-    .status[data-status="earns its place"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="not yet"] { --tone: var(--sb-warn, #d69e2e); }
-    .card-icon--scenario { --tone: color-mix(in srgb, var(--sb-accent) 50%, var(--sb-good, #3f9142)); }
-    .card-icon--rule { --tone: var(--sb-text); }
-    .status[data-status="met"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="not met"] { --tone: var(--sb-bad, #c53030); }
     .versions { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin: 12px 0; }
     .flow-summary { margin: 0 0 10px; color: var(--sb-muted); font-size: 13px; white-space: pre-line; }
 
@@ -125,89 +83,15 @@
     .tested-by-used { color: var(--sb-muted); font: 11.5px ui-monospace, Menlo, Consolas, monospace; }
     .card-icon--entity { --tone: var(--sb-accent); }
     .card-icon--primitive { --tone: var(--sb-muted); }
-    .status[data-status="proposed"] { --tone: var(--sb-accent); }
-    .status[data-status="trying"] { --tone: var(--sb-warn, #d69e2e); }
-    .status[data-status="integrated"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="rejected"] { --tone: var(--sb-bad, #c53030); }
-    .card-icon--investigation { --tone: var(--sb-accent); }
-    .status[data-status="under way"] { --tone: var(--sb-accent); }
-    .card-icon--metric { --tone: var(--sb-accent); }
-    .card-icon--experiment { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="planned"] { --tone: var(--sb-accent); }
-    .status[data-status="in doubt"] { --tone: var(--sb-warn, #d69e2e); }
-    .status[data-status="supported"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="pending"] { --tone: var(--sb-muted); }
-    .status[data-status="borne out"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="not borne out"] { --tone: var(--sb-bad, #c53030); }
-    .card-icon--observation { --tone: var(--sb-text); }
-    .card-icon--assumption { --tone: var(--sb-warn, #d69e2e); }
-    .card-icon--inference { --tone: var(--sb-accent); }
-    .card-icon--definition { --tone: var(--sb-muted); }
-    .card-icon--opinion { --tone: color-mix(in srgb, var(--sb-warn, #d69e2e) 60%, var(--sb-bad, #c53030)); }
-    .status[data-status="untested"] { --tone: var(--sb-warn, #d69e2e); }
-    .status[data-status="sound"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="shaken"] { --tone: var(--sb-warn, #d69e2e); }
-    .card-icon--agreement { --tone: color-mix(in srgb, var(--sb-accent) 50%, var(--sb-good, #3f9142)); }
-    .status[data-status="in force"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="worked"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="failed"] { --tone: var(--sb-bad, #c53030); }
-    .status[data-status="partly"] { --tone: var(--sb-warn, #d69e2e); }
-    .firmness { padding: 1px 8px; border: 1px solid currentColor; border-radius: 999px; color: var(--sb-muted); font-size: 11px; font-style: italic; white-space: nowrap; }
-    .firmness[data-firmness="soft"] { border-style: dashed; }
-    .card-icon--goal { --tone: var(--sb-accent); }
     .card-icon--source { --tone: var(--sb-text); }
-    .status[data-status="accepted"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="on track"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="off track"] { --tone: var(--sb-bad, #c53030); }
-    .status[data-status="review"] { --tone: var(--sb-warn, #b7791f); }
-    .status[data-status="to do"] { --tone: var(--sb-accent); }
-    .status[data-status="done"] { --tone: var(--sb-good, #3f9142); }
-    .status[data-status="open"] { --tone: var(--sb-warn, #b7791f); }
-    .level { padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; color: var(--sb-bad, #c53030); box-shadow: inset 0 0 0 1px currentColor; }
-    .card-icon--action { --tone: var(--sb-accent); }
-    .card-icon--risk { --tone: var(--sb-bad, #c53030); }
-    .claim-body .label { margin: 0 0 4px; color: var(--sb-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-    .claim-body p { margin: 0; }
-    .claim-body > * + * { margin-top: 12px; }
-    .strip { --tone: var(--sb-accent); padding: 8px 12px; border-left: 3px solid var(--tone); border-radius: 0 var(--sb-radius) var(--sb-radius) 0; background: color-mix(in srgb, var(--tone) 14%, var(--sb-surface)); }
-    .strip--main p { font-weight: 600; font-size: 14px; line-height: 1.4; }
-    .strip--answer { --tone: var(--sb-good, #3f9142); }
-    .strip--note { --tone: var(--sb-muted); }
-    .strip--warn { --tone: var(--sb-warn, #b7791f); }
-    .strip--expect { --tone: var(--sb-accent); border-left-style: dashed; background: color-mix(in srgb, var(--tone) 7%, var(--sb-surface)); }
-    .strip--unresolved { --tone: var(--sb-warn, #b7791f); border-left-style: dashed; }
-    .strip--unresolved p { color: var(--sb-muted); font-style: italic; }
-    .claim-body .strip .label { color: var(--tone); }
 
     /* Slips: a passage of source material, on the source's paper. */
-    .assertion { --fold: 10px; --edge: color-mix(in srgb, var(--sb-text) 24%, transparent); --sheet: color-mix(in srgb, var(--sb-surface) 94%, #f3e2b8); position: relative; display: flex; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12)) drop-shadow(0 2px 4px rgba(0,0,0,0.12)); }
-    .assertion::after { content: ""; position: absolute; top: 0; right: 0; width: var(--fold); height: var(--fold); border-left: 1px solid var(--edge); border-bottom: 1px solid var(--edge); border-bottom-left-radius: 2px; background: linear-gradient(to top right, color-mix(in srgb, var(--sheet) 84%, var(--sb-text)) 50%, transparent 50%); }
-    .slip { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 14px 6px 10px; border: 1px solid var(--edge); border-radius: 2px; clip-path: polygon(0 0, calc(100% - var(--fold)) 0, 100% var(--fold), 100% 100%, 0 100%); background: linear-gradient(135deg, color-mix(in srgb, var(--sheet) 97%, #fff), var(--sheet) 45%, color-mix(in srgb, var(--sheet) 93%, #000)); cursor: pointer; }
-    .slip:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: -2px; }
-    .assertion.is-lit { outline: none; }
-    .assertion.is-lit .slip { background: color-mix(in srgb, var(--sb-accent) 14%, var(--sheet)); }
-    .slip .who { font: 600 14px/1.35 Georgia, "Iowan Old Style", "Times New Roman", serif; }
-    .quote { flex-basis: 100%; color: var(--sb-text); font: italic 13px/1.5 Georgia, "Iowan Old Style", "Times New Roman", serif; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
-    .has-stance .quote, .has-stance .pills { padding-left: 30px; }
-    .claim--open .quote { display: block; }
-    .assertion.is-repeat { margin-left: 22px; opacity: 0.7; }
-    .assertion .role { margin-left: auto; }
-    .repeats { color: var(--sb-muted); font-size: 12px; }
-    .pills { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
     .pill { display: inline-flex; align-items: center; gap: 5px; padding: 0 3px 0 8px; border: 1px solid var(--sb-border); border-radius: 999px; font-size: 11px; white-space: nowrap; }
     .pill-level { min-width: 16px; padding: 0 4px; border-radius: 999px; background: color-mix(in srgb, var(--sb-text) 10%, transparent); font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
-    .strength { margin-left: auto; color: var(--sb-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-    .score { padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--sb-muted); border: 1px solid currentColor; }
-    .score.is-high { color: var(--sb-good, #3f9142); }
-    .score.is-low { color: var(--sb-bad, #c53030); }
-    .stance { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; font-weight: 700; color: #fff; }
-    .stance.yes { background: var(--sb-good, #3f9142); }
-    .stance.no { background: var(--sb-bad, #c53030); }
 
     /* Questions and decisions side by side. */
     .asked { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; align-items: start; }
     .asked > div { display: grid; gap: 12px; }
-    .question-mark { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; background: var(--sb-accent); color: var(--sb-accent-text, #fff); font-weight: 700; }
 
     /* Source cards, in the look of sb-sources: paper with a folded corner. */
     .sources { --fold: 16px; --edge: color-mix(in srgb, var(--sb-text) 24%, transparent); display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
@@ -240,7 +124,6 @@
     .step { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); color: var(--sb-text); font: inherit; cursor: pointer; }
     .step:disabled { opacity: 0.4; cursor: default; }
     .step:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
-    .node.is-carried { background: none; }
     .flow-defs { position: absolute; }
     #flow-arrow path { fill: var(--sb-accent); }
     .flow-bands { display: grid; gap: 30px; }
@@ -253,7 +136,12 @@
     .flow.is-across .flow-band { width: 170px; }
     .flow.is-across .flow-band.is-collapsed { width: 96px; }
     /* A folded band: each card down to its icon and code. */
-    .flow-band.is-collapsed .node > :not(.node-head), .flow-band.is-collapsed .node-head > :not(.card-icon, .claim-id) { display: none; }
+    .flow-band.is-collapsed .sb-discovery-card__compact > :not(.sb-discovery-card__compact-head), .flow-band.is-collapsed .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }
+    /* Cards on a board: lit along a chain, the rest faded, the one pointed at outlined. */
+    .flow-node { position: relative; z-index: 1; transition: opacity 0.15s; }
+    .flow.is-tracing .flow-node:not(.is-lit) { opacity: 0.25; }
+    .flow-node.is-focus .sb-discovery-card__compact { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+    sb-source-trace sb-discovery-card, sb-source-trace .sb-discovery-card__paper, sb-source-trace .sb-discovery-card__compact { height: 100%; }
     .flow-band.is-collapsed .flow-cards { grid-template-columns: repeat(auto-fill, minmax(96px, max-content)); }
     .flow.is-across .flow-band.is-collapsed .flow-cards { grid-template-columns: 1fr; }
     .flow-toggle { display: inline-flex; align-items: baseline; gap: 5px; padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; cursor: pointer; }
@@ -270,25 +158,8 @@
     .flip button { padding: 3px 10px; border: 0; border-radius: calc(var(--sb-radius) - 2px); background: none; color: var(--sb-muted); font: inherit; font-size: 12px; cursor: pointer; }
     .flip button[aria-pressed="true"] { background: var(--sb-surface); color: var(--sb-text); box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
     .flip button:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
-    .node--awaited { border-style: dashed; background: none; color: var(--sb-muted); }
-    .node-note { color: var(--sb-muted); font-size: 11px; font-style: italic; }
-    .node-file { color: var(--sb-muted); font: 10px ui-monospace, Menlo, Consolas, monospace; }
     .flow-title { margin: 0 0 2px; color: var(--sb-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-    .node { position: relative; z-index: 1; display: grid; gap: 4px; padding: 6px 8px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2, var(--sb-surface)); color: inherit; font: inherit; font-size: 12px; line-height: 1.35; text-align: left; cursor: pointer; transition: opacity 0.15s; }
-    .node--source { border-radius: 2px; background: color-mix(in srgb, var(--sb-surface) 94%, #f3e2b8); }
-    .node.is-assumed { border-style: dashed; border-color: var(--sb-warn, #b7791f); }
-    .node:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
-    .node-head { display: flex; align-items: center; gap: 6px; }
-    .node-head .card-icon { width: 20px; height: 20px; }
-    .node-head .card-icon svg { width: 13px; height: 13px; }
-    .node-head .status { padding: 1px 7px; font-size: 10px; }
-    .node-head .format { margin-left: auto; padding: 0 5px; border-color: color-mix(in srgb, var(--sb-text) 24%, transparent); color: var(--sb-muted); letter-spacing: 0.04em; }
-    .node-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-    .flow.is-tracing .node:not(.is-lit) { opacity: 0.25; }
-    .node.is-lit { outline: none; }
-    .node.is-focus { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
     .flow-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-    sb-source-trace .node { height: 100%; cursor: pointer; }
     .flow-lines path { fill: none; stroke: var(--sb-accent); stroke-width: 1.5; stroke-linejoin: round; opacity: 0.7; marker-end: url(#flow-arrow); }
     .flow-lines text { fill: var(--sb-accent); font: 600 10px var(--sb-font); paint-order: stroke; stroke: var(--sb-surface); stroke-width: 4px; stroke-linejoin: round; }
     /* The key: scope, grade and standing. */
@@ -302,9 +173,6 @@
     #card-modal { --sb-modal-width: 980px; }
 
     /* A card opened in full: what it says on the left, its folds on the right, stacked when narrow. */
-    .claim--open .claim-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px 20px; align-items: start; }
-    .claim--open .claim-body > * + * { margin-top: 0; }
-    .card-main, .card-side { display: grid; gap: 12px; }
 
     /* Each format its own colour, shared by its icon and its badge so the two read together.
        Mixed from the theme's colours, away from the plain tones so a format never reads as a status. */
@@ -1699,50 +1567,24 @@ Not announced,0
       return node;
     }
 
-    // A source's grades as pills, then its strength, or a note in its place.
-    function pills(source, note = `= ${strength(source)}`) {
-      const row = el('span', 'pills');
-      for (const name of Object.keys(GRADES)) row.append(pill(name, source.grade[name]));
-      row.append(el('span', 'strength', note));
-      return row;
-    }
-
     function scoreBadge(claim) {
       const value = score(claim);
-      const badge = el('span', `score${value > 0 ? ' is-high' : value < 0 ? ' is-low' : ''}`, value > 0 ? `+${value}` : `${value}`);
-      badge.title = 'Score: each independent yes adds its strength, each no takes it away';
-      return badge;
+      return { text: value > 0 ? `+${value}` : `${value}`, tone: value > 0 ? 'good' : value < 0 ? 'bad' : undefined,
+        title: 'Score: each independent yes adds its strength, each no takes it away' };
     }
 
-    // A slip of the source's paper holding one passage, so it reads as the material it comes from.
-    // Its words show on one line; clicking the slip opens the source in full, at this passage,
-    // named by the card it sits in.
-    function passage(sourceId, quote, { mark, after = [] } = {}) {
-      const source = sourceById(sourceId);
-      const item = el('li', 'assertion');
-      item.dataset.source = sourceId;
-      const slip = el('div', 'slip');
-      if (mark) {
-        item.classList.add('has-stance');
-        slip.append(mark);
-      }
-      slip.append(el('span', 'paper-id', source.id), el('span', 'who', source.name), el('span', 'role', source.role), el('q', 'quote', quote), ...after);
-      opensSource(slip, () => openSource(sourceId, slip.closest('.claim').dataset.ref));
-      item.append(slip);
-      return item;
+    // A passage of a source, as a card's fold holds it: the words, whether they say yes, no or ask,
+    // and the source's name with its strength, or why it isn't counted. Clicking it opens the source
+    // there, named by the card it sits in.
+    function passage(sourceId, quote, { stance, counted = `= ${strength(sourceById(sourceId))}` } = {}) {
+      return { passage: { source: sourceId, quote, stance, note: `${sourceById(sourceId).name} · ${counted}` } };
     }
 
     function assertionItem(claim, sourceId) {
       const source = sourceById(sourceId);
       const [mark, quote] = claim.assertions[sourceId];
-      const yes = mark === '+';
-      const note = isCopy(claim, sourceId) ? 'counted once' : inScope(sourceId) ? undefined : `a ${source.role}: not counted`;
-      const item = passage(sourceId, quote, { mark: el('span', `stance ${yes ? 'yes' : 'no'}`, yes ? '✓' : '✗'), after: [pills(source, note)] });
-      if (isCopy(claim, sourceId)) {
-        item.classList.add('is-repeat');
-        item.querySelector('.who').after(el('span', 'repeats', 'repeats it'));
-      }
-      return item;
+      const counted = isCopy(claim, sourceId) ? 'repeats it, counted once' : inScope(sourceId) ? undefined : `a ${source.role}: not counted`;
+      return passage(sourceId, quote, { stance: mark === '+' ? '+' : '-', counted });
     }
 
     // A slip or a source card opens its source, from a click or the keyboard.
@@ -1757,34 +1599,11 @@ Not announced,0
       });
     }
 
-    // Each kind of card has its own icon, top left: a claim is something said, a question is
-    // asked, a decision takes one path of several, an action is a box to tick, a risk is a
-    // warning, and source material is a sheet of paper.
+    // The icons the page still draws itself, for a domain object's view and the source cards; cards
+    // of discovery draw their own.
     const ICONS = {
-      claim: '<path d="M3 3.5h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.5L4.5 14v-2.5H3a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z"/><path d="M5 6.5h6M5 8.5h4"/>',
-      question: '<circle cx="8" cy="8" r="6.25"/><path d="M6.25 6.4a1.8 1.8 0 1 1 2.5 1.65c-.45.25-.75.6-.75 1.1v.35"/><path d="M8 11.4v.1"/>',
-      source: '<path d="M4 1.75h5.5L12.5 4.75v9a.5.5 0 0 1-.5.5H4a.5.5 0 0 1-.5-.5v-11.5a.5.5 0 0 1 .5-.5z"/><path d="M9.5 1.75v3h3"/><path d="M5.75 8h4.5M5.75 10.5h4.5"/>',
-      action: '<rect x="2.25" y="2.25" width="11.5" height="11.5" rx="2"/><path d="m5 8.25 2 2 4-4.5"/>',
-      risk: '<path d="M8 2 14.5 13.5h-13z"/><path d="M8 6.5v3.25M8 11.6v.1"/>',
-      goal: '<circle cx="8" cy="8" r="6.25"/><circle cx="8" cy="8" r="3.25"/><circle cx="8" cy="8" r="0.6" fill="currentColor"/>',
-      decision: '<path d="M8 14.5V9l4.5-5.5"/><path d="M9.75 3.5h2.75v2.75"/><path d="M8 9 3.5 3.5" opacity="0.35"/>',
-      run: '<rect x="3" y="2.75" width="10" height="11.5" rx="1.5"/><path d="M6 2.75h4v2H6z"/><path d="m5.75 9.25 1.75 1.75 3-3.25"/>',
-      scenario: '<rect x="2.25" y="2.25" width="11.5" height="11.5" rx="2"/><path d="m6.5 5.25 4.25 2.75-4.25 2.75z"/>',
-      rule: '<path d="M3 3.5h10M3 8h10M3 12.5h5"/><path d="m10 12.25 1.5 1.5 2.5-2.75"/>',
       entity: '<path d="M8 1.75 13.5 4.75v6.5L8 14.25 2.5 11.25v-6.5z"/><path d="M2.5 4.75 8 7.75l5.5-3M8 7.75v6.5"/>',
       primitive: '<path d="M8 3 12.5 8 8 13 3.5 8z"/>',
-      investigation: '<circle cx="7" cy="7" r="4.5"/><path d="m10.25 10.25 3.5 3.5"/>',
-      metric: '<rect x="1.75" y="5.25" width="12.5" height="5.5" rx="1"/><path d="M4.5 5.25v2M7 5.25v2.75M9.5 5.25v2M12 5.25v2.75"/>',
-      experiment: '<path d="M6 2h4M6.5 2v4.5L3 13a.75.75 0 0 0 .65 1.1h8.7A.75.75 0 0 0 13 13L9.5 6.5V2"/><path d="M4.75 10.5h6.5"/>',
-      prediction: '<path d="M2.5 13.5 10.5 5.5" stroke-dasharray="2 1.8"/><path d="M6.5 4.5h5v5"/>',
-      observation: '<circle cx="8" cy="8" r="4.25"/><path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3"/>',
-      assumption: '<path d="M3 3.5h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.5L4.5 14v-2.5H3a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" stroke-dasharray="2 1.6"/>',
-      inference: '<circle cx="8" cy="4" r="1.25" fill="currentColor"/><circle cx="4.25" cy="11.5" r="1.25" fill="currentColor"/><circle cx="11.75" cy="11.5" r="1.25" fill="currentColor"/>',
-      definition: '<path d="M2.5 2.5h5.25L13.5 8.25 8.25 13.5 2.5 7.75z"/><circle cx="5.5" cy="5.5" r="0.9" fill="currentColor"/>',
-      opinion: '<circle cx="6" cy="5.5" r="2.5"/><path d="M1.75 13.75a4.25 4.25 0 0 1 8.5 0"/><path d="M11 2.5h3.5v3h-1.25L12 6.75V5.5h-1z"/>',
-      agreement: '<path d="M6.5 9.5 9.5 6.5"/><path d="M7 4.5 8.25 3.25a2.5 2.5 0 0 1 3.5 3.5L10.5 8"/><path d="M5.5 8 4.25 9.25a2.5 2.5 0 0 0 3.5 3.5L9 11.5"/>',
-      outcome: '<path d="M13.5 3.5v4a2 2 0 0 1-2 2h-8"/><path d="m6 6.5-3 3 3 3"/>',
-      constraint: '<path d="M2.5 2.5v11M13.5 2.5v11"/><path d="M5 8h6"/><path d="m7 6-2 2 2 2M9 6l2 2-2 2"/>',
     };
 
     function icon(kind, drawing = ICONS[kind], title = capitalised(kind)) {
@@ -1824,58 +1643,33 @@ Not announced,0
       return [source.format, type !== source.format && type].filter(Boolean).join(' · ');
     }
 
-    // The header every card shares: its code, who raised or decided it, and its badges.
+    // Every card as sb-discovery-card takes it: plain data, prepared by the builders below as of an
+    // iteration. The component draws it; nothing here draws.
     function cardHead(kind, id, byline, badges) {
-      const head = el('header', 'claim-head');
-      const group = el('span', 'claim-badges');
-      group.append(...badges);
-      head.dataset.ref = id;
-      head.append(icon(kind), el('span', 'claim-id', id), el('span', 'raised', byline), group);
-      return head;
+      return { kind, id, byline, status: badges.find(b => b.status)?.status, badges: badges.filter(b => !b.status) };
     }
+    const strip = (tone, label, text) => ({ tone, label, text });
+    const statusBadge = status => ({ status });
+    const facet = (text, title) => ({ text, title });
+    const fold = (label, items) => ({ label, items });
+    const sources = (items, empty) => items.length ? fold('Sources', items) : strip('unresolved', 'Sources', empty);
+    // A fold holding a component, such as sb-scenario, put in the card's slot of the same name.
+    const viewFold = (label, view) => ({ label, items: [{ slot: label }], view });
 
-    // A strip, as sb-choice draws its reason: a label and a line set off by a bar.
-    function strip(tone, label, text) {
-      const block = el('div', `strip strip--${tone}`);
-      block.append(el('div', 'label', label), el('p', null, text));
-      return block;
-    }
-
-    // Every card: a header, then a body of strips saying what it means, then folds holding
-    // what it rests on.
+    // A card: its header, its strips, its folds, and its own record: the iteration it was raised in
+    // and its file. Views its folds hold travel beside it, to be slotted in when it's drawn.
     function card(head, ...parts) {
-      const body = el('div', 'claim-body');
-      body.append(...parts);
-      const article = el('article', 'claim');
-      article.dataset.ref = head.dataset.ref;
-      article.append(head, body);
-      return article;
+      const folds = parts.filter(part => part.items);
+      return {
+        ...head, iteration: iterationOf(head.id), file: FOLDERS[kindOf(head.id)] && fileOf(head.id),
+        strips: parts.filter(part => part.tone), folds: folds.map(({ view, ...rest }) => rest),
+        slotted: Object.fromEntries(folds.filter(f => f.view).map(f => [f.label, f.view])),
+      };
     }
-
-    function statusBadge(name) {
-      const status = el('span', 'status', name);
-      status.dataset.status = name;
-      return status;
-    }
-
-    // A fold, closed at first: a counted label that opens to what it holds.
-    function fold(label, items, className = 'assertions') {
-      const details = el('details', 'passages');
-      const list = el('ul', className);
-      list.append(...items);
-      details.append(el('summary', 'label', `${label} · ${items.length}`), list);
-      return details;
-    }
-
-    const sources = (items, empty) => items.length ? fold('Sources', items) : el('p', 'nobody', empty);
-
 
     function basisBadge(claim) {
       const name = basis(claim);
-      const badge = el('span', 'basis', name);
-      badge.dataset.basis = name;
-      badge.title = 'Basis: what holds it up';
-      return badge;
+      return { text: name, title: 'Basis: what holds it up', tone: ['assumption', 'conjecture'].includes(name) ? 'warn' : undefined };
     }
 
     // Every card shows how things stood by an iteration k, the latest when none is given: only
@@ -1896,9 +1690,8 @@ Not announced,0
     // A question: asked in a passage, its answer written up, and the passages that answer it.
     function questionCard(question, k = Infinity) {
       const [askedIn, asking] = question.raisedBy;
-      const asked = passage(askedIn, asking, { mark: el('span', 'question-mark', '?'), after: [pills(sourceById(askedIn))] });
-      const answers = Object.entries(question.answers).filter(([id]) => iterationOf(id) <= k)
-        .map(([id, quote]) => passage(id, quote, { after: [pills(sourceById(id))] }));
+      const asked = passage(askedIn, asking, { stance: '?' });
+      const answers = Object.entries(question.answers).filter(([id]) => iterationOf(id) <= k).map(([id, quote]) => passage(id, quote));
       const status = questionStatus(question, k);
       return card(
         cardHead('question', question.id, `Raised by ${sourceById(askedIn).name}, ${askedIn}`, [statusBadge(status)]),
@@ -1922,29 +1715,16 @@ Not announced,0
         strip('note', 'Reason', decision.reason),
         ...predicts,
         ...(reasons.length ? [strip('warn', 'Review', reasons.join(' '))] : []),
-        fold('Options', options, 'options'),
+        fold('Options', options),
         sources(cite(decision.sources), 'No sources'),
       );
     }
 
-    // One option a row, so any number of them reads down the card; the chosen one is marked,
-    // the rest faded, and an option put forward in a source names it.
-    function optionItem(option, isChosen) {
-      const item = el('li', isChosen ? 'option is-chosen' : 'option');
-      const head = el('div', 'option-head');
-      head.append(el('span', 'option-title', option.title));
-      if (option.source) head.append(el('span', 'paper-id', option.source));
-      if (isChosen) head.append(el('span', 'chosen', '✓ Chosen'));
-      const points = el('ul', 'points');
-      for (const pro of option.pros ?? []) points.append(el('li', 'pro', pro));
-      for (const con of option.cons ?? []) points.append(el('li', 'con', con));
-      item.append(head, points);
-      return item;
-    }
+    // An option weighed: the chosen one marked, the rest faded, and one put forward in a source names it.
+    const optionItem = (option, chosen) =>
+      ({ option: { title: option.source ? `${option.title} (${option.source})` : option.title, pros: option.pros, cons: option.cons, chosen } });
 
-
-    const cite = list => list.map(({ source, quote }) => passage(source, quote, { after: [pills(sourceById(source))] }));
-
+    const cite = list => list.map(({ source, quote }) => passage(source, quote));
 
     // A goal: where we're trying to get to, how we'll know, and where we stand: the latest
     // outcome measured against it.
@@ -2005,14 +1785,8 @@ Not announced,0
     }
 
     // An inference: what follows, the step from the premises, and the premises themselves.
-    // Other cards as rows: each one's code and what it says, as it stood by an iteration.
-    const cardRows = (ids, k) => ids.map(id => {
-      const row = el('li', 'option');
-      const head = el('div', 'option-head');
-      head.append(el('span', 'paper-id', id), el('span', 'option-title', asOf(id, k).text));
-      row.append(head);
-      return row;
-    });
+    // Other cards in a fold, each as it stood by an iteration, drawn compact.
+    const cardRows = (ids, k) => ids.map(id => ({ card: faceOf({ id, ...asOf(id, k) }) }));
 
     function inferenceCard(inference, k = Infinity) {
       const premises = cardRows(inference.premises, k);
@@ -2020,7 +1794,7 @@ Not announced,0
         cardHead('inference', inference.id, `Reasoned by ${inference.raisedBy}`, [statusBadge(inferenceStatus(inference, k))]),
         strip('main', 'Inference', inference.text),
         strip('note', 'Because', inference.step),
-        fold('Premises', premises, 'options'),
+        fold('Premises', premises),
       );
     }
 
@@ -2051,7 +1825,6 @@ Not announced,0
     // the iteration shown.
     function investigationCard(investigation, k = Infinity) {
       const found = gatheredBy(investigation, k);
-      const facet = text => el('span', 'basis', text);
       return card(
         cardHead('investigation', investigation.id, investigation.prompt ? `Prompted by ${investigation.prompt}` : 'Part of the first look',
           [facet(investigation.form), facet(`by ${investigation.by}`), statusBadge(investigationStatus(investigation, k))]),
@@ -2069,7 +1842,7 @@ Not announced,0
       const targets = GOALS.filter(g => g.metric === metric.id);
       const forecasts = PREDICTIONS.filter(p => p.metric === metric.id && iterationOf(p.id) <= k);
       return card(
-        cardHead('metric', metric.id, `${metric.from}, each ${metric.every}`, [el('span', 'basis', metric.unit)]),
+        cardHead('metric', metric.id, `${metric.from}, each ${metric.every}`, [facet(metric.unit)]),
         strip('main', 'Metric', metric.name),
         strip('note', 'Counts', metric.counted),
         strip('answer', 'Readings', readings.length ? readings.map(o => `${o.value} in ${o.when} (${o.id})`).join(' · ') : 'None yet.'),
@@ -2082,7 +1855,6 @@ Not announced,0
     // bear it out, all written before it runs; then its results, by the iteration shown.
     function experimentCard(experiment, k = Infinity) {
       const [setIn, words] = experiment.setIn;
-      const facet = text => el('span', 'basis', text);
       return card(
         cardHead('experiment', experiment.id, `Called for by ${experiment.from} · tests ${experiment.tests.join(', ')}`,
           [facet(experiment.form), facet(experiment.on === 'model' ? 'on the model' : 'in the world'), statusBadge(experimentStatus(experiment, k))]),
@@ -2118,14 +1890,9 @@ Not announced,0
     function runCard(run) {
       const r = runResults(run), ids = tests => tests.map(t => t.id).join(', ') || 'none';
       const what = run.tries ? `Iteration ${run.iteration}’s model with ${run.tries}` : `The model of iteration ${run.iteration}`;
-      const tests = r.tests.map(test => {
-        const face = nodeCard({ id: test.id, ...asOf(test.id, run.iteration) }, 'button');
-        face.type = 'button';
-        face.addEventListener('click', () => openCard(test.id));
-        return face;
-      });
+      const tests = r.tests.map(test => ({ card: faceOf({ id: test.id, ...asOf(test.id, run.iteration) }) }));
       return card(
-        cardHead('run', run.id, what, run.tries ? [statusBadge(earnsItsPlace(r.change) ? 'earns its place' : 'not yet')] : [el('span', 'basis', `${r.met.length} of ${r.tests.length} met`)]),
+        cardHead('run', run.id, what, run.tries ? [statusBadge(earnsItsPlace(r.change) ? 'earns its place' : 'not yet')] : [facet(`${r.met.length} of ${r.tests.length} met`)]),
         strip('main', 'Run', `Every scenario and rule written by iteration ${run.iteration}, run against ${what.toLowerCase()}.`),
         strip('note', 'The model', `${plural(Object.keys(run.parts).length, 'part')}, ${plural(r.decisions, 'decision')} · ${r.met.length} of ${r.tests.length} met, ${(r.met.length / r.decisions).toFixed(2)} per decision · busiest: ${r.busiest.name}, ${plural(r.busiest.decisions, 'decision')}`),
         strip('answer', 'Met', ids(r.met)),
@@ -2135,7 +1902,7 @@ Not announced,0
         ...(r.arrived.length ? [strip('note', 'Met on arrival', `${r.metOnArrival.length} of ${r.arrived.length} new tests met with no change to the model.`)] : []),
         ...(run.tries ? [strip(earnsItsPlace(r.change) ? 'answer' : 'warn', 'Recommendation',
           earnsItsPlace(r.change) ? `${run.tries} earns its place. Integrating it is a decision for people.` : `${run.tries} doesn’t earn its place yet.`)] : []),
-        fold('Tests', tests, 'options'),
+        fold('Tests', tests),
       );
     }
 
@@ -2156,7 +1923,7 @@ Not announced,0
           ...changes.map(version => strip('expect', `Changed in iteration ${version.iteration}`, `By ${version.changedBy[entity.id]}.`)),
         ] : []),
         ...partEnding(entity, k),
-        fold('Founded on', cardRows(entity.foundedOn, k), 'options'),
+        fold('Founded on', cardRows(entity.foundedOn, k)),
       );
     }
 
@@ -2174,7 +1941,7 @@ Not announced,0
           strip('note', 'Part of', partOf.join(' · ') || 'No entity yet.'),
         ] : []),
         ...partEnding(primitive, k),
-        fold('Founded on', cardRows(primitive.foundedOn, k), 'options'),
+        fold('Founded on', cardRows(primitive.foundedOn, k)),
       );
     }
 
@@ -2182,13 +1949,13 @@ Not announced,0
     // shown, every step marked as it played out; and what it's founded on.
     function scenarioCard(scenario, k = Infinity) {
       const view = document.createElement('sb-scenario');
-      view.className = 'in-main';
       view.scenario = { code: scenario.id, title: scenario.title, steps: scenario.steps };
       view.results = scenarioResults(scenario, k);
       return card(
         cardHead('scenario', scenario.id, `Played against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(testWord(scenario)(k))]),
-        view,
-        fold('Founded on', cardRows(scenario.foundedOn, k), 'options'),
+        strip('main', 'Scenario', scenario.title),
+        viewFold('Steps', view),
+        fold('Founded on', cardRows(scenario.foundedOn, k)),
       );
     }
 
@@ -2196,16 +1963,16 @@ Not announced,0
     // shown, with the trains it breaks for; and what it's founded on.
     function ruleCard(rule, k = Infinity) {
       const view = document.createElement('sb-rule');
-      view.className = 'in-main';
       view.rule = { kind: rule.kind, code: rule.id, title: rule.title, lines: rule.lines };
       const failures = ruleFailures(rule, k);
       view.status = failures.length ? 'broken' : 'holds';
       const breaks = failures.length ? [strip('warn', 'Breaks for', failures.join('; ') + '.')] : [];
       return card(
         cardHead('rule', rule.id, `Checked against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(testWord(rule)(k))]),
-        view,
+        strip('main', 'Rule', rule.title),
+        viewFold('The rule', view),
         ...breaks,
-        fold('Founded on', cardRows(rule.foundedOn, k), 'options'),
+        fold('Founded on', cardRows(rule.foundedOn, k)),
       );
     }
 
@@ -2236,9 +2003,7 @@ Not announced,0
     // soft is a word, as likelihood and impact are for a risk.
     function constraintCard(constraint) {
       const [setIn, words] = constraint.setIn;
-      const firmness = el('span', 'firmness', constraint.firmness);
-      firmness.dataset.firmness = constraint.firmness;
-      firmness.title = constraint.firmness === 'hard' ? 'Hard: can’t be moved' : 'Soft: could be moved, at a cost';
+      const firmness = facet(constraint.firmness, constraint.firmness === 'hard' ? 'Hard: can’t be moved' : 'Soft: could be moved, at a cost');
       return card(
         cardHead('constraint', constraint.id, `Imposed by ${sourceById(setIn).name}, ${setIn}`, [firmness, statusBadge(constraint.status)]),
         strip('main', 'Constraint', constraint.text),
@@ -2263,8 +2028,7 @@ Not announced,0
     // A risk: what could go wrong, what follows if it does, and how it's handled. Likelihood
     // and impact are words, not a score.
     function riskCard(risk) {
-      const level = el('span', 'level', `${risk.likelihood} · ${risk.impact}`);
-      level.title = 'Likelihood · impact';
+      const level = facet(`${risk.likelihood} · ${risk.impact}`, 'Likelihood · impact');
       return card(
         cardHead('risk', risk.id, `Raised by ${risk.raisedBy}`, [level, statusBadge(risk.status)]),
         strip('main', 'Risk', risk.text),
@@ -2578,31 +2342,35 @@ Not announced,0
       return { nodes, links: found };
     }
 
-    // A card on a board: it opens the card, or the source, in full.
+    // A card on a board, compact, opening the card or the source in full.
     function flowNode(node) {
-      const item = nodeCard(node, 'button');
-      item.type = 'button';
+      const item = nodeCard(node, true);
+      item.classList.add('flow-node');
       item.dataset.node = node.key;
-      item.addEventListener('click', () => node.source ? openSource(node.id) : openCard(node.id));
       return item;
     }
 
-    // A card's face as the boards draw it: its icon, code, status and text. Anywhere else that shows
-    // cards, such as a trace, draws them with this too, so they look the same everywhere.
-    function nodeCard(node, tag = 'span') {
-      const item = el(tag, `node node--${node.kind}${node.assumed ? ' is-assumed' : ''}${node.carried ? ' is-carried' : ''}`);
-      const head = el('span', 'node-head');
-      const awaited = node.kind === 'awaited';
-      head.append(node.source ? sourceIcon(node.source) : icon(awaited ? 'source' : node.kind), el('span', 'claim-id', awaited ? 'awaited' : node.id));
-      if (node.status) head.append(statusBadge(node.status));
-      if (node.source) head.append(formatBadge(node.source));
-      item.append(head, el('span', 'node-text', node.text));
-      if (node.note) item.append(el('span', 'node-note', node.note));
-      if (node.updated) item.append(el('span', 'node-note', 'updated: new material arrived'));
-      if (node.carried) item.append(el('span', 'node-note', `carried from iteration ${node.k}`));
-      if (FOLDERS[node.id.slice(0, 3)]) item.append(el('span', 'node-file', fileOf(node.id)));
-      return item;
+    // A card's compact view, as it stood in an iteration: the boards, traces and runs all draw cards
+    // with it, so they look the same everywhere.
+    function faceOf(node) {
+      return {
+        id: node.id, kind: node.kind, status: node.status, text: node.text, format: node.source?.format,
+        marks: [node.assumed && 'assumed', node.carried && 'carried', node.kind === 'awaited' && 'awaited'].filter(Boolean),
+        notes: [node.note, node.updated && 'updated: new material arrived', node.carried && `carried from iteration ${node.k}`].filter(Boolean),
+        file: FOLDERS[kindOf(node.id)] && fileOf(node.id),
+      };
     }
+
+    // A card drawn by sb-discovery-card, with the views its folds hold slotted in.
+    function drawCard(view, variant = 'normal', openable = false) {
+      const element = document.createElement('sb-discovery-card');
+      element.setAttribute('variant', variant);
+      element.toggleAttribute('openable', openable);
+      for (const [name, child] of Object.entries(view.slotted ?? {})) element.append(Object.assign(child, { slot: name }));
+      element.card = view;
+      return element;
+    }
+    const nodeCard = (node, openable = false) => drawCard(faceOf(node), 'compact', openable);
 
     // What the flow shows: one iteration, one of its boards, running across or down.
     const shown = { iteration: ITERATIONS.length, board: 0, across: true };
@@ -2661,11 +2429,11 @@ Not announced,0
       lines.classList.add('flow-lines');
       flow.append(block, lines);
 
-      for (const node of flow.querySelectorAll('.node')) {
+      for (const node of flow.querySelectorAll('.flow-node')) {
         node.addEventListener('mouseenter', () => lightChain(flow, lines, node.dataset.node, all));
         node.addEventListener('mouseleave', () => clearChain(flow, lines));
-        node.addEventListener('focus', () => lightChain(flow, lines, node.dataset.node, all));
-        node.addEventListener('blur', () => clearChain(flow, lines));
+        node.addEventListener('focusin', () => lightChain(flow, lines, node.dataset.node, all));
+        node.addEventListener('focusout', () => clearChain(flow, lines));
       }
       return flow;
     }
@@ -2903,9 +2671,7 @@ Not announced,0
       if (!found.length) return el('p', 'nobody', 'No scenario or rule exercises it yet.');
       const list = el('div', 'tested-by');
       for (const { test, touch } of found) {
-        const face = nodeCard({ id: test.id, ...asOf(test.id, k) }, 'button');
-        face.type = 'button';
-        face.addEventListener('click', () => openCard(test.id));
+        const face = nodeCard({ id: test.id, ...asOf(test.id, k) }, true);
         const used = [...touch.calls].map(name => `${name}()`).concat([...touch.reads]);
         const row = el('div', 'tested-by-row');
         row.append(face, el('span', 'tested-by-used', used.length ? `Used: ${used.join(', ')}` : 'Made it'));
@@ -3051,7 +2817,7 @@ Not announced,0
       const back = reach(id, 0, all), on = reach(id, 1, all);
       const lit = new Set([...back, ...on]);
       flow.classList.add('is-tracing');
-      for (const node of flow.querySelectorAll('.node')) {
+      for (const node of flow.querySelectorAll('.flow-node')) {
         node.classList.toggle('is-lit', lit.has(node.dataset.node));
         node.classList.toggle('is-focus', node.dataset.node === id);
       }
@@ -3218,20 +2984,13 @@ Not announced,0
       return cut;
     }
 
-    // Opening a card from the board, in sb-modal, with everything in it open: what it says on the
-    // left, and on the right its folds, every passage read in full. Awaited material has no card.
+    // Opening a card in sb-modal, expanded: what it says on the left, and on the right its folds,
+    // every passage read in full. Awaited material has no card.
     function openCard(id) {
-      const card = cardOf(id, shown.iteration);
-      if (!card) return;
-      for (const fold of card.querySelectorAll('details')) fold.open = true;
-      const body = card.querySelector('.claim-body');
-      const main = el('div', 'card-main'), side = el('div', 'card-side');
-      main.append(...body.querySelectorAll(':scope > .strip, :scope > .in-main'));
-      side.append(...body.children);
-      body.replaceChildren(main, side);
-      card.classList.add('claim--open');
+      const view = cardOf(id, shown.iteration);
+      if (!view) return;
       const modal = document.getElementById('card-modal');
-      document.getElementById('card-view').replaceChildren(card);
+      document.getElementById('card-view').replaceChildren(drawCard(view, 'expanded'));
       modal.setAttribute('heading', `${capitalised(asOf(id, shown.iteration).kind)} ${id} · as of iteration ${shown.iteration}`);
       modal.show();
     }
@@ -3338,12 +3097,24 @@ Not announced,0
       return [x / STILL.width, y / STILL.height, STILL.boardWidth / STILL.width, STILL.row / STILL.height];
     }
 
-    // Pointing at a passage lights its source, and pointing at a source lights its passages.
-    function lightTogether(root) {
-      const sharing = node => root.querySelectorAll(`[data-source="${node.dataset.source}"]`);
-      for (const node of root.querySelectorAll('[data-source]')) {
-        node.addEventListener('mouseenter', () => sharing(node).forEach(n => n.classList.add('is-lit')));
-        node.addEventListener('mouseleave', () => sharing(node).forEach(n => n.classList.remove('is-lit')));
+    // Opening from any card: a source, or a passage of one, opens the source there; any other card
+    // opens in full. Pointing at a card, a passage or a source lights it wherever else it appears.
+    function wireCards(root) {
+      const announce = ref => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+      document.addEventListener('sb-open', e => {
+        if (e.target.localName !== 'sb-discovery-card') return;
+        const { ref, quote } = e.detail;
+        if (ref.startsWith('SRC')) openSource(ref, quote ? e.target.card.id : null);
+        else openCard(ref);
+      });
+      document.addEventListener('sb-highlight', e => {
+        const refs = e.detail.ref ? [e.detail.ref] : [];
+        for (const card of document.querySelectorAll('sb-discovery-card')) card.highlight = refs;
+        for (const source of root.querySelectorAll('.source')) source.classList.toggle('is-lit', refs.includes(source.dataset.ref));
+      });
+      for (const source of root.querySelectorAll('.source')) {
+        source.addEventListener('mouseenter', () => announce(source.dataset.ref));
+        source.addEventListener('mouseleave', () => announce(null));
       }
     }
 
@@ -3363,31 +3134,33 @@ Not announced,0
 
 
     document.getElementById('summary').textContent = summary();
-    // Cards that take an iteration get one argument here: map would pass its index as the second.
-    document.getElementById('claims').replaceChildren(...CLAIMS.map(item => claimCard(item)));
-    document.getElementById('entities').replaceChildren(...ENTITIES.map(item => entityCard(item)));
-    document.getElementById('primitives').replaceChildren(...PRIMITIVES.map(item => primitiveCard(item)));
-    document.getElementById('scenarios').replaceChildren(...SCENARIOS.map(item => scenarioCard(item)));
-    document.getElementById('rules').replaceChildren(...RULES.map(item => ruleCard(item)));
-    document.getElementById('investigations').replaceChildren(...INVESTIGATIONS.map(item => investigationCard(item)));
-    document.getElementById('observations').replaceChildren(...OBSERVATIONS.map(observationCard));
-    document.getElementById('metrics').replaceChildren(...METRICS.map(item => metricCard(item)));
-    document.getElementById('assumptions').replaceChildren(...ASSUMPTIONS.map(item => assumptionCard(item)));
-    document.getElementById('inferences').replaceChildren(...INFERENCES.map(item => inferenceCard(item)));
-    document.getElementById('definitions').replaceChildren(...DEFINITIONS.map(definitionCard));
-    document.getElementById('opinions').replaceChildren(...OPINIONS.map(opinionCard));
-    document.getElementById('outcomes').replaceChildren(...OUTCOMES.map(outcomeCard));
-    document.getElementById('predictions').replaceChildren(...PREDICTIONS.map(item => predictionCard(item)));
-    document.getElementById('experiments').replaceChildren(...EXPERIMENTS.map(item => experimentCard(item)));
-    document.getElementById('goals').replaceChildren(...GOALS.map(item => goalCard(item)));
-    document.getElementById('agreements').replaceChildren(...AGREEMENTS.map(agreementCard));
-    document.getElementById('constraints').replaceChildren(...CONSTRAINTS.map(constraintCard));
-    document.getElementById('questions').replaceChildren(...QUESTIONS.map(item => questionCard(item)));
-    document.getElementById('decisions').replaceChildren(...DECISIONS.map(item => decisionCard(item)));
-    document.getElementById('actions').replaceChildren(...ACTIONS.map(item => actionCard(item)));
-    document.getElementById('risks').replaceChildren(...RISKS.map(riskCard));
+    // Every card of a kind, drawn in full, as it stands now. One argument each: map would pass its
+    // index as the iteration.
+    const drawAll = (id, list, build) => document.getElementById(id).replaceChildren(...list.map(item => drawCard(build(item))));
+    drawAll('claims', CLAIMS, item => claimCard(item));
+    drawAll('entities', ENTITIES, item => entityCard(item));
+    drawAll('primitives', PRIMITIVES, item => primitiveCard(item));
+    drawAll('scenarios', SCENARIOS, item => scenarioCard(item));
+    drawAll('rules', RULES, item => ruleCard(item));
+    drawAll('investigations', INVESTIGATIONS, item => investigationCard(item));
+    drawAll('observations', OBSERVATIONS, observationCard);
+    drawAll('metrics', METRICS, item => metricCard(item));
+    drawAll('assumptions', ASSUMPTIONS, item => assumptionCard(item));
+    drawAll('inferences', INFERENCES, item => inferenceCard(item));
+    drawAll('definitions', DEFINITIONS, definitionCard);
+    drawAll('opinions', OPINIONS, opinionCard);
+    drawAll('outcomes', OUTCOMES, outcomeCard);
+    drawAll('predictions', PREDICTIONS, item => predictionCard(item));
+    drawAll('experiments', EXPERIMENTS, item => experimentCard(item));
+    drawAll('goals', GOALS, item => goalCard(item));
+    drawAll('agreements', AGREEMENTS, agreementCard);
+    drawAll('constraints', CONSTRAINTS, constraintCard);
+    drawAll('questions', QUESTIONS, item => questionCard(item));
+    drawAll('decisions', DECISIONS, item => decisionCard(item));
+    drawAll('actions', ACTIONS, item => actionCard(item));
+    drawAll('risks', RISKS, riskCard);
     document.getElementById('sources').replaceChildren(...SOURCES.map(sourceCard));
-    lightTogether(document.querySelector('main'));
+    wireCards(document.querySelector('main'));
     drawFlow(document.getElementById('flow'));
     wireDirection(document.getElementById('flow'));
     wireSteps(document.getElementById('flow'));
