@@ -20,6 +20,8 @@
   <script src="../../components/sb-bars/sb-bars.js"></script>
   <script src="../../components/sb-callout/sb-callout.js"></script>
   <script src="../../components/sb-source-trace/sb-source-trace.js"></script>
+  <script src="../../components/sb-chart/sb-chart.js"></script>
+  <script src="../../components/sb-table/sb-table.js"></script>
 
   <style>
     body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
@@ -87,6 +89,7 @@
     .card-icon--rule { --tone: var(--sb-text); }
     .status[data-status="met"] { --tone: var(--sb-good, #3f9142); }
     .status[data-status="not met"] { --tone: var(--sb-bad, #c53030); }
+    .versions { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin: 12px 0; }
     .flow-summary { margin: 0 0 10px; color: var(--sb-muted); font-size: 13px; white-space: pre-line; }
 
     /* The prototype, the outliner set into the page beside it, and the object view. */
@@ -366,6 +369,20 @@
         <div id="prototype-board"></div>
         <sb-outliner id="objects" heading="Objects"></sb-outliner>
       </div>
+    </section>
+
+    <section class="card">
+      <h3>Versions of the model</h3>
+      <sb-callout kind="warning" heading="Mock-up">
+        <p>Everything in this section is made up, to show how versions of the model and their compression signal might look over many iterations. Nothing here is derived from the model.</p>
+      </sb-callout>
+      <sb-chart id="versions-score" heading="Compression signal, out of 100"></sb-chart>
+      <p class="flow-hint">Compression = 100 × tests met per decision × arrival × spread. Arrival is 0.5 + 0.5 × the share of new tests met with no change to the model; spread is 1 − the busiest method’s share of all decisions. So structure raises it, a patch lowers it, and crowding code into one method costs.</p>
+      <div class="versions">
+        <sb-chart id="versions-compression" heading="Tests met per decision"></sb-chart>
+        <sb-chart id="versions-size" heading="Decisions and tests met"></sb-chart>
+      </div>
+      <sb-table id="versions-table"></sb-table>
     </section>
 
     <section class="card">
@@ -1041,6 +1058,53 @@
       { time: '14:25', destination: 'Ely', delay: 6, platform: 11, planned: 10, reason: 'an earlier fault' },
       { time: '13:58', destination: 'Hastings', platform: 1, departed: true },
     ];
+
+    // A mock-up, not derived: made-up versions of the model, to show how its compression signal
+    // might read over many iterations.
+    const VERSIONS_MOCKUP = [
+      { id: 'v1', iteration: 1, change: 'The first model', kind: 'first version', parts: 5, decisions: 16, met: 5, tests: 7, busiest: 'Board.expectedFor', busiestDecisions: 3, arrived: 0, metOnArrival: 0 },
+      { id: 'v2', iteration: 2, change: 'Message for a changed platform', kind: 'a patch', parts: 5, decisions: 18, met: 6, tests: 8, busiest: 'Board.expectedFor', busiestDecisions: 3, arrived: 1, metOnArrival: 0 },
+      { id: 'v3', iteration: 3, change: 'Announcement integrated', kind: 'new capability', parts: 6, decisions: 19, met: 7, tests: 9, busiest: 'Board.expectedFor', busiestDecisions: 3, arrived: 1, metOnArrival: 0 },
+      { id: 'v4', iteration: 3, change: 'Messages by priority, several per train', kind: 'structure', parts: 6, decisions: 17, met: 9, tests: 10, busiest: 'Board.messagesFor', busiestDecisions: 2, arrived: 1, metOnArrival: 1 },
+      { id: 'v5', iteration: 4, change: 'Notice period as a domain primitive', kind: 'structure', parts: 7, decisions: 15, met: 11, tests: 12, busiest: 'Board.expectedFor', busiestDecisions: 3, arrived: 2, metOnArrival: 2 },
+      { id: 'v6', iteration: 5, change: 'Special case for Dover Priory', kind: 'a patch', parts: 7, decisions: 17, met: 12, tests: 14, busiest: 'Board.platformFor', busiestDecisions: 4, arrived: 2, metOnArrival: 0 },
+    ];
+
+    // The compression signal as one number, out of 100: tests met per decision, weighed by how many
+    // new tests were met on arrival (a model that predicts) and by how evenly decisions are spread
+    // (a crowded method costs). Every other figure stays beside it.
+    function compressionScore(v) {
+      const arrival = v.arrived ? 0.5 + 0.5 * v.metOnArrival / v.arrived : 1;
+      const spread = 1 - v.busiestDecisions / v.decisions;
+      return Math.round(100 * (v.met / v.decisions) * arrival * spread);
+    }
+
+    function drawVersionsMockup() {
+      const labels = VERSIONS_MOCKUP.map(v => v.id);
+      const tone = kind => ({ structure: 'good', 'a patch': 'warn' })[kind];
+      document.getElementById('versions-score').data = {
+        series: [{ label: 'Compression', values: VERSIONS_MOCKUP.map(compressionScore) }],
+        xLabels: labels, yMax: 100,
+        marks: VERSIONS_MOCKUP.map((v, i) => ({ id: v.id, at: i, label: v.kind, tone: tone(v.kind) })).filter(m => m.tone),
+      };
+      document.getElementById('versions-compression').data = {
+        series: [{ label: 'Met per decision', values: VERSIONS_MOCKUP.map(v => +(v.met / v.decisions).toFixed(2)) }],
+        xLabels: labels,
+        marks: VERSIONS_MOCKUP.map((v, i) => ({ id: v.id, at: i, label: v.kind, tone: tone(v.kind) })).filter(m => m.tone),
+      };
+      document.getElementById('versions-size').data = {
+        series: [{ label: 'Decisions', values: VERSIONS_MOCKUP.map(v => v.decisions), tone: 'warn' }, { label: 'Tests met', values: VERSIONS_MOCKUP.map(v => v.met), tone: 'good' }],
+        xLabels: labels,
+      };
+      const table = document.getElementById('versions-table');
+      table.columns = [
+        { key: 'id', label: 'Version' }, { key: 'iteration', label: 'Iteration' }, { key: 'change', label: 'Change' }, { key: 'kind', label: 'Kind' },
+        { key: 'parts', label: 'Parts' }, { key: 'decisions', label: 'Decisions' }, { key: 'metOf', label: 'Met' }, { key: 'perDecision', label: 'Met per decision' },
+        { key: 'busiestOf', label: 'Busiest method' }, { key: 'arrival', label: 'Met on arrival' }, { key: 'score', label: 'Compression' },
+      ];
+      table.rows = VERSIONS_MOCKUP.map(v => ({ ...v, metOf: `${v.met} of ${v.tests}`, perDecision: (v.met / v.decisions).toFixed(2),
+        busiestOf: `${v.busiest}, ${v.busiestDecisions}`, arrival: v.arrived ? `${v.metOnArrival} of ${v.arrived}` : '–', score: compressionScore(v), tone: tone(v.kind) }));
+    }
 
     // The afternoon at the station, for the prototype: the timetable as it stood at 13:55, and the
     // feed's updates as they arrived, the ones worth finding again marked on the scrubber. The
@@ -3329,6 +3393,7 @@ Not announced,0
     wireSteps(document.getElementById('flow'));
     wirePrototype();
     drawPrototype();
+    drawVersionsMockup();
   </script>
 </body>
 </html>
