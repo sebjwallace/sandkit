@@ -4,6 +4,11 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.57 · 2026-10-25
+- Engines and records, decided: an engine is a method's rules written once, in `engines/` beside `components/`, one classic script with no DOM, knowing no component; what a sandbox writes is kept in `records/` beside `sources/`, never edited, each record carrying when, by whom and in which iteration it was made. The domain discovery practice gains a Records section.
+- The first engine, `engines/discovery` 0.1.0: weighing claims, from the records and each source's authored grade.
+- The sources practice: the catalogue gains `grade` (a value from 1 to 5 with the reason for it, and any aspects that matter), `speaksTo` (how things are, or what should be) and `copies`. Listed in the catalog's Discovery section; `test/versions` checks engines too.
+
 ## 0.2.56 · 2026-10-25
 - **Manifests name no other component.** Every component's "Works well with" section is gone, and the few manifests naming another in passing say it in plain words, so components stay agnostic of each other even in suggestions (a patch version for each). The practices say which components go together; `test/isolation` now checks manifests too. The decision, the contributing guide, `AGENTS.md`, the readme, the building guide and the template's `AGENTS.md` say so.
 - Fifty-nine components: added `sb-discovery-board`, the sandbox's own items in columns by the part they play, with an item's chain lit and its links drawn when pointed at. The domain discovery practice gains a Boards section: the three boards and their columns, links as signal, and composing the board with the cards.

@@ -47,6 +47,23 @@
         });
       }
     }
+
+    // Engines compute and never know a component; components never know an engine.
+    const ENGINES = ['discovery'];
+    for (const engine of ENGINES) {
+      for (const file of [`${engine}.js`, 'manifest.md']) {
+        test(`engines/${engine}/${file} mentions no component`, async () => {
+          const source = await read(`../../engines/${engine}/${file}`);
+          assertEqual(COMPONENTS.filter((tag) => mentions(source, tag)), [], 'references');
+        });
+      }
+    }
+    for (const component of COMPONENTS) {
+      test(`${component}/${component}.js uses no engine`, async () => {
+        const source = await read(`../../components/${component}/${component}.js`);
+        assertEqual(ENGINES.filter((engine) => source.includes(`engines/${engine}`) || source.includes('createDiscovery')), [], 'engines');
+      });
+    }
   </script>
 </body>
 </html>

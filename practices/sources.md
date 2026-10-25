@@ -81,6 +81,9 @@ sources/
 | `sensitivity` | `public`, `internal` or `confidential`. `internal` when not given. |
 | `derivedFrom` | For a readable copy: the source it was made from. Empty otherwise. |
 | `supersedes` | The source this one replaces. Set the old one's `status` to `superseded`. |
+| `copies` | The source this one repeats, such as a newsletter passing on a forum post. It adds nothing of its own, so it's counted as that one. |
+| `grade` | How far this source can be trusted, as whoever catalogued it judges: `{ "value": 4, "why": "First-hand, from the dispatcher on shift, though recalled a week later.", "aspects": { "distance": "first-hand" } }`. `value` from 1 (weak) to 5 (strong), 3 ordinary; `why` is required, since a grade without a reason is a conclusion nobody can check; `aspects`, optional, any dimensions that matter in this subject. Leave it out until it's been judged. |
+| `speaksTo` | `how things are` (the default) or `what should be`, for a plan, manual or policy: what should happen isn't evidence of what does. |
 
 Keep to these fields. Write dates as `yyyy-mm-dd`.
 

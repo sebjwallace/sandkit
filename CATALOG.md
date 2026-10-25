@@ -51,12 +51,16 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 
 ## Discovery
 
-Components for domain discovery, which never know each other: the [domain discovery practice](practices/domain-discovery.md) says how they go together, so read it first. The card knows the method's kinds, which belong to discovery rather than to any subject.
+Components and the engine for domain discovery, which never know each other: the [domain discovery practice](practices/domain-discovery.md) says how they go together, so read it first. The card knows the method's kinds, which belong to discovery rather than to any subject.
 
 | Component | What it does |
 |---|---|
 | [`sb-discovery-card`](components/sb-discovery-card/manifest.md) | One card of discovery, in 26 kinds each with its icon and tone: compact on a board, normal, or expanded in a modal; what it means in strips, what it rests on in folds of passages, cards, options and slots; sources always compact, on paper; when, by whom and in which iteration it was made. |
 | [`sb-discovery-board`](components/sb-discovery-board/manifest.md) | The sandbox's own items in columns by the part they play, across or down: pointing at one lights its chain back and forward and draws only those links, labelled; columns fold to make room. |
+
+| Engine | What it works out |
+|---|---|
+| [`discovery`](engines/discovery/manifest.md) | The method's rules, from the sandbox's records: so far, weighing claims, with each source's strength, which passages count and why not, and a claim's standing, score and basis as of any iteration. |
 
 ## Components
 

@@ -106,6 +106,7 @@ sandkit/
   AGENTS.md         how agents work on Sandkit itself
   practices/        guides to doing things well, starting with building a sandbox
   components/       reusable building blocks, each in its own folder with a demo
+  engines/          a method's rules, written once, for sandboxes that follow it
   shell/            the environment around a sandbox: header, settings, theming
   templates/        the starting point for a new sandbox
   tools/            optional helpers, such as setting up a sandbox in one command

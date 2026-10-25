@@ -17,9 +17,24 @@ Everything discovery records is a card with a code, whose prefix names its kind 
 - **Cards are never edited.** A later card supersedes or tests an earlier one. Whatever follows from the cards (a claim's standing, a decision under review, a test met) is worked out by the sandbox for each iteration, never written by hand, so the iterations stay an audit trail.
 - **Source material versus cards: outside and inside.** Source material comes from outside the sandbox, brought in by people or the agent: documents, articles, web pages, data, images, even the part of a chat where someone says how things work. It's kept and screened as the [sources practice](sources.md) describes. Cards are written inside the sandbox, by the agent or a person, from that material: an observation or a claim resting on a source's passages, never a source itself.
 - **Screen before deriving.** Never write a card from material that hasn't been screened, and never quote into a card what screening cleared out.
-- **Every card records its own making:** `created` (when), `by` (`Agent` or the person) and `iteration` (the one it was raised in). Add whatever else is worth keeping as `meta`: the rows an observation was read from, the model a run tried, the version a piece of feedback was made on. Source material carries its own details in the catalogue; cards carry theirs.
+- **Every card records its own making** (in its record; see Records): `created` (when), `by` (`Agent` or the person) and `iteration` (the one it was raised in). Add whatever else is worth keeping as `meta`: the rows an observation was read from, the model a run tried, the version a piece of feedback was made on. Source material carries its own details in the catalogue; cards carry theirs.
 - **A card rests on passages,** not whole sources: the words it cites, with whether they say yes, no or ask.
 - **A new kind earns its place** only with parts or connections the others lack. Prefer a variant of an existing kind.
+
+## Records
+
+What the agent or a person writes is kept as records, in the sandbox's `records/` folder, beside `sources/`:
+
+```
+sources/   what came in from outside: documents, data, chats; screened and catalogued
+records/   what was written inside, from it: one script per kind
+  claims.js, questions.js, decisions.js, …
+```
+
+- **A record holds only what someone wrote:** the claim and the passages for and against it, the options a decision weighed and what it rests on, a scenario's steps and code. Never a standing, a status or anything else that follows: those are worked out (see "Weighing claims" and the statuses in "The kinds").
+- **Every record carries its making:** `created` (`yyyy-mm-ddThh:mm`), `by` (`Agent` or the person) and `iteration`, and anything else worth keeping in `meta`.
+- **One script per kind,** each setting its list, as the [pages practice](pages.md) keeps data, so a page opened from disk reads them; a page includes the kinds it shows.
+- **Records are never edited.** A record that's wrong or out of date is superseded by a new one, which names it.
 
 ## The kinds
 
@@ -74,13 +89,13 @@ Everything discovery records is a card with a code, whose prefix names its kind 
 
 ## Weighing claims
 
-A claim never gets a verdict by hand. The sandbox weighs it from its passages:
+A claim never gets a verdict by hand. The [discovery engine](../engines/discovery/manifest.md) weighs it from its passages (`discovery.weigh`), by these rules:
 
-- **Grades.** Each source is graded on distance (second-hand, first-hand, direct), trust (doubtful, unknown, trusted) and clarity (noisy, partial, clean), 1 to 3 each; its strength is their sum.
-- **In scope:** only sources whose role is a record or an opinion speak to how things are. A plan says what should happen, so its passages show but don't count.
+- **Grades.** Each source carries an authored grade in the catalogue: a value from 1 to 5 and the reason for it, with any aspects that matter in this subject (see the [sources practice](sources.md)). Grade it when you catalogue it, and say why. A source not graded yet weighs 3, and its passages say so.
+- **In scope:** only sources that speak to how things are count. One that says what should be, such as a plan, shows but doesn't count.
 - **Copies count once:** a source repeating another counts as the one it repeats.
 - **Standing:** corroborated (two or more independent yeses), single source, contested (yeses and noes), refuted (only noes), unbacked.
-- **Score:** the strength of each independent yes, less each no.
+- **Score:** the grade of each independent yes, less each no.
 - **Basis:** observed (data or an image), reported (first-hand), inferred (only an analysis), conjecture, or assumption once something rests on it.
 
 ## Building the model
