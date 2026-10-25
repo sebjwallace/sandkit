@@ -27,7 +27,10 @@ const ITEMS = [
   { id: 'RUL-4', title: 'Hold response for the largest loss', kind: 'Rule',
     sources: [{ source: 'SRC-2', quote: 'Enough response is held at all times to cover the largest single infeed loss' }], restsOn: ['PAR-3'] },
   { id: 'ASM-1', title: 'Falls are faster on windy nights', kind: 'Assumption',
-    sources: [{ source: 'SRC-5', quote: 'Falls are faster on windy nights', note: 'Taken as twice as fast: the analysis says "roughly", from six trips.' }], restsOn: ['RUL-1'] },
+    sources: [
+      { source: 'SRC-3', quote: '2026-08-16,Unit 2 Valley,820,strong,49.58,3.5', note: 'One of six August trips: the three in strong wind reached their lowest in 3 to 4 seconds, the three in light wind in 6.5 to 8. Taken as twice as fast, from a small sample.' },
+      { source: 'SRC-1', quote: "with more wind and solar there's less inertia, so the drop is faster" },
+    ], restsOn: ['RUL-1'] },
 
   // What operators asked of the new screen.
   { id: 'REQ-1', title: 'See how fast it is falling', kind: 'Requirement',
@@ -47,6 +50,11 @@ const ITEMS = [
   { id: 'SCR-3', title: 'Book extra response', kind: 'Screen part', restsOn: ['REQ-2'] },
   { id: 'SCR-4', title: 'Low inertia warning', kind: 'Screen part', restsOn: ['REQ-3'] },
   { id: 'SCR-5', title: 'Demand disconnection status', kind: 'Screen part', restsOn: ['REQ-4', 'QST-1'] }
+];
+
+// Codes that no longer name anything, and what replaced them (see the journal practice).
+const RETIRED = [
+  { id: 'SRC-5', in: '0.2.0', replacedBy: [] },   // the agent's analysis: its reading is now ASM-1's note
 ];
 
 // The physics, kept simple: one number for the whole grid's frequency.
@@ -113,6 +121,7 @@ function createModel(options) {
     get lowInertia() { return opts.wind === 'windy'; },     // SCR-4, REQ-3
     get breached() { return state.lowest < LIMIT_HZ; },      // PAR-4
     items: ITEMS,
+    retired: RETIRED,
     limits: { limit: LIMIT_HZ, floor: FLOOR_HZ, nominal: NOMINAL_HZ, stepS: STEP_S, tripAtS: TRIP_AT_S },
     step,
     reset,

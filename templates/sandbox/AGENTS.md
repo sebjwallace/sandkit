@@ -21,6 +21,12 @@ Where this sandbox is now, and how it is meant to grow. Rewrite it at the end of
 - **Chosen direction:** {{what the person asked for next, and why}}
 - **Open questions:** {{codes, one line each}}
 
+## Sensitive material
+
+What the people behind this sandbox treat as confidential, personal or otherwise sensitive, so every session screens sources the same way. Ask before the first source arrives, and keep only the rules here, never the material. See "Screening" in `lib/sandkit/practices/sources.md`.
+
+{{the person's rules, one line each; not asked yet}}
+
 ## Files
 
 | File | What it is |
@@ -55,7 +61,7 @@ Parts of the surface this sandbox made its own, once they were needed in more th
 - **Journal every change.** After any meaningful change, add an entry to `JOURNAL.md`, update Where it stands, and commit if the folder uses Git (tagging a breaking version). See `lib/sandkit/practices/journal.md`.
 - **A page per part worth sharing on its own,** once the sandbox grows: each listed in `sandbox.js`, sharing `model.js`, and including only what it uses, so it can be exported alone. See `lib/sandkit/practices/pages.md`.
 - **Exporting a page:** when asked, run `node lib/sandkit/tools/export.mjs <page>.html` from this folder (the page's Export button gives people the prompt), then report where it saved, every file that went in with its size, and any warnings.
-- **Sources are catalogued and cited.** Process `sources/inbox/` when it isn't empty, cite passages from the model's `ITEMS`, and run `node lib/sandkit/tools/sources.mjs check .` after. See `lib/sandkit/practices/sources.md`.
+- **Sources are screened, catalogued and cited.** Screen every source before using it, wherever it came from, and raise anything sensitive with the person. Process `sources/inbox/` when it isn't empty, cite passages from the model's `ITEMS`, and run `node lib/sandkit/tools/sources.mjs check .` after. See `lib/sandkit/practices/sources.md`.
 - **Serving:** features that read or write the sandbox's files need `node lib/sandkit/tools/serve.mjs .` (then open the address it prints). Everything else works by double-clicking.
 - **Declare everything, then start.** Page scripts declare their state and functions first, and start the sandbox in one marked section at the end.
 - **Codes for what people discuss.** Rules, entities, claims and sources get stable codes (see `lib/sandkit/practices/identifiers.md`), issued in the model and cited everywhere.

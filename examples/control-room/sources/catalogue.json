@@ -69,22 +69,6 @@
       "supersedes": null
     },
     {
-      "id": "SRC-5",
-      "title": "How low inertia changes the first seconds",
-      "path": "sources/analyses/low-inertia.md",
-      "format": "notes",
-      "author": "Agent",
-      "authored": "2026-09-24",
-      "captured": "2026-09-24",
-      "status": "catalogued",
-      "stance": "speculative",
-      "sensitivity": "internal",
-      "summary": "A reading of the interview and the fault log: falls are faster on windy nights.",
-      "tags": ["inertia"],
-      "derivedFrom": ["SRC-1", "SRC-3"],
-      "supersedes": null
-    },
-    {
       "id": "SRC-6",
       "title": "Sketch of the current frequency screen",
       "path": "sources/images/current-screen.svg",
