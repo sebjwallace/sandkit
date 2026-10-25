@@ -9,7 +9,7 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-accordion', 'sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-kanban', 'sb-c4', 'sb-callout', 'sb-choice', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-discovery-card', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-handoff', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-inspect-mode', 'sb-outliner', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-notebook', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stamp', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-person', 'sb-poll', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
+    window.TAGS = ['sb-accordion', 'sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-kanban', 'sb-c4', 'sb-callout', 'sb-choice', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-discovery-board', 'sb-discovery-card', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-handoff', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-inspect-mode', 'sb-outliner', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-notebook', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stamp', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-person', 'sb-poll', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
@@ -21,6 +21,7 @@
   <script src="../../components/sb-wireframe/sb-wireframe.js"></script>
   <script src="../../components/sb-xref/sb-xref.js"></script>
   <script src="../../components/sb-discovery-card/sb-discovery-card.js"></script>
+  <script src="../../components/sb-discovery-board/sb-discovery-board.js"></script>
   <script src="../../components/sb-profile/sb-profile.js"></script>
   <script src="../../components/sb-dependencies/sb-dependencies.js"></script>
   <script src="../../components/sb-ontology/sb-ontology.js"></script>

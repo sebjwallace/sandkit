@@ -30,7 +30,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [Sources](practices/sources.md) | The material a sandbox was built from: `sources/` with one catalogue, an inbox to process, citations of passages from the model's `ITEMS`, and checking them. Supported by `tools/sources.mjs` and `tools/serve.mjs`. |
 | [Modes](practices/modes.md) | Other ways of using a sandbox for a while, such as commenting or tracing: one shape for every mode, and one at a time through the page-wide `sb-mode` event. Supported by the modes below. |
 | [Workshops](practices/workshops.md) | Working through a sandbox's model with the people who know the subject, until they understand it, have corrected it and own it: principles, roles, preparing, the workshop page, activities (predict and reveal, confidence checks, forks, checking sources, questions, decisions), the round trip with the agent, and closing. Supported by `sb-notebook`, `sb-person`, `sb-poll`, `sb-handoff` and `sb-choice`. |
-| [Domain discovery](practices/domain-discovery.md) | Discovering a domain on purpose, an iteration at a time: a record of cards that are never edited, each kind and what it's for, weighing claims, growing and trying the model, feedback from people who know the domain, and showing the cards. Supported by `sb-discovery-card`. |
+| [Domain discovery](practices/domain-discovery.md) | Discovering a domain on purpose, an iteration at a time: a record of cards that are never edited, each kind and what it's for, weighing claims, growing and trying the model, feedback from people who know the domain, and showing the cards on three boards per iteration. Supported by `sb-discovery-card` and `sb-discovery-board`. |
 | [Feedback](practices/feedback.md) | Collecting comments with `sb-comments`, and what the agent does on receiving them: saved as sources, `FB-` codes, answered in the journal. Supported by `sb-comments`. |
 
 ## Shell
@@ -51,11 +51,12 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 
 ## Discovery
 
-Components for domain discovery. They know the method's kinds, which belong to discovery rather than to any subject; read the [domain discovery practice](practices/domain-discovery.md) first.
+Components for domain discovery, which never know each other: the [domain discovery practice](practices/domain-discovery.md) says how they go together, so read it first. The card knows the method's kinds, which belong to discovery rather than to any subject.
 
 | Component | What it does |
 |---|---|
 | [`sb-discovery-card`](components/sb-discovery-card/manifest.md) | One card of discovery, in 26 kinds each with its icon and tone: compact on a board, normal, or expanded in a modal; what it means in strips, what it rests on in folds of passages, cards, options and slots; sources always compact, on paper; when, by whom and in which iteration it was made. |
+| [`sb-discovery-board`](components/sb-discovery-board/manifest.md) | The sandbox's own items in columns by the part they play, across or down: pointing at one lights its chain back and forward and draws only those links, labelled; columns fold to make room. |
 
 ## Components
 

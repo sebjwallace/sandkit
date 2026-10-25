@@ -6,6 +6,7 @@ Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking
 
 ## 0.2.56 · 2026-10-25
 - **Manifests name no other component.** Every component's "Works well with" section is gone, and the few manifests naming another in passing say it in plain words, so components stay agnostic of each other even in suggestions (a patch version for each). The practices say which components go together; `test/isolation` now checks manifests too. The decision, the contributing guide, `AGENTS.md`, the readme, the building guide and the template's `AGENTS.md` say so.
+- Fifty-nine components: added `sb-discovery-board`, the sandbox's own items in columns by the part they play, with an item's chain lit and its links drawn when pointed at. The domain discovery practice gains a Boards section: the three boards and their columns, links as signal, and composing the board with the cards.
 
 ## 0.2.55 · 2026-10-25
 - Fifty-eight components: added `sb-discovery-card`, one card of domain discovery in 26 kinds, compact, normal or expanded, in a new Discovery section of the catalog.

@@ -1,6 +1,6 @@
 # Domain discovery
 
-How a sandbox discovers a domain on purpose, one iteration at a time, keeping a record of what was learnt as cards and growing a working model alongside it. Read this when a sandbox is for finding out how something works, rather than showing what's already known, and before using [`sb-discovery-card`](../components/sb-discovery-card/manifest.md).
+How a sandbox discovers a domain on purpose, one iteration at a time, keeping a record of what was learnt as cards and growing a working model alongside it. Read this when a sandbox is for finding out how something works, rather than showing what's already known, and before using [`sb-discovery-card`](../components/sb-discovery-card/manifest.md) or [`sb-discovery-board`](../components/sb-discovery-board/manifest.md).
 
 ## Why it matters
 
@@ -103,3 +103,25 @@ People who know the domain try the prototype or a run and say what they think. T
 - **Sources are only ever compact cards.** Opened, a source is the material itself: answer `sb-open` on a source by showing it in [`sb-source`](../components/sb-source/manifest.md), and on a passage by going to the passage it quotes.
 - **Open other cards expanded,** in [`sb-modal`](../components/sb-modal/manifest.md).
 - **Route pointing both ways.** Cards announce `sb-highlight` for what's pointed at; route it to every card's `highlight`, so a source lights up wherever it's cited (see [highlighting](highlighting.md)).
+
+## Boards
+
+Each iteration is laid out on three boards in [`sb-discovery-board`](../components/sb-discovery-board/manifest.md), with the cards on them drawn compact. People switch between the boards and step between iterations.
+
+| Board | Columns, in order |
+|---|---|
+| What we know | Gathered (sources, and finished investigations beside them), Captured (observations), Interpreted (metrics, claims, definitions, opinions, feedback), Reasoned (inferences), Assumed, Open (questions), Under way (investigations still looking), Awaited |
+| Where we're going | Rests on (what a decision rests on from What we know, folded), In force (outcomes, goals, predictions, agreements, constraints standing), Decided, Brought about (experiments, actions, risks, and what a decision brought about in this iteration), Awaited |
+| What we're building | Founded on (folded), Proposed, Trying, Integrated, Runs, Met, Not met yet, Rejected |
+
+- **Columns hold a card's role in the iteration, not its kind.** An investigation is under way until a source it gathered arrives, then gathered; a prediction is brought about in the iteration its decision made it, and in force after.
+- **Links are signal, not noise.** Every link answers a question: what supports or disputes a claim, what shaped a decision or what it brought about, what a part is founded on. Label each with what it means ("supports", "rests on", "brought about"). What brought a card about is linked only in the iteration where it did; afterwards it stands in force, and that history stays on the card.
+- **Tone links by what they mean,** so a chain reads before its labels do: what supports, answers or bears out in `good`; what disputes, refutes or puts in doubt in `bad`; what rests on an assumption or constrains in `warn`; bookkeeping, such as gathered, captures or informs, `muted`; the rest the default accent.
+- **A grounding column holds only cards linked to the board's own,** folded, and links between two grounding cards are left out.
+- **Set the board again for each iteration:** its cards (compact, `openable`, as of that iteration), its columns and its links. Carried cards keep the `carried` mark.
+- **Fold cards with their column,** so a folded column shows each card's icon and code:
+  ```css
+  .sb-discovery-board__column--folded .sb-discovery-card__compact > :not(.sb-discovery-card__compact-head),
+  .sb-discovery-board__column--folded .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }
+  ```
+- **Opening and pointing are the cards'.** Answer their `sb-open` as above. Route `sb-highlight` to the board's `highlight` as well as every card's, and call the board's `reveal` from `goTo` (see [locating](locating.md)).
