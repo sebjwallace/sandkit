@@ -24,6 +24,30 @@
   <script src="../../components/sb-table/sb-table.js"></script>
   <script src="../../components/sb-discovery-card/sb-discovery-card.js"></script>
   <script src="../../components/sb-discovery-board/sb-discovery-board.js"></script>
+  <script src="../../engines/discovery/discovery.js"></script>
+  <script src="records/claims.js"></script>
+  <script src="records/questions.js"></script>
+  <script src="records/investigations.js"></script>
+  <script src="records/metrics.js"></script>
+  <script src="records/experiments.js"></script>
+  <script src="records/observations.js"></script>
+  <script src="records/assumptions.js"></script>
+  <script src="records/inferences.js"></script>
+  <script src="records/definitions.js"></script>
+  <script src="records/opinions.js"></script>
+  <script src="records/decisions.js"></script>
+  <script src="records/goals.js"></script>
+  <script src="records/predictions.js"></script>
+  <script src="records/outcomes.js"></script>
+  <script src="records/constraints.js"></script>
+  <script src="records/agreements.js"></script>
+  <script src="records/actions.js"></script>
+  <script src="records/risks.js"></script>
+  <script src="records/awaited.js"></script>
+  <script src="records/entities.js"></script>
+  <script src="records/primitives.js"></script>
+  <script src="records/scenarios.js"></script>
+  <script src="records/rules.js"></script>
 
   <style>
     body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
@@ -87,8 +111,6 @@
     .card-icon--source { --tone: var(--sb-text); }
 
     /* Slips: a passage of source material, on the source's paper. */
-    .pill { display: inline-flex; align-items: center; gap: 5px; padding: 0 3px 0 8px; border: 1px solid var(--sb-border); border-radius: 999px; font-size: 11px; white-space: nowrap; }
-    .pill-level { min-width: 16px; padding: 0 4px; border-radius: 999px; background: color-mix(in srgb, var(--sb-text) 10%, transparent); font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
 
     /* Questions and decisions side by side. */
     .asked { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; align-items: start; }
@@ -272,16 +294,15 @@
       <div>
         <h3>Scope: what a source can speak to</h3>
         <dl>
-          <dt>Role</dt><dd>Which kind of claim. A <b>record</b> speaks to what is or was, a <b>plan</b> to what should be, a <b>decision</b> to what was chosen, an <b>opinion</b> to what people think.</dd>
+          <dt>Speaks to</dt><dd><b>How things are</b>, as a record or an opinion does, which counts for a claim; or <b>what should be</b>, as a plan or a decision does, which shows but doesn't count.</dd>
           <dt>As of</dt><dd>Which moment it describes. An old source isn't worse; it speaks to an earlier time.</dd>
         </dl>
       </div>
       <div>
-        <h3>Grade: how well it speaks</h3>
+        <h3>Grade: how far to trust it</h3>
         <dl>
-          <dt>Distance</dt><dd>How far from what happened: direct, first-hand or second-hand.</dd>
-          <dt>Trust</dt><dd>Whether whoever made it is able and willing to get it right: trusted, unknown or doubtful.</dd>
-          <dt>Clarity</dt><dd>How well the record kept it: clean, partial or noisy.</dd>
+          <dt>Value</dt><dd>From 1 (weak) to 5 (strong), 3 ordinary, judged by whoever catalogued it. A claim's score adds up the grades of the sources for it, less those against.</dd>
+          <dt>Why</dt><dd>The reason, always written down, with any aspects that matter here, such as how far it is from what happened. A source not graded yet counts as 3, and says so.</dd>
         </dl>
       </div>
       <div>
@@ -354,69 +375,29 @@
     // Ashford International's departure board, and how it decides what to show. Trains come in
     // from the data feed; the board's controller turns each one into a line on the board.
     const SOURCES = [
-      { id: 'SRC-1', gatheredBy: 'INV-3', name: 'Display supplier', title: 'Board controller manual, v4.2', summary: 'How the supplier says the board decides what to show, and how its rules are set up.', path: 'sources/supplier/controller-manual-v4.2.pdf', format: 'document', role: 'plan', asOf: '2019', grade: { distance: 2, trust: 3, clarity: 3 } },
-      { id: 'SRC-2', gatheredBy: 'INV-1', name: 'Station camera', title: 'Board stills, Tuesday afternoon', summary: 'A photo of the main board every minute, from 14:00 to 15:00.', path: 'sources/board/stills-2026-10-06.png', format: 'image', role: 'record', asOf: '6 Oct 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-3', gatheredBy: 'INV-2', name: 'Dispatcher', title: 'Talk with a platform dispatcher', summary: 'Notes from twenty minutes on platform 4 with the afternoon dispatcher.', path: 'sources/interviews/dispatcher.md', format: 'notes', role: 'record', asOf: '7 Oct 2026', grade: { distance: 2, trust: 3, clarity: 2 } },
-      { id: 'SRC-4', gatheredBy: 'INV-4', name: 'Commuter newsletter', title: '“The board that cries On time”', summary: 'The commuter group’s newsletter, retelling a forum post.', path: 'sources/web/commuter-newsletter.html', format: 'web', role: 'record', asOf: '3 Oct 2026', copies: 'SRC-5', grade: { distance: 1, trust: 2, clarity: 3 } },
-      { id: 'SRC-5', gatheredBy: 'INV-4', name: 'Passenger forum', title: '“Board said On time, train never came”', summary: 'A passenger says the board showed On time for a train with no estimate.', path: 'sources/web/forum-on-time.html', format: 'web', role: 'opinion', asOf: '1 Oct 2026', grade: { distance: 1, trust: 1, clarity: 2 } },
-      { id: 'SRC-6', name: 'Agent', title: 'The board against the feed', summary: 'The agent’s reading of the stills against the train data feed for the same hour.', path: 'sources/analyses/board-against-feed.md', format: 'analysis', role: 'record', asOf: '7 Oct 2026', derivedFrom: 'SRC-2', grade: { distance: 2, trust: 2, clarity: 3 } },
-      { id: 'SRC-7', gatheredBy: 'INV-3', name: 'Customer services', title: 'Complaints log, September', summary: 'Every complaint made to the station in September, with its category.', path: 'sources/data/complaints-2026-09.csv', format: 'data', role: 'record', asOf: '30 Sep 2026', grade: { distance: 3, trust: 3, clarity: 2 } },
-      { id: 'SRC-8', gatheredBy: 'INV-3', name: 'Station team', title: 'Station team minute, 9 October', summary: 'The station team’s resolutions on the departure board.', path: 'sources/minutes/station-team-2026-10-09.pdf', format: 'document', role: 'decision', asOf: '9 Oct 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-9', name: 'Board controller', title: 'Message log, 19 to 25 October', summary: 'Every message the board showed in the week after the new rule, with the train it was for.', path: 'sources/board/message-log-2026-10-25.csv', format: 'data', role: 'record', asOf: '25 Oct 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-10', name: 'Customer services', title: 'Complaints log, October', summary: 'Every complaint made to the station in October, with its category.', path: 'sources/data/complaints-2026-10.csv', format: 'data', role: 'record', asOf: '31 Oct 2026', grade: { distance: 3, trust: 3, clarity: 2 } },
-      { id: 'SRC-11', name: 'Survey team', title: 'Passenger survey on the board', summary: 'Two hundred passengers asked which parts of the board they read before heading for a train.', path: 'sources/data/passenger-survey-2026-10.csv', format: 'data', role: 'record', asOf: '28 Oct 2026', grade: { distance: 2, trust: 3, clarity: 2 } },
-      { id: 'SRC-12', gatheredBy: 'INV-5', name: 'Duty manager', title: 'Notes from a busy morning', summary: 'The duty manager watched the main board through the morning peak.', path: 'sources/interviews/morning-peak.md', format: 'notes', role: 'record', asOf: '29 Oct 2026', grade: { distance: 2, trust: 3, clarity: 2 } },
-      { id: 'SRC-13', name: 'Station team', title: 'Station team minute, 6 November', summary: 'The station team’s resolutions after October’s results.', path: 'sources/minutes/station-team-2026-11-06.pdf', format: 'document', role: 'decision', asOf: '6 Nov 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-14', name: 'Signalling control', title: 'Letter of agreement, platform-change notice', summary: 'Signalling control and the station team agree how much notice of a platform change each gives.', path: 'sources/agreements/platform-change-notice.pdf', format: 'document', role: 'decision', asOf: '5 Nov 2026', grade: { distance: 3, trust: 3, clarity: 3 } },
-      { id: 'SRC-15', name: 'Sandbox model', title: 'Model run: October’s platform changes, replayed', summary: 'The board’s model replaying every platform change in October with PA announcements and seven minutes’ notice from signalling.', path: 'sources/runs/replay-2026-10.csv', format: 'data', role: 'record', asOf: '7 Nov 2026', grade: { distance: 2, trust: 2, clarity: 3 } },
+      { id: 'SRC-1', iteration: 1, gatheredBy: 'INV-3', name: 'Display supplier', title: 'Board controller manual, v4.2', summary: 'How the supplier says the board decides what to show, and how its rules are set up.', path: 'sources/supplier/controller-manual-v4.2.pdf', format: 'document', role: 'plan', speaksTo: 'what should be', asOf: '2019', grade: { value: 4, why: 'First-hand, trusted and clean.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-2', iteration: 1, gatheredBy: 'INV-1', name: 'Station camera', title: 'Board stills, Tuesday afternoon', summary: 'A photo of the main board every minute, from 14:00 to 15:00.', path: 'sources/board/stills-2026-10-06.png', format: 'image', role: 'record', asOf: '6 Oct 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-3', iteration: 1, gatheredBy: 'INV-2', name: 'Dispatcher', title: 'Talk with a platform dispatcher', summary: 'Notes from twenty minutes on platform 4 with the afternoon dispatcher.', path: 'sources/interviews/dispatcher.md', format: 'notes', role: 'record', asOf: '7 Oct 2026', grade: { value: 4, why: 'First-hand, trusted and partial.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'partial' } } },
+      { id: 'SRC-4', iteration: 1, gatheredBy: 'INV-4', name: 'Commuter newsletter', title: '“The board that cries On time”', summary: 'The commuter group’s newsletter, retelling a forum post.', path: 'sources/web/commuter-newsletter.html', format: 'web', role: 'record', asOf: '3 Oct 2026', copies: 'SRC-5', grade: { value: 3, why: 'Second-hand, unknown and clean.', aspects: { distance: 'second-hand', trust: 'unknown', clarity: 'clean' } } },
+      { id: 'SRC-5', iteration: 1, gatheredBy: 'INV-4', name: 'Passenger forum', title: '“Board said On time, train never came”', summary: 'A passenger says the board showed On time for a train with no estimate.', path: 'sources/web/forum-on-time.html', format: 'web', role: 'opinion', asOf: '1 Oct 2026', grade: { value: 2, why: 'Second-hand, doubtful and partial.', aspects: { distance: 'second-hand', trust: 'doubtful', clarity: 'partial' } } },
+      { id: 'SRC-6', iteration: 1, name: 'Agent', title: 'The board against the feed', summary: 'The agent’s reading of the stills against the train data feed for the same hour.', path: 'sources/analyses/board-against-feed.md', format: 'analysis', role: 'record', asOf: '7 Oct 2026', derivedFrom: 'SRC-2', grade: { value: 4, why: 'First-hand, unknown and clean.', aspects: { distance: 'first-hand', trust: 'unknown', clarity: 'clean' } } },
+      { id: 'SRC-7', iteration: 1, gatheredBy: 'INV-3', name: 'Customer services', title: 'Complaints log, September', summary: 'Every complaint made to the station in September, with its category.', path: 'sources/data/complaints-2026-09.csv', format: 'data', role: 'record', asOf: '30 Sep 2026', grade: { value: 4, why: 'Direct, trusted and partial.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'partial' } } },
+      { id: 'SRC-8', iteration: 1, gatheredBy: 'INV-3', name: 'Station team', title: 'Station team minute, 9 October', summary: 'The station team’s resolutions on the departure board.', path: 'sources/minutes/station-team-2026-10-09.pdf', format: 'document', role: 'decision', speaksTo: 'what should be', asOf: '9 Oct 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-9', iteration: 2, name: 'Board controller', title: 'Message log, 19 to 25 October', summary: 'Every message the board showed in the week after the new rule, with the train it was for.', path: 'sources/board/message-log-2026-10-25.csv', format: 'data', role: 'record', asOf: '25 Oct 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-10', iteration: 2, name: 'Customer services', title: 'Complaints log, October', summary: 'Every complaint made to the station in October, with its category.', path: 'sources/data/complaints-2026-10.csv', format: 'data', role: 'record', asOf: '31 Oct 2026', grade: { value: 4, why: 'Direct, trusted and partial.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'partial' } } },
+      { id: 'SRC-11', iteration: 2, name: 'Survey team', title: 'Passenger survey on the board', summary: 'Two hundred passengers asked which parts of the board they read before heading for a train.', path: 'sources/data/passenger-survey-2026-10.csv', format: 'data', role: 'record', asOf: '28 Oct 2026', grade: { value: 4, why: 'First-hand, trusted and partial.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'partial' } } },
+      { id: 'SRC-12', iteration: 2, gatheredBy: 'INV-5', name: 'Duty manager', title: 'Notes from a busy morning', summary: 'The duty manager watched the main board through the morning peak.', path: 'sources/interviews/morning-peak.md', format: 'notes', role: 'record', asOf: '29 Oct 2026', grade: { value: 4, why: 'First-hand, trusted and partial.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'partial' } } },
+      { id: 'SRC-13', iteration: 2, name: 'Station team', title: 'Station team minute, 6 November', summary: 'The station team’s resolutions after October’s results.', path: 'sources/minutes/station-team-2026-11-06.pdf', format: 'document', role: 'decision', speaksTo: 'what should be', asOf: '6 Nov 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-14', iteration: 2, name: 'Signalling control', title: 'Letter of agreement, platform-change notice', summary: 'Signalling control and the station team agree how much notice of a platform change each gives.', path: 'sources/agreements/platform-change-notice.pdf', format: 'document', role: 'decision', speaksTo: 'what should be', asOf: '5 Nov 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-15', iteration: 2, name: 'Sandbox model', title: 'Model run: October’s platform changes, replayed', summary: 'The board’s model replaying every platform change in October with PA announcements and seven minutes’ notice from signalling.', path: 'sources/runs/replay-2026-10.csv', format: 'data', role: 'record', asOf: '7 Nov 2026', grade: { value: 4, why: 'First-hand, unknown and clean.', aspects: { distance: 'first-hand', trust: 'unknown', clarity: 'clean' } } },
     ];
 
     // Each assertion: what the passage says to the claim, '+' (yes) or '−' (no), and its words.
-    const CLAIMS = [
-      { id: 'CLM-1', text: 'A train is taken off the board as soon as it has departed.', summary: 'The stills show it, and the agent’s reading of them agrees. The manual says the same, though a manual says how the board should work, not how it does. Well backed.', assertions: {
-        'SRC-2': ['+', '13:58 Hastings: on the board at 13:57, gone at 13:59, the minute the feed marked it departed.'],
-        'SRC-6': ['+', 'Every departed train left the board within a minute of the feed marking it departed. None stayed on.'],
-        'SRC-1': ['+', 'Departed services are removed from display.'],
-      } },
-      { id: 'CLM-2', text: 'Any delay, even a minute, shows an expected time instead of On time.', summary: 'The stills and the agent’s reading agree. The manual says delays under five minutes show On time, but it describes how the board was meant to work; the board itself does otherwise.', assertions: {
-        'SRC-2': ['+', '14:05 Cambridge, three minutes late in the feed: shown as Exp 14:08.'],
-        'SRC-6': ['+', 'All four delayed trains showed an expected time, whether one minute late or twelve.'],
-        'SRC-1': ['−', 'Delays of under five minutes are shown as On time.'],
-      } },
-      { id: 'CLM-3', text: 'When a train has no estimate, the board shows it as On time.', summary: 'Only the forum post says so, and the newsletter repeats it. The stills and the dispatcher both say such a train shows as Delayed. This leans false.', assertions: {
-        'SRC-5': ['+', 'No estimate on the app, and the board said On time right up until it vanished. Never came.'],
-        'SRC-4': ['+', 'One commuter reports the board showing On time for a train that had no estimate at all.'],
-        'SRC-2': ['−', '14:12 Dover Priory, no estimate in the feed: shown as Delayed, platform –.'],
-        'SRC-3': ['−', 'If there’s no estimate it says Delayed. I’ve never seen it say On time for one of those.'],
-      } },
-      { id: 'CLM-4', text: 'Until a platform is confirmed, the board shows a dash.', summary: 'The stills show it, and the dispatcher sees it every day. Well backed.', assertions: {
-        'SRC-2': ['+', '14:20 Bedford, platform unconfirmed in the feed: platform column shows –.'],
-        'SRC-3': ['+', 'Until signalling confirms a platform we get a dash, and people crowd the concourse waiting for it.'],
-      } },
-      { id: 'CLM-5', informs: ['QST-1'], text: 'A changed platform shows only in the platform column, with no message.', summary: 'The agent’s reading of the stills. Nothing disputes it, but nothing else checks it either.', assertions: {
-        'SRC-6': ['+', 'Gatwick Airport moved from platform 3 to 9: the platform column showed 9, and the message line stayed blank.'],
-      } },
-    ];
 
     // Who raised each claim: who grouped its assertions and wrote its line.
     for (const claim of CLAIMS) claim.raisedBy ??= 'Agent';
 
     // A question is raised by a passage, and answered by passages from any source.
-    const QUESTIONS = [
-      { id: 'QST-1', text: 'Why does a changed platform get no message?',
-        answer: 'Because no rule covers it. The board has message rules for cancellations and delays only; a new platform shows in the platform column and nowhere else.',
-        raisedBy: ['SRC-3', 'Platform changes are the worst. The number changes and nothing else does, so half of them miss it.'],
-        answers: {
-          'SRC-1': 'Messages: cancellation, with reason; delay, with reason. Further message rules may be added in configuration.',
-          'SRC-6': 'None of the board’s message rules mentions the platform, so a change shows only in the platform column.',
-        } },
-      { id: 'QST-2', text: 'Does the board change anything as a train becomes due?',
-        answer: 'No. Nothing on a train’s line changes as it becomes due; the board never says Boarding.',
-        raisedBy: ['SRC-8', 'The team asks whether the board ever says Boarding, or marks a train about to leave.'],
-        answers: {
-          'SRC-12': 'Between 07:30 and 09:00 the board never said Boarding; nothing on a train’s line changed as it became due.',
-        } },
-    ];
 
     // No card is ever edited, only superseded or tested by a later one, so every iteration can be
     // read as it was. What follows from the cards, such as an assumption being refuted, is worked
@@ -427,210 +408,46 @@
     // question, an assumption or a prediction may prompt it; what it gathers is source material,
     // even when the agent fetched it, and the cards written from it come after. It's done once
     // something it gathered has arrived.
-    const INVESTIGATIONS = [
-      { id: 'INV-1', form: 'watching', by: 'Agent',
-        text: 'See what the board actually shows, minute by minute.',
-        how: 'Ask for a photo of the main board every minute through a Tuesday afternoon.' },
-      { id: 'INV-2', form: 'interview', by: 'Station team',
-        text: 'Hear how the board behaves from someone who works under it.',
-        how: 'Twenty minutes on platform 4 with the afternoon dispatcher, notes taken on the spot.' },
-      { id: 'INV-3', form: 'desk research', by: 'Agent',
-        text: 'Find how the board is meant to work, and what the station has decided about it.',
-        how: 'Gather the supplier’s manual, the complaints log and the station team’s minutes.' },
-      { id: 'INV-4', form: 'web search', by: 'Agent',
-        text: 'Find what passengers say about the board.',
-        how: 'Search the passenger forum and local commuter groups for posts about the board.' },
-      { id: 'INV-5', prompt: 'QST-2', form: 'watching', by: 'Duty manager',
-        text: 'Find whether anything on the board changes as a train becomes due.',
-        how: 'Watch the main board through a morning peak, noting what changes in each train’s last minutes.' },
-      { id: 'INV-6', prompt: 'PRD-2', form: 'desk research', by: 'Agent',
-        text: 'Find how stations that already announce platform changes on the PA have fared.',
-        how: 'Search rail industry reports, and other stations’ published complaint figures from before and after they began announcing changes.' },
-    ];
 
     // A metric: a quantity tracked over time, what's counted, from where and how often. Goals set
     // targets on it, predictions forecast it, and observations are its readings.
-    const METRICS = [
-      { id: 'MET-1', name: 'Missed trains after a platform change', unit: 'passengers', every: 'month',
-        counted: 'Complaints from passengers who missed a train after a platform change.',
-        from: 'The customer services complaints log' },
-      { id: 'MET-2', name: 'Passengers who read the message line', unit: 'percent', every: 'survey',
-        counted: 'The share of surveyed passengers who say they read the message line under each train before heading for it.',
-        from: 'The passenger survey' },
-    ];
 
     // An experiment: a test run on purpose, somewhere safe, rather than waiting for the world to
     // answer: on the world (a survey, a trial) or on the model (a simulation in the sandbox,
     // instant and free of risk, but only as good as the model). What would bear it out is written
     // before it runs. Its results arrive as observations, so it's done once one has.
-    const EXPERIMENTS = [
-      { id: 'EXP-1', from: 'DEC-1', form: 'survey', on: 'world', tests: ['ASM-1'],
-        text: 'Ask two hundred passengers which parts of the board they read before heading for a train.',
-        method: 'The survey team on the concourse over three days, at the morning peak, midday and the evening peak.',
-        keeps: 'The board as it is, so the answers describe the board passengers know.',
-        counts: 'The share of passengers who read each part of the board.',
-        bearsOutIf: 'Most passengers say they read the message line.',
-        setIn: ['SRC-8', 'The team asks for a survey of which parts of the board passengers read.'] },
-      { id: 'EXP-2', from: 'DEC-2', form: 'trial', on: 'world', tests: ['PRD-2'],
-        text: 'Announce platform changes on the PA for one week, on platforms 3 and 9 only.',
-        method: 'Every platform change for a train from platforms 3 or 9 is announced on the PA as soon as signalling confirms it.',
-        keeps: 'The board’s message on every platform, and the other platforms without PA announcements.',
-        counts: 'Passengers missing a train after a platform change, on platforms 3 and 9 against the rest.',
-        bearsOutIf: 'Platforms 3 and 9 miss fewer trains than the rest, at a rate that would reach two or fewer a month station-wide.',
-        setIn: ['SRC-13', 'Before the whole station, the PA announcements run for a week on platforms 3 and 9 only.'] },
-      { id: 'EXP-3', from: 'DEC-2', form: 'simulation', on: 'model', tests: ['PRD-2'],
-        text: 'Replay October’s platform changes through the board’s model, with PA announcements and seven minutes’ notice from signalling.',
-        method: 'The sandbox runs every platform change in October’s feed through the model, as DEC-2, AGR-1 and CON-3 would have it.',
-        keeps: 'October’s trains and platform changes, exactly as they were.',
-        counts: 'Changes announced at least five minutes before departure, as CON-2 asks.',
-        bearsOutIf: 'Every change is announced in time.',
-        setIn: ['SRC-13', 'First, the sandbox replays October\'s platform changes with the new arrangement.'] },
-    ];
 
     // An observation: a value captured from source material, exactly where it sits and when it
     // held, with no interpretation. One that reads a metric names it, one that tests an assumption
     // or a prediction says which way, and one an experiment produced names it.
-    const OBSERVATIONS = [
-      { id: 'OBS-1', metric: 'MET-1', value: '12', of: 'Missed trains after a platform change', when: 'September 2026',
-        at: ['SRC-7', 'Missed train after platform change,12'] },
-      { id: 'OBS-2', metric: 'MET-1', value: '5', of: 'Missed trains after a platform change', when: 'October 2026',
-        at: ['SRC-10', 'Missed train after platform change,5'] },
-      { id: 'OBS-3', metric: 'MET-2', value: '38%', of: 'Passengers who read the message line under each train', when: 'October 2026',
-        at: ['SRC-11', 'Message line under each train,38%'], tests: ['ASM-1', '−'], resultOf: 'EXP-1' },
-      { id: 'OBS-4', value: '3 of 34', of: 'Platform changes that would still be announced under five minutes before departure', when: 'October 2026, replayed',
-        at: ['SRC-15', 'Announced under five minutes before departure,3'], tests: ['PRD-2', '−'], resultOf: 'EXP-3' },
-    ];
 
     // An assumption: something held without evidence, which decisions may rest on. Its parts are
     // its exposure: how it could be tested, and what follows if it's wrong. Tests come as later
     // cards, never as edits to it.
-    const ASSUMPTIONS = [
-      { id: 'ASM-1', heldBy: 'Station team', text: 'Passengers read the message line under each train.',
-        testBy: 'Ask passengers which parts of the board they read before heading for a train.',
-        ifWrong: 'A message alone won’t reach most passengers, so DEC-1 can’t bring the goal much closer.',
-        setIn: ['SRC-8', 'The team expects passengers to see a message under the train, as they do for delays.'] },
-    ];
 
     // An inference: reasoned from other cards rather than read in a source. It holds only as well
     // as its premises do.
-    const INFERENCES = [
-      { id: 'INF-1', raisedBy: 'Agent', premises: ['CLM-5', 'OBS-1'],
-        text: 'Passengers miss trains after a platform change because nothing but the platform number tells them.',
-        step: 'A changed platform shows only as a new number in the platform column (CLM-5), and twelve passengers missed trains after a change in September (OBS-1).' },
-    ];
 
     // A definition: what a term means here, so everyone reads it the same way. Every name in the
     // model should be founded on one, so the model speaks the domain's own words.
-    const DEFINITIONS = [
-      { id: 'DEF-1', term: 'Delay', meaning: 'How late a train is, in whole minutes. Five minutes or more is a major delay; anything less is a minor one.',
-        example: 'A train three minutes late has a minor delay; the board still shows its expected time (CLM-2).',
-        setIn: ['SRC-1', 'A delay of five minutes or more is a major delay; anything less is a minor delay.'] },
-      { id: 'DEF-2', term: 'Train', meaning: 'A service scheduled to leave the station for a destination at a set time.',
-        example: 'The 14:05 to Cambridge.',
-        setIn: ['SRC-1', 'A service is a train scheduled to leave the station for a destination at a set time.'] },
-      { id: 'DEF-3', term: 'Board', meaning: 'The main departure board: one line per train, in order of scheduled departure.',
-        example: 'The board on the concourse, above the ticket gates.',
-        setIn: ['SRC-1', 'The display shows one line per service, in order of scheduled departure.'] },
-      { id: 'DEF-4', term: 'Platform', meaning: 'Where a train leaves from: one of the station’s platforms, numbered 1 to 12.',
-        example: 'Platform 9, where the Gatwick Airport train moved from platform 3.',
-        setIn: ['SRC-3', 'Platforms run from 1 to 12. Three and nine are the ones that swap most.'] },
-      { id: 'DEF-5', term: 'Clock time', meaning: 'A time of day by the station clock, in hours and minutes on the 24-hour clock.',
-        example: '14:05.',
-        setIn: ['SRC-1', 'All times are shown on the 24-hour clock, by the station clock.'] },
-    ];
 
     // An opinion: what someone thinks should be, and why. It voices a view, so it bears on goals
     // and decisions without being evidence of how things are.
-    const OPINIONS = [
-      { id: 'OPN-1', heldBy: 'Dispatcher', text: 'The board, not staff, should tell passengers about a platform change.',
-        because: 'Staff walking the platform reach too few people, and too late.',
-        said: ['SRC-3', 'The board should be telling them, not us running up and down the platform.'] },
-    ];
 
     // A decision: the question, what was decided and why, the options weighed, and the
     // passages behind it.
-    const DECISIONS = [{
-      id: 'DEC-1',
-      title: 'How should the board tell passengers about a platform change?',
-      status: 'accepted',
-      when: '2026-10-09',
-      deciders: ['Station team'],
-      options: [
-        { id: 'a', title: 'Leave the board as it is', pros: ['No work'], cons: ['Twelve missed trains a month'] },
-        { id: 'b', title: 'Add a message: “Platform changed to 9”', source: 'SRC-1', pros: ['A change of settings, no new hardware'], cons: ['Only works if people read the message line'] },
-        { id: 'c', title: 'Flash the platform number', pros: ['Hard to miss'], cons: ['Needs a supplier upgrade'] },
-      ],
-      chosen: 'b',
-      restsOn: ['GOL-1', 'CON-1', 'CON-2', 'CLM-5', 'ASM-1', 'QST-1'],
-      decided: 'We add a message rule: when a train’s platform changes, the message line says “Platform changed to” and the new number.',
-      reason: 'It answers QST-1 directly, needs only a change of settings, and can be in place this week, well before trains leave. Flashing would need a supplier upgrade, which CON-1 rules out.',
-      sources: [
-        { source: 'SRC-8', quote: 'Resolved: add a message to the board whenever a train’s platform changes.' },
-        { source: 'SRC-1', quote: 'Further message rules may be added in configuration.' },
-        { source: 'SRC-6', quote: 'None of the board’s message rules mentions the platform, so a change shows only in the platform column.' },
-      ],
-    }, {
-      id: 'DEC-2',
-      title: 'How do platform changes reach the passengers who don’t read the message line?',
-      status: 'accepted',
-      when: '2026-11-06',
-      deciders: ['Station team'],
-      options: [
-        { id: 'a', title: 'Keep the message alone', pros: ['No more work'], cons: ['Five missed trains a month'] },
-        { id: 'b', title: 'Announce platform changes on the PA too', pros: ['Reaches people who never read the message line'], cons: ['Signalling has to confirm changes earlier'] },
-        { id: 'c', title: 'Flash the platform number', pros: ['Hard to miss'], cons: ['Needs a supplier upgrade, which CON-1 rules out'] },
-      ],
-      chosen: 'b',
-      restsOn: ['OUT-2', 'GOL-1', 'CON-1', 'CON-2', 'OBS-3'],
-      decided: 'We announce every platform change on the PA as well as the board.',
-      reason: 'Fewer than four in ten passengers read the message line (OBS-3), so the message alone can’t reach the goal. The PA reaches everyone on the concourse, and needs no change to the board.',
-      sources: [
-        { source: 'SRC-13', quote: 'Resolved: announce every platform change on the PA as well as the board.' },
-        { source: 'SRC-11', quote: 'Message line under each train,38%' },
-      ],
-    }];
 
 
     // A goal: where the sandbox is trying to get to, as a target on a metric, and where things
     // stand against it. Decisions are made towards it, and judged by whether they bring it closer.
-    const GOALS = [
-      { id: 'GOL-1', text: 'No more than two missed trains a month from platform changes, by January.', status: 'off track',
-        metric: 'MET-1', target: 'Two or fewer a month, by January.',
-        setIn: ['SRC-8', 'Target: no more than two missed-train complaints a month from platform changes, by January.'] },
-    ];
 
     // A prediction: what a decision says will happen, by when, and how it will be measured. A goal
     // is where we want to be; a prediction is a decision's own bet on what it will bring about. An
     // outcome measured against it later says whether it was borne out.
-    const PREDICTIONS = [
-      { id: 'PRD-1', from: 'DEC-1', by: 'October 2026',
-        text: 'Missed trains after a platform change fall from twelve to a handful.',
-        metric: 'MET-1' },
-      { id: 'PRD-2', from: 'DEC-2', by: 'December 2026',
-        text: 'Missed trains after a platform change fall to two or fewer.',
-        metric: 'MET-1' },
-    ];
 
     // An outcome: feedback from the world. What happened, measured against a goal or a
     // prediction, so it says whether things worked; and what it teaches, which shapes what comes
     // next. Failures tend to bring constraints, successes the practices worth keeping.
-    const OUTCOMES = [
-      { id: 'OUT-1', result: 'failed', against: 'GOL-1', from: ['OBS-1', 'INF-1'],
-        text: 'Passengers miss trains when a platform changes: twelve in September.',
-        teaches: 'A platform change shown only in the platform column goes unseen. Passengers need telling some other way.',
-        sources: [
-          { source: 'SRC-7', quote: 'Missed train after platform change,12' },
-          { source: 'SRC-3', quote: 'Platform changes are the worst. The number changes and nothing else does, so half of them miss it.' },
-        ] },
-      { id: 'OUT-2', result: 'partly', against: 'GOL-1', from: ['OBS-2'],
-        text: 'Missed trains after a platform change fell from twelve to five in October.',
-        teaches: 'The message helps, but it doesn’t reach everyone: more than half the misses went, but not enough to meet the goal.',
-        sources: [{ source: 'SRC-10', quote: 'Missed train after platform change,5' }] },
-      { id: 'OUT-3', result: 'worked', against: 'PRD-1', from: ['OBS-2'],
-        text: 'Missed trains after a platform change fell to five in October: the handful DEC-1 predicted.',
-        teaches: 'The message did what was predicted of it. The prediction was too modest for the goal, not wrong.',
-        sources: [{ source: 'SRC-10', quote: 'Missed train after platform change,5' }] },
-    ];
 
     // A constraint: a limit the system has to work within, as goals pull it forward. Hard ones can't
     // be moved; soft ones could be, at a cost. What it rules out says how it shapes decisions.
@@ -639,79 +456,20 @@
     // about in this step names what brought it about as its from; without one, it was in force.
     // Causes: nature, scarcity, the unknown, someone's goal, a past decision, an agreement, a
     // failure, values, or the system's own structure.
-    const CONSTRAINTS = [
-      { id: 'CON-1', text: 'The board’s logic can only change through its message rules; anything else needs a supplier upgrade.', firmness: 'hard', status: 'holds',
-        rulesOut: 'Flashing the platform number, or changing how the platform column shows a change.',
-        comesFrom: { cause: 'a past decision', text: 'The supplier’s design: everything but the message rules was fixed in the controller’s firmware when the board was bought.' },
-        protects: 'The supplier’s goal of a board it can support, so every deeper change goes through an upgrade it has tested.',
-        setIn: ['SRC-1', 'Display logic other than message rules is fixed in firmware, and changes to it need a supplier upgrade.'] },
-      { id: 'CON-2', text: 'A platform change must reach passengers at least five minutes before departure.', firmness: 'soft', status: 'holds',
-        rulesOut: 'Relying on staff calling out the change along the platform, which often comes too late.',
-        comesFrom: { cause: 'values', text: 'The station’s accessibility policy. The station team set it, and could change it.' },
-        protects: 'Passengers with reduced mobility, who need time to reach a new platform.',
-        setIn: ['SRC-8', 'As station policy, platform changes must reach passengers at least five minutes before departure, so those with reduced mobility can reach the new platform.'] },
-      { id: 'CON-3', from: 'AGR-1', text: 'Signalling must confirm a platform change at least seven minutes before departure.', firmness: 'soft', status: 'holds',
-        rulesOut: 'Late platform changes, made with no time left to announce them.',
-        comesFrom: { cause: 'an agreement', text: 'AGR-1, the station’s agreement with signalling control.' },
-        protects: 'CON-2’s five minutes’ notice for passengers: announcing takes about two, so signalling must confirm seven ahead.',
-        setIn: ['SRC-14', 'Signalling control will confirm every platform change at Ashford International at least seven minutes before the train\'s departure.'] },
-    ];
 
     // An agreement: terms between parties, such as a standard, a protocol, a convention or a
     // contract. Decided between several parties, it stands in force from then on, a common
     // cause of constraints, and can only be changed with the parties to it.
-    const AGREEMENTS = [
-      { id: 'AGR-1', from: 'DEC-2', status: 'in force', parties: ['Signalling control', 'Station team'],
-        text: 'Signalling confirms every platform change at least seven minutes before departure, and the station announces it at once.',
-        sides: 'Signalling control confirms each change seven minutes ahead. The station team announces it on the PA and the board straight away.',
-        changedBy: 'Either side asking to review the terms, at three months’ notice.',
-        setIn: ['SRC-14', 'Either side may ask to review these terms at three months\' notice.'] },
-    ];
 
     // An action: something that has to happen, who owns it, and how anyone can tell it's done.
     // done names the source that shows it was, so it counts as done from when that arrives.
-    const ACTIONS = [
-      { id: 'ACT-1', from: 'DEC-1', text: 'Add the platform-change message rule on the board controller.', status: 'to do',
-        owner: 'Station systems lead', due: '2026-10-16',
-        doneWhen: 'The board’s message log shows “Platform changed to …” for the next train whose platform changes.',
-        why: 'DEC-1 only helps once the board shows it.',
-        done: 'SRC-9',
-        sources: [
-          { source: 'SRC-1', quote: 'Message rules are added under Configuration › Messages, and apply from the next refresh.' },
-          { source: 'SRC-9', quote: '2026-10-20 14:15,Gatwick Airport,Platform changed to 9' },
-        ] },
-      { id: 'ACT-2', from: 'DEC-2', text: 'Set the PA to announce every platform change as soon as signalling confirms it.', status: 'to do',
-        owner: 'Station systems lead', due: '2026-11-20',
-        doneWhen: 'The PA log shows an announcement for every platform change over a week.',
-        why: 'DEC-2 only helps if every change is announced, not just the ones staff notice.',
-        sources: [{ source: 'SRC-13', quote: 'Resolved: announce every platform change on the PA as well as the board.' }] },
-    ];
 
     // A risk: something that could go wrong, how likely and how bad, and how it's handled.
-    const RISKS = [
-      { id: 'RSK-1', from: ['DEC-1', 'ASM-1'], text: 'Passengers don’t read the message line, so a changed platform still goes unseen.', status: 'open',
-        raisedBy: 'Agent', likelihood: 'possible', impact: 'serious',
-        ifItHappens: 'Complaints stay near twelve a month, and the goal stays off track.',
-        handling: 'Watch October’s complaints. If they don’t fall, look again at flashing the platform number.',
-        sources: [
-          { source: 'SRC-3', quote: 'On a busy platform people glance up for the number and go.' },
-        ] },
-    ];
 
 
     // Awaited: material a card is waiting for from the world. An action waits for what shows
     // it's done, a risk for what to watch, a question for what would answer it, an assumption
     // for what would test it. When it arrives it becomes a source, and the loop turns once.
-    const AWAITED = [
-      { id: 'NEXT-1', title: 'Board message log after the new rule', for: 'ACT-1', why: 'shows it’s done' },
-      { id: 'NEXT-2', title: 'Complaints log, October', for: 'RSK-1', why: 'to watch' },
-      { id: 'NEXT-3', title: 'Notes from a busy morning', for: 'INV-5', why: 'what it finds' },
-      { id: 'NEXT-4', title: 'Passenger survey on the board', for: 'EXP-1', why: 'its result' },
-      { id: 'NEXT-5', title: 'PA announcement log, one week', for: 'ACT-2', why: 'shows it’s done' },
-      { id: 'NEXT-6', title: 'Complaints log, December', for: 'PRD-2', why: 'would bear it out or not' },
-      { id: 'NEXT-7', title: 'Trial log, platforms 3 and 9', for: 'EXP-2', why: 'its result' },
-      { id: 'NEXT-8', title: 'Reports from stations that announce changes', for: 'INV-6', why: 'what it finds' },
-    ];
 
     // The domain model, as code. Domain primitives check their constraints when made and have no
     // behaviour; entities have properties typed by primitives, and behaviour. The cards on What
@@ -847,23 +605,7 @@
     // Entities and domain primitives proposed for the model: a name, what it's for, and the cards
     // it's founded on. That's all anyone writes; once integrated, the rest is drawn from its class.
     // A proposal that doesn't earn its place is rejected, with why, and stays on record.
-    const ENTITIES = [
-      { id: 'ENT-1', name: 'Train', proposedBy: 'Agent', foundedOn: ['DEF-2', 'CLM-1', 'CLM-2', 'CLM-4', 'INV-3'],
-        purpose: 'A service leaving the station: when, where to, from which platform, and how late.' },
-      { id: 'ENT-2', name: 'Board', proposedBy: 'Agent', foundedOn: ['DEF-3', 'CLM-1', 'CLM-3', 'CON-1', 'QST-1'],
-        purpose: 'The departure board: which trains it shows, and the line it shows for each.' },
-      { id: 'ENT-3', name: 'Platform', proposedBy: 'Agent', foundedOn: ['DEF-4', 'CLM-4', 'CLM-5'],
-        purpose: 'A platform as a thing in its own right.',
-        rejected: { in: 1, why: 'It has no state or behaviour of its own: every rule about platforms needs only its number. The Platform primitive (PRM-2) does the job with one less moving part.' } },
-      { id: 'ENT-4', name: 'Announcement', proposedBy: 'Agent', foundedOn: ['DEC-2', 'CON-2', 'CON-3'],
-        purpose: 'A PA announcement of a platform change: for which train, and how long before it leaves.' },
-    ];
 
-    const PRIMITIVES = [
-      { id: 'PRM-1', name: 'Delay', proposedBy: 'Agent', foundedOn: ['DEF-1', 'CLM-2', 'CLM-3'], purpose: 'How late a train is.' },
-      { id: 'PRM-2', name: 'Platform', proposedBy: 'Agent', foundedOn: ['DEF-4', 'CLM-4', 'CLM-5'], purpose: 'Which platform a train leaves from.' },
-      { id: 'PRM-3', name: 'Clock time', proposedBy: 'Agent', foundedOn: ['DEF-5', 'CLM-1'], purpose: 'A time of day at the station.' },
-    ];
 
     // The model's classes by name, as they stood by an iteration, so tests read naturally.
     const asClassName = name => name.split(/\s+/).map(word => word[0].toUpperCase() + word.slice(1)).join('');
@@ -974,77 +716,9 @@
 
     // A scenario: Given, When and Then steps, founded on cards, and the code that plays them against
     // the model, giving each step's result (null where it isn't checked).
-    const SCENARIOS = [
-      { id: 'SCN-1', title: 'A departed train leaves the board', foundedOn: ['CLM-1'],
-        steps: [{ keyword: 'Given', text: 'the 13:58 to Hastings has departed' }, { keyword: 'Then', text: 'the board doesn’t show it' }],
-        play: M => {
-          const train = trainFor(M, { time: '13:58', destination: 'Hastings', platform: 1, departed: true });
-          return [null, { ok: !new M.Board([train]).shows(train), actual: 'it is still shown' }];
-        } },
-      { id: 'SCN-2', title: 'A cancelled train shows why', foundedOn: ['QST-1'],
-        steps: [{ keyword: 'Given', text: 'the 14:10 to Reading is cancelled due to a shortage of train crew' },
-          { keyword: 'Then', text: 'its message line says "Cancelled due to a shortage of train crew"' }],
-        play: M => {
-          const train = trainFor(M, { time: '14:10', destination: 'Reading', platform: 5, cancelled: true, reason: 'a shortage of train crew' });
-          const message = new M.Board([train]).messageFor(train);
-          return [null, { ok: message === 'Cancelled due to a shortage of train crew', actual: message || 'an empty message line' }];
-        } },
-      { id: 'SCN-3', title: 'A major delay shows why', foundedOn: ['DEF-1', 'QST-1'],
-        steps: [{ keyword: 'Given', text: 'the 14:08 to Oxford is 12 minutes late because of a signal fault' },
-          { keyword: 'Then', text: 'its message line says "Delayed due to a signal fault"' }],
-        play: M => {
-          const train = trainFor(M, { time: '14:08', destination: 'Oxford', platform: 7, delay: 12, reason: 'a signal fault' });
-          const message = new M.Board([train]).messageFor(train);
-          return [null, { ok: message === 'Delayed due to a signal fault', actual: message || 'an empty message line' }];
-        } },
-      { id: 'SCN-4', title: 'A minor delay shows its expected time', foundedOn: ['CLM-2', 'DEF-1'],
-        steps: [{ keyword: 'Given', text: 'the 14:05 to Cambridge is 3 minutes late' },
-          { keyword: 'Then', text: 'its expected time is "14:08"' }, { keyword: 'And', text: 'its message line is empty' }],
-        play: M => {
-          const train = trainFor(M, { time: '14:05', destination: 'Cambridge', platform: 2, delay: 3 });
-          const expected = train.expected()?.text, message = new M.Board([train]).messageFor(train);
-          return [null, { ok: expected === '14:08', actual: expected ?? 'no expected time' }, { ok: message === '', actual: message }];
-        } },
-      { id: 'SCN-5', title: 'A changed platform shows a message', foundedOn: ['CLM-5', 'DEC-1'],
-        steps: [{ keyword: 'Given', text: 'the 14:15 to Gatwick Airport was planned for platform 3' },
-          { keyword: 'And', text: 'it now leaves from platform 9' }, { keyword: 'Then', text: 'its message line says "Platform changed to 9"' }],
-        play: M => {
-          const train = trainFor(M, { time: '14:15', destination: 'Gatwick Airport', platform: 9, planned: 3 });
-          const message = new M.Board([train]).messageFor(train);
-          return [null, null, { ok: message === 'Platform changed to 9', actual: message || 'an empty message line' }];
-        } },
-      { id: 'SCN-6', title: 'A platform change is announced in time', foundedOn: ['DEC-2', 'CON-2', 'CON-3'],
-        steps: [{ keyword: 'Given', text: 'the 14:15 to Gatwick Airport is moved from platform 3 to 9' },
-          { keyword: 'When', text: 'signalling confirms the change at 14:07' },
-          { keyword: 'Then', text: 'the PA announces it by 14:10, five minutes before departure' }],
-        play: M => {
-          if (!M.Announcement) throw new Error('The model has no Announcement: ENT-4 isn’t in it.');
-          const train = trainFor(M, { time: '14:15', destination: 'Gatwick Airport', platform: 9, planned: 3 });
-          const announcement = new M.Announcement({ train, confirmedAt: new M.ClockTime('14:07') });
-          const at = announcement.announcedAt().text;
-          return [null, null, { ok: announcement.inTime() && at <= '14:10', actual: `announced at ${at}` }];
-        } },
-    ];
 
     // A rule: in sb-rule's grammar, a mandate or a conditional, founded on cards, and the code that
     // checks it across the afternoon's trains.
-    const RULES = [
-      { id: 'RUL-1', kind: 'MANDATE', title: 'Departed trains leave the board', foundedOn: ['CLM-1'],
-        lines: [{ text: 'a departed train MUST NOT be shown on the board' }],
-        check: M => {
-          const board = new M.Board([]);
-          return AFTERNOON.map(f => trainFor(M, f)).filter(t => t.departed && board.shows(t)).map(t => `the ${t.time.text} to ${t.destination}`);
-        } },
-      { id: 'RUL-2', kind: 'CONDITIONAL', title: 'A changed platform is always told', foundedOn: ['CLM-5', 'DEC-1', 'OPN-1'],
-        lines: [{ keyword: 'Given', text: 'a running train on the board' }, { keyword: 'If', text: 'its platform has changed' },
-          { keyword: 'Then', text: 'its message line MUST say so', depth: 1 }],
-        check: M => {
-          const board = new M.Board([]);
-          return AFTERNOON.map(f => trainFor(M, f))
-            .filter(t => !t.departed && !t.cancelled && t.platformChanged() && !board.messageFor(t).startsWith('Platform changed'))
-            .map(t => `the ${t.time.text} to ${t.destination}, whose message reads “${board.messageFor(t) || 'nothing'}”`);
-        } },
-    ];
 
     // What each source's file holds, as it would be read from disk. A demo opened straight from
     // the computer can't read files, so the text lives here. The board stills are drawn below.
@@ -1211,82 +885,16 @@ Not announced,0
 
     // Where each card's passage sits on the stills: [still, row].
     const STILL_PASSAGES = { 'CLM-1': [0, 0], 'CLM-2': [1, 1], 'CLM-3': [0, 3], 'CLM-4': [1, 4] };
-    // Each grade's words, from low (1) to high (3).
-    const GRADES = {
-      distance: ['second-hand', 'first-hand', 'direct'],
-      trust: ['doubtful', 'unknown', 'trusted'],
-      clarity: ['noisy', 'partial', 'clean'],
-    };
-
-    // Working out standing
-
+    // Weighing claims is the discovery engine's. The page gives it the sources, each with the iteration
+    // it arrived in, and the claims, and asks how a claim stood as of an iteration.
     const sourceById = id => SOURCES.find(s => s.id === id);
-    const says = (claim, id) => claim.assertions[id][0];
-
-    // A source that copies another is counted as the one it copies.
-    function originOf(id) {
-      let source = sourceById(id);
-      while (source.copies) source = sourceById(source.copies);
-      return source.id;
-    }
-
-    // Only a source that speaks to how things are can back a claim about the world: a record or
-    // an opinion. A plan says what should happen and a decision what was chosen, so their
-    // passages show on the card but aren't counted.
-    const inScope = id => ['record', 'opinion'].includes(sourceById(id).role);
-
-    function independent(claim, mark) {
-      const origins = Object.keys(claim.assertions).filter(id => says(claim, id) === mark && inScope(id)).map(originOf);
-      return new Set(origins).size;
-    }
-
-    function standing(claim) {
-      const supporters = independent(claim, '+'), opponents = independent(claim, '−');
-      if (supporters && opponents) return 'contested';
-      if (opponents) return 'refuted';
-      if (supporters >= 2) return 'corroborated';
-      if (supporters) return 'single source';
-      return 'unbacked';
-    }
-
-    // What holds a claim up, from its counted yeses: observed when data or an image backs it, reported when
-    // someone says so first-hand, inferred when only an analysis does. With nothing behind it, a
-    // claim is a conjecture, or an assumption once something rests on it.
-    function basis(claim) {
-      const backers = Object.keys(claim.assertions).filter(id => says(claim, id) === '+' && inScope(id)).map(sourceById);
-      if (backers.some(source => ['data', 'image'].includes(source.format))) return 'observed';
-      if (backers.some(source => !source.derivedFrom)) return 'reported';
-      if (backers.length) return 'inferred';
-      return reliedOnBy(claim).length ? 'assumption' : 'conjecture';
-    }
 
     // What rests on a card. Awaited material only waits on it, so it doesn't count.
     const reliedOnBy = card => links().filter(([from, to]) => from === card.id && !to.startsWith('NEXT')).map(([, to]) => to);
 
-    const isCopy = (claim, id) => sourceById(id).copies && claim.assertions[originOf(id)] && says(claim, originOf(id)) === says(claim, id);
-
-    // Repeats sit under the source they repeat.
-    function orderedSources(claim) {
-      const ids = Object.keys(claim.assertions);
-      const originals = ids.filter(id => !isCopy(claim, id));
-      return originals.flatMap(id => [id, ...ids.filter(other => isCopy(claim, other) && originOf(other) === id)]);
-    }
-
-    // An assertion's strength is its source's grades added up, 3 to 9.
-    const strength = source => Object.keys(GRADES).reduce((total, name) => total + source.grade[name], 0);
-
-    // A claim's score: the strength of each independent yes, less each no. Repeats add nothing.
-    function score(claim) {
-      return Object.keys(claim.assertions)
-        .filter(id => inScope(id) && !isCopy(claim, id))
-        .reduce((total, id) => total + (says(claim, id) === '+' ? 1 : -1) * strength(sourceById(id)), 0);
-    }
-
-
-    // A claim weighed only on what had arrived by an iteration.
-    function claimAsOf(claim, k) {
-      return { ...claim, assertions: Object.fromEntries(Object.entries(claim.assertions).filter(([source]) => iterationOf(source) <= k)) };
-    }
+    let engine = null;
+    const discovery = () => engine ??= createDiscovery({ sources: SOURCES.map(s => ({ ...s, iteration: iterationOf(s.id) })), claims: CLAIMS });
+    const weighed = (claim, k = Infinity) => discovery().weigh(claim.id, { asOf: k, reliedOn: reliedOnBy(claim).length > 0 });
 
     // Why a decision needs reviewing by an iteration: a claim it rests on has turned against
     // it since it was made, or what it predicted hasn't been borne out. None means it stands. A
@@ -1295,7 +903,7 @@ Not announced,0
       const reasons = [];
       const doubted = standing => standing === 'refuted' || standing === 'contested';
       for (const claim of CLAIMS.filter(c => decision.restsOn.includes(c.id))) {
-        const then = standing(claimAsOf(claim, iterationOf(decision.id))), now = standing(claimAsOf(claim, k));
+        const then = weighed(claim, iterationOf(decision.id)).standing, now = weighed(claim, k).standing;
         if (doubted(now) && !doubted(then)) reasons.push(`${claim.id}, which it rests on, is now ${now}.`);
       }
       for (const assumption of ASSUMPTIONS.filter(a => decision.restsOn.includes(a.id))) {
@@ -1323,7 +931,7 @@ Not announced,0
 
     function inferenceStatus(inference, k = Infinity) {
       const doubted = id => {
-        if (id.startsWith('CLM')) return ['refuted', 'contested'].includes(standing(claimAsOf(itemOf(id), k)));
+        if (id.startsWith('CLM')) return ['refuted', 'contested'].includes(weighed(itemOf(id), k).standing);
         if (id.startsWith('ASM')) return assumptionStatus(itemOf(id), k) === 'refuted';
         if (id.startsWith('INF')) return inferenceStatus(itemOf(id), k) === 'shaken';
         return false;
@@ -1526,31 +1134,23 @@ Not announced,0
 
     const capitalised = word => word[0].toUpperCase() + word.slice(1);
 
-    function pill(name, level) {
-      const node = el('span', 'pill', GRADES[name][level - 1]);
-      node.title = capitalised(name);
-      node.append(el('span', 'pill-level', level));
-      return node;
-    }
-
-    function scoreBadge(claim) {
-      const value = score(claim);
+    function scoreBadge(value) {
       return { text: value > 0 ? `+${value}` : `${value}`, tone: value > 0 ? 'good' : value < 0 ? 'bad' : undefined,
-        title: 'Score: each independent yes adds its strength, each no takes it away' };
+        title: 'Score: each counted yes adds its source’s grade, each no takes it away' };
     }
 
     // A passage of a source, as a card's fold holds it: the words, whether they say yes, no or ask,
-    // and the source's name with its strength, or why it isn't counted. Clicking it opens the source
+    // and the source's name with its grade, or why it isn't counted. Clicking it opens the source
     // there, named by the card it sits in.
-    function passage(sourceId, quote, { stance, counted = `= ${strength(sourceById(sourceId))}` } = {}) {
+    function passage(sourceId, quote, { stance, counted = `grade ${discovery().strength(sourceId)}` } = {}) {
       return { passage: { source: sourceId, quote, stance, note: `${sourceById(sourceId).name} · ${counted}` } };
     }
 
-    function assertionItem(claim, sourceId) {
-      const source = sourceById(sourceId);
-      const [mark, quote] = claim.assertions[sourceId];
-      const counted = isCopy(claim, sourceId) ? 'repeats it, counted once' : inScope(sourceId) ? undefined : `a ${source.role}: not counted`;
-      return passage(sourceId, quote, { stance: mark === '+' ? '+' : '-', counted });
+    // A claim's passage as the engine weighed it, saying why when it isn't counted.
+    function assertionItem(p) {
+      const counted = p.repeats ? `repeats ${p.repeats}, counted once` : p.outOfScope ? `says ${p.outOfScope}: not counted`
+        : p.ungraded ? 'not graded yet' : `grade ${p.strength}`;
+      return passage(p.source, p.quote, { stance: p.stance === '+' ? '+' : '-', counted });
     }
 
     // A slip or a source card opens its source, from a click or the keyboard.
@@ -1633,8 +1233,7 @@ Not announced,0
       };
     }
 
-    function basisBadge(claim) {
-      const name = basis(claim);
+    function basisBadge(name) {
       return { text: name, title: 'Basis: what holds it up', tone: ['assumption', 'conjecture'].includes(name) ? 'warn' : undefined };
     }
 
@@ -1643,13 +1242,13 @@ Not announced,0
     const arrivedBy = k => ({ source }) => iterationOf(source) <= k;
 
     function claimCard(claim, k = Infinity) {
-      const then = claimAsOf(claim, k);
+      const then = weighed(claim, k);
       return card(
-        cardHead('claim', claim.id, `Raised by ${claim.raisedBy}`, [basisBadge(then), statusBadge(standing(then)), scoreBadge(then)]),
+        cardHead('claim', claim.id, `Raised by ${claim.raisedBy}`, [basisBadge(then.basis), statusBadge(then.standing), scoreBadge(then.score)]),
         strip('main', 'Claim', claim.text),
         strip('note', 'Summary', claim.summary),
         ...(reliedOnBy(claim).length ? [strip('note', 'Relied on by', reliedOnBy(claim).join(', '))] : []),
-        sources(orderedSources(then).map(id => assertionItem(then, id)), 'No sources'),
+        sources(then.passages.map(assertionItem), 'No sources'),
       );
     }
 
@@ -2022,8 +1621,8 @@ Not announced,0
       field(fields, 'As of', source.asOf);
       if (source.copies) field(fields, 'Repeats', source.copies);
       if (source.derivedFrom) field(fields, 'Derived from', source.derivedFrom);
-      for (const name of Object.keys(GRADES)) field(fields, capitalised(name), pill(name, source.grade[name]));
-      field(fields, 'Strength', `= ${strength(source)}`);
+      field(fields, 'Grade', source.grade ? `${source.grade.value} of 5` : 'not graded yet');
+      if (source.grade) field(fields, 'Why', source.grade.why);
 
       const paper = el('div', 'paper');
       paper.append(head, el('h4', 'paper-title', source.title), el('div', 'paper-summary', source.summary), fields);
@@ -2151,21 +1750,14 @@ Not announced,0
     // The loop, one iteration at a time. Its sources are what arrived from the world in that
     // turn, and its cards what was raised in it. Nothing points back: a card that changes later
     // appears again, as its updated self. The first iteration holds whatever no later one claims.
-    const LATER = [
-      { title: 'Iteration 2 · feedback from October, early November',
-        sources: ['SRC-9', 'SRC-10', 'SRC-11', 'SRC-12', 'SRC-13', 'SRC-14', 'SRC-15', 'NEXT-5', 'NEXT-6', 'NEXT-7', 'NEXT-8'],
-        cards: ['SCN-6', 'ENT-4', 'INV-6', 'OBS-2', 'OBS-3', 'OBS-4', 'OUT-2', 'OUT-3', 'AGR-1', 'CON-3', 'DEC-2', 'PRD-2', 'EXP-2', 'EXP-3', 'ACT-2'] },
-    ];
-    const claimedLater = id => LATER.some(it => it.sources.includes(id) || it.cards.includes(id));
+    // The iterations, in order. What each one brought is in the records: every source, every awaited
+    // material and every record says the iteration it arrived in or was raised in.
     const ITERATIONS = [
-      { title: 'Iteration 1 · how the board decides, early October',
-        sources: [...SOURCES, ...AWAITED].map(item => item.id).filter(id => !claimedLater(id)),
-        cards: [...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...RUNS, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id).filter(id => !claimedLater(id)) },
-      ...LATER,
+      { title: 'Iteration 1 · how the board decides, early October' },
+      { title: 'Iteration 2 · feedback from October, early November' },
     ];
 
-    const iterationOf = id => id.startsWith('RUN') ? RUNS.find(run => run.id === id).iteration
-      : ITERATIONS.findIndex(it => it.sources.includes(id) || it.cards.includes(id)) + 1;
+    const iterationOf = id => itemOf(id).iteration;
 
     function itemOf(id) {
       return [...SOURCES, ...AWAITED, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...RUNS, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].find(item => item.id === id);
@@ -2232,8 +1824,8 @@ Not announced,0
       if (id.startsWith('SRC')) return { kind: 'source', source: item, text: `${item.name}: ${item.title}` };
       if (id.startsWith('NEXT')) return { kind: 'awaited', text: item.title, note: `for ${item.for} · ${item.why}` };
       if (id.startsWith('CLM')) {
-        const then = claimAsOf(item, k);
-        return { kind: 'claim', text: item.text, status: standing(then), assumed: basis(then) === 'assumption' };
+        const then = weighed(item, k);
+        return { kind: 'claim', text: item.text, status: then.standing, assumed: then.basis === 'assumption' };
       }
       if (id.startsWith('GOL')) return { kind: 'goal', text: item.text, status: item.status };
       if (id.startsWith('CON')) return { kind: 'constraint', text: item.text, status: item.status };
@@ -2944,11 +2536,11 @@ Not announced,0
     function summary() {
       const count = test => CLAIMS.filter(test).length;
       const parts = [
-        [count(c => standing(c) === 'corroborated'), 'corroborated'],
-        [count(c => standing(c) === 'single source'), 'on a single source'],
-        [count(c => standing(c) === 'contested'), 'contested'],
-        [count(c => standing(c) === 'refuted'), 'refuted'],
-        [count(c => standing(c) === 'unbacked' && basis(c) === 'assumption'), 'assumption'],
+        [count(c => weighed(c).standing === 'corroborated'), 'corroborated'],
+        [count(c => weighed(c).standing === 'single source'), 'on a single source'],
+        [count(c => weighed(c).standing === 'contested'), 'contested'],
+        [count(c => weighed(c).standing === 'refuted'), 'refuted'],
+        [count(c => weighed(c).standing === 'unbacked' && weighed(c).basis === 'assumption'), 'assumption'],
       ].filter(([n]) => n).map(([n, words]) => words === 'assumption' && n > 1 ? `${n} assumptions` : `${n} ${words}`);
       return `${CLAIMS.length} claims · ${parts.join(', ')}`;
     }

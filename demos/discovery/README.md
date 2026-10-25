@@ -31,7 +31,7 @@ The page shows one iteration at a time, stepped with ← and →. There are two 
 How iterations are recorded:
 
 - An iteration lists the **sources** that arrived from the world in that turn and the **cards** raised in it. Nothing points back.
-- **The first iteration holds whatever no later one claims.** In the code it's built from every card minus those listed in `LATER`.
+- **Every source and record says the iteration it arrived in or was raised in,** in its own metadata; nothing else lists them.
 - **A card that changes later appears again**, as its updated self, in the iteration that brought new material for it: a claim when a new source speaks to it, a decision when its grounds change, a test when what it says against the model changes, and so on. On the board it carries the note "updated: new material arrived".
 - **Cards from earlier iterations that this one's cards rest on are carried in** as they last stood, marked "carried from iteration N". A constraint still in force is the usual example.
 - **Every card is shown as of the iteration being viewed (`k`).** A claim is weighed only on the sources that had arrived by then; a prediction is pending until an outcome by then measures it. Step back to iteration 1 and DEC-1 shows as it stood then.
@@ -134,11 +134,11 @@ Card files: everything the sandbox records sits as a file among its material, `c
 
 A claim is never given a verdict by hand. It's weighed from its assertions:
 
-- **Grades:** each source has distance (second-hand, first-hand, direct), trust (doubtful, unknown, trusted) and clarity (noisy, partial, clean), scored 1 to 3 each. A source's **strength** is their sum, 3 to 9.
-- **In scope:** only sources whose role is *record* or *opinion* speak to how things are. A *plan* says what should happen and a *decision* what was chosen, so their passages show on the card but aren't counted. The manual (a plan) saying "delays under five minutes show On time" doesn't outweigh the stills.
+- **Grades:** each source carries an authored grade: a value from 1 to 5 and the reason for it, with any aspects that matter (here, the old distance, trust and clarity). A source not graded yet counts as 3, and says so.
+- **In scope:** only sources that speak to *how things are* count. One that says *what should be*, a plan or a decision, shows on the card but isn't counted. The manual (a plan) saying "delays under five minutes show On time" doesn't outweigh the stills.
 - **Copies count once:** a source that copies another (the newsletter repeating the forum post) is counted as the one it copies. Repeats sit under the source they repeat.
 - **Standing:** *corroborated* (two or more independent yeses), *single source*, *contested* (yeses and noes), *refuted* (only noes), *unbacked*.
-- **Score:** the strength of each independent yes, less each no.
+- **Score:** the grade of each independent yes, less each no.
 - **Basis,** what holds it up: *observed* (data or an image backs it), *reported* (someone says so first-hand), *inferred* (only an analysis does), and with nothing behind it *conjecture*, or *assumption* once something rests on it.
 
 ## 6. Principles

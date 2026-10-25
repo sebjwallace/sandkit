@@ -12,10 +12,9 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
    - the versions mock-up (`sb-chart`s, `sb-table#versions-table`);
    - the older sections below the boards;
    - three modals: `#card-modal`, `#source-modal` (holding `sb-source#source-view`) and `#object-modal` (`size="full"`).
-3. **Records,** the only things written by hand:
-   - **What we know:** `SOURCES`, `CLAIMS`, `QUESTIONS`, `INVESTIGATIONS`, `METRICS`, `EXPERIMENTS`, `OBSERVATIONS`, `ASSUMPTIONS`, `INFERENCES`, `DEFINITIONS`, `OPINIONS`;
-   - **Where we're going:** `DECISIONS`, `GOALS`, `PREDICTIONS`, `OUTCOMES`, `CONSTRAINTS`, `AGREEMENTS`, `ACTIONS`, `RISKS`;
-   - **awaited material:** `AWAITED`.
+3. **Sources and records,** the only things written by hand:
+   - **the sources:** `SOURCES`, the catalogue, in the page, each with its authored `grade`, what it `speaksTo` and the `iteration` it arrived in;
+   - **the records,** in `records/`, one script per kind, loaded before the page's script: `claims.js`, `questions.js`, `decisions.js` and the rest, `awaited.js`, and for the model `entities.js`, `primitives.js`, `scenarios.js` and `rules.js`. Each record carries `created`, `by` and `iteration`.
 4. **The model:**
    - classes `Delay`, `Platform`, `ClockTime`, `Train`, `Board`, `BoardWithPlatformChanges` and `Announcement`;
    - versions and runs: `MODEL`, `CANDIDATES` and `RUNS` (derived);
@@ -26,7 +25,7 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
    - the mock-up: `VERSIONS_MOCKUP` and `compressionScore`.
 6. **Source texts:** `SOURCE_TEXT` (inline, because a page opened from disk can't read files) and `STILLS`, drawn as SVG.
 7. **Working things out:**
-   - **claims:** `GRADES`, `originOf`, `standing`, `basis`, `score`, `claimAsOf`;
+   - **claims:** weighed by the discovery engine (`engines/discovery`): `discovery()` makes it from the sources and claims, `weighed(claim, k)` asks it how a claim stood as of an iteration;
    - **derived statuses:** `reviewReasons`/`decisionStatus`, `questionStatus`, `assumptionStatus`, `inferenceStatus`, `predictionStatus`, `partStage`, `investigationStatus`, `experimentStatus`, `actionStatus`, `testStatus`;
    - **compression:** `decisionsIn`, `modelDecisions`, `busiestMethod`, `compare`, `changeKind`, `runResults`;
    - **watched runs:** `watchedRun`, `testsOf`.
@@ -36,7 +35,7 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
     - kinds and boards: the prefix lists (`KNOWING`, `PARTS`, `TESTS`, `BUILDING`, `DIRECTION`) and `BOARDS`;
     - links: `links()` and `reach()`;
     - files: `FOLDERS` and `fileOf`;
-    - iterations: `LATER`, `ITERATIONS`, `iterationOf`, `itemOf`;
+    - iterations: `ITERATIONS` (their titles), `iterationOf` (read from the record), `itemOf`;
     - working out the boards: `inputsOf`, `appearancesOf`, `asOf`, `unrolled()`;
     - drawing them: `faceOf` (a card's compact data from `asOf`), `drawCard` (any card, in a variant, with its slots), `nodeCard`, and `drawFlow`, which gives the page's one `sb-discovery-board` its cards, columns and links.
 11. **The prototype and object view:** `drawPrototype`, `showObject`, and one function per tab (`nowView`, `codeView`, `relationsView`, `overTimeView`, `constraintsView`, `valuesSeenView`, `testedByView`, `definitionView`, `provenanceView`/`provenanceItems`), plus `wirePrototype`.
@@ -70,7 +69,7 @@ Opening a card calls `cardOf(id, shown.iteration)`, which calls the kind's build
 
 Copy the nearest existing record. The shapes that matter most:
 
-- **Source:** `{ id, name, title, summary, path, format, asOf, role: 'record'|'opinion'|'plan'|'decision', grade: { distance, trust, clarity }, copies?, derivedFrom?, gatheredBy? }`.
+- **Source:** `{ id, iteration, name, title, summary, path, format, asOf, role, speaksTo?, grade: { value, why, aspects? }, copies?, derivedFrom?, gatheredBy? }`. `speaksTo: 'what should be'` for plans and decisions.
 - **Claim:** `{ id, text, summary, raisedBy, assertions: { 'SRC-n': ['+'|'−', quote] }, informs? }`.
 - **Decision:** `{ id, title, status, when, deciders, options: [{ id, title, pros, cons }], chosen, restsOn: [ids], decided, reason, sources: [{ source, quote }] }`.
 - **Constraint:** `{ id, text, firmness, status, rulesOut, comesFrom: { cause, text }, protects, setIn: [source, quote], from? }`.
@@ -85,23 +84,22 @@ Copy the nearest existing record. The shapes that matter most:
 
 ### A card of an existing kind
 
-1. Add its record to the kind's array.
-2. If it was raised in a later iteration, add its id to that iteration's `cards` in `LATER`. Otherwise it falls into iteration 1.
-3. Make sure what it rests on is in its record, under the field `links()` and `inputsOf()` read for that kind. That's all: it appears on the right board, in the right column, linked.
+1. Add its record to the kind's script in `records/`, with `created`, `by` and the `iteration` it was raised in.
+2. Make sure what it rests on is in its record, under the field `links()` and `inputsOf()` read for that kind. That's all: it appears on the right board, in the right column, linked.
 
 ### A source
 
 1. Add it to `SOURCES`, with its text in `SOURCE_TEXT`.
-2. For a later iteration, add its id to that iteration's `sources`.
+2. Give it the `iteration` it arrived in, and an authored `grade` with its reason.
 3. Cite it from cards' assertions or `setIn`. Claims are re-weighed automatically.
 
 ### A new kind of card
 
 First check it earns its place (principle 5), and ask the author.
 
-1. Add the record array and a prefix.
+1. Add a script for its records in `records/`, load it in the page, and give it a prefix.
 2. Add the prefix to the right list (`KNOWING`, `DIRECTION` or `BUILDING`), and give it a column in `BOARDS` if none fits.
-3. Teach `links()`, `inputsOf()`, `itemOf()`, `ITERATIONS`' first-iteration list, `unrolled()`'s id list and `asOf()` about it.
+3. Teach `links()`, `inputsOf()`, `itemOf()`, `unrolled()`'s id list and `asOf()` about it.
 4. Add `FOLDERS[prefix]` for its file.
 5. Give the kind its icon and tone, and any new status words their tone, in `sb-discovery-card` (a component change, versioned), and add it to the domain discovery practice.
 6. Write a `kindCard(item, k)` builder returning the card's data, and add it to `cardOf`.
@@ -110,7 +108,7 @@ First check it earns its place (principle 5), and ask the author.
 
 ### An iteration
 
-1. Add an entry to `LATER` with a title, the sources that arrived and the cards raised.
+1. Add its title to `ITERATIONS`, and give the sources that arrived and the records raised in it that `iteration`.
 2. If the model changes, add a `MODEL` version with the iteration's number and `changedBy`.
 3. Earlier cards reappear by themselves where new material reaches them.
 
@@ -128,7 +126,7 @@ First check it earns its place (principle 5), and ask the author.
 
 ### A test
 
-Add a scenario or rule, founded on cards, written against `M` (classes by name). Build trains with `trainFor(M, { … })`, so tests stay plain. Write it in the iteration it arises in (add the id to `LATER`'s cards). It runs against every version from then on. Met on arrival is worked out from it.
+Add a scenario or rule, founded on cards, written against `M` (classes by name). Build trains with `trainFor(M, { … })`, so tests stay plain. Give it the `iteration` it arises in. It runs against every version from then on. Met on arrival is worked out from it.
 
 ### A tab in the object view
 
