@@ -23,6 +23,7 @@
   <script src="../../components/sb-chart/sb-chart.js"></script>
   <script src="../../components/sb-table/sb-table.js"></script>
   <script src="../../components/sb-discovery-card/sb-discovery-card.js"></script>
+  <script src="../../components/sb-discovery-board/sb-discovery-board.js"></script>
 
   <style>
     body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
@@ -114,54 +115,22 @@
     .fields dd { margin: 0; display: flex; align-items: center; gap: 8px; }
 
 
-    /* The flow: columns from evidence to commitments, links drawn only while tracing. */
-    .scroll { overflow-x: auto; }
     .flow-hint { margin: -4px 0 12px; color: var(--sb-muted); font-size: 13px; }
-    .flow { position: relative; display: grid; gap: 22px; }
-    .flow-iteration { display: grid; gap: 30px; padding: 12px 14px 16px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background-image: linear-gradient(var(--sb-drop), var(--sb-drop)); }
     .flow-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
     .steps { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
     .step { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); color: var(--sb-text); font: inherit; cursor: pointer; }
     .step:disabled { opacity: 0.4; cursor: default; }
     .step:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
-    .flow-defs { position: absolute; }
-    #flow-arrow path { fill: var(--sb-accent); }
-    .flow-bands { display: grid; gap: 30px; }
-    .flow-band { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }
-    .flow-band .flow-title { margin: 6px 0 0; }
-    .flow-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
-    /* Across: each band a column, with room between them for links to turn and be labelled. */
-    .flow.is-across { width: max-content; min-width: 100%; }
-    .flow.is-across .flow-bands { grid-auto-flow: column; grid-auto-columns: max-content; gap: 72px; align-items: start; }
-    .flow.is-across .flow-band { width: 170px; }
-    .flow.is-across .flow-band.is-collapsed { width: 96px; }
-    /* A folded band: each card down to its icon and code. */
-    .flow-band.is-collapsed .sb-discovery-card__compact > :not(.sb-discovery-card__compact-head), .flow-band.is-collapsed .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }
-    /* Cards on a board: lit along a chain, the rest faded, the one pointed at outlined. */
-    .flow-node { position: relative; z-index: 1; transition: opacity 0.15s; }
-    .flow.is-tracing .flow-node:not(.is-lit) { opacity: 0.25; }
-    .flow-node.is-focus .sb-discovery-card__compact { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+    /* The board: cards fold with their column, as the domain discovery practice gives it. */
+    .sb-discovery-board__column--folded .sb-discovery-card__compact > :not(.sb-discovery-card__compact-head),
+    .sb-discovery-board__column--folded .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }
     sb-source-trace sb-discovery-card, sb-source-trace .sb-discovery-card__paper, sb-source-trace .sb-discovery-card__compact { height: 100%; }
-    .flow-band.is-collapsed .flow-cards { grid-template-columns: repeat(auto-fill, minmax(96px, max-content)); }
-    .flow.is-across .flow-band.is-collapsed .flow-cards { grid-template-columns: 1fr; }
-    .flow-toggle { display: inline-flex; align-items: baseline; gap: 5px; padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; cursor: pointer; }
-    .flow-toggle::before { content: '▾'; font-size: 11px; }
-    .flow-band.is-collapsed .flow-toggle::before { content: '▸'; }
-    .flow-toggle:hover { color: var(--sb-text); }
-    .flow-toggle:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 2px; }
-    .flow.is-across .flow-band { grid-template-columns: 1fr; gap: 8px; }
-    .flow.is-across .flow-band .flow-title { margin: 0; }
-    .flow.is-across .flow-cards { grid-template-columns: 1fr; }
     .flow-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
     .flow-head h3 { margin: 0; }
     .flip { display: flex; padding: 2px; border-radius: var(--sb-radius); background: var(--sb-surface-2); }
     .flip button { padding: 3px 10px; border: 0; border-radius: calc(var(--sb-radius) - 2px); background: none; color: var(--sb-muted); font: inherit; font-size: 12px; cursor: pointer; }
     .flip button[aria-pressed="true"] { background: var(--sb-surface); color: var(--sb-text); box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
     .flip button:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
-    .flow-title { margin: 0 0 2px; color: var(--sb-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-    .flow-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-    .flow-lines path { fill: none; stroke: var(--sb-accent); stroke-width: 1.5; stroke-linejoin: round; opacity: 0.7; marker-end: url(#flow-arrow); }
-    .flow-lines text { fill: var(--sb-accent); font: 600 10px var(--sb-font); paint-order: stroke; stroke: var(--sb-surface); stroke-width: 4px; stroke-linejoin: round; }
     /* The key: scope, grade and standing. */
     .parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
     .parts dl { margin: 0; font-size: 14px; }
@@ -222,10 +191,7 @@
           <button type="button" data-board="2" aria-pressed="false">What we’re building</button>
         </div>
       </div>
-      <div class="scroll" id="flow"></div>
-      <svg class="flow-defs" width="0" height="0" aria-hidden="true">
-        <defs><marker id="flow-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 1 10 5 0 9z"/></marker></defs>
-      </svg>
+      <div id="flow"></div>
     </section>
 
     <section class="card">
@@ -2176,20 +2142,6 @@ Not announced,0
       return found;
     }
 
-    // Everything reached from an id by following links one way: 0 back to what it rests on, 1 on.
-    function reach(id, way, all) {
-      const seen = new Set([id]);
-      const queue = [id];
-      while (queue.length) {
-        const at = queue.shift();
-        for (const link of all) {
-          if (link[1 - way] !== at || seen.has(link[way])) continue;
-          seen.add(link[way]);
-          queue.push(link[way]);
-        }
-      }
-      return seen;
-    }
 
     // Everything below the sources is the sandbox's own record, kept as a file among the
     // source material; only what comes from the world sits in the sources band.
@@ -2342,13 +2294,6 @@ Not announced,0
       return { nodes, links: found };
     }
 
-    // A card on a board, compact, opening the card or the source in full.
-    function flowNode(node) {
-      const item = nodeCard(node, true);
-      item.classList.add('flow-node');
-      item.dataset.node = node.key;
-      return item;
-    }
 
     // A card's compact view, as it stood in an iteration: the boards, traces and runs all draw cards
     // with it, so they look the same everywhere.
@@ -2375,8 +2320,12 @@ Not announced,0
     // What the flow shows: one iteration, one of its boards, running across or down.
     const shown = { iteration: ITERATIONS.length, board: 0, across: true };
 
-    // The shown board of the shown iteration. Cards from earlier iterations that this one's cards
-    // rest on, such as a constraint still in force, are carried in as they last stood.
+    // The shown board of the shown iteration, in sb-discovery-board: its cards, compact and as they
+    // stood, in the columns that hold them, and the links between them, labelled and toned by what
+    // they mean. Cards from earlier iterations that this one's cards rest on, such as a constraint
+    // still in force, are carried in as they last stood. One board, kept, so folding stays put.
+    const board = document.createElement('sb-discovery-board');
+
     function drawFlow(root) {
       const k = shown.iteration;
       const { nodes, links: found } = unrolled();
@@ -2384,13 +2333,34 @@ Not announced,0
       const restedOn = n => found.some(([from, to]) => from === n.key && keys.has(to) && !to.startsWith(`${n.id}@`));
       const here = nodes.filter(n => n.k === k || (n.k < k && restedOn(n)))
         .map(n => n.k < k ? { ...n, carried: true } : n);
+      const placed = BOARDS[shown.board].columns.map(column => ({ column, here: here.filter(n => column.holds(n.id, k)) }));
+      // A grounding card shows only if it links to a card the board shows for itself.
+      const ownKeys = new Set(placed.filter(p => !p.column.grounds).flatMap(p => p.here.map(n => n.key)));
+      for (const p of placed.filter(p => p.column.grounds)) p.here = p.here.filter(n => found.some(([from, to]) => from === n.key && ownKeys.has(to)));
+      const columnOf = new Map(placed.flatMap(({ column, here }) => here.map(n => [n.key, column])));
+      const grounds = key => columnOf.get(key)?.grounds;
+      const idOf = key => key.split('@')[0];
+      board.direction = shown.across ? 'across' : 'down';
+      board.replaceChildren(...placed.flatMap(p => p.here).map(n => nodeCard(n, true)));
+      board.columns = placed.map(({ column, here }) => ({ title: column.title, refs: here.map(n => n.id), folded: Boolean(column.grounds) }));
+      board.links = found.filter(([from, to]) => columnOf.has(from) && columnOf.has(to) && !(grounds(from) && grounds(to)))
+        .map(([from, to]) => ({ from: idOf(from), to: idOf(to), label: relation(from, to), tone: toneOfLink(relation(from, to)) }));
       const summary = BOARDS[shown.board].title === 'What we’re building' ? [el('p', 'flow-summary', modelSummary(k))] : [];
-      root.replaceChildren(...summary, drawBoard(BOARDS[shown.board], here, found));
+      root.replaceChildren(...summary, board);
       document.getElementById('iteration-title').textContent = ITERATIONS[k - 1].title;
       document.querySelector('[data-step="-1"]').disabled = k === 1;
       document.querySelector('[data-step="1"]').disabled = k === ITERATIONS.length;
       for (const button of document.querySelectorAll('[data-board]')) button.setAttribute('aria-pressed', Number(button.dataset.board) === shown.board);
     }
+
+    // A link's tone, as the domain discovery practice gives it, so a chain reads before its labels do.
+    const LINK_TONES = {
+      good: ['supports', 'answers', 'bears out', 'meets', 'aims', 'defines', 'founds'],
+      bad: ['disputes', 'refutes', 'doubts', 'doesn’t meet', 'fails'],
+      warn: ['states', 'constrains', 'imposes', 'partly meets'],
+      muted: ['updated', 'gathered', 'captures', 'records', 'informs', 'awaits', 'reading of', 'run in', 'tried in', 'voices', 'sets', 'measures', 'shows', 'raises', 'part of'],
+    };
+    const toneOfLink = label => Object.keys(LINK_TONES).find(tone => LINK_TONES[tone].includes(label)) ?? 'accent';
 
     // The model in a line: how big it is, how much of what it's asked to do it does, what the last
     // change did, and what trials found. The compression signal, so far.
@@ -2403,40 +2373,6 @@ Not announced,0
       return `${state} · runs: ${runs.join(', ')}`;
     }
 
-    // A board: its columns of cards, and only the links between cards it shows.
-    function drawBoard(board, nodes, found) {
-      const flow = el('div', shown.across ? 'flow is-across' : 'flow');
-      const block = el('section', 'flow-iteration');
-      const bands = el('div', 'flow-bands');
-      const placed = board.columns.map(column => ({ column, here: nodes.filter(n => column.holds(n.id, shown.iteration)) }));
-      // A grounding card shows only if it links to a card the board shows for itself.
-      const ownKeys = new Set(placed.filter(p => !p.column.grounds).flatMap(p => p.here.map(n => n.key)));
-      for (const p of placed.filter(p => p.column.grounds)) p.here = p.here.filter(n => found.some(([from, to]) => from === n.key && ownKeys.has(to)));
-      const columnOf = new Map();
-      for (const { column, here } of placed) {
-        if (!here.length) continue;
-        here.forEach(n => columnOf.set(n.key, column));
-        const row = el('div', column.grounds ? 'flow-band is-collapsed' : 'flow-band');
-        const cards = el('div', 'flow-cards');
-        cards.append(...here.map(flowNode));
-        row.append(bandTitle(column.title, row), cards);
-        bands.append(row);
-      }
-      const isGrounds = key => columnOf.get(key)?.grounds;
-      const all = found.filter(([from, to]) => columnOf.has(from) && columnOf.has(to) && !(isGrounds(from) && isGrounds(to)));
-      block.append(bands);
-      const lines = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      lines.classList.add('flow-lines');
-      flow.append(block, lines);
-
-      for (const node of flow.querySelectorAll('.flow-node')) {
-        node.addEventListener('mouseenter', () => lightChain(flow, lines, node.dataset.node, all));
-        node.addEventListener('mouseleave', () => clearChain(flow, lines));
-        node.addEventListener('focusin', () => lightChain(flow, lines, node.dataset.node, all));
-        node.addEventListener('focusout', () => clearChain(flow, lines));
-      }
-      return flow;
-    }
 
     // The prototype: the departure board drawn by running the model of the iteration shown on the
     // trains as they stand at the scrubber's minute. The drawing only asks the model what to show;
@@ -2800,31 +2736,8 @@ Not announced,0
       }
     }
 
-    // A band's title folds it: its cards shrink to their icon and code, still there for links to
-    // reach, and unfold again.
-    function bandTitle(text, band) {
-      const toggle = el('button', 'flow-toggle', text);
-      toggle.type = 'button';
-      toggle.setAttribute('aria-expanded', !band.classList.contains('is-collapsed'));
-      toggle.addEventListener('click', () => toggle.setAttribute('aria-expanded', !band.classList.toggle('is-collapsed')));
-      const title = el('h5', 'flow-title');
-      title.append(toggle);
-      return title;
-    }
 
 
-    function lightChain(flow, lines, id, all) {
-      const back = reach(id, 0, all), on = reach(id, 1, all);
-      const lit = new Set([...back, ...on]);
-      flow.classList.add('is-tracing');
-      for (const node of flow.querySelectorAll('.flow-node')) {
-        node.classList.toggle('is-lit', lit.has(node.dataset.node));
-        node.classList.toggle('is-focus', node.dataset.node === id);
-      }
-      // Only the links on a path through the card: back along what it rests on, on along what rests on it.
-      const onPath = ([from, to]) => (back.has(from) && back.has(to)) || (on.has(from) && on.has(to));
-      lines.replaceChildren(...drawLinks(flow, all.filter(onPath)));
-    }
 
     // What a link means, read from the card it leaves to the card it reaches, as a knowledge
     // graph would label its edges.
@@ -2871,118 +2784,25 @@ Not announced,0
       return 'raises';
     }
 
-    // The flow runs down, each band a row, or across, each band a column.
-    const isAcross = flow => flow.classList.contains('is-across');
 
-    // Links reaching a card meet it at one point per kind of link, spread along the edge they
-    // arrive at (the top going down, the left going across) and labelled there, where links of
-    // one kind have gathered and other kinds have parted. Labels by the target never pile up the
-    // way they would where links leave a card together.
-    function drawLinks(flow, shown) {
-      const box = flow.getBoundingClientRect(), across = isAcross(flow);
-      const rect = key => flow.querySelector(`[data-node="${key}"]`).getBoundingClientRect();
-      // Where a card sits along the arriving edge, so kinds meet it in the order they come from.
-      const along = key => { const r = rect(key); return across ? r.top + r.height / 2 - box.top : r.left + r.width / 2 - box.left; };
-      const drawn = [];
-      for (const [to, links] of groupBy(shown, ([, target]) => target)) {
-        const kinds = [...groupBy(links, ([from]) => relation(from, to))]
-          .sort(([, p], [, q]) => average(p.map(([from]) => along(from))) - average(q.map(([from]) => along(from))));
-        const target = rect(to);
-        kinds.forEach(([name, group], i) => {
-          const share = (i + 1) / (kinds.length + 1);
-          const left = target.left - box.left, top = target.top - box.top;
-          const entry = across ? top + target.height * share : left + target.width * share;
-          // Going down, with more than two kinds, labels alternate between two heights so neighbours don't touch.
-          const lift = kinds.length > 2 && i % 2 ? 12 : 0;
-          // Going across, links from the same column come in on the right, where there's room for the label.
-          const sameColumn = across && group.every(([from]) => rect(from).right > target.left);
-          const right = target.right - box.left;
-          const tag = !across ? label(name, entry, top - 12 - lift)
-            : sameColumn ? label(name, right + 4, entry - 4, 'start') : label(name, left - 4, entry - 4, 'end');
-          drawn.push(...group.map(link => curve(flow, link, entry)), tag);
-        });
-      }
-      return drawn;
-    }
 
-    function label(text, x, y, anchor = 'middle') {
-      const node = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      node.setAttribute('x', x);
-      node.setAttribute('y', y);
-      node.setAttribute('text-anchor', anchor);
-      node.textContent = text;
-      return node;
-    }
 
-    const average = list => list.reduce((sum, n) => sum + n, 0) / list.length;
 
-    function groupBy(list, key) {
-      const groups = new Map();
-      for (const item of list) groups.set(key(item), [...(groups.get(key(item)) ?? []), item]);
-      return groups;
-    }
 
-    function clearChain(flow, lines) {
-      flow.classList.remove('is-tracing');
-      lines.replaceChildren();
-    }
 
-    // A route from one card to a point on the other, drawn like a transit map. Going down: from
-    // the bottom, a 45° corner, across in the gap above the target's band, another corner, and
-    // down into the top. Going across, the same turned on its side, turning far enough from the
-    // target to leave room for the label on the last run. Long runs pass behind the cards between.
-    function curve(flow, [from, to], entry) {
-      const box = flow.getBoundingClientRect();
-      const a = flow.querySelector(`[data-node="${from}"]`).getBoundingClientRect();
-      const b = flow.querySelector(`[data-node="${to}"]`).getBoundingClientRect();
-      // A link to a card in the same column runs down the column's right-hand gap and comes in on
-      // the right; one in the same band, going down, leaves from the top and turns just above.
-      let route;
-      if (isAcross(flow)) {
-        const y1 = a.top + a.height / 2 - box.top;
-        if (b.left >= a.right) {
-          const x2 = b.left - box.left, turn = x2 - 52;
-          route = [[a.right - box.left, y1], [turn, y1], [turn, entry], [x2, entry]];
-        } else {
-          const turn = Math.max(a.right, b.right) - box.left + 14;
-          route = [[a.right - box.left, y1], [turn, y1], [turn, entry], [b.right - box.left, entry]];
-        }
-      } else {
-        const ahead = b.top >= a.bottom;
-        const x1 = a.left + a.width / 2 - box.left, y1 = (ahead ? a.bottom : a.top) - box.top, y2 = b.top - box.top, turn = y2 - 8;
-        route = [[x1, y1], [x1, turn], [entry, turn], [entry, y2]];
-      }
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M' + chamfer(route, 6).map(([x, y]) => `${x},${y}`).join(' L'));
-      return path;
-    }
 
     // The toggle flips the board between running down and running across.
-    function wireDirection(root) {
+    function wireDirection() {
       const buttons = document.querySelectorAll('[data-direction]');
       for (const button of buttons) {
         button.addEventListener('click', () => {
           shown.across = button.dataset.direction === 'across';
-          root.querySelector('.flow').classList.toggle('is-across', shown.across);
+          board.direction = shown.across ? 'across' : 'down';
           for (const other of buttons) other.setAttribute('aria-pressed', other === button);
         });
       }
     }
 
-    // Cuts each corner of a route of straight runs at 45°, never by more than half a run.
-    function chamfer(points, size) {
-      const cut = [points[0]];
-      for (let i = 1; i < points.length - 1; i++) {
-        const [px, py] = points[i];
-        const [ax, ay] = points[i - 1], [bx, by] = points[i + 1];
-        const r = Math.min(size, Math.hypot(px - ax, py - ay) / 2, Math.hypot(bx - px, by - py) / 2);
-        const unit = (dx, dy) => { const length = Math.hypot(dx, dy) || 1; return [dx / length, dy / length]; };
-        const [ix, iy] = unit(px - ax, py - ay), [ox, oy] = unit(bx - px, by - py);
-        cut.push([px - ix * r, py - iy * r], [px + ox * r, py + oy * r]);
-      }
-      cut.push(points[points.length - 1]);
-      return cut;
-    }
 
     // Opening a card in sb-modal, expanded: what it says on the left, and on the right its folds,
     // every passage read in full. Awaited material has no card.
@@ -3110,6 +2930,7 @@ Not announced,0
       document.addEventListener('sb-highlight', e => {
         const refs = e.detail.ref ? [e.detail.ref] : [];
         for (const card of document.querySelectorAll('sb-discovery-card')) card.highlight = refs;
+        board.highlight = refs;
         for (const source of root.querySelectorAll('.source')) source.classList.toggle('is-lit', refs.includes(source.dataset.ref));
       });
       for (const source of root.querySelectorAll('.source')) {
@@ -3162,7 +2983,7 @@ Not announced,0
     document.getElementById('sources').replaceChildren(...SOURCES.map(sourceCard));
     wireCards(document.querySelector('main'));
     drawFlow(document.getElementById('flow'));
-    wireDirection(document.getElementById('flow'));
+    wireDirection();
     wireSteps(document.getElementById('flow'));
     wirePrototype();
     drawPrototype();

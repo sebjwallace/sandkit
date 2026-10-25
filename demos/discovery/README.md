@@ -261,7 +261,7 @@ These are the first steps towards an `sb-entity` and an `sb-primitive` that take
 
 ## 12. Sandkit components this demo uses or changed
 
-It uses `sb-discovery-card` for every card, `sb-modal`, `sb-source`, `sb-rule`, `sb-scenario`, `sb-outliner`, `sb-scrubber`, `sb-tabs`, `sb-json`, `sb-code`, `sb-erd`, `sb-timeline`, `sb-bars`, `sb-callout`, `sb-source-trace`, `sb-chart` and `sb-table`, and the shell.
+It uses `sb-discovery-card` for every card, `sb-discovery-board` for the boards, `sb-modal`, `sb-source`, `sb-rule`, `sb-scenario`, `sb-outliner`, `sb-scrubber`, `sb-tabs`, `sb-json`, `sb-code`, `sb-erd`, `sb-timeline`, `sb-bars`, `sb-callout`, `sb-source-trace`, `sb-chart` and `sb-table`, and the shell.
 
 Changed for it:
 
