@@ -128,7 +128,7 @@ Every card has an id whose prefix names its kind. Each kind has its own icon and
 | RUL | Rule | In `sb-rule`'s grammar: a MANDATE, or a CONDITIONAL with If / Then. Founded on cards, with code that checks it across the afternoon's trains. | met, not met |
 | RUN | Run | Every scenario and rule run against one version of the model, or one candidate. Worked out, never written. | for a trial: earns its place, or not yet |
 
-Card files: everything the sandbox records sits as a file among its material, `claims/CLM-1.md`, `runs/RUN-3.md` and so on, and the board shows each card's file path. Only what came from the world sits in the sources band.
+Records: everything the sandbox writes is kept in `records/`, one script per kind (`records/claims.js`), beside the sources, which are all that came from the world. Each record says when, by whom and in which iteration it was made, and a card shows it.
 
 ## 5. Weighing claims
 

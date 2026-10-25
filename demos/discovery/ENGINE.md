@@ -29,15 +29,13 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
    - **derived statuses:** the engine's too: `statusOf(item, k)` asks it for any record's status, and `reviewReasons(decision, k)` puts its reasons for reviewing a decision into words. The model's own, `partStage` and `testStatus`, are still the page's;
    - **compression:** `decisionsIn`, `modelDecisions`, `busiestMethod`, `compare`, `changeKind`, `runResults`;
    - **watched runs:** `watchedRun`, `testsOf`.
-8. **Card helpers,** which prepare a card's data for `sb-discovery-card` and draw nothing: `cardHead`, `strip`, `statusBadge`, `facet`, `fold`, `viewFold` (a fold holding a component, slotted in), `sources`, `cite`, `passage`, `assertionItem`, `basisBadge`, `scoreBadge`, and `card`, which adds the card's iteration and file. Plus `el`, and `icon`, `sourceIcon` and `formatBadge` for the source cards and the object view.
+8. **Card helpers,** which prepare a card's data for `sb-discovery-card` and draw nothing: `cardHead`, `strip`, `statusBadge`, `facet`, `fold`, `viewFold` (a fold holding a component, slotted in), `sources`, `cite`, `passage`, `assertionItem`, `basisBadge`, `scoreBadge`, and `card`, which adds the iteration the card was raised in. Plus `el`, and `icon`, `sourceIcon` and `formatBadge` for the source cards and the object view.
 9. **Card builders:** one per kind, `claimCard(item, k)` … `riskCard(item)`, each returning the card's data, and `cardOf(id, k)`, which dispatches on the prefix.
 10. **Boards and iterations:**
     - kinds and boards: the prefix lists (`KNOWING`, `PARTS`, `TESTS`, `BUILDING`, `DIRECTION`) and `BOARDS`;
-    - links: `links()` and `reach()`;
-    - files: `FOLDERS` and `fileOf`;
+    - links: the engine's (`links()` asks it); what only the model knows is handed to it in `also`, with `modelAppearances`;
     - iterations: `ITERATIONS` (their titles), `iterationOf` (read from the record), `itemOf`;
-    - working out the boards: `inputsOf`, `appearancesOf`, `asOf`, `unrolled()`;
-    - drawing them: `faceOf` (a card's compact data from `asOf`), `drawCard` (any card, in a variant, with its slots), `nodeCard`, and `drawFlow`, which gives the page's one `sb-discovery-board` its cards, columns and links.
+    - drawing them: `asOf(id, k)` (a card's face as of an iteration), `faceOf` (its compact data), `drawCard` (any card, in a variant, with its slots), `nodeCard`, `ORDER` (the order cards stand in their columns) and `drawFlow`, which asks the engine what the iteration shows and gives the page's one `sb-discovery-board` its cards, columns and links.
 11. **The prototype and object view:** `drawPrototype`, `showObject`, and one function per tab (`nowView`, `codeView`, `relationsView`, `overTimeView`, `constraintsView`, `valuesSeenView`, `testedByView`, `definitionView`, `provenanceView`/`provenanceItems`), plus `wirePrototype`.
 12. **Links on the board:** `relation` (a link's label) and `toneOfLink` (its tone, as the domain discovery practice gives it). Routing, lighting chains and folding are the board's.
 13. **Opening and pointing:** `openCard` (expanded, in a modal) and `openSource` (with `citationsOf`); `wireCards` answers every card's `sb-open` and routes `sb-highlight` to every card.
@@ -45,20 +43,16 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
 ## How data flows
 
 ```
-records + model classes
+sources + records + model classes
    │
-   ├─ links()          every [from, to] pair, from what something rests on to what rests on it
-   ├─ iterationOf(id)  the iteration a card was raised or a source arrived in
-   ├─ inputsOf(id)     what a card is built from: { sources, cards }
-   ├─ appearancesOf(id) every iteration it appears in (raised, and each that brought new material)
-   ├─ asOf(id, k)      its face as of iteration k: { kind, text, status, note, … }
-   │
-   └─ unrolled()       every card in every iteration it appears in, as nodes keyed id@k,
-                       and the links between them, all downwards
-        │
-        └─ drawFlow()  picks the shown iteration and board, carries in earlier cards that
-                       this iteration's rest on, sorts nodes into columns by BOARDS[…].holds(id, k),
-                       hands sb-discovery-board compact cards (nodeCard), columns and labelled links
+   └─ the discovery engine (engines/discovery), handed the model's runs and what only it knows
+        ├─ weigh(claim, k), status(id, k), reviewReasons(decision, k)
+        ├─ links()          every link, from what something rests on to what rests on it
+        └─ iteration(k)     the cards it shows (raised, updated or carried) and the links among them
+             │
+             └─ drawFlow()  orders the cards, sorts them into columns by BOARDS[…].holds(id, k), gives each
+                            its face as of the iteration it stands in (asOf), and hands sb-discovery-board
+                            compact cards (nodeCard), columns and labelled links
 ```
 
 Opening a card calls `cardOf(id, shown.iteration)`, which calls the kind's builder with `k`, so the full card is shown as of the iteration on screen.
@@ -85,7 +79,7 @@ Copy the nearest existing record. The shapes that matter most:
 ### A card of an existing kind
 
 1. Add its record to the kind's script in `records/`, with `created`, `by` and the `iteration` it was raised in.
-2. Make sure what it rests on is in its record, under the field `links()` and `inputsOf()` read for that kind. That's all: it appears on the right board, in the right column, linked.
+2. Make sure what it rests on is in its record, under the field the engine reads for that kind (see its manifest). That's all: it appears on the right board, in the right column, linked.
 
 ### A source
 
@@ -99,11 +93,10 @@ First check it earns its place (principle 5), and ask the author.
 
 1. Add a script for its records in `records/`, load it in the page, and give it a prefix.
 2. Add the prefix to the right list (`KNOWING`, `DIRECTION` or `BUILDING`), and give it a column in `BOARDS` if none fits.
-3. Teach `links()`, `inputsOf()`, `itemOf()`, `unrolled()`'s id list and `asOf()` about it.
-4. Add `FOLDERS[prefix]` for its file.
-5. Give the kind its icon and tone, and any new status words their tone, in `sb-discovery-card` (a component change, versioned), and add it to the domain discovery practice.
-6. Write a `kindCard(item, k)` builder returning the card's data, and add it to `cardOf`.
-7. If anything new should bring a card back in a later iteration, add it to `appearancesOf`.
+3. Teach the engine what it rests on and, if it has one, its status rule (an engine change, versioned); and `itemOf()`, `ORDER` and `asOf()` here.
+4. Give the kind its icon and tone, and any new status words their tone, in `sb-discovery-card` (a component change, versioned), and add it to the domain discovery practice.
+5. Write a `kindCard(item, k)` builder returning the card's data, and add it to `cardOf`.
+6. If anything new should bring a card back in a later iteration, teach the engine (or, for the model, `modelAppearances`).
 
 
 ### An iteration

@@ -896,7 +896,34 @@ Not announced,0
     let engine = null;
     const discovery = () => engine ??= createDiscovery({ sources: SOURCES, claims: CLAIMS, questions: QUESTIONS, assumptions: ASSUMPTIONS,
       inferences: INFERENCES, observations: OBSERVATIONS, predictions: PREDICTIONS, outcomes: OUTCOMES, investigations: INVESTIGATIONS,
-      experiments: EXPERIMENTS, actions: ACTIONS, decisions: DECISIONS });
+      experiments: EXPERIMENTS, actions: ACTIONS, decisions: DECISIONS, goals: GOALS, metrics: METRICS, definitions: DEFINITIONS,
+      opinions: OPINIONS, agreements: AGREEMENTS, constraints: CONSTRAINTS, risks: RISKS, awaited: AWAITED, entities: ENTITIES,
+      primitives: PRIMITIVES, scenarios: SCENARIOS, rules: RULES,
+      // What only the model knows, until the engine does: the runs, an entity's primitives and a run's
+      // changes, when a part or a test comes back, and which runs show a test.
+      also: {
+        records: RUNS,
+        inputs: id => id.startsWith('ENT') ? primitivesOf(id) : id.startsWith('RUN') ? itemOf(id).changes : [],
+        appearances: modelAppearances,
+        linksInto: (id, k) => ['SCN', 'RUL'].includes(id.slice(0, 3)) ? runsShowing(itemOf(id), k).map(run => run.id) : [],
+      } });
+
+    // Every link, from what something rests on to what rests on it, as the engine finds them.
+    const links = () => discovery().links().map(({ from, to }) => [from, to]);
+
+    // The iterations a part of the model, or a test of it, comes back in: a part when its version or
+    // stage changes, a test when what it says against the model does.
+    function modelAppearances(id) {
+      if (['SCN', 'RUL'].includes(id.slice(0, 3))) {
+        return MODEL.filter((version, i) => i && testOutcome(itemOf(id), version.iteration) !== testOutcome(itemOf(id), MODEL[i - 1].iteration))
+          .map(version => version.iteration);
+      }
+      if (['ENT', 'PRM'].includes(id.slice(0, 3))) {
+        return [...MODEL.filter((version, i) => i && version.parts[id] !== MODEL[i - 1].parts[id]).map(version => version.iteration),
+          ...(itemOf(id).rejected ? [itemOf(id).rejected.in] : [])];
+      }
+      return [];
+    }
     const weighed = (claim, k = Infinity) => discovery().weigh(claim.id, { asOf: k, reliedOn: reliedOnBy(claim).length > 0 });
 
     // Every status is the engine's too: a record's, as of an iteration.
@@ -1177,12 +1204,12 @@ Not announced,0
     // A fold holding a component, such as sb-scenario, put in the card's slot of the same name.
     const viewFold = (label, view) => ({ label, items: [{ slot: label }], view });
 
-    // A card: its header, its strips, its folds, and its own record: the iteration it was raised in
-    // and its file. Views its folds hold travel beside it, to be slotted in when it's drawn.
+    // A card: its header, its strips, its folds, and the iteration it was raised in. Views its folds
+    // hold travel beside it, to be slotted in when it's drawn.
     function card(head, ...parts) {
       const folds = parts.filter(part => part.items);
       return {
-        ...head, iteration: iterationOf(head.id), file: FOLDERS[kindOf(head.id)] && fileOf(head.id),
+        ...head, iteration: iterationOf(head.id),
         strips: parts.filter(part => part.tone), folds: folds.map(({ view, ...rest }) => rest),
         slotted: Object.fromEntries(folds.filter(f => f.view).map(f => [f.label, f.view])),
       };
@@ -1643,68 +1670,6 @@ Not announced,0
       ] },
     ];
 
-    // Every link, from what something rests on to what rests on it.
-    function links() {
-      const found = [];
-      const add = (from, to) => found.push([from, to]);
-      const cited = (item, list) => list.forEach(({ source }) => add(source, item.id));
-      for (const claim of CLAIMS) {
-        Object.keys(claim.assertions).forEach(id => add(id, claim.id));
-        (claim.informs ?? []).forEach(id => add(claim.id, id));
-      }
-      for (const question of QUESTIONS) {
-        add(question.raisedBy[0], question.id);
-        Object.keys(question.answers).forEach(id => add(id, question.id));
-      }
-      for (const decision of DECISIONS) {
-        decision.restsOn.forEach(id => add(id, decision.id));
-        cited(decision, decision.sources);
-      }
-      for (const action of ACTIONS) { add(action.from, action.id); cited(action, action.sources); }
-      for (const risk of RISKS) { risk.from.forEach(id => add(id, risk.id)); cited(risk, risk.sources); }
-      for (const awaited of AWAITED) add(awaited.for, awaited.id);
-      for (const goal of GOALS) add(goal.setIn[0], goal.id);
-      for (const prediction of PREDICTIONS) add(prediction.from, prediction.id);
-      for (const part of [...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES]) part.foundedOn.forEach(id => add(id, part.id));
-      for (const entity of ENTITIES) primitivesOf(entity.id).forEach(id => add(id, entity.id));
-      for (const investigation of INVESTIGATIONS) if (investigation.prompt) add(investigation.prompt, investigation.id);
-      for (const source of SOURCES) if (source.gatheredBy) add(source.gatheredBy, source.id);
-      for (const experiment of EXPERIMENTS) add(experiment.from, experiment.id);
-      for (const observation of OBSERVATIONS) {
-        add(observation.at[0], observation.id);
-        if (observation.tests) add(observation.id, observation.tests[0]);
-        if (observation.resultOf) add(observation.id, observation.resultOf);
-        if (observation.metric) add(observation.id, observation.metric);
-      }
-      for (const assumption of ASSUMPTIONS) add(assumption.setIn[0], assumption.id);
-      for (const inference of INFERENCES) inference.premises.forEach(id => add(id, inference.id));
-      for (const definition of DEFINITIONS) add(definition.setIn[0], definition.id);
-      for (const opinion of OPINIONS) add(opinion.said[0], opinion.id);
-      for (const outcome of OUTCOMES) {
-        outcome.from.forEach(id => add(id, outcome.id));
-        cited(outcome, outcome.sources);
-        add(outcome.id, outcome.against);
-      }
-      for (const agreement of AGREEMENTS) {
-        add(agreement.setIn[0], agreement.id);
-        if (agreement.from) add(agreement.from, agreement.id);
-      }
-      for (const constraint of CONSTRAINTS) {
-        add(constraint.setIn[0], constraint.id);
-        if (constraint.from) add(constraint.from, constraint.id);
-      }
-      return found;
-    }
-
-
-    // Everything below the sources is the sandbox's own record, kept as a file among the
-    // source material; only what comes from the world sits in the sources band.
-    const FOLDERS = { RUN: 'runs', SCN: 'scenarios', RUL: 'rules', ENT: 'entities', PRM: 'primitives', INV: 'investigations', MET: 'metrics', EXP: 'experiments', PRD: 'predictions', OBS: 'observations', ASM: 'assumptions', INF: 'inferences', DEF: 'definitions', OPN: 'opinions', AGR: 'agreements', OUT: 'outcomes', GOL: 'goals', CON: 'constraints', CLM: 'claims', QST: 'questions', DEC: 'decisions', ACT: 'actions', RSK: 'risks' };
-    const fileOf = id => `${FOLDERS[id.slice(0, 3)]}/${id}.md`;
-
-    // The loop, one iteration at a time. Its sources are what arrived from the world in that
-    // turn, and its cards what was raised in it. Nothing points back: a card that changes later
-    // appears again, as its updated self. The first iteration holds whatever no later one claims.
     // The iterations, in order. What each one brought is in the records: every source, every awaited
     // material and every record says the iteration it arrived in or was raised in.
     const ITERATIONS = [
@@ -1717,61 +1682,6 @@ Not announced,0
     function itemOf(id) {
       return [...SOURCES, ...AWAITED, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...RUNS, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].find(item => item.id === id);
     }
-
-    // What a card is built from: the sources it cites, and the cards it rests on.
-    function inputsOf(id) {
-      const item = itemOf(id), cited = list => list.map(({ source }) => source);
-      switch (id.slice(0, 3)) {
-        case 'OUT': return { sources: cited(item.sources), cards: item.from };
-        case 'GOL': return { sources: [item.setIn[0]], cards: OUTCOMES.filter(o => o.against === id).map(o => o.id) };
-        case 'CON': case 'AGR': return { sources: [item.setIn[0]], cards: item.from ? [item.from] : [] };
-        case 'OBS': return { sources: [item.at[0]], cards: [] };
-        case 'ASM': return { sources: [item.setIn[0]], cards: OBSERVATIONS.filter(o => o.tests?.[0] === id).map(o => o.id) };
-        case 'INF': return { sources: [], cards: item.premises };
-        case 'DEF': return { sources: [item.setIn[0]], cards: [] };
-        case 'OPN': return { sources: [item.said[0]], cards: [] };
-        case 'CLM': return { sources: Object.keys(item.assertions), cards: [] };
-        case 'QST': return { sources: [item.raisedBy[0], ...Object.keys(item.answers)], cards: CLAIMS.filter(c => c.informs?.includes(id)).map(c => c.id) };
-        case 'DEC': return { sources: cited(item.sources), cards: item.restsOn };
-        case 'PRD': return { sources: [], cards: [item.from, ...OUTCOMES.filter(o => o.against === id).map(o => o.id), ...OBSERVATIONS.filter(o => o.tests?.[0] === id).map(o => o.id)] };
-        case 'SRC': return { sources: [], cards: item.gatheredBy ? [item.gatheredBy] : [] };
-        case 'ENT': return { sources: [], cards: [...item.foundedOn, ...primitivesOf(id)] };
-        case 'RUN': return { sources: [], cards: item.changes };
-        case 'PRM': case 'SCN': case 'RUL': return { sources: [], cards: item.foundedOn };
-        case 'INV': return { sources: [], cards: item.prompt ? [item.prompt] : [] };
-        case 'MET': return { sources: [], cards: OBSERVATIONS.filter(o => o.metric === id).map(o => o.id) };
-        case 'EXP': return { sources: [item.setIn[0]], cards: [item.from, ...OBSERVATIONS.filter(o => o.resultOf === id).map(o => o.id)] };
-        case 'ACT': return { sources: cited(item.sources), cards: [item.from] };
-        case 'RSK': return { sources: cited(item.sources), cards: item.from };
-        case 'NEX': return { sources: [], cards: [item.for] };
-        default: return { sources: [], cards: [] };
-      }
-    }
-
-    // The iterations a card appears in: where it was raised, and each later one that brought
-    // new material for it. A decision also comes back when anything it rests on changes, so
-    // it can be reviewed against its new grounds, a goal when a new outcome measures it, an
-    // assumption when it's tested, an inference when a premise changes, and an investigation
-    // when what it gathered arrives, a part of the model when its version or stage changes, and a
-    // test when what it says against the model changes.
-    function appearancesOf(id) {
-      const first = iterationOf(id), { sources, cards } = inputsOf(id);
-      const later = sources.map(iterationOf);
-      if (['DEC', 'GOL', 'PRD', 'EXP', 'MET', 'ASM', 'INF'].includes(id.slice(0, 3))) later.push(...cards.flatMap(appearancesOf));
-      if (id.startsWith('INV')) later.push(...gatheredBy(itemOf(id)).map(s => iterationOf(s.id)));
-      if (['SCN', 'RUL'].includes(id.slice(0, 3))) {
-        later.push(...MODEL.filter((version, i) => i && testOutcome(itemOf(id), version.iteration) !== testOutcome(itemOf(id), MODEL[i - 1].iteration))
-          .map(version => version.iteration));
-      }
-      if (['ENT', 'PRM'].includes(id.slice(0, 3))) {
-        later.push(...MODEL.filter((version, i) => i && version.parts[id] !== MODEL[i - 1].parts[id]).map(version => version.iteration));
-        if (itemOf(id).rejected) later.push(itemOf(id).rejected.in);
-      }
-      return [...new Set([first, ...later.filter(k => k > first)])].sort((a, b) => a - b);
-    }
-
-    const keyOf = (id, k) => `${id}@${k}`;
-    const latestBy = (id, k) => appearancesOf(id).filter(at => at <= k).pop();
 
     // A card as it stood in one iteration: a claim weighed on what had arrived by then.
     function asOf(id, k) {
@@ -1813,35 +1723,6 @@ Not announced,0
       return { kind: 'risk', text: item.text, status: item.status };
     }
 
-    // Every card in every iteration it appears in, and the links between them, all downwards:
-    // from an earlier version, from new sources, and from new versions of the cards it rests on.
-    function unrolled() {
-      const nodes = [], found = [];
-      const ids = [...INVESTIGATIONS, ...SOURCES, ...AWAITED, ...PRIMITIVES, ...ENTITIES, ...RUNS, ...SCENARIOS, ...RULES, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id);
-      for (const id of ids) {
-        const at = appearancesOf(id), { sources, cards } = inputsOf(id);
-        at.forEach((k, i) => {
-          const before = i ? at[i - 1] : 0;
-          nodes.push({ key: keyOf(id, k), id, k, updated: i > 0, ...asOf(id, k) });
-          if (i) found.push([keyOf(id, before), keyOf(id, k)]);
-          for (const source of sources) {
-            const arrived = iterationOf(source);
-            if (arrived > before && arrived <= k) found.push([keyOf(source, arrived), keyOf(id, k)]);
-          }
-          for (const card of cards) {
-            if (i && [itemOf(id).from, itemOf(id).prompt].includes(card)) continue; // what brought a card about links only where it did
-            const version = latestBy(card, k);
-            if (version > before || (!i && version)) found.push([keyOf(card, version), keyOf(id, k)]);
-          }
-          if (['SCN', 'RUL'].includes(id.slice(0, 3))) {
-            for (const run of runsShowing(itemOf(id), k)) found.push([keyOf(run.id, k), keyOf(id, k)]);
-          }
-        });
-      }
-      return { nodes, links: found };
-    }
-
-
     // A card's compact view, as it stood in an iteration: the boards, traces and runs all draw cards
     // with it, so they look the same everywhere.
     function faceOf(node) {
@@ -1849,7 +1730,6 @@ Not announced,0
         id: node.id, kind: node.kind, status: node.status, text: node.text, format: node.source?.format,
         marks: [node.assumed && 'assumed', node.carried && 'carried', node.kind === 'awaited' && 'awaited'].filter(Boolean),
         notes: [node.note, node.updated && 'updated: new material arrived', node.carried && `carried from iteration ${node.k}`].filter(Boolean),
-        file: FOLDERS[kindOf(node.id)] && fileOf(node.id),
       };
     }
 
@@ -1873,25 +1753,30 @@ Not announced,0
     // still in force, are carried in as they last stood. One board, kept, so folding stays put.
     const board = document.createElement('sb-discovery-board');
 
+    // The order cards stand in their columns: investigations before the sources they gathered, then
+    // the rest kind by kind.
+    const ORDER = [...INVESTIGATIONS, ...SOURCES, ...AWAITED, ...PRIMITIVES, ...ENTITIES, ...RUNS, ...SCENARIOS, ...RULES, ...OBSERVATIONS,
+      ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...GOALS,
+      ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id);
+
     function drawFlow(root) {
       const k = shown.iteration;
-      const { nodes, links: found } = unrolled();
-      const keys = new Set(nodes.filter(n => n.k === k).map(n => n.key));
-      const restedOn = n => found.some(([from, to]) => from === n.key && keys.has(to) && !to.startsWith(`${n.id}@`));
-      const here = nodes.filter(n => n.k === k || (n.k < k && restedOn(n)))
-        .map(n => n.k < k ? { ...n, carried: true } : n);
+      const { cards, links: found } = discovery().iteration(k);
+      const here = cards.sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id)).map(card => {
+        const at = card.as === 'carried' ? card.from : k;
+        return { id: card.id, k: at, updated: card.as === 'updated', carried: card.as === 'carried', ...asOf(card.id, at) };
+      });
       const placed = BOARDS[shown.board].columns.map(column => ({ column, here: here.filter(n => column.holds(n.id, k)) }));
       // A grounding card shows only if it links to a card the board shows for itself.
-      const ownKeys = new Set(placed.filter(p => !p.column.grounds).flatMap(p => p.here.map(n => n.key)));
-      for (const p of placed.filter(p => p.column.grounds)) p.here = p.here.filter(n => found.some(([from, to]) => from === n.key && ownKeys.has(to)));
-      const columnOf = new Map(placed.flatMap(({ column, here }) => here.map(n => [n.key, column])));
-      const grounds = key => columnOf.get(key)?.grounds;
-      const idOf = key => key.split('@')[0];
+      const own = new Set(placed.filter(p => !p.column.grounds).flatMap(p => p.here.map(n => n.id)));
+      for (const p of placed.filter(p => p.column.grounds)) p.here = p.here.filter(n => found.some(l => l.from === n.id && own.has(l.to)));
+      const columnOf = new Map(placed.flatMap(({ column, here }) => here.map(n => [n.id, column])));
+      const grounds = id => columnOf.get(id)?.grounds;
       board.direction = shown.across ? 'across' : 'down';
       board.replaceChildren(...placed.flatMap(p => p.here).map(n => nodeCard(n, true)));
       board.columns = placed.map(({ column, here }) => ({ title: column.title, refs: here.map(n => n.id), folded: Boolean(column.grounds) }));
-      board.links = found.filter(([from, to]) => columnOf.has(from) && columnOf.has(to) && !(grounds(from) && grounds(to)))
-        .map(([from, to]) => ({ from: idOf(from), to: idOf(to), label: relation(from, to), tone: toneOfLink(relation(from, to)) }));
+      board.links = found.filter(l => columnOf.has(l.from) && columnOf.has(l.to) && !(grounds(l.from) && grounds(l.to)))
+        .map(({ from, to }) => ({ from, to, label: relation(from, to), tone: toneOfLink(relation(from, to)) }));
       const summary = BOARDS[shown.board].title === 'What we’re building' ? [el('p', 'flow-summary', modelSummary(k))] : [];
       root.replaceChildren(...summary, board);
       document.getElementById('iteration-title').textContent = ITERATIONS[k - 1].title;
@@ -1905,7 +1790,7 @@ Not announced,0
       good: ['supports', 'answers', 'bears out', 'meets', 'aims', 'defines', 'founds'],
       bad: ['disputes', 'refutes', 'doubts', 'doesn’t meet', 'fails'],
       warn: ['states', 'constrains', 'imposes', 'partly meets'],
-      muted: ['updated', 'gathered', 'captures', 'records', 'informs', 'awaits', 'reading of', 'run in', 'tried in', 'voices', 'sets', 'measures', 'shows', 'raises', 'part of'],
+      muted: ['gathered', 'captures', 'records', 'informs', 'awaits', 'reading of', 'run in', 'tried in', 'voices', 'sets', 'measures', 'shows', 'raises', 'part of'],
     };
     const toneOfLink = label => Object.keys(LINK_TONES).find(tone => LINK_TONES[tone].includes(label)) ?? 'accent';
 
@@ -2288,10 +2173,8 @@ Not announced,0
 
     // What a link means, read from the card it leaves to the card it reaches, as a knowledge
     // graph would label its edges.
-    function relation(fromKey, toKey) {
-      const from = fromKey.split('@')[0], to = toKey.split('@')[0];
+    function relation(from, to) {
       const kind = id => id.slice(0, 3);
-      if (from === to) return 'updated';
       if (kind(to) === 'NEX') return 'awaits';
       if (kind(from) === 'SRC') {
         if (kind(to) === 'CLM') return itemOf(to).assertions[from][0] === '−' ? 'disputes' : 'supports';
