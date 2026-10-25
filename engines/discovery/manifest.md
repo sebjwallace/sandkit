@@ -4,7 +4,7 @@ The engine of domain discovery: the method's rules, written once. Give it the sa
 
 It draws nothing and knows no component; the practice says how a sandbox shows what it works out.
 
-So far it weighs claims, works out every status that follows from the records, and knows what rests on what: the links between records, and what each iteration shows. The model's versions and runs are to come; until then, what only the model knows is handed in.
+It weighs claims, works out every status that follows from the records, knows what rests on what (the links between records, and what each iteration shows), and runs the model being built against every scenario and rule.
 
 Use this engine through the interface below. You don't need to read its source.
 
@@ -23,6 +23,7 @@ In a page, as a classic script, beside the records it reads:
   discovery.status('DEC-1', { asOf: 2 });          // → 'review'
   discovery.reviewReasons('DEC-1', { asOf: 2 });   // → [{ ref: 'ASM-1', now: 'refuted', why: 'rests on' }]
   discovery.iteration(2);                          // → { cards: [{ id: 'CLM-3', as: 'updated' }, …], links: [{ from, to }, …] }
+  discovery.run('RUN-3').change.earnsItsPlace;     // → true
 </script>
 ```
 
@@ -34,7 +35,7 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 
 ## What it takes
 
-`createDiscovery({ sources, claims, questions, assumptions, inferences, observations, predictions, outcomes, investigations, experiments, actions, decisions, goals, metrics, definitions, opinions, agreements, constraints, risks, awaited, entities, primitives, scenarios, rules, also })`. Give it the kinds the sandbox has; any left out is empty. Each list is plain records, each saying the `iteration` it was raised in; the engine never changes them.
+`createDiscovery({ sources, claims, questions, assumptions, inferences, observations, predictions, outcomes, investigations, experiments, actions, decisions, goals, metrics, definitions, opinions, agreements, constraints, risks, awaited, entities, primitives, scenarios, rules, model })`. Give it the kinds the sandbox has; any left out is empty. Each list is plain records, each saying the `iteration` it was raised in; the engine never changes them.
 
 **A source**, as discovery weighs it, from its entry in the catalogue (see the [sources practice](../../practices/sources.md)):
 
@@ -67,7 +68,22 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 
 **What each kind rests on,** which makes the links: a claim on its passages' sources, and it informs questions (`informs`); a question on the source raising it (`raisedBy`) and those answering it; a decision on `restsOn` and its cited `sources`; an action and a risk on what brought them about (`from`) and their sources; a prediction and an experiment on `from`, an experiment also on its source (`setIn`); a goal, assumption, definition, agreement and constraint on the source setting them (`setIn`, `said` for an opinion), an agreement or constraint also on `from`; an inference on its `premises`; an observation on the source it was read from (`at`), and it bears on what it `tests`, its experiment (`resultOf`) and its `metric`; an outcome on `from` and its sources, and it bears on what it's measured `against`; an investigation on what prompted it (`prompt`), and a source on the investigation that gathered it (`gatheredBy`); entities, primitives, scenarios and rules on what they're `foundedOn`; awaited material on what it's `for`.
 
-**`also`**, what only the sandbox's model knows until the engine does: `records`, derived records to show, such as runs (`{ id, iteration }`); `inputs(id)`, more of what a record rests on (an entity's primitives, a run's changes); `appearances(id)`, more iterations it comes back in (a part's new version, a test's new result); `linksInto(id, k)`, records linking to it in iteration `k` alone (the runs showing a test).
+**The model**, `model: { versions, candidates }`, the classes the sandbox writes, handed in since the engine can't know them:
+
+| Field | Meaning |
+|---|---|
+| `versions` | One per iteration that changed it, oldest first: `{ iteration, parts: { 'ENT-1': Train, 'PRM-1': Delay, … } }`, each part's id to its class. Every version is kept, so every run can be repeated. |
+| `candidates` | Proposals tried beside the model: `{ iteration, tries: 'ENT-4', parts }`, the model it would join with the part added. |
+
+The parts, scenarios and rules it reads:
+
+| Kind | Reads |
+|---|---|
+| entity, primitive | `name`, which names its class for tests (`clock time` is `ClockTime`); `rejected: { in, why }` once turned down; an entity's class may list `static properties`, naming the classes of the primitives it's made of |
+| scenario | `steps: [{ keyword, text }]`; `play(M)`, given the model's classes by name, returning each step's result, `null` for a step not checked, else `{ ok, actual }` |
+| rule | `check(M)`, returning the cases it fails for, in words; none when it holds |
+
+**What the model adds to the links:** each version and candidate is a run, `RUN-1` onwards (versions first), resting on the parts it changed. An entity rests on its primitives. A part comes back in an iteration where its class or its stage changes; a test where what it says against the model does. The runs of an iteration that say something about a test link to it there: the model's own run, and a trial's where it newly meets it.
 
 ## What it works out
 
@@ -81,6 +97,15 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 | `appearances(id)` | The iterations it appears in: the one it was raised in, each later one bringing new material for it, and, for decisions, goals, predictions, experiments, metrics, assumptions and inferences, each one bringing back what they rest on, so they can be judged again; an investigation also when what it gathered arrives. |
 | `iteration(k)` | What iteration `k` shows: `{ cards, links }`. Each card is `{ id, as }`, `as` being `raised`, `updated` (back with new material) or `carried` (an earlier one this iteration's cards rest on, as it last stood, with `from`, the iteration it stood in). Links are those among the cards shown, each to the version of what it rests on that stood by then; what brought a record about links to it only in the iteration where it did. Which order cards stand in is the sandbox's to choose. |
 | `status(id, { asOf? })` | Any record's status as of an iteration, by its kind's rule (below). A kind without a rule keeps the `status` its record says. |
+| `model(k?)` | The model as it stood by iteration `k` (the latest by default): `{ iteration, parts, classes, decisions, busiest }`. `classes` are by name, as tests use them; `decisions`, the compression signal, counts the choices in its code; `busiest` is the method with the most, `{ name, decisions }`. |
+| `runs()` | Every run's id, versions first, then candidates. |
+| `run(id)` | What a run found: `{ id, iteration, parts, tries?, changes, tests, met, notMet, decisions, busiest, change, arrived, metOnArrival }`. `tests` are those written by its iteration. `change`, against the version before or, for a trial, the model it would join: `{ met, broken, added, decisions, inPlace, kind, earnsItsPlace }`, `null` for the first version. `kind` says what sort of change it was, in words; it earns its place by meeting more and breaking nothing. `arrived` and `metOnArrival`: a version's new tests, and those the version before already met. |
+| `results(testId, { asOf? })` | What a scenario or rule says against the model: a scenario's step results (`{ ok: true }` or `{ ok: false, actual }`, `null` where not checked), or a rule's failing cases. A test the model can't run fails, saying why. |
+| `exercisedBy(partId, { asOf? })` | The tests that exercised a part when they ran, watched, and what each used: `[{ test, made, calls, reads }]`. An entity counts when made or called, a primitive only when its value is read. |
+| `decisionsIn(cls)` | Where a class's decisions are: it and each class it extends, oldest first, `[{ cls, decisions, methods: [{ name, decisions }] }]`. |
+| `partOfClass(cls, k)` | The part a class is in the model of iteration `k`. |
+| `primitivesOf(entityId)` | The primitives an entity's class is made of, in any version. |
+| `definitionOf(partId)` | The definition its name rests on: one it's founded on, defining that word; `null` if none. |
 | `reviewReasons(decisionId, { asOf? })` | Why a decision needs another look: `[{ ref, now, why }]`, where `why` is `rests on` (a claim or assumption it rests on that has turned since it was taken) or `predicted` (a prediction of its not borne out). Empty when it stands. Put them in words as the sandbox likes. |
 
 **Standing:** `corroborated` (two or more independent yeses), `single source`, `contested` (yeses and noes), `refuted` (only noes), `unbacked`. Only sources that speak to how things are count, and a copy counts as the source it copies.
@@ -105,9 +130,14 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 | action | `done` once what shows it has arrived; until then its written `status` |
 | decision | `review` when it has review reasons; otherwise its written `status`. Grounds already in doubt when it was taken were part of its reasoning, not a reason. |
 | outcome | its `result` |
+| entity, primitive | `rejected` once turned down; `integrated` once a version of the model holds it; `trying` once a candidate tries it; `proposed` until then |
+| scenario, rule | `met` when it passes against the model as it stood; `not met` otherwise |
+
+**Decisions in code** are the points where it chooses: `if`, `case`, `&&`, `||`, `??` and the ternary `?`, counted with strings and comments taken out, so writing densely changes nothing.
 
 ## Notes
 
 - **Dependencies:** none.
 - **In a page:** a classic script, so it works opened from disk and survives single-file export. It adds one name to the page, `createDiscovery`.
-- **Errors:** a claim, a source or a record it doesn't have throws, naming it.
+- **Errors:** a claim, a source, a record or a run it doesn't have throws, naming it; so does asking for a part's results.
+- **Running the model:** the engine calls the sandbox's scenarios and rules with its classes, and watches what they touch through proxies. Results are kept, since the model and the tests are fixed.

@@ -110,6 +110,8 @@ A claim never gets a verdict by hand. The [discovery engine](../engines/discover
 
 ## Building the model
 
+Write the model's classes, keep every version, and hand them to the [discovery engine](../engines/discovery/manifest.md) (`model: { versions, candidates }`): it runs every version and candidate against every scenario and rule (`discovery.run`), and works out each part's stage and each test's status.
+
 - **The model speaks the domain's words.** Every entity and domain primitive is founded on a definition of its name; one without is flagged. Borrow from domain-driven design where it fits, never by reflex.
 - **A proposal is tried as a candidate model,** and its run compares it with the model as it stands: tests newly met, tests broken. It earns its place if it meets something new and breaks nothing.
 - **Integration is a decision for people.** The run recommends; a decision card brings about the next version of the model, or rejects the proposal with the run's reasons. Every version is kept, so every run can be repeated.

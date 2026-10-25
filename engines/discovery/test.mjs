@@ -233,7 +233,8 @@ const loop = createDiscovery({
   constraints: [{ id: 'CON-1', iteration: 1, setIn: ['SRC-3', 'no new hides'] }],
   decisions: [{ id: 'DEC-1', iteration: 1, status: 'accepted', restsOn: ['CLM-1', 'CON-1'], sources: [] }],
   actions: [{ id: 'ACT-1', iteration: 3, from: 'DEC-1', sources: [] }],
-  also: { records: [{ id: 'RUN-1', iteration: 3 }], inputs: (id) => (id === 'RUN-1' ? ['ACT-1'] : []) },
+  entities: [{ id: 'ENT-1', iteration: 3, name: 'Holt', foundedOn: ['DEC-1'] }],
+  model: { versions: [{ iteration: 3, parts: { 'ENT-1': class Holt {} } }] },
 });
 const linked = (from, to) => loop.links().some((l) => l.from === from && l.to === to);
 // What an iteration shows, in a fixed order: which order cards stand in is the sandbox's to choose.
@@ -244,8 +245,8 @@ test('links run from what a record rests on to the record, and from a record to 
   assert(linked('CLM-1', 'DEC-1') && linked('SRC-3', 'CON-1') && linked('DEC-1', 'ACT-1'), 'rests on, set in, brought about');
 });
 
-test('what the model knows is handed in, and links like any other', () => {
-  assert(linked('ACT-1', 'RUN-1'), 'a run rests on what it changed');
+test('the model’s runs are records too, and link like any other', () => {
+  assert(linked('ENT-1', 'RUN-1'), 'a run rests on what it changed');
 });
 
 test('each link is listed once', () => {
@@ -269,7 +270,7 @@ test('an investigation comes back when what it gathered arrives', () => {
 test('an iteration shows what was raised in it, what came back updated, and what its records rest on, carried in', () => {
   assertEqual(shows(1), { 'CLM-1': 'raised', 'CON-1': 'raised', 'DEC-1': 'raised', 'INV-1': 'raised', 'QST-1': 'raised', 'SRC-1': 'raised', 'SRC-3': 'raised' });
   assertEqual(shows(2), { 'CLM-1': 'updated', 'DEC-1': 'updated', 'INV-1': 'updated', 'SRC-2': 'raised' });
-  assertEqual(shows(3), { 'ACT-1': 'raised', 'DEC-1': 'carried from 2', 'RUN-1': 'raised' });
+  assertEqual(shows(3), { 'ACT-1': 'raised', 'DEC-1': 'carried from 2', 'ENT-1': 'raised', 'RUN-1': 'raised' });
 });
 
 test('an iteration’s links are only those among the cards it shows, by id', () => {
@@ -290,4 +291,161 @@ test('what brought a record about links to it only where it did', () => {
   assertEqual([later.appearances('DEC-1'), later.appearances('PRD-1')], [[1, 2], [1, 2]]);
   assertEqual(later.iteration(1).links.some((l) => l.from === 'DEC-1' && l.to === 'PRD-1'), true);
   assertEqual(later.iteration(2).links.some((l) => l.from === 'DEC-1' && l.to === 'PRD-1'), false);
+});
+
+// ---- The model ----
+
+// The trust's model of its holts over two iterations: iteration 2 patches the holt so an old spraint
+// doesn't count, and tries a survey of many holts in a candidate model; a grid reference is turned down.
+class Count {
+  static constraints = ['A whole number, never below 0.'];
+  constructor(n) { this.n = n; }
+}
+class Holt {
+  static properties = { spraints: Count, fresh: 'yes or no' };
+  constructor({ spraints, fresh = true }) { this.spraints = spraints; this.fresh = fresh; }
+  occupied() { return this.spraints.n > 0; } // if a holt has spraint, it's in use: "if" here is no decision
+}
+class HoltWithFreshness extends Holt {
+  occupied() {
+    if (this.fresh === false) return false;
+    return super.occupied();
+  }
+}
+class Survey {
+  constructor(holts) { this.holts = holts; }
+  occupiedCount() { return this.holts.length ? this.holts.filter((holt) => holt.occupied()).length : 0; }
+}
+const holtOf = (M, n, fresh) => new M.Holt({ spraints: new M.Count(n), fresh });
+const river = createDiscovery({
+  definitions: [{ id: 'DEF-1', iteration: 1, term: 'holt', setIn: ['SRC-1', 'an otter’s den'] }],
+  sources: [{ id: 'SRC-1', iteration: 1, format: 'document' }],
+  primitives: [
+    { id: 'PRM-1', iteration: 1, name: 'count', foundedOn: [] },
+    { id: 'PRM-2', iteration: 1, name: 'grid reference', foundedOn: [], rejected: { in: 2, why: 'Nothing needs it yet.' } },
+  ],
+  entities: [
+    { id: 'ENT-1', iteration: 1, name: 'holt', foundedOn: ['DEF-1'] },
+    { id: 'ENT-2', iteration: 1, name: 'survey', foundedOn: [] },
+  ],
+  scenarios: [
+    { id: 'SCN-1', iteration: 1, foundedOn: [], steps: [{ keyword: 'Given', text: 'three spraints' }, { keyword: 'Then', text: 'the holt is occupied' }],
+      play: (M) => [null, { ok: holtOf(M, 3).occupied(), actual: 'empty' }] },
+    { id: 'SCN-2', iteration: 2, foundedOn: [], steps: [{ keyword: 'Given', text: 'one old spraint' }, { keyword: 'Then', text: 'the holt is empty' }],
+      play: (M) => [null, { ok: !holtOf(M, 1, false).occupied(), actual: 'occupied' }] },
+    { id: 'SCN-3', iteration: 2, foundedOn: [], steps: [{ keyword: 'Given', text: 'two holts, one with spraint' }, { keyword: 'Then', text: 'one is occupied' }],
+      play: (M) => [null, { ok: new M.Survey([holtOf(M, 2), holtOf(M, 0)]).occupiedCount() === 1, actual: 'another count' }] },
+  ],
+  rules: [
+    { id: 'RUL-1', iteration: 2, foundedOn: [], check: (M) => [0].filter((n) => holtOf(M, n).occupied()).map((n) => `a holt with ${n} spraints`) },
+  ],
+  model: {
+    versions: [
+      { iteration: 1, parts: { 'PRM-1': Count, 'ENT-1': Holt } },
+      { iteration: 2, parts: { 'PRM-1': Count, 'ENT-1': HoltWithFreshness } },
+    ],
+    candidates: [{ iteration: 2, tries: 'ENT-2', parts: { 'PRM-1': Count, 'ENT-1': HoltWithFreshness, 'ENT-2': Survey } }],
+  },
+});
+
+test('a part is proposed, trying once a candidate tries it, integrated once the model holds it, rejected once turned down', () => {
+  assertEqual(['ENT-1', 'ENT-2', 'PRM-2'].map((id) => [1, 2].map((k) => river.status(id, { asOf: k }))),
+    [['integrated', 'integrated'], ['proposed', 'trying'], ['proposed', 'rejected']]);
+});
+
+test('a scenario or rule is met or not, against the model as it stood', () => {
+  assertEqual(['SCN-1', 'SCN-2', 'SCN-3', 'RUL-1'].map((id) => [1, 2].map((k) => river.status(id, { asOf: k }))),
+    [['met', 'met'], ['not met', 'met'], ['not met', 'not met'], ['met', 'met']]);
+});
+
+test('what a test said: each step’s result, or the cases a rule fails for', () => {
+  assertEqual(river.results('SCN-2', { asOf: 1 }), [null, { ok: false, actual: 'occupied' }]);
+  assertEqual(river.results('SCN-2', { asOf: 2 }), [null, { ok: true }], 'what happened is only said where it wasn’t expected');
+  assertEqual(river.results('RUL-1'), []);
+});
+
+test('a scenario the model can’t play fails every step it checks, saying why', () => {
+  const [given, then] = river.results('SCN-3', { asOf: 2 });
+  assert(given === null && then.ok === false && then.actual.includes('Survey'), JSON.stringify(then));
+});
+
+test('the model by an iteration: its parts, its classes by their names, and its size', () => {
+  const { iteration, parts, classes, decisions, busiest } = river.model(2);
+  assertEqual([iteration, Object.keys(parts), Object.keys(classes)], [2, ['PRM-1', 'ENT-1'], ['Count', 'Holt']]);
+  assert(classes.Holt === HoltWithFreshness, 'a class goes by its part’s name');
+  assertEqual([decisions, busiest], [1, { name: 'HoltWithFreshness.occupied', decisions: 1 }]);
+});
+
+test('decisions are counted in the code with strings and comments taken out', () => {
+  assertEqual(river.model(1).decisions, 0, 'the "if" in Holt’s comment');
+  assertEqual(river.decisionsIn(HoltWithFreshness).map(({ cls, decisions, methods }) => [cls.name, decisions, methods]),
+    [['Holt', 0, [{ name: 'occupied', decisions: 0 }]], ['HoltWithFreshness', 1, [{ name: 'occupied', decisions: 1 }]]]);
+});
+
+test('a run for each version of the model and each candidate', () => {
+  assertEqual(river.runs(), ['RUN-1', 'RUN-2', 'RUN-3']);
+  assertEqual(['RUN-1', 'RUN-2', 'RUN-3'].map((id) => river.run(id)).map(({ iteration, tries, changes }) => [iteration, tries, changes]),
+    [[1, undefined, ['PRM-1', 'ENT-1']], [2, undefined, ['ENT-1']], [2, 'ENT-2', ['ENT-2']]]);
+});
+
+test('a run finds which tests written by its iteration are met, and what changed against the version before', () => {
+  const { tests, met, notMet, change, arrived, metOnArrival } = river.run('RUN-2');
+  assertEqual([tests, met, notMet], [['SCN-1', 'SCN-2', 'SCN-3', 'RUL-1'], ['SCN-1', 'SCN-2', 'RUL-1'], ['SCN-3']]);
+  assertEqual(change, { met: ['SCN-2'], broken: [], added: 0, decisions: 1, inPlace: 1,
+    kind: 'a patch, adding to existing code to meet one test', earnsItsPlace: true });
+  assertEqual([arrived, metOnArrival], [['SCN-2', 'SCN-3', 'RUL-1'], ['RUL-1']], 'what the version before already met');
+  assertEqual(river.run('RUN-1').change, null, 'the first version has nothing before it');
+});
+
+test('a trial is set against the model it would join, and earns its place by meeting more and breaking nothing', () => {
+  const { change, arrived } = river.run('RUN-3');
+  assertEqual(change, { met: ['SCN-3'], broken: [], added: 1, decisions: 1, inPlace: 0,
+    kind: 'met by a new part, the rest untouched: new capability', earnsItsPlace: true });
+  assertEqual(arrived, [], 'only a version of the model meets tests on arrival');
+});
+
+test('a change that breaks what was met never earns its place, whatever it meets', () => {
+  const careless = createDiscovery({
+    primitives: [{ id: 'PRM-1', iteration: 1, name: 'count', foundedOn: [] }],
+    entities: [{ id: 'ENT-1', iteration: 1, name: 'holt', foundedOn: [] }],
+    scenarios: [
+      { id: 'SCN-1', iteration: 1, foundedOn: [], steps: [], play: (M) => [{ ok: holtOf(M, 3).occupied() }] },
+      { id: 'SCN-2', iteration: 2, foundedOn: [], steps: [], play: (M) => [{ ok: !holtOf(M, 1, false).occupied() }] },
+    ],
+    model: { versions: [
+      { iteration: 1, parts: { 'PRM-1': Count, 'ENT-1': Holt } },
+      { iteration: 2, parts: { 'PRM-1': Count, 'ENT-1': class Empty extends Holt { occupied() { return false; } } } },
+    ] },
+  });
+  const { met, broken, kind, earnsItsPlace } = careless.run('RUN-2').change;
+  assertEqual([met, broken, kind, earnsItsPlace], [['SCN-2'], ['SCN-1'], 'it breaks what was met', false]);
+});
+
+test('a run rests on what it changed, an entity on its primitives, and a test on the runs that say something about it', () => {
+  assertEqual(river.inputsOf('RUN-2').records, ['ENT-1']);
+  assertEqual(river.inputsOf('ENT-1').records, ['DEF-1', 'PRM-1']);
+  const links = river.iteration(2).links.map((l) => `${l.from}→${l.to}`);
+  assert(links.includes('RUN-2→SCN-3') && links.includes('RUN-3→SCN-3'), 'the model’s run, and the trial meeting it');
+  assert(!links.includes('RUN-3→SCN-2'), 'a trial says nothing of a test it doesn’t newly meet');
+});
+
+test('a part comes back when its version or stage changes, a test when what it says does', () => {
+  assertEqual(['ENT-1', 'PRM-1', 'PRM-2', 'SCN-1', 'SCN-2'].map((id) => river.appearances(id)), [[1, 2], [1], [1, 2], [1], [2]]);
+});
+
+test('what each test exercised of a part: an entity made or called, a primitive’s value read', () => {
+  assertEqual(river.exercisedBy('ENT-1', { asOf: 1 }), [{ test: 'SCN-1', made: true, calls: ['occupied'], reads: ['spraints'] }]);
+  // SCN-2 makes a count too, but its old spraint settles it before the count is read.
+  assertEqual(river.exercisedBy('PRM-1', { asOf: 2 }).map(({ test, reads }) => [test, reads]), [['SCN-1', ['n']], ['RUL-1', ['n']]]);
+});
+
+test('a part’s class, its primitives and its definition', () => {
+  assertEqual([river.partOfClass(HoltWithFreshness, 2), river.partOfClass(HoltWithFreshness, 1)], ['ENT-1', undefined]);
+  assertEqual(river.primitivesOf('ENT-1'), ['PRM-1'], 'a property naming a primitive’s class; a plain description isn’t one');
+  assertEqual([river.definitionOf('ENT-1')?.id, river.definitionOf('ENT-2')], ['DEF-1', null]);
+});
+
+test('a run, scenario or rule it doesn’t have throws', () => {
+  assertThrows(() => river.run('RUN-9'), 'an unknown run throws');
+  assertThrows(() => river.results('ENT-1'), 'a part isn’t a test');
 });
