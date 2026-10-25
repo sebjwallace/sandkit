@@ -35,7 +35,7 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
     - iterations: `ITERATIONS` (their titles), `iterationOf` (read from the record), `itemOf`;
     - drawing them: `asOf(id, k)` (a card's face as of an iteration), `faceOf` (its compact data), `drawCard` (any card, in a variant, with its slots), `nodeCard`, `ORDER` (the order cards stand in their columns) and `drawFlow`, which asks the engine what the iteration shows and gives the page's one `sb-discovery-board` its cards, columns and links.
 11. **The prototype and object view:** `drawPrototype`, `showObject`, and one function per tab (`nowView`, `codeView`, `relationsView`, `overTimeView`, `constraintsView`, `valuesSeenView`, `testedByView`, `definitionView`, `provenanceView`/`provenanceItems`), plus `wirePrototype`.
-12. **Links on the board:** `relation` (a link's label) and `toneOfLink` (its tone, as the domain discovery practice gives it). Routing, lighting chains and folding are the board's.
+12. **Links on the board:** labelled with what the engine says each means, and toned by `toneOfLink` (its tone, as the domain discovery practice gives it). Routing, lighting chains and folding are the board's.
 13. **Opening and pointing:** `openCard` (expanded, in a modal) and `openSource` (with `citationsOf`); `wireCards` answers every card's `sb-open` and routes `sb-highlight` to every card.
 
 ## How data flows

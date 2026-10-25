@@ -1350,7 +1350,7 @@ Not announced,0
       board.replaceChildren(...placed.flatMap(p => p.here).map(n => nodeCard(n, true)));
       board.columns = placed.map(({ column, here }) => ({ title: column.title, refs: here.map(n => n.id), folded: Boolean(column.grounds) }));
       board.links = found.filter(l => columnOf.has(l.from) && columnOf.has(l.to) && !(grounds(l.from) && grounds(l.to)))
-        .map(({ from, to }) => ({ from, to, label: relation(from, to), tone: toneOfLink(relation(from, to)) }));
+        .map(({ from, to, means }) => ({ from, to, label: means, tone: toneOfLink(means) }));
       const summary = BOARDS[shown.board].title === 'What we’re building' ? [el('p', 'flow-summary', modelSummary(k))] : [];
       root.replaceChildren(...summary, board);
       document.getElementById('iteration-title').textContent = ITERATIONS[k - 1].title;
@@ -1741,56 +1741,6 @@ Not announced,0
         });
       }
     }
-
-
-
-
-    // What a link means, read from the card it leaves to the card it reaches, as a knowledge
-    // graph would label its edges.
-    function relation(from, to) {
-      const kind = id => id.slice(0, 3);
-      if (kind(to) === 'NEX') return 'awaits';
-      if (kind(from) === 'SRC') {
-        if (kind(to) === 'CLM') return itemOf(to).assertions[from][0] === '−' ? 'disputes' : 'supports';
-        if (kind(to) === 'QST') return itemOf(to).raisedBy[0] === from ? 'asks' : 'answers';
-        if (kind(to) === 'GOL') return 'sets';
-        if (kind(to) === 'CON') return 'imposes';
-        if (kind(to) === 'AGR') return 'records';
-        if (kind(to) === 'EXP') return 'records';
-        if (kind(to) === 'OBS') return 'captures';
-        if (kind(to) === 'ASM') return 'states';
-        if (kind(to) === 'DEF') return 'defines';
-        if (kind(to) === 'OPN') return 'voices';
-        return sourceById(from).role === 'decision' ? 'records' : 'informs';
-      }
-      if (kind(from) === 'OUT' && kind(to) === 'DEC') return 'prompts';
-      if (kind(to) === 'ASM') return itemOf(from).tests?.[1] === '−' ? 'refutes' : 'bears out';
-      if (kind(from) === 'OBS' && kind(to) === 'PRD') return itemOf(from).tests[1] === '−' ? 'doubts' : 'supports';
-      if (kind(from) === 'OBS' && kind(to) === 'EXP') return 'result';
-      if (kind(to) === 'MET') return 'reading of';
-      if (kind(from) === 'INV' && kind(to) === 'SRC') return 'gathered';
-      if (kind(from) === 'PRM' && kind(to) === 'ENT') return 'part of';
-      if (kind(to) === 'RUN') return itemOf(to).tries ? 'tried in' : 'run in';
-      if (kind(from) === 'RUN') return runOf(from).met.includes(to) ? 'meets' : 'doesn’t meet';
-      if (['ENT', 'PRM', 'SCN', 'RUL'].includes(kind(to))) return 'founds';
-      if (kind(to) === 'INV') return 'prompts';
-      if (kind(to) === 'EXP') return 'calls for';
-      if (kind(to) === 'INF') return 'premise';
-      if (kind(from) === 'INF' && kind(to) === 'OUT') return 'explains';
-      if (kind(from) === 'OUT') return { worked: 'meets', failed: 'fails', partly: 'partly meets' }[itemOf(from).result];
-      if (kind(to) === 'OUT') return 'shows';
-      if (kind(to) === 'DEC') return { GOL: 'aims', CON: 'constrains' }[kind(from)] ?? 'grounds';
-      if (kind(to) === 'QST') return 'informs';
-      if (kind(to) === 'GOL') return 'measures';
-      if (kind(to) === 'ACT') return 'calls for';
-      if (kind(to) === 'CON' || kind(to) === 'AGR') return 'brings about';
-      if (kind(to) === 'PRD') return 'predicts';
-      return 'raises';
-    }
-
-
-
-
 
 
 
