@@ -12,6 +12,14 @@
   <script src="../../components/sb-scenario/sb-scenario.js"></script>
   <script src="../../components/sb-outliner/sb-outliner.js"></script>
   <script src="../../components/sb-scrubber/sb-scrubber.js"></script>
+  <script src="../../components/sb-tabs/sb-tabs.js"></script>
+  <script src="../../components/sb-json/sb-json.js"></script>
+  <script src="../../components/sb-code/sb-code.js"></script>
+  <script src="../../components/sb-erd/sb-erd.js"></script>
+  <script src="../../components/sb-timeline/sb-timeline.js"></script>
+  <script src="../../components/sb-bars/sb-bars.js"></script>
+  <script src="../../components/sb-callout/sb-callout.js"></script>
+  <script src="../../components/sb-source-trace/sb-source-trace.js"></script>
 
   <style>
     body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
@@ -79,7 +87,7 @@
     .flow-summary { margin: 0 0 10px; color: var(--sb-muted); font-size: 13px; }
 
     /* The prototype, the outliner set into the page beside it, and the object view. */
-    .prototype { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(220px, 1fr) minmax(0, 1.4fr); gap: 14px; align-items: start; }
+    .prototype { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(220px, 1fr); gap: 14px; align-items: start; }
     .prototype > * { min-width: 0; }
     @media (max-width: 960px) { .prototype { grid-template-columns: 1fr; } }
     #objects { position: static; z-index: auto; width: auto; max-height: 560px; box-shadow: none; }
@@ -97,12 +105,15 @@
     .departures-frame .is-selected { box-shadow: inset 0 0 0 1px var(--board-ink); }
     .departures-frame .is-pinned-fill { background: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 40%), transparent); }
     .departures-frame .is-pinned-outline { outline: 2px solid color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 100%), transparent); }
-    .object-view { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 12px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); font-size: 13px; }
+    .object-view { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; font-size: 13px; }
     .object-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
     .object-class { margin-left: auto; color: var(--sb-muted); font: 12px ui-monospace, Menlo, Consolas, monospace; }
     .object-section > .label { margin-bottom: 4px; color: var(--sb-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
     .object-section p { margin: 0; }
-    .object-code { max-height: 240px; margin: 0 0 6px; padding: 8px 10px; overflow: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 11.5px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space: pre; }
+    .object-panel { display: grid; gap: 10px; padding-top: 8px; }
+    .object-wide { overflow-x: auto; }
+    .object-wide sb-erd { display: block; min-width: 440px; }
+    .object-call { margin: 0; font-weight: 600; }
     .card-icon--entity { --tone: var(--sb-accent); }
     .card-icon--primitive { --tone: var(--sb-muted); }
     .status[data-status="proposed"] { --tone: var(--sb-accent); }
@@ -267,6 +278,7 @@
     .node.is-lit { outline: none; }
     .node.is-focus { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
     .flow-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+    sb-source-trace .node { height: 100%; cursor: pointer; }
     .flow-lines path { fill: none; stroke: var(--sb-accent); stroke-width: 1.5; stroke-linejoin: round; opacity: 0.7; marker-end: url(#flow-arrow); }
     .flow-lines text { fill: var(--sb-accent); font: 600 10px var(--sb-font); paint-order: stroke; stroke: var(--sb-surface); stroke-width: 4px; stroke-linejoin: round; }
     /* The key: scope, grade and standing. */
@@ -340,13 +352,12 @@
 
     <section class="card">
       <h3>The prototype</h3>
-      <p class="flow-hint">The departure board, run by the model of the iteration shown above on the afternoon’s trains. Scrub through the afternoon as the feed’s updates arrive. Point at anything to light what it decides and what decided it; double-click a line, a cell or an outline entry to see the object behind it, as it is now and as its class.</p>
+      <p class="flow-hint">The departure board, run by the model of the iteration shown above on the afternoon’s trains. Scrub through the afternoon as the feed’s updates arrive. Point at anything to light what it decides and what decided it; double-click a line, a cell or an outline entry to open the object behind it.</p>
       <sb-scrubber id="afternoon" min="0" max="40" step="1" duration="20" label="The afternoon"></sb-scrubber>
       <p class="flow-summary"><span id="prototype-model"></span> <span id="feed-latest"></span></p>
       <div class="prototype">
         <div id="prototype-board"></div>
         <sb-outliner id="objects" heading="Objects"></sb-outliner>
-        <div id="object-view" class="object-view"></div>
       </div>
     </section>
 
@@ -468,6 +479,10 @@
       </div>
     </section>
   </main>
+
+  <sb-modal id="object-modal" size="full" expandable>
+    <div id="object-view" class="object-view"></div>
+  </sb-modal>
 
   <sb-modal id="card-modal" expandable>
     <div id="card-view"></div>
@@ -893,7 +908,7 @@
 
     class Board {
       static title = 'Board';
-      static properties = { trains: 'trains', clock: ClockTime };
+      static properties = { trains: [Train], clock: ClockTime };
       static behaviour = {
         shows: 'Whether a train is on the board: every train until it departs.',
         expectedFor: 'Its expected column: On time, its expected time when late, Delayed with no estimate, or Cancelled.',
@@ -1852,7 +1867,8 @@ Not announced,0
     // properties and behaviour come from its class in the model, with any later change noted.
     function entityCard(entity, k = Infinity) {
       const cls = modelAt(k)?.parts[entity.id];
-      const typeOf = type => typeof type === 'string' ? type : `${type.title} (${partOfClass(type, k)})`;
+      const typeOf = type => typeof type === 'string' ? type
+        : Array.isArray(type) ? `list of ${type[0].title} (${partOfClass(type[0], k)})` : `${type.title} (${partOfClass(type, k)})`;
       const changes = MODEL.filter(version => version.iteration <= k && version.changedBy?.[entity.id]);
       return card(
         cardHead('entity', entity.id, `Proposed by ${entity.proposedBy}${definitionOf(entity) ? ` · defined by ${definitionOf(entity).id}` : ''}${cls ? ` · class ${cls.name}` : ''}`, [statusBadge(partStage(entity, k))]),
@@ -2273,10 +2289,19 @@ Not announced,0
       return { nodes, links: found };
     }
 
+    // A card on a board: it opens the card, or the source, in full.
     function flowNode(node) {
-      const item = el('button', `node node--${node.kind}${node.assumed ? ' is-assumed' : ''}${node.carried ? ' is-carried' : ''}`);
+      const item = nodeCard(node, 'button');
       item.type = 'button';
       item.dataset.node = node.key;
+      item.addEventListener('click', () => node.source ? openSource(node.id) : openCard(node.id));
+      return item;
+    }
+
+    // A card's face as the boards draw it: its icon, code, status and text. Anywhere else that shows
+    // cards, such as a trace, draws them with this too, so they look the same everywhere.
+    function nodeCard(node, tag = 'span') {
+      const item = el(tag, `node node--${node.kind}${node.assumed ? ' is-assumed' : ''}${node.carried ? ' is-carried' : ''}`);
       const head = el('span', 'node-head');
       const awaited = node.kind === 'awaited';
       head.append(node.source ? sourceIcon(node.source) : icon(awaited ? 'source' : node.kind), el('span', 'claim-id', awaited ? 'awaited' : node.id));
@@ -2287,7 +2312,6 @@ Not announced,0
       if (node.updated) item.append(el('span', 'node-note', 'updated: new material arrived'));
       if (node.carried) item.append(el('span', 'node-note', `carried from iteration ${node.k}`));
       if (FOLDERS[node.id.slice(0, 3)]) item.append(el('span', 'node-file', fileOf(node.id)));
-      item.addEventListener('click', () => node.source ? openSource(node.id) : openCard(node.id));
       return item;
     }
 
@@ -2362,7 +2386,7 @@ Not announced,0
     const START = 13 * 60 + 55;
     const clockAt = minute => `${String(Math.floor((START + minute) / 60)).padStart(2, '0')}:${String((START + minute) % 60).padStart(2, '0')}`;
     const minuteOf = clock => { const [h, m] = clock.split(':').map(Number); return h * 60 + m - START; };
-    const prototype = { minute: 15, objects: {}, selected: 'T7' };
+    const prototype = { minute: 15, objects: {}, selected: null, tabs: {} };
 
     // The trains as they stand at a time: the timetable, its platforms as planned, with every update
     // arrived by then applied.
@@ -2445,43 +2469,188 @@ Not announced,0
           { ref: `${t.id}.board.expected`, label: `expected: ${board.expectedFor(t)}` },
           { ref: `${t.id}.board.message`, label: `message: ${board.messageFor(t) || 'nothing'}` },
         ] }))];
-      showObject(prototype.selected);
     }
 
-    // The object behind a ref: what it is now (its values, and what its behaviour gives), and its
-    // class (its properties, behaviour or constraints, and its code, the very code that ran).
+    // The object behind a ref, in a full-size modal, as it stands at the scrubber's minute: seen
+    // several ways, every one derived from its class, its instance, the model or the cards.
     function showObject(ref) {
       const view = document.getElementById('object-view');
       const object = prototype.objects[ref];
+      if (!object) return;
       prototype.selected = ref;
-      if (!object) {
-        view.replaceChildren(el('p', 'nobody', 'Double-click a line, a cell or an outline entry to see the object behind it.'));
-        return;
-      }
-      const { instance, cls, part } = object;
-      const card = itemOf(part);
+      const { cls, part } = object, k = shown.iteration, isEntity = part.startsWith('ENT');
       const head = el('div', 'object-head');
-      head.append(icon(part.startsWith('ENT') ? 'entity' : 'primitive'), el('span', 'claim-id', part), el('strong', null, card.name), el('span', 'object-class', `class ${cls.name}`));
-      const rows = (pairs) => {
-        const list = el('dl', 'fields');
-        for (const [name, value] of pairs) field(list, name, value);
-        return list;
+      head.append(icon(isEntity ? 'entity' : 'primitive'), el('span', 'claim-id', part), el('strong', null, itemOf(part).name), el('span', 'object-class', `class ${cls.name}`));
+      const panel = (heading, ...content) => {
+        const section = el('section', 'object-panel');
+        section.setAttribute('heading', heading);
+        section.append(...content);
+        return section;
       };
-      const section = (title, ...content) => { const box = el('div', 'object-section'); box.append(el('div', 'label', title), ...content); return box; };
-      const now = object.call
-        ? [section('Now', rows([[`${object.call}(${object.train.time.text} ${object.train.destination})`, object.value || 'nothing']]))]
-        : [section('Now', rows(Object.entries(instance).map(([name, value]) => [name, describe(value)]))),
-           ...behaviourNow(instance, cls)];
-      const schema = cls.constraints
-        ? [section('Constraints', el('p', null, cls.constraints.join(' ')))]
-        : [section('Properties', rows(Object.entries(cls.properties).map(([name, type]) => [name, typeof type === 'string' ? type : type.title]))),
-           section('Behaviour', rows(Object.entries(cls.behaviour)))];
+      const values = isEntity ? null : valuesSeenView(cls);
+      const panels = [
+        panel('Now', ...nowView(object)),
+        ...(isEntity
+          ? [panel('Code', ...codeView(cls)), panel('Relations', relationsView(part, k)), panel('Over time', overTimeView(object))]
+          : [panel('Constraints', constraintsView(part, cls)), ...(values ? [panel('Values seen', values)] : []), panel('Code', ...codeView(cls))]),
+        panel('Definition', definitionView(part)),
+        panel('Provenance', provenanceView(part)),
+      ];
+      const tabs = document.createElement('sb-tabs');
+      const kind = isEntity ? 'entity' : 'primitive';
+      tabs.append(...panels);
+      tabs.setAttribute('selected', Math.min(prototype.tabs[kind] ?? 0, panels.length - 1));
+      tabs.addEventListener('sb-select', e => { prototype.tabs[kind] = e.detail.index; });
+      view.replaceChildren(head, tabs);
+      for (const node of document.querySelectorAll('#prototype-board [data-ref]')) node.classList.toggle('is-selected', node.dataset.ref === ref);
+      const modal = document.getElementById('object-modal');
+      modal.setAttribute('heading', `${itemOf(part).name} at ${clockAt(prototype.minute)}, in iteration ${k}`);
+      modal.show();
+    }
+
+    // A domain object as plain data, its primitives as their contents, so sb-json can show it.
+    const plainOf = value => value && typeof value === 'object'
+      ? Array.isArray(value) ? value.map(plainOf) : Object.fromEntries(Object.entries(value).map(([name, v]) => [name, plainOf(v)]))
+      : value;
+
+    // Now: the instance as it is, with what the feed has changed in it so far spotlit; for what the
+    // board shows, the call that gave it; and what behaviour needing nothing more gives now.
+    function nowView(object) {
+      const { instance, cls } = object;
+      const clock = clockAt(prototype.minute);
+      const json = document.createElement('sb-json');
+      json.value = plainOf(instance);
+      json.spotlight = instance instanceof classesAt(shown.iteration).Board ? ['clock']
+        : [...new Set(FEED.filter(u => u.train === instance.id && u.at <= clock).flatMap(u => Object.keys(u.set)))];
+      const call = object.call ? [el('p', 'object-call', `${object.call}(${object.train.time.text} ${object.train.destination}) gives “${object.value || 'nothing'}”`)] : [];
+      return [...call, json, ...behaviourNow(instance, cls)];
+    }
+
+    // Code: the class's own source, and the class it extends, coloured by sb-code.
+    function codeView(cls) {
       const chain = [];
       for (let c = cls; c && c.toString().startsWith('class'); c = Object.getPrototypeOf(c)) chain.unshift(c);
-      const code = section('Code', ...chain.map(c => el('pre', 'object-code', dedent(c.toString()))));
-      view.replaceChildren(head, ...now, ...schema, code);
-      for (const node of document.querySelectorAll('#prototype-board [data-ref]')) node.classList.toggle('is-selected', node.dataset.ref === ref);
+      return chain.map(c => {
+        const code = document.createElement('sb-code');
+        code.setAttribute('variables', 'none');
+        code.code = dedent(c.toString());
+        return code;
+      });
     }
+
+    // Relations: every part of the model at this iteration in sb-erd. An entity's fields are its
+    // properties, a typed one referring to its part; a primitive's are a live instance's own. The
+    // object's own fields, or the fields referring to it, are lit.
+    function relationsView(part, k) {
+      const sample = cls => Object.values(prototype.objects).find(o => o.cls === cls && !o.call)?.instance ?? {};
+      const fieldsOf = cls => cls.properties
+        ? Object.entries(cls.properties).map(([name, type]) => {
+            const target = Array.isArray(type) ? type[0] : type;
+            return typeof target === 'string' ? { name, type: target }
+              : { name, type: Array.isArray(type) ? `${target.title} list` : target.title, references: partOfClass(target, k) };
+          })
+        : Object.entries(sample(cls)).map(([name, value]) => ({ name, type: value === null ? 'number or unknown' : typeof value }));
+      // Primitives in one column, entities in the next, each stacked by its number of fields.
+      const columns = { PRM: { x: 0, y: 0 }, ENT: { x: 230, y: 0 } };
+      const entities = Object.entries(modelAt(k).parts).map(([id, cls]) => {
+        const fields = fieldsOf(cls), at = columns[id.slice(0, 3)];
+        const placed = { id, name: itemOf(id).name, fields, x: at.x, y: at.y };
+        at.y += 60 + fields.length * 26;
+        return placed;
+      });
+      const erd = document.createElement('sb-erd');
+      erd.entities = entities;
+      erd.highlight = { fields: entities.flatMap(e => e.fields.filter(f => e.id === part || f.references === part).map(f => `${e.id}.${f.name}`)) };
+      const box = el('div', 'object-wide');
+      box.append(erd);
+      return box;
+    }
+
+    // Over time: the feed's updates to this train, or to every train for the board, as moments
+    // in sb-timeline, with now at the scrubber's minute.
+    function overTimeView(object) {
+      const id = object.instance.id;
+      const timeline = document.createElement('sb-timeline');
+      timeline.events = FEED.filter(u => !id || u.train === id)
+        .map(u => ({ id: `${u.train}-${u.at}`, label: u.short, at: minuteOf(u.at), note: u.says }));
+      timeline.format = clockAt;
+      timeline.now = prototype.minute;
+      return timeline;
+    }
+
+    // Constraints: the class's own constraints, as a mandate in sb-rule. It holds: this instance
+    // could only be made because it met them.
+    function constraintsView(part, cls) {
+      const rule = document.createElement('sb-rule');
+      rule.rule = { kind: 'MANDATE', code: part, title: `What a ${cls.title.toLowerCase()} may be`, lines: cls.constraints.map(text => ({ text })) };
+      rule.status = 'holds';
+      return rule;
+    }
+
+    // Values seen: every live instance of a number-valued primitive on the board now, in sb-bars;
+    // unknown values marked as such. Nothing for primitives that aren't numbers.
+    function valuesSeenView(cls) {
+      const seen = Object.entries(prototype.objects).filter(([, o]) => o.cls === cls && !o.call);
+      const [, first] = seen[0] ?? [];
+      const valueOf = instance => Object.values(instance)[0];
+      if (!first || !['number', 'object'].includes(typeof valueOf(first.instance))) return null;
+      const bars = document.createElement('sb-bars');
+      bars.bars = seen.map(([ref, o]) => {
+        const [train, property] = ref.split('.'), value = valueOf(o.instance);
+        const label = `${prototype.objects[train].instance.destination}, ${property}`;
+        return value === null ? { id: ref, label: `${label} (unknown)`, value: 0, tone: 'warn' } : { id: ref, label, value };
+      });
+      return bars;
+    }
+
+    // Definition: the definition its name is founded on, in sb-callout, or a warning that there's none.
+    function definitionView(part) {
+      const definition = definitionOf(itemOf(part));
+      const callout = document.createElement('sb-callout');
+      if (!definition) {
+        callout.setAttribute('kind', 'warning');
+        callout.append(el('p', null, `Nothing defines “${itemOf(part).name}”.`));
+        return callout;
+      }
+      callout.setAttribute('kind', 'definition');
+      callout.setAttribute('heading', `${definition.term} · ${definition.id}`);
+      callout.append(el('p', null, definition.meaning), el('p', null, `For example: ${definition.example}`));
+      return callout;
+    }
+
+    // Provenance: the part traced back through the cards it's founded on to their sources, in
+    // sb-source-trace, built from the cards' own links and citations. Opening a source shows it.
+    function provenanceView(part) {
+      const trace = document.createElement('sb-source-trace');
+      trace.items = provenanceItems();
+      trace.catalogue = SOURCES.map(s => ({ id: s.id, title: s.title, path: s.path, format: s.format, derivedFrom: s.derivedFrom ? [s.derivedFrom] : undefined }));
+      // Every card in the trace drawn as the boards draw it, as it stood in the iteration shown.
+      trace.drawNode = node => nodeCard({ id: node.id, ...asOf(node.id, shown.iteration) });
+      trace.nodeSize = { width: 190, height: 106 };
+      trace.subject = part;
+      trace.addEventListener('sb-open', e => openSource(e.detail.id));
+      const box = el('div', 'object-wide');
+      box.append(trace);
+      return box;
+    }
+
+    // Every card as an item for sb-source-trace: what it rests on, and the passages it cites.
+    let tracedItems = null;
+    function provenanceItems() {
+      if (tracedItems) return tracedItems;
+      const found = links(), notSource = id => !id.startsWith('SRC') && !id.startsWith('NEXT');
+      const cites = new Map();
+      for (const source of SOURCES) {
+        for (const { id, quote } of citationsOf(source.id)) cites.set(id, [...(cites.get(id) ?? []), { source: source.id, quote }]);
+      }
+      const ids = [...new Set(found.flat())].filter(notSource);
+      tracedItems = ids.map(id => ({
+        id, title: asOf(id, ITERATIONS.length).text, kind: asOf(id, ITERATIONS.length).kind,
+        sources: cites.get(id) ?? [], restsOn: [...new Set(found.filter(([from, to]) => to === id && notSource(from)).map(([from]) => from))],
+      }));
+      return tracedItems;
+    }
+
 
     // Code as it stands in the page keeps the page's indentation after its first line; take it off.
     function dedent(code) {

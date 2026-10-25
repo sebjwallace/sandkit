@@ -11,6 +11,7 @@ The Domain Discovery Engine demo models discovering how Ashford International's 
 - **Loosely inspired by domain-driven design:** borrow pieces where they fit, never think in its terms. Parts of the model (entities, domain primitives, events, scenarios, rules) aren't cards; cards are their precursors, traced back by "founded on".
 - **The model speaks the domain's words.** Every entity, domain primitive (and later event) is founded on a definition of its name; a part without one is flagged.
 - **The prototype draws; the model decides.** In this domain what the board shows is domain behaviour, so it's in the model; the prototype's layout and colours aren't, and nothing like a view model is modelled. Ported to production, the model goes and the prototype stays behind.
+- **Every view of a domain object is derived.** From its class, its instance, the model, the feed, the cards' links: change the entity and every view follows. Nothing in a view is written by hand.
 - **The sandbox is where experiments run.** Experiments on the model are instant and free of risk, so a prediction can be put in doubt before the world has to answer. That is the principal idea behind the whole toolkit.
 - **What brought a card about is linked only in the iteration where it did.** Later, the card stands in force and that history stays on the card.
 
@@ -23,7 +24,7 @@ The Domain Discovery Engine demo models discovering how Ashford International's 
 
 ### To pick up
 
-3. **Trace.** Click any card, or any part of the prototype, to trace it back to its sources: `sb-trace-mode` with `sb-source-trace` in a modal. Every card's links (founded on, cites, rests on) already exist. Overlaps with the connections view (a trace is the connections running back to the sources).
+3. **Trace.** Click any card, or any part of the prototype, to trace it back to its sources: `sb-trace-mode` with `sb-source-trace` in a modal. The object view's Provenance tab already builds the items from the cards' links and citations, and draws every node as the boards draw their cards (`sb-source-trace` 0.1.2's `drawNode`), so this is mostly wiring. Overlaps with the connections view. The trace flags one gap: an investigation rests on nothing cited, since gathering a source isn't citing it.
 
 4. **Supersedes.** How a card is superseded, and how that shows on the boards and on the superseded card (struck through, as `sb-sources` does). A modified proposal for the model returns as a new one superseding it.
 5. **A connections view.** Clicking a card opens another kind of modal showing how it connects to every other card, not just along the board: a knowledge graph around it. Supersedes is one of its connections.
@@ -38,14 +39,18 @@ The Domain Discovery Engine demo models discovering how Ashford International's 
 14. **Scenarios without a When.** Most of the board's scenarios are Given … Then. Perhaps the scenario card could show an empty When, saying none is needed; or it may be fine as it is.
 15. **One card component,** once the kinds settle: the page prepares a plain view of each card (kind, id, byline, badges, strips, folds), and the component only draws it.
 
+16. **Classes written to be described.** Raw JavaScript gives the code, the values, the class it extends and its method names; types, behaviour descriptions and constraints are declared as statics, since JavaScript keeps no types. Primitives' constraints exist twice (their words, and the constructor's check), which could drift: declare each with its words and its check (`{ says, holds }`), and have the constructor enforce exactly those, so the Constraints tab shows the checks that run. Types might later be read from JSDoc or TypeScript instead of declared.
+
+17. **Runtime traces of the model,** inspired by OpenTelemetry: instrument the classes so every run records spans (each method's inputs, outputs and the mutations it makes) as pathways through the objects. Stepped through like a debugger (`sb-code` already steps a trace), it shows how the model really works, not just what the prototype shows. Builds on item 16.
+
 ### Tidying
 
-16. **The sections below the boards** repeat what the boards and their modals now show; decide what the page keeps.
+18. **The sections below the boards** repeat what the boards and their modals now show; decide what the page keeps.
 
 ### Sandkit, beyond this demo
 
-17. **`sb-scenario` splits times:** "14:15" is marked as two numbers, 14 and 15. A component change, for the author to schedule.
-18. **A faster test runner:** a path filter and pages run in parallel, so one component's tests run alone. The author's to schedule.
+19. **`sb-scenario` splits times:** "14:15" is marked as two numbers, 14 and 15. A component change, for the author to schedule.
+20. **A faster test runner:** a path filter and pages run in parallel, so one component's tests run alone. The author's to schedule.
 
 ## Done
 
@@ -59,3 +64,5 @@ The Domain Discovery Engine demo models discovering how Ashford International's 
 - **What we know by role** (2026-10-25): Gathered, Captured, Interpreted, Reasoned, Assumed, Open, Under way, Awaited.
 - **Tidying** (2026-10-25): claim headers no longer cramped (what rests on a claim moved into its body); the key below the boards lists every kind of card by board; links within a column run down its right-hand gap, labels in view.
 - **The prototype** (2026-10-26): the departure board run by each iteration's model on the afternoon's trains, scrubbed through the feed's updates (`sb-scrubber`); the board's objects in `sb-outliner`, set into the page, lighting the prototype both ways; double-click any line, cell or entry for the object view: its instance now and its class, with the code that ran. Board gained expectedFor and platformFor.
+- **Views of a domain object** (2026-10-26): the object view in tabs, every one derived. Entity: Now (`sb-json`, the feed's changes spotlit, behaviour now), Code (`sb-code`, coloured), Relations (`sb-erd` from the model), Over time (`sb-timeline` from the feed). Primitive: Now, Constraints (`sb-rule` from its class), Values seen (`sb-bars` of live instances), Code. Both: Definition (`sb-callout`) and Provenance (`sb-source-trace`). The steps towards an `sb-entity` and `sb-primitive` that take these views through slots.
+- **`sb-source-trace` 0.1.2** (2026-10-26): `drawNode` and `nodeSize`, so a sandbox draws the trace's nodes in its own look while the trace does the tracing. The Provenance tab now shows the boards' own cards.
