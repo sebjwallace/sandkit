@@ -29,6 +29,16 @@
     .pick code { font: 600 11px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); }
     .opened { margin: 8px 0 0; font-size: 12px; color: var(--sb-muted); }
     .opened code { font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-text); }
+
+    /* The catchment sandbox's own cards: a bar in each kind's colour, its code and kind, then its title. */
+    .own-node { display: flex; flex-direction: column; gap: 2px; padding: 6px 9px; border: 1px solid var(--sb-border); border-left: 4px solid var(--kind); border-radius: var(--sb-radius); background: var(--sb-surface); font-size: 12px; line-height: 1.3; overflow: hidden; }
+    .own-node[data-kind="Observation"] { --kind: var(--sb-accent); }
+    .own-node[data-kind="Parameter"] { --kind: var(--sb-good); }
+    .own-node[data-kind="Assumption"] { --kind: var(--sb-warn); }
+    .own-node[data-kind="Rule"] { --kind: var(--sb-text); }
+    .own-node__top { display: flex; gap: 6px; color: var(--sb-muted); font-size: 11px; }
+    .own-node__top b { color: var(--kind); font: 600 11px ui-monospace, Menlo, Consolas, monospace; }
+    .own-node__title { font-weight: 600; }
   </style>
 </head>
 <body>
@@ -68,7 +78,7 @@
   trace.subject = 'SCR-3';
   trace.addEventListener('sb-open', (e) =&gt; openSource(e.detail.id));
 &lt;/script&gt;</pre>
-      <p>Items cite passages and rest on other items, as the <a href="../../practices/sources.md">sources practice</a> describes. The page loads the catalogue, which needs the sandbox served. The <a href="manifest.md">manifest</a> has the full contract.</p>
+      <p>Items cite passages and rest on other items, as the <a href="../../practices/sources.md">sources practice</a> describes. The page loads the catalogue, which needs the sandbox served. To draw the nodes the way the rest of the sandbox draws its things, give <code>drawNode</code> an element for each; the trace still does the tracing. The <a href="manifest.md">manifest</a> has the full contract.</p>
 
       <h3>Making it reveal</h3>
       <ul>
@@ -93,6 +103,12 @@
       <p>Traced from the residents' accounts: the analysis derived from them, the items citing either, and everything resting on those.</p>
       <sb-source-trace id="river"></sb-source-trace>
       <p class="opened" id="river-opened">Click a source to open it.</p>
+    </section>
+
+    <section class="example">
+      <h2>The catchment again, in the sandbox's own look</h2>
+      <p>The same trace, its items drawn by the sandbox as it draws them everywhere else: a bar in each kind's colour. The sources stay as the trace draws them. The trace still lays them out, joins them, lights them and follows them.</p>
+      <sb-source-trace id="river-own"></sb-source-trace>
     </section>
   </main>
 
@@ -163,10 +179,28 @@
     river.catalogue = RIVER_SOURCES;
     showOpened('river', RIVER_SOURCES);
 
+    // ---- The catchment, in the sandbox's own look ----
+
+    function ownNode(node) {
+      if (node.type !== 'item') return null; // sources keep the trace's paper
+      const card = document.createElement('span');
+      card.className = 'own-node';
+      card.dataset.kind = node.kind;
+      const top = document.createElement('span');
+      top.className = 'own-node__top';
+      top.append(Object.assign(document.createElement('b'), { textContent: node.id }), node.kind);
+      card.append(top, Object.assign(document.createElement('span'), { className: 'own-node__title', textContent: node.title }));
+      return card;
+    }
+
+    const riverOwn = document.getElementById('river-own');
+    Object.assign(riverOwn, { items: RIVER_ITEMS, catalogue: RIVER_SOURCES, drawNode: ownNode, nodeSize: { width: 180, height: 70 } });
+
     // ---- Start ----
 
     grid.subject = 'ASM-1';
     river.subject = 'SRC-23';
+    riverOwn.subject = 'RUL-12';
   </script>
 </body>
 </html>

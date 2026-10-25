@@ -1,5 +1,8 @@
 # sb-source-trace changelog
 
+## 0.1.2 · 2026-10-26
+- Added `drawNode`, so a sandbox can draw sources and items in its own look while the trace lays them out, joins, lights and follows them; and `nodeSize`, the size they're drawn at.
+
 ## 0.1.1 · 2026-10-19
 - Manifest: trace mode is now `sb-trace-mode`, in the shell's mode picker, rather than wired in the page.
 

@@ -245,6 +245,50 @@
       assertEqual(litFlows(trace), ['SRC-2>PAR-1']);
     });
 
+    // ---- The sandbox's own nodes ----
+
+    const ownLook = (calls = []) => (n) => {
+      calls.push(n.id);
+      if (n.id === 'QST-1') return null;
+      return Object.assign(document.createElement('span'), { className: 'own', textContent: `${n.type} ${n.id}` });
+    };
+
+    test('drawNode gives sources and items the sandbox\'s own look, or the trace\'s where it returns null', () => {
+      const trace = show('RUL-1', { drawNode: ownLook() });
+      assert(node(trace, 'SRC-1').classList.contains('sb-source-trace__node--own'), 'a source drawn by the sandbox');
+      assertEqual(node(trace, 'SRC-1').querySelector('.own').textContent, 'source SRC-1');
+      assertEqual(node(trace, 'ASM-1').querySelector('.own').textContent, 'item ASM-1');
+      assert(!node(trace, 'QST-1').classList.contains('sb-source-trace__node--own'), 'null keeps the trace\'s look');
+      assert(node(trace, 'QST-1').querySelector('.sb-source-trace__id'), 'with its id');
+    });
+
+    test('the trace still places, lights and follows the sandbox\'s own nodes', () => {
+      const trace = show('RUL-1', { drawNode: ownLook() });
+      assert(node(trace, 'RUL-1').classList.contains('sb-source-trace__node--subject'), 'the subject marked');
+      point(node(trace, 'PAR-1').querySelector('.own'));
+      assert(node(trace, 'PAR-1').classList.contains('sb-source-trace__node--lit'), 'pointing lights it');
+      node(trace, 'ASM-1').querySelector('.own').click();
+      assertEqual(trace.subject, 'ASM-1');
+      assert(node(trace, 'ASM-1').querySelector('.own'), 'drawn again after retracing');
+    });
+
+    test('unknown ids keep the trace\'s own warning look, and are never handed to drawNode', () => {
+      const calls = [];
+      const trace = show('ASM-1', { drawNode: ownLook(calls) });
+      assert(node(trace, 'PAR-9').classList.contains('sb-source-trace__node--missing'), 'still marked missing');
+      assert(!node(trace, 'PAR-9').classList.contains('sb-source-trace__node--own'), 'not the sandbox\'s look');
+      assert(!calls.includes('PAR-9'), 'never asked for');
+    });
+
+    test('nodeSize sizes every node and spaces the columns to match', () => {
+      const trace = show('RUL-1', { nodeSize: { width: 200, height: 90 } });
+      assertEqual(node(trace, 'RUL-1').style.width, '200px');
+      assertEqual(node(trace, 'RUL-1').style.height, '90px');
+      const left = (id) => parseFloat(node(trace, id).style.left);
+      assertEqual(left('RUL-1') - left('ASM-1'), 244, 'one column apart: a node and the gap');
+      assertEqual(trace.nodeSize, { width: 200, height: 90 });
+    });
+
     // ---- Instances and loading ----
 
     test('two instances side by side keep their own subject, trail and pointing', () => {
