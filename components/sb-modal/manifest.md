@@ -82,7 +82,7 @@ Suggestions only: nothing here is wired in. The sandbox composes these itself.
 
 - **Use them sparingly.** A modal interrupts. Keep it for what should stop the viewer; anything they might want beside the model belongs in the page, or in a panel.
 - **Room to look closely.** For content that rewards space, such as a source, a diagram or a wide table, make the modal `expandable`, or open it at `size="full"`.
-- **One at a time.** Opening a modal from inside another isn't supported.
+- **They stack.** A modal opened while another is showing lies over it, with its own dimmed backdrop, so the one below steps back. Escape and the backdrop close only the top one, and closing it returns focus to the one below. A modal can sit beside the other in the page or inside its content; clicks in an inner modal never close the outer one. Its `sb-close` still bubbles through the outer element, so a listener there that should hear only its own checks `e.target`. The browser groups modals opened from code with no click or key press between them, and Escape closes such a group together.
 - **Built on the browser's own modal dialog,** which lies over everything, keeps keyboard focus inside, closes on Escape, and returns focus to where it was when it closes.
 - **A click on the backdrop closes it** only when the press began there too, so selecting text and letting go outside leaves it open.
 - **Dependencies:** none.

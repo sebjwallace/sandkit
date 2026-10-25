@@ -136,7 +136,7 @@ modal.addEventListener('sb-close', (e) =&gt; e.detail.reason === 'replay' &amp;&
 
     <section class="example">
       <h2>A timetable, up close</h2>
-      <p class="note">A whole afternoon of departures is too wide for a small window. This modal is expandable: press the corners beside × to give it nearly the whole window, and again to bring it back.</p>
+      <p class="note">A whole afternoon of departures is too wide for a small window. This modal is expandable: press the corners beside × to give it nearly the whole window, and again to bring it back. "What the times mean" opens a second modal over it.</p>
       <div class="row">
         <button type="button" class="button" id="open-timetable">See the afternoon's departures</button>
         <span class="status" id="timetable-status"></span>
@@ -147,6 +147,13 @@ modal.addEventListener('sb-close', (e) =&gt; e.detail.reason === 'replay' &amp;&
           <thead><tr><th>Time</th><th>Destination</th><th>Calling at</th><th>Platform</th><th>Expected</th><th>Operator</th></tr></thead>
           <tbody id="timetable-rows"></tbody>
         </table>
+        <button slot="actions" id="open-key">What the times mean</button>
+        <sb-modal id="key" heading="What the times mean">
+          <p><strong>On time</strong>: running to time, or less than a minute late.</p>
+          <p><strong>Exp 14:31</strong>: late, and expected to leave then.</p>
+          <p><strong>Delayed</strong>: late, with no estimate yet.</p>
+          <p>A dash for the platform means it isn't confirmed yet.</p>
+        </sb-modal>
       </sb-modal>
     </section>
   </main>
@@ -255,6 +262,7 @@ modal.addEventListener('sb-close', (e) =&gt; e.detail.reason === 'replay' &amp;&
       }
     });
     document.getElementById('open-timetable').addEventListener('click', () => document.getElementById('timetable').show());
+    document.getElementById('open-key').addEventListener('click', () => document.getElementById('key').show());
     document.getElementById('timetable').addEventListener('sb-size', (e) => {
       document.getElementById('timetable-status').textContent = `Last switched to: ${e.detail.size}`;
     });

@@ -220,6 +220,36 @@
       assertEqual(sizes, []);
     });
 
+    // ---- Stacking ----
+
+    test('a modal opened over another stacks on it, and closing it leaves the first open', () => {
+      const pair = mount('<div><sb-modal heading="Below">A</sb-modal><sb-modal heading="Above">B</sb-modal></div>');
+      const [below, above] = pair.querySelectorAll('sb-modal');
+      below.show();
+      above.show();
+      assert(isModal(below) && isModal(above), 'both modal');
+      dialogOf(above).dispatchEvent(new Event('cancel', { cancelable: true }));
+      assert(!above.open && below.open && isModal(below), 'only the top one closed');
+      below.close();
+    });
+
+    test('a modal inside another closes alone, and its clicks never reach the outer one', () => {
+      const outer = modal('heading="Outer"', '<sb-modal heading="Inner"><p class="inner">Detail</p></sb-modal>');
+      const inner = outer.querySelector('.sb-modal__body sb-modal');
+      const reasons = [];
+      outer.addEventListener('sb-close', (e) => { if (e.target === outer) reasons.push(e.detail.reason); });
+      outer.show();
+      inner.show();
+      press(inner.querySelector('.inner'));
+      press(dialogOf(inner)); // the inner backdrop
+      assert(!inner.open && outer.open && isModal(outer), 'only the inner one closed');
+      inner.show();
+      inner.querySelector('.sb-modal__close').click();
+      assert(!inner.open && outer.open, 'the inner close button closed only the inner one');
+      assertEqual(reasons, []);
+      outer.close();
+    });
+
     // ---- Several on a page ----
 
     test('two modals open and close independently', () => {
