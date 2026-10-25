@@ -80,11 +80,14 @@
     .status[data-status="holds"] { --tone: var(--sb-muted); }
     .card-icon--outcome { --tone: var(--sb-text); }
     .card-icon--prediction { --tone: var(--sb-accent); }
+    .card-icon--run { --tone: var(--sb-accent); }
+    .status[data-status="earns its place"] { --tone: var(--sb-good, #3f9142); }
+    .status[data-status="not yet"] { --tone: var(--sb-warn, #d69e2e); }
     .card-icon--scenario { --tone: color-mix(in srgb, var(--sb-accent) 50%, var(--sb-good, #3f9142)); }
     .card-icon--rule { --tone: var(--sb-text); }
     .status[data-status="met"] { --tone: var(--sb-good, #3f9142); }
     .status[data-status="not met"] { --tone: var(--sb-bad, #c53030); }
-    .flow-summary { margin: 0 0 10px; color: var(--sb-muted); font-size: 13px; }
+    .flow-summary { margin: 0 0 10px; color: var(--sb-muted); font-size: 13px; white-space: pre-line; }
 
     /* The prototype, the outliner set into the page beside it, and the object view. */
     .prototype { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(220px, 1fr); gap: 14px; align-items: start; }
@@ -980,6 +983,16 @@
       { iteration: 2, tries: 'ENT-4', parts: { ...MODEL[1].parts, 'ENT-4': Announcement } },
     ];
 
+    // Runs: every scenario and rule run against a model, one run for each version of the model and
+    // one for each candidate. Never written, only worked out, and reproducible since every version
+    // is kept: each version is compared with the one before, each candidate with the model it would
+    // join. What it changes is the reason a part is in a run.
+    const RUNS = [
+      ...MODEL.map((version, i) => ({ iteration: version.iteration, parts: version.parts, against: MODEL[i - 1]?.parts ?? null,
+        changes: Object.keys(version.parts).filter(id => version.parts[id] !== MODEL[i - 1]?.parts[id]) })),
+      ...CANDIDATES.map(c => ({ iteration: c.iteration, parts: c.parts, tries: c.tries, against: MODEL.filter(v => v.iteration <= c.iteration).pop().parts, changes: [c.tries] })),
+    ].map((run, i) => ({ id: `RUN-${i + 1}`, ...run }));
+
     // Entities and domain primitives proposed for the model: a name, what it's for, and the cards
     // it's founded on. That's all anyone writes; once integrated, the rest is drawn from its class.
     // A proposal that doesn't earn its place is rejected, with why, and stays on record.
@@ -1440,6 +1453,29 @@ Not announced,0
       return candidateOf(part.id, k) ? 'trying' : 'proposed';
     }
 
+    // Decisions in code: every point where it chooses (if, case, &&, ||, ??, and the ternary ?),
+    // counted in its source with strings and comments taken out, so writing it densely changes
+    // nothing; only fewer real choices count.
+    function decisionsIn(source) {
+      const code = source.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/`(?:\\.|[^`\\])*`|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"/g, '""');
+      return (code.match(/\bif\b|\bcase\b|&&|\|\||\?\?|\?(?![.?])/g) ?? []).length;
+    }
+    // A class and every class it extends, oldest first.
+    function chainOf(cls) {
+      const chain = [];
+      for (let c = cls; c && c.toString().startsWith('class'); c = Object.getPrototypeOf(c)) chain.unshift(c);
+      return chain;
+    }
+    const classesIn = parts => [...new Set(Object.values(parts).flatMap(chainOf))];
+    const methodsOf = cls => Object.getOwnPropertyNames(cls.prototype).filter(name => name !== 'constructor' && typeof cls.prototype[name] === 'function');
+    const modelDecisions = parts => classesIn(parts).reduce((sum, cls) => sum + decisionsIn(cls.toString()), 0);
+    // The method holding the most decisions: where code would crowd if compression were chased.
+    function busiestMethod(parts) {
+      return classesIn(parts).flatMap(cls => methodsOf(cls).map(name => ({ name: `${cls.name}.${name}`, decisions: decisionsIn(cls.prototype[name].toString()) })))
+        .reduce((most, method) => method.decisions > most.decisions ? method : most, { name: 'none', decisions: 0 });
+    }
+
     // Whether a test passes against a set of parts, such as a candidate model.
     function passesWith(test, parts) {
       const M = classesOf(parts);
@@ -1458,13 +1494,45 @@ Not announced,0
         met: tests.filter(t => !passesWith(t, before) && passesWith(t, after)),
         broken: tests.filter(t => passesWith(t, before) && !passesWith(t, after)),
         added: Object.keys(after).length - Object.keys(before).length,
+        decisions: modelDecisions(after) - modelDecisions(before),
+        // Decisions added to parts that were already there, as against those arriving with new parts.
+        inPlace: modelDecisions(onlyParts(after, before)) - modelDecisions(before),
       };
     }
+    const onlyParts = (parts, kept) => Object.fromEntries(Object.entries(parts).filter(([id]) => id in kept));
+
+    // What kind of change it was, judged by what it met against what it added: real structure meets
+    // more for no more choices; a patch adds a choice to existing code to meet one test; a new part
+    // meeting a new need, the rest untouched, is new capability.
+    const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+    function changeKind({ met, broken, decisions, added, inPlace }) {
+      if (broken.length) return 'it breaks what was met';
+      if (!met.length) return decisions > 0 ? 'more decisions, nothing more met' : 'nothing more met';
+      if (decisions <= 0) return 'more met for no more decisions: structure';
+      if (added > 0 && inPlace <= 0) return 'met by a new part, the rest untouched: new capability';
+      if (met.length === 1) return 'a patch, adding to existing code to meet one test';
+      return decisions < met.length ? 'one change, many met: structure' : 'met by adding decisions';
+    }
     const trialOf = candidate => compare(modelAt(candidate.iteration).parts, candidate.parts, candidate.iteration);
+
+    // What a run found: each test written by its iteration, met or not, the model's size and busiest
+    // method, the comparison with what it's set against, and the new tests met on arrival.
+    function runResults(run) {
+      const tests = [...SCENARIOS, ...RULES].filter(t => iterationOf(t.id) <= run.iteration);
+      const met = tests.filter(t => passesWith(t, run.parts));
+      const arrived = run.against && !run.tries ? tests.filter(t => iterationOf(t.id) === run.iteration) : [];
+      return {
+        tests, met, notMet: tests.filter(t => !met.includes(t)),
+        decisions: modelDecisions(run.parts), busiest: busiestMethod(run.parts),
+        change: run.against ? compare(run.against, run.parts, run.iteration) : null,
+        arrived, metOnArrival: arrived.filter(t => passesWith(t, run.against)),
+      };
+    }
+    const earnsItsPlace = change => change.met.length > 0 && !change.broken.length;
     function trialVerdict(trial) {
       const ids = tests => tests.map(t => t.id).join(', ') || 'nothing';
       const earns = trial.met.length > 0 && !trial.broken.length;
-      return `In a candidate model it newly meets ${ids(trial.met)} and breaks ${ids(trial.broken)}, for ${trial.added} more part${trial.added === 1 ? '' : 's'}. ${earns ? 'It earns its place.' : 'It doesn’t earn its place yet.'}`;
+      return `In a candidate model it newly meets ${ids(trial.met)} and breaks ${ids(trial.broken)}, for ${plural(trial.added, 'more part')} and ${plural(trial.decisions, 'more decision')}: ${changeKind(trial)}. ${earns ? 'It earns its place.' : 'It doesn’t earn its place yet.'}`;
     }
     // The definition a part's name rests on: one it's founded on, defining that very word.
     const definitionOf = part => DEFINITIONS.find(d => part.foundedOn.includes(d.id) && d.term.toLowerCase() === part.name.toLowerCase());
@@ -1529,13 +1597,9 @@ Not announced,0
         .filter(({ touch }) => exercises(part, touch));
     }
 
-    // The parts a test drives in an iteration: those it exercised, and those a trial says it would be
-    // met by.
-    function partsDrivenBy(test, k) {
-      const touched = [...watchedRun(test, k)].filter(([part, touch]) => exercises(part, touch)).map(([part]) => part);
-      const trying = CANDIDATES.filter(c => c.iteration <= k && trialOf(c).met.includes(test)).map(c => c.tries);
-      return [...touched, ...trying];
-    }
+    // The runs of an iteration that say something about a test: the model's run, always, and a
+    // trial's where it newly meets it.
+    const runsShowing = (test, k) => RUNS.filter(run => run.iteration === k && (!run.tries || runResults(run).change.met.includes(test)));
     function testStatus(test, k = Infinity) {
       const failed = test.id.startsWith('SCN') ? scenarioResults(test, k).some(r => r && !r.ok) : ruleFailures(test, k).length > 0;
       return failed ? 'failing' : 'passing';
@@ -1640,6 +1704,7 @@ Not announced,0
       risk: '<path d="M8 2 14.5 13.5h-13z"/><path d="M8 6.5v3.25M8 11.6v.1"/>',
       goal: '<circle cx="8" cy="8" r="6.25"/><circle cx="8" cy="8" r="3.25"/><circle cx="8" cy="8" r="0.6" fill="currentColor"/>',
       decision: '<path d="M8 14.5V9l4.5-5.5"/><path d="M9.75 3.5h2.75v2.75"/><path d="M8 9 3.5 3.5" opacity="0.35"/>',
+      run: '<rect x="3" y="2.75" width="10" height="11.5" rx="1.5"/><path d="M6 2.75h4v2H6z"/><path d="m5.75 9.25 1.75 1.75 3-3.25"/>',
       scenario: '<rect x="2.25" y="2.25" width="11.5" height="11.5" rx="2"/><path d="m6.5 5.25 4.25 2.75-4.25 2.75z"/>',
       rule: '<path d="M3 3.5h10M3 8h10M3 12.5h5"/><path d="m10 12.25 1.5 1.5 2.5-2.75"/>',
       entity: '<path d="M8 1.75 13.5 4.75v6.5L8 14.25 2.5 11.25v-6.5z"/><path d="M2.5 4.75 8 7.75l5.5-3M8 7.75v6.5"/>',
@@ -1983,6 +2048,33 @@ Not announced,0
       );
     }
 
+    // A run: what model it ran, each test met or not, the model's size, what changed against what it's
+    // compared with and what kind of change that is, the new tests met on arrival, and for a trial a
+    // recommendation. People decide; the run is the evidence.
+    function runCard(run) {
+      const r = runResults(run), ids = tests => tests.map(t => t.id).join(', ') || 'none';
+      const what = run.tries ? `Iteration ${run.iteration}’s model with ${run.tries}` : `The model of iteration ${run.iteration}`;
+      const tests = r.tests.map(test => {
+        const face = nodeCard({ id: test.id, ...asOf(test.id, run.iteration) }, 'button');
+        face.type = 'button';
+        face.addEventListener('click', () => openCard(test.id));
+        return face;
+      });
+      return card(
+        cardHead('run', run.id, what, run.tries ? [statusBadge(earnsItsPlace(r.change) ? 'earns its place' : 'not yet')] : [el('span', 'basis', `${r.met.length} of ${r.tests.length} met`)]),
+        strip('main', 'Run', `Every scenario and rule written by iteration ${run.iteration}, run against ${what.toLowerCase()}.`),
+        strip('note', 'The model', `${plural(Object.keys(run.parts).length, 'part')}, ${plural(r.decisions, 'decision')} · ${r.met.length} of ${r.tests.length} met, ${(r.met.length / r.decisions).toFixed(2)} per decision · busiest: ${r.busiest.name}, ${plural(r.busiest.decisions, 'decision')}`),
+        strip('answer', 'Met', ids(r.met)),
+        ...(r.notMet.length ? [strip('warn', 'Not met', ids(r.notMet))] : []),
+        ...(r.change ? [strip('expect', run.tries ? `Against the model of iteration ${run.iteration}` : `Against iteration ${run.iteration - 1}`,
+          `Newly met: ${ids(r.change.met)}. Broken: ${ids(r.change.broken)}. ${plural(r.change.added, 'part')} and ${plural(r.change.decisions, 'decision')} more: ${changeKind(r.change)}.`)] : []),
+        ...(r.arrived.length ? [strip('note', 'Met on arrival', `${r.metOnArrival.length} of ${r.arrived.length} new tests met with no change to the model.`)] : []),
+        ...(run.tries ? [strip(earnsItsPlace(r.change) ? 'answer' : 'warn', 'Recommendation',
+          earnsItsPlace(r.change) ? `${run.tries} earns its place. Integrating it is a decision for people.` : `${run.tries} doesn’t earn its place yet.`)] : []),
+        fold('Tests', tests, 'options'),
+      );
+    }
+
     // An entity: proposed with a name, a purpose and what it's founded on; once integrated, its
     // properties and behaviour come from its class in the model, with any later change noted.
     function entityCard(entity, k = Infinity) {
@@ -2164,7 +2256,7 @@ Not announced,0
     const KNOWING = ['INV', 'OBS', 'MET', 'CLM', 'DEF', 'OPN', 'INF', 'ASM', 'QST'];
     const PARTS = ['ENT', 'PRM'];
     const TESTS = ['SCN', 'RUL'];
-    const BUILDING = [...PARTS, ...TESTS];
+    const BUILDING = [...PARTS, ...TESTS, 'RUN'];
     const DIRECTION = ['OUT', 'GOL', 'PRD', 'AGR', 'CON', 'DEC', 'EXP', 'ACT', 'RSK'];
     // A card brought about by another counts as brought about only in the iteration that made it;
     // from then on it stands in force.
@@ -2196,6 +2288,7 @@ Not announced,0
         { title: 'Proposed', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'proposed' },
         { title: 'Trying', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'trying' },
         { title: 'Integrated', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'integrated' },
+        { title: 'Runs', holds: id => kindOf(id) === 'RUN' },
         { title: 'Met', holds: (id, k) => TESTS.includes(kindOf(id)) && testStatus(itemOf(id), k) === 'passing' },
         { title: 'Not met yet', holds: (id, k) => TESTS.includes(kindOf(id)) && testStatus(itemOf(id), k) === 'failing' },
         { title: 'Rejected', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'rejected' },
@@ -2272,7 +2365,7 @@ Not announced,0
 
     // Everything below the sources is the sandbox's own record, kept as a file among the
     // source material; only what comes from the world sits in the sources band.
-    const FOLDERS = { SCN: 'scenarios', RUL: 'rules', ENT: 'entities', PRM: 'primitives', INV: 'investigations', MET: 'metrics', EXP: 'experiments', PRD: 'predictions', OBS: 'observations', ASM: 'assumptions', INF: 'inferences', DEF: 'definitions', OPN: 'opinions', AGR: 'agreements', OUT: 'outcomes', GOL: 'goals', CON: 'constraints', CLM: 'claims', QST: 'questions', DEC: 'decisions', ACT: 'actions', RSK: 'risks' };
+    const FOLDERS = { RUN: 'runs', SCN: 'scenarios', RUL: 'rules', ENT: 'entities', PRM: 'primitives', INV: 'investigations', MET: 'metrics', EXP: 'experiments', PRD: 'predictions', OBS: 'observations', ASM: 'assumptions', INF: 'inferences', DEF: 'definitions', OPN: 'opinions', AGR: 'agreements', OUT: 'outcomes', GOL: 'goals', CON: 'constraints', CLM: 'claims', QST: 'questions', DEC: 'decisions', ACT: 'actions', RSK: 'risks' };
     const fileOf = id => `${FOLDERS[id.slice(0, 3)]}/${id}.md`;
 
     // The loop, one iteration at a time. Its sources are what arrived from the world in that
@@ -2287,14 +2380,15 @@ Not announced,0
     const ITERATIONS = [
       { title: 'Iteration 1 · how the board decides, early October',
         sources: [...SOURCES, ...AWAITED].map(item => item.id).filter(id => !claimedLater(id)),
-        cards: [...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id).filter(id => !claimedLater(id)) },
+        cards: [...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...RUNS, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id).filter(id => !claimedLater(id)) },
       ...LATER,
     ];
 
-    const iterationOf = id => ITERATIONS.findIndex(it => it.sources.includes(id) || it.cards.includes(id)) + 1;
+    const iterationOf = id => id.startsWith('RUN') ? RUNS.find(run => run.id === id).iteration
+      : ITERATIONS.findIndex(it => it.sources.includes(id) || it.cards.includes(id)) + 1;
 
     function itemOf(id) {
-      return [...SOURCES, ...AWAITED, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].find(item => item.id === id);
+      return [...SOURCES, ...AWAITED, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...RUNS, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].find(item => item.id === id);
     }
 
     // What a card is built from: the sources it cites, and the cards it rests on.
@@ -2315,6 +2409,7 @@ Not announced,0
         case 'PRD': return { sources: [], cards: [item.from, ...OUTCOMES.filter(o => o.against === id).map(o => o.id), ...OBSERVATIONS.filter(o => o.tests?.[0] === id).map(o => o.id)] };
         case 'SRC': return { sources: [], cards: item.gatheredBy ? [item.gatheredBy] : [] };
         case 'ENT': return { sources: [], cards: [...item.foundedOn, ...primitivesOf(id)] };
+        case 'RUN': return { sources: [], cards: item.changes };
         case 'PRM': case 'SCN': case 'RUL': return { sources: [], cards: item.foundedOn };
         case 'INV': return { sources: [], cards: item.prompt ? [item.prompt] : [] };
         case 'MET': return { sources: [], cards: OBSERVATIONS.filter(o => o.metric === id).map(o => o.id) };
@@ -2367,6 +2462,11 @@ Not announced,0
       if (id.startsWith('PRD')) return { kind: 'prediction', text: item.text, status: predictionStatus(item, k) };
       if (id.startsWith('EXP')) return { kind: 'experiment', text: item.text, status: experimentStatus(item, k) };
       if (id.startsWith('INV')) return { kind: 'investigation', text: item.text, status: investigationStatus(item, k) };
+      if (id.startsWith('RUN')) {
+        const r = runResults(item);
+        return item.tries ? { kind: 'run', text: `Trying ${item.tries}: newly meets ${r.change.met.map(t => t.id).join(', ') || 'nothing'}, breaks ${r.change.broken.map(t => t.id).join(', ') || 'nothing'}`, status: earnsItsPlace(r.change) ? 'earns its place' : 'not yet' }
+          : { kind: 'run', text: `${r.met.length} of ${r.tests.length} met, ${plural(r.decisions, 'decision')}${r.change ? `: ${changeKind(r.change)}` : ''}` };
+      }
       if (id.startsWith('SCN')) return { kind: 'scenario', text: item.title, status: testWord(item)(k) };
       if (id.startsWith('RUL')) return { kind: 'rule', text: item.title, status: testWord(item)(k) };
       if (['ENT', 'PRM'].includes(id.slice(0, 3))) return { kind: id.startsWith('ENT') ? 'entity' : 'primitive',
@@ -2390,7 +2490,7 @@ Not announced,0
     // from an earlier version, from new sources, and from new versions of the cards it rests on.
     function unrolled() {
       const nodes = [], found = [];
-      const ids = [...INVESTIGATIONS, ...SOURCES, ...AWAITED, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id);
+      const ids = [...INVESTIGATIONS, ...SOURCES, ...AWAITED, ...PRIMITIVES, ...ENTITIES, ...RUNS, ...SCENARIOS, ...RULES, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id);
       for (const id of ids) {
         const at = appearancesOf(id), { sources, cards } = inputsOf(id);
         at.forEach((k, i) => {
@@ -2407,7 +2507,7 @@ Not announced,0
             if (version > before || (!i && version)) found.push([keyOf(card, version), keyOf(id, k)]);
           }
           if (['SCN', 'RUL'].includes(id.slice(0, 3))) {
-            for (const part of partsDrivenBy(itemOf(id), k)) found.push([keyOf(part, latestBy(part, k)), keyOf(id, k)]);
+            for (const run of runsShowing(itemOf(id), k)) found.push([keyOf(run.id, k), keyOf(id, k)]);
           }
         });
       }
@@ -2463,16 +2563,12 @@ Not announced,0
     // The model in a line: how big it is, how much of what it's asked to do it does, what the last
     // change did, and what trials found. The compression signal, so far.
     function modelSummary(k) {
-      const parts = Object.keys(modelAt(k).parts).length;
+      const parts = modelAt(k).parts, decisions = modelDecisions(parts), busiest = busiestMethod(parts);
       const tests = [...SCENARIOS, ...RULES].filter(t => iterationOf(t.id) <= k);
       const met = tests.filter(t => testStatus(t, k) === 'passing').length;
-      const since = k > 1 ? compare(modelAt(k - 1).parts, modelAt(k).parts, k) : null;
-      const change = since ? ` · since iteration ${k - 1}: ${since.met.length} newly met, ${since.broken.length ? `${since.broken.map(t => t.id).join(', ')} broken` : 'nothing broken'}` : '';
-      const trials = CANDIDATES.filter(c => c.iteration === k).map(c => {
-        const trial = trialOf(c);
-        return ` · trying ${c.tries}: ${trial.met.length} newly met, ${trial.broken.length} broken, for ${trial.added} more part`;
-      }).join('');
-      return `The model at iteration ${k}: ${parts} parts · ${met} of ${tests.length} scenarios and rules met${change}${trials}`;
+      const state = `The model at iteration ${k}: ${Object.keys(parts).length} parts, ${decisions} decisions · ${met} of ${tests.length} scenarios and rules met, ${(met / decisions).toFixed(2)} per decision · busiest: ${busiest.name}, ${busiest.decisions} decisions`;
+      const runs = RUNS.filter(run => run.iteration === k).map(run => run.tries ? `${run.id} (trying ${run.tries})` : run.id);
+      return `${state} · runs: ${runs.join(', ')}`;
     }
 
     // A board: its columns of cards, and only the links between cards it shows.
@@ -2658,15 +2754,16 @@ Not announced,0
       return [...call, json, ...behaviourNow(instance, cls)];
     }
 
-    // Code: the class's own source, and the class it extends, coloured by sb-code.
+    // Code: the class's own source, and the class it extends, coloured by sb-code, each with the
+    // decisions it holds.
     function codeView(cls) {
-      const chain = [];
-      for (let c = cls; c && c.toString().startsWith('class'); c = Object.getPrototypeOf(c)) chain.unshift(c);
-      return chain.map(c => {
+      return chainOf(cls).flatMap(c => {
         const code = document.createElement('sb-code');
         code.setAttribute('variables', 'none');
         code.code = dedent(c.toString());
-        return code;
+        const counts = methodsOf(c).map(name => `${name}() ${decisionsIn(c.prototype[name].toString())}`);
+        const summary = el('p', 'object-call', `${c.name}: ${plural(decisionsIn(c.toString()), 'decision')}${counts.length ? ` · ${counts.join(', ')}` : ''}`);
+        return [summary, code];
       });
     }
 
@@ -2926,9 +3023,8 @@ Not announced,0
       if (kind(to) === 'MET') return 'reading of';
       if (kind(from) === 'INV' && kind(to) === 'SRC') return 'gathered';
       if (kind(from) === 'PRM' && kind(to) === 'ENT') return 'part of';
-      if (['ENT', 'PRM'].includes(kind(from)) && ['SCN', 'RUL'].includes(kind(to))) {
-        return modelAt(Infinity).parts[from] ? 'exercised by' : 'would meet';
-      }
+      if (kind(to) === 'RUN') return itemOf(to).tries ? 'tried in' : 'run in';
+      if (kind(from) === 'RUN') return passesWith(itemOf(to), itemOf(from).parts) ? 'meets' : 'doesn’t meet';
       if (['ENT', 'PRM', 'SCN', 'RUL'].includes(kind(to))) return 'founds';
       if (kind(to) === 'INV') return 'prompts';
       if (kind(to) === 'EXP') return 'calls for';
@@ -3090,6 +3186,7 @@ Not announced,0
         case 'INV': return investigationCard(item, k);
         case 'ENT': return entityCard(item, k);
         case 'PRM': return primitiveCard(item, k);
+        case 'RUN': return runCard(item);
         case 'SCN': return scenarioCard(item, k);
         case 'RUL': return ruleCard(item, k);
         case 'OBS': return observationCard(item);
