@@ -30,8 +30,11 @@ A component is done when it has all of these:
 
 ## Checking work
 
-- **Run everything:** `node test/run.mjs` (headless Chrome for `test.html`, Node for `test.mjs`). It must pass before committing.
-- **Mutation-check new tests:** break the behaviour on purpose, confirm a test fails, restore.
+- **While working, test only what you changed.** Components share nothing, so a change to one can't affect another: run that component's own `test.html`, and nothing else. Add `node test/versions/test.mjs` after a version bump, and `test/collisions` and `test/isolation` when adding a component. Run tests only when the change needs checking. To run one page:
+  `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --allow-file-access-from-files --user-data-dir=<fresh temp dir> --virtual-time-budget=10000 --dump-dom file://<page>`
+  The results are the JSON in `#test-results`. Delete the temp dir afterwards. `node test/run.mjs` takes no path: given one, it still runs everything.
+- **The full suite once, before committing:** `node test/run.mjs` (headless Chrome for every `test.html`, Node for every `test.mjs`). It must pass. Running it earlier is the exception, for a change that really reaches across Sandkit (the shell, the harness, the runner), never the habit.
+- **Mutation-check new tests:** break the behaviour on purpose, confirm a test fails (on that page alone), restore.
 - **Look at it:** screenshot demos and sandboxes with headless Chrome rather than trusting the code. For example:
   `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --user-data-dir=<fresh temp dir> --window-size=1100,1000 --virtual-time-budget=800 --screenshot=<file> file://<page>`
   Crop tall pages with `sips -c <h> <w> --cropOffset <y> <x>`. Headless screenshots don't follow scrolling.

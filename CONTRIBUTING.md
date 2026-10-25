@@ -53,10 +53,10 @@ Every change to a component, the shell or Sandkit itself gets a changelog entry,
 
 ## Running the tests
 
-Open any `test.html` in a browser to see its results; run any `test.mjs` with Node. To run every test at once (the pages in headless Chrome, the rest in Node):
+Open any `test.html` in a browser to see its results; run any `test.mjs` with Node. While working on a component, its own `test.html` is all you need: components share nothing, so a change to one can't break another. To run every test at once (the pages in headless Chrome, the rest in Node):
 
 ```sh
 node test/run.mjs
 ```
 
-It needs only Node and Chrome; set `CHROME=/path/to/chrome` if Chrome isn't found. Please make sure everything passes before opening a pull request.
+It needs only Node and Chrome; set `CHROME=/path/to/chrome` if Chrome isn't found. It takes a while, so run it once, before opening a pull request, and make sure everything passes.
