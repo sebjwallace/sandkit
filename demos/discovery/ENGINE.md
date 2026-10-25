@@ -26,7 +26,7 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
 6. **Source texts:** `SOURCE_TEXT` (inline, because a page opened from disk can't read files) and `STILLS`, drawn as SVG.
 7. **Working things out:**
    - **claims:** weighed by the discovery engine (`engines/discovery`): `discovery()` makes it from the sources and claims, `weighed(claim, k)` asks it how a claim stood as of an iteration;
-   - **derived statuses:** `reviewReasons`/`decisionStatus`, `questionStatus`, `assumptionStatus`, `inferenceStatus`, `predictionStatus`, `partStage`, `investigationStatus`, `experimentStatus`, `actionStatus`, `testStatus`;
+   - **derived statuses:** the engine's too: `statusOf(item, k)` asks it for any record's status, and `reviewReasons(decision, k)` puts its reasons for reviewing a decision into words. The model's own, `partStage` and `testStatus`, are still the page's;
    - **compression:** `decisionsIn`, `modelDecisions`, `busiestMethod`, `compare`, `changeKind`, `runResults`;
    - **watched runs:** `watchedRun`, `testsOf`.
 8. **Card helpers,** which prepare a card's data for `sb-discovery-card` and draw nothing: `cardHead`, `strip`, `statusBadge`, `facet`, `fold`, `viewFold` (a fold holding a component, slotted in), `sources`, `cite`, `passage`, `assertionItem`, `basisBadge`, `scoreBadge`, and `card`, which adds the card's iteration and file. Plus `el`, and `icon`, `sourceIcon` and `formatBadge` for the source cards and the object view.

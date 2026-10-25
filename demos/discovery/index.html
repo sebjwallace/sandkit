@@ -885,68 +885,26 @@ Not announced,0
 
     // Where each card's passage sits on the stills: [still, row].
     const STILL_PASSAGES = { 'CLM-1': [0, 0], 'CLM-2': [1, 1], 'CLM-3': [0, 3], 'CLM-4': [1, 4] };
-    // Weighing claims is the discovery engine's. The page gives it the sources, each with the iteration
-    // it arrived in, and the claims, and asks how a claim stood as of an iteration.
+    // Weighing claims and working out statuses are the discovery engine's. The page gives it the
+    // sources and the records, each saying the iteration it arrived in, and asks how a claim, or any
+    // record's status, stood as of an iteration.
     const sourceById = id => SOURCES.find(s => s.id === id);
 
     // What rests on a card. Awaited material only waits on it, so it doesn't count.
     const reliedOnBy = card => links().filter(([from, to]) => from === card.id && !to.startsWith('NEXT')).map(([, to]) => to);
 
     let engine = null;
-    const discovery = () => engine ??= createDiscovery({ sources: SOURCES.map(s => ({ ...s, iteration: iterationOf(s.id) })), claims: CLAIMS });
+    const discovery = () => engine ??= createDiscovery({ sources: SOURCES, claims: CLAIMS, questions: QUESTIONS, assumptions: ASSUMPTIONS,
+      inferences: INFERENCES, observations: OBSERVATIONS, predictions: PREDICTIONS, outcomes: OUTCOMES, investigations: INVESTIGATIONS,
+      experiments: EXPERIMENTS, actions: ACTIONS, decisions: DECISIONS });
     const weighed = (claim, k = Infinity) => discovery().weigh(claim.id, { asOf: k, reliedOn: reliedOnBy(claim).length > 0 });
 
-    // Why a decision needs reviewing by an iteration: a claim it rests on has turned against
-    // it since it was made, or what it predicted hasn't been borne out. None means it stands. A
-    // claim already refuted when the decision was made is part of its grounds, not a reason.
-    function reviewReasons(decision, k = Infinity) {
-      const reasons = [];
-      const doubted = standing => standing === 'refuted' || standing === 'contested';
-      for (const claim of CLAIMS.filter(c => decision.restsOn.includes(c.id))) {
-        const then = weighed(claim, iterationOf(decision.id)).standing, now = weighed(claim, k).standing;
-        if (doubted(now) && !doubted(then)) reasons.push(`${claim.id}, which it rests on, is now ${now}.`);
-      }
-      for (const assumption of ASSUMPTIONS.filter(a => decision.restsOn.includes(a.id))) {
-        const then = assumptionStatus(assumption, iterationOf(decision.id)), now = assumptionStatus(assumption, k);
-        if (now === 'refuted' && then !== 'refuted') reasons.push(`${assumption.id}, which it rests on, is now refuted.`);
-      }
-      for (const prediction of PREDICTIONS.filter(p => p.from === decision.id)) {
-        if (predictionStatus(prediction, k) === 'not borne out') reasons.push(`${prediction.id}, what it predicted, was not borne out.`);
-      }
-      return reasons;
-    }
+    // Every status is the engine's too: a record's, as of an iteration.
+    const statusOf = (item, k = Infinity) => discovery().status(item.id, { asOf: k });
 
-    const decisionStatus = (decision, k) => reviewReasons(decision, k).length ? 'review' : decision.status;
-
-    // A question is answered once a source that answers it has arrived, and an action done once
-    // the source that shows it has.
-    const questionStatus = (question, k = Infinity) =>
-      question.answer && Object.keys(question.answers).some(source => iterationOf(source) <= k) ? 'answered' : 'unresolved';
-    // An assumption is refuted or confirmed by the observations that test it, once they arrive;
-    // untested until then. An inference is shaken once any premise is in doubt.
-    function assumptionStatus(assumption, k = Infinity) {
-      const verdicts = OBSERVATIONS.filter(o => o.tests?.[0] === assumption.id && iterationOf(o.id) <= k).map(o => o.tests[1]);
-      return verdicts.includes('−') ? 'refuted' : verdicts.includes('+') ? 'confirmed' : 'untested';
-    }
-
-    function inferenceStatus(inference, k = Infinity) {
-      const doubted = id => {
-        if (id.startsWith('CLM')) return ['refuted', 'contested'].includes(weighed(itemOf(id), k).standing);
-        if (id.startsWith('ASM')) return assumptionStatus(itemOf(id), k) === 'refuted';
-        if (id.startsWith('INF')) return inferenceStatus(itemOf(id), k) === 'shaken';
-        return false;
-      };
-      return inference.premises.some(doubted) ? 'shaken' : 'sound';
-    }
-
-    // A prediction is borne out, or not, by the latest outcome measured against it.
-    // Until an outcome measures it, an experiment's results can support it or put it in doubt.
-    function predictionStatus(prediction, k = Infinity) {
-      const latest = OUTCOMES.filter(o => o.against === prediction.id && iterationOf(o.id) <= k).pop();
-      if (latest) return { worked: 'borne out', partly: 'partly', failed: 'not borne out' }[latest.result];
-      const verdicts = OBSERVATIONS.filter(o => o.tests?.[0] === prediction.id && iterationOf(o.id) <= k).map(o => o.tests[1]);
-      return verdicts.includes('−') ? 'in doubt' : verdicts.includes('+') ? 'supported' : 'pending';
-    }
+    // Why a decision needs another look, as of an iteration, in words.
+    const reviewReasons = (decision, k = Infinity) => discovery().reviewReasons(decision.id, { asOf: k })
+      .map(r => r.why === 'predicted' ? `${r.ref}, what it predicted, was not borne out.` : `${r.ref}, which it rests on, is now ${r.now}.`);
 
     // The model as it stood by an iteration, and a part's stage in it: integrated once a version
     // of the model holds it, rejected once turned down, trying once a candidate model tries it,
@@ -1117,12 +1075,9 @@ Not announced,0
     const testOutcome = (test, k) => JSON.stringify(test.id.startsWith('SCN') ? scenarioResults(test, k) : ruleFailures(test, k));
 
     const gatheredBy = (investigation, k = Infinity) => SOURCES.filter(s => s.gatheredBy === investigation.id && iterationOf(s.id) <= k);
-    const investigationStatus = (investigation, k = Infinity) => gatheredBy(investigation, k).length ? 'done' : 'under way';
 
     const resultsOf = (experiment, k = Infinity) => OBSERVATIONS.filter(o => o.resultOf === experiment.id && iterationOf(o.id) <= k);
-    const experimentStatus = (experiment, k = Infinity) => resultsOf(experiment, k).length ? 'done' : 'planned';
 
-    const actionStatus = (action, k = Infinity) => action.done && iterationOf(action.done) <= k ? 'done' : action.status;
     // Drawing
 
     function el(tag, className, text) {
@@ -1257,7 +1212,7 @@ Not announced,0
       const [askedIn, asking] = question.raisedBy;
       const asked = passage(askedIn, asking, { stance: '?' });
       const answers = Object.entries(question.answers).filter(([id]) => iterationOf(id) <= k).map(([id, quote]) => passage(id, quote));
-      const status = questionStatus(question, k);
+      const status = statusOf(question, k);
       return card(
         cardHead('question', question.id, `Raised by ${sourceById(askedIn).name}, ${askedIn}`, [statusBadge(status)]),
         strip('main', 'Question', question.text),
@@ -1271,10 +1226,10 @@ Not announced,0
     function decisionCard(decision, k = Infinity) {
       const options = decision.options.map(option => optionItem(option, option.id === decision.chosen));
       const predicts = PREDICTIONS.filter(p => p.from === decision.id)
-        .map(p => strip('expect', `Predicts · ${p.id} · ${predictionStatus(p, k)}`, `${p.text} By ${p.by}.`));
+        .map(p => strip('expect', `Predicts · ${p.id} · ${statusOf(p, k)}`, `${p.text} By ${p.due}.`));
       const reasons = reviewReasons(decision, k);
       return card(
-        cardHead('decision', decision.id, `Decided by ${decision.deciders.join(', ')}, ${formatDate(decision.when)}`, [statusBadge(decisionStatus(decision, k))]),
+        cardHead('decision', decision.id, `Decided by ${decision.deciders.join(', ')}, ${formatDate(decision.when)}`, [statusBadge(statusOf(decision, k))]),
         strip('main', 'Question', decision.title),
         strip('answer', 'Decision', decision.decided),
         strip('note', 'Reason', decision.reason),
@@ -1339,7 +1294,7 @@ Not announced,0
       const relied = reliedOnBy(assumption);
       const tests = OBSERVATIONS.filter(o => o.tests?.[0] === assumption.id && iterationOf(o.id) <= k);
       return card(
-        cardHead('assumption', assumption.id, `Held by ${assumption.heldBy}`, [statusBadge(assumptionStatus(assumption, k))]),
+        cardHead('assumption', assumption.id, `Held by ${assumption.heldBy}`, [statusBadge(statusOf(assumption, k))]),
         strip('main', 'Assumption', assumption.text),
         strip('note', 'Relied on by', relied.length ? relied.join(', ') : 'Nothing yet.'),
         strip('expect', 'Tested by', EXPERIMENTS.filter(e => e.tests.includes(assumption.id)).map(e => `${e.id}: ${e.text}`).join(' ') || assumption.testBy),
@@ -1356,7 +1311,7 @@ Not announced,0
     function inferenceCard(inference, k = Infinity) {
       const premises = cardRows(inference.premises, k);
       return card(
-        cardHead('inference', inference.id, `Reasoned by ${inference.raisedBy}`, [statusBadge(inferenceStatus(inference, k))]),
+        cardHead('inference', inference.id, `Reasoned by ${inference.raisedBy}`, [statusBadge(statusOf(inference, k))]),
         strip('main', 'Inference', inference.text),
         strip('note', 'Because', inference.step),
         fold('Premises', premises),
@@ -1392,7 +1347,7 @@ Not announced,0
       const found = gatheredBy(investigation, k);
       return card(
         cardHead('investigation', investigation.id, investigation.prompt ? `Prompted by ${investigation.prompt}` : 'Part of the first look',
-          [facet(investigation.form), facet(`by ${investigation.by}`), statusBadge(investigationStatus(investigation, k))]),
+          [facet(investigation.form), facet(`by ${investigation.who}`), statusBadge(statusOf(investigation, k))]),
         strip('main', 'Investigation', investigation.text),
         strip('note', 'How', investigation.how),
         found.length ? strip('answer', 'Found', found.map(s => `${s.id}: ${s.name}, ${s.title}`).join(' · '))
@@ -1412,7 +1367,7 @@ Not announced,0
         strip('note', 'Counts', metric.counted),
         strip('answer', 'Readings', readings.length ? readings.map(o => `${o.value} in ${o.when} (${o.id})`).join(' · ') : 'None yet.'),
         ...(targets.length ? [strip('expect', 'Targets', targets.map(g => `${g.id}: ${g.target}`).join(' · '))] : []),
-        ...(forecasts.length ? [strip('expect', 'Forecasts', forecasts.map(p => `${p.id}: ${p.text} By ${p.by}, ${predictionStatus(p, k)}.`).join(' · '))] : []),
+        ...(forecasts.length ? [strip('expect', 'Forecasts', forecasts.map(p => `${p.id}: ${p.text} By ${p.due}, ${statusOf(p, k)}.`).join(' · '))] : []),
       );
     }
 
@@ -1422,7 +1377,7 @@ Not announced,0
       const [setIn, words] = experiment.setIn;
       return card(
         cardHead('experiment', experiment.id, `Called for by ${experiment.from} · tests ${experiment.tests.join(', ')}`,
-          [facet(experiment.form), facet(experiment.on === 'model' ? 'on the model' : 'in the world'), statusBadge(experimentStatus(experiment, k))]),
+          [facet(experiment.form), facet(experiment.on === 'model' ? 'on the model' : 'in the world'), statusBadge(statusOf(experiment, k))]),
         strip('main', 'Experiment', experiment.text),
         strip('note', 'How', experiment.method),
         strip('note', 'Kept the same', experiment.keeps),
@@ -1437,15 +1392,15 @@ Not announced,0
     // has measured it, by the iteration shown.
     function predictionCard(prediction, k = Infinity) {
       const latest = OUTCOMES.filter(o => o.against === prediction.id && iterationOf(o.id) <= k).pop();
-      const status = predictionStatus(prediction, k);
+      const status = statusOf(prediction, k);
       return card(
-        cardHead('prediction', prediction.id, `Predicted by ${prediction.from}, for ${prediction.by}`, [statusBadge(status)]),
+        cardHead('prediction', prediction.id, `Predicted by ${prediction.from}, for ${prediction.due}`, [statusBadge(status)]),
         strip('main', 'Prediction', prediction.text),
         strip('note', `Forecasts ${prediction.metric}`, `${itemOf(prediction.metric).name}, counted each ${itemOf(prediction.metric).every}.`),
         ...OBSERVATIONS.filter(o => o.tests?.[0] === prediction.id && iterationOf(o.id) <= k).map(o =>
           strip(o.tests[1] === '−' ? 'warn' : 'answer', `${o.tests[1] === '−' ? 'In doubt' : 'Supported'} · ${o.id}${o.resultOf ? ` from ${o.resultOf}` : ''}`, `${o.value}: ${o.of}.`)),
         latest ? strip(status === 'borne out' ? 'answer' : 'warn', `Outcome · ${latest.id}`, latest.text)
-          : strip('unresolved', 'Not measured yet', `No outcome has measured it. It falls due by ${prediction.by}.`),
+          : strip('unresolved', 'Not measured yet', `No outcome has measured it. It falls due by ${prediction.due}.`),
       );
     }
 
@@ -1582,7 +1537,7 @@ Not announced,0
     // An action: what has to happen, how anyone can tell it's done, and why.
     function actionCard(action, k = Infinity) {
       return card(
-        cardHead('action', action.id, `Owned by ${action.owner} · due ${formatDate(action.due)}`, [statusBadge(actionStatus(action, k))]),
+        cardHead('action', action.id, `Owned by ${action.owner} · due ${formatDate(action.due)}`, [statusBadge(statusOf(action, k))]),
         strip('main', 'Action', action.text),
         strip('answer', 'Done when', action.doneWhen),
         strip('note', 'Why', action.why),
@@ -1659,13 +1614,13 @@ Not announced,0
 
     const BOARDS = [
       { title: 'What we know', columns: [
-        { title: 'Gathered', holds: (id, k) => kindOf(id) === 'SRC' || (kindOf(id) === 'INV' && investigationStatus(itemOf(id), k) === 'done') },
+        { title: 'Gathered', holds: (id, k) => kindOf(id) === 'SRC' || (kindOf(id) === 'INV' && statusOf(itemOf(id), k) === 'done') },
         { title: 'Captured', holds: id => kindOf(id) === 'OBS' },
         { title: 'Interpreted', holds: id => ['MET', 'CLM', 'DEF', 'OPN'].includes(kindOf(id)) },
         { title: 'Reasoned', holds: id => kindOf(id) === 'INF' },
         { title: 'Assumed', holds: id => kindOf(id) === 'ASM' },
         { title: 'Open', holds: id => kindOf(id) === 'QST' },
-        { title: 'Under way', holds: (id, k) => kindOf(id) === 'INV' && investigationStatus(itemOf(id), k) === 'under way' },
+        { title: 'Under way', holds: (id, k) => kindOf(id) === 'INV' && statusOf(itemOf(id), k) === 'under way' },
         { title: 'Awaited', holds: awaitedFor(KNOWING) },
       ] },
       { title: 'Where we’re going', columns: [
@@ -1831,9 +1786,9 @@ Not announced,0
       if (id.startsWith('CON')) return { kind: 'constraint', text: item.text, status: item.status };
       if (id.startsWith('OUT')) return { kind: 'outcome', text: item.text, status: item.result };
       if (id.startsWith('AGR')) return { kind: 'agreement', text: item.text, status: item.status };
-      if (id.startsWith('PRD')) return { kind: 'prediction', text: item.text, status: predictionStatus(item, k) };
-      if (id.startsWith('EXP')) return { kind: 'experiment', text: item.text, status: experimentStatus(item, k) };
-      if (id.startsWith('INV')) return { kind: 'investigation', text: item.text, status: investigationStatus(item, k) };
+      if (id.startsWith('PRD')) return { kind: 'prediction', text: item.text, status: statusOf(item, k) };
+      if (id.startsWith('EXP')) return { kind: 'experiment', text: item.text, status: statusOf(item, k) };
+      if (id.startsWith('INV')) return { kind: 'investigation', text: item.text, status: statusOf(item, k) };
       if (id.startsWith('RUN')) {
         const r = runResults(item);
         return item.tries ? { kind: 'run', text: `Trying ${item.tries}: newly meets ${r.change.met.map(t => t.id).join(', ') || 'nothing'}, breaks ${r.change.broken.map(t => t.id).join(', ') || 'nothing'}`, status: earnsItsPlace(r.change) ? 'earns its place' : 'not yet' }
@@ -1848,13 +1803,13 @@ Not announced,0
         return { kind: 'metric', text: latest ? `${item.name}: ${latest.value} in ${latest.when}` : item.name };
       }
       if (id.startsWith('OBS')) return { kind: 'observation', text: `${item.value}: ${item.of}, ${item.when}` };
-      if (id.startsWith('ASM')) return { kind: 'assumption', text: item.text, status: assumptionStatus(item, k) };
-      if (id.startsWith('INF')) return { kind: 'inference', text: item.text, status: inferenceStatus(item, k) };
+      if (id.startsWith('ASM')) return { kind: 'assumption', text: item.text, status: statusOf(item, k) };
+      if (id.startsWith('INF')) return { kind: 'inference', text: item.text, status: statusOf(item, k) };
       if (id.startsWith('DEF')) return { kind: 'definition', text: `${item.term}: ${item.meaning}` };
       if (id.startsWith('OPN')) return { kind: 'opinion', text: item.text };
-      if (id.startsWith('QST')) return { kind: 'question', text: item.text, status: questionStatus(item, k) };
-      if (id.startsWith('DEC')) return { kind: 'decision', text: item.decided, status: decisionStatus(item, k) };
-      if (id.startsWith('ACT')) return { kind: 'action', text: item.text, status: actionStatus(item, k) };
+      if (id.startsWith('QST')) return { kind: 'question', text: item.text, status: statusOf(item, k) };
+      if (id.startsWith('DEC')) return { kind: 'decision', text: item.decided, status: statusOf(item, k) };
+      if (id.startsWith('ACT')) return { kind: 'action', text: item.text, status: statusOf(item, k) };
       return { kind: 'risk', text: item.text, status: item.status };
     }
 
