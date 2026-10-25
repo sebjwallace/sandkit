@@ -107,15 +107,6 @@ Classes: `sb-discovery-card` (`--expanded`, `--highlighted`), `sb-discovery-card
 
 A board that folds a column down can hide everything in a compact card but its icon and code: `.sb-discovery-card__compact > :not(.sb-discovery-card__compact-head), .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-modal`](../sb-modal/manifest.md),** holding the card expanded when a compact one is opened.
-- **[`sb-source`](../sb-source/manifest.md),** for `sb-open` on a source or a passage: open the source, at the passage when there's a `quote`.
-- **[`sb-source-trace`](../sb-source-trace/manifest.md),** whose `drawNode` can return a compact card, so a trace looks like the boards.
-- **[`sb-outliner`](../sb-outliner/manifest.md),** whose traces the sandbox routes to every card's `highlight`.
-
 ## Notes
 
 - **Dependencies:** none.

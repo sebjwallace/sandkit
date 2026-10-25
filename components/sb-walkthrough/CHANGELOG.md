@@ -1,5 +1,8 @@
 # sb-walkthrough changelog
 
+## 0.1.4 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.1.3 · 2026-10-18
 - Viewers resize the narration and the views by dragging the dividers between them, or with the arrow keys; double-clicking a divider resets it. No area goes below 120px. Sizes aren't remembered between visits.
 - The views are placed by the component rather than by `data-count` styles; `data-count` is still set.

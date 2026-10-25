@@ -1,4 +1,4 @@
-// Sandkit sb-wireframe 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-wireframe 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A wireframe prototype written in plain HTML. Everything inside is drawn as a wireframe; children
 // marked data-screen become screens shown one at a time, data-go moves between them, and parts
 // marked data-ref can be pointed at, highlighted and clicked.

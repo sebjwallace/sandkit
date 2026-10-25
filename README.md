@@ -130,7 +130,7 @@ For contributors:
 - **Keep it independent.** Each component works on its own when copied into a sandbox. A little repetition is acceptable, as simplicity matters more here than tidiness.
 - **Keep it contained.** No global variables and nothing leaking out to clash with anything else. Each component's tag name begins with `sb-`.
 - **Communicate through the interface.** Components receive data and emit events. They never reach into one another or into the page.
-- **Never depend on one another.** Components are combined in the sandbox, not inside each other. A component that should hold the sandbox's content offers a slot, and its manifest can suggest good pairings in words.
+- **Never depend on one another.** Components are combined in the sandbox, not inside each other. A component that should hold the sandbox's content offers a slot, and the practices say which components go together.
 - **Let sandboxes set the style.** Colours and fonts are supplied by the sandbox through CSS custom properties.
 - **Survive packaging.** Every component must continue to work when an entire sandbox is packaged into a single file.
 - **Test simply.** Each component has a test page that runs in a browser, with no test framework.

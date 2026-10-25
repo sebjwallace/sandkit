@@ -107,16 +107,6 @@ Classes: `sb-choice` (`--highlighted`), `sb-choice__head`, `sb-choice__heading`,
 
 The card carries `data-ref` with its id, `data-status`, and `data-has-chosen` when an option is chosen. Each option carries `data-ref` as `DEC-3.b`, so a sandbox can find them (see the [locating practice](../../practices/locating.md)). Codes carry `data-go`: they lead to a place rather than being one. Gaps carry `data-tone`: `warn` on an accepted decision, `todo` on a proposal.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[The sources practice](../../practices/sources.md).** On `sb-save`, save the decision as a source file in the workshop's inbox folder, then catalogue it, so model items can cite it and a trace shows the decision behind them.
-- **[The identifiers practice](../../practices/identifiers.md).** Issue `DEC-` codes from a counter that only goes up, so a decision has its code at once and can be cited during the workshop.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so prose can point at a decision or one of its options.
-- **[`sb-trace-mode`](../sb-trace-mode/manifest.md) and [`sb-source-trace`](../sb-source-trace/manifest.md).** On `sb-go`, show why the code is there, decisions included.
-- **[`sb-id`](../sb-id/manifest.md)** pills in the prose citing a decision's code.
-
 ## Notes
 
 - **The card never stores or saves.** Every save comes out as `sb-save` with the whole decision; the sandbox keeps it and sets it back.

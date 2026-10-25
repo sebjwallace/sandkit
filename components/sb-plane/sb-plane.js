@@ -1,4 +1,4 @@
-// Sandkit sb-plane 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-plane 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A two-dimensional coordinate plane for vectors, points and shapes, which can be transformed by a
 // matrix, smoothly, so people watch space itself move. Vectors and points can be dragged.
 //

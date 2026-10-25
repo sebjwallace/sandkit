@@ -1,5 +1,8 @@
 # sb-tree changelog
 
+## 0.1.2 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.1.1 · 2026-10-18
 - Each item carries `data-ref` with its node's id (it was an undocumented `data-id`), so a sandbox can find a node on the page.
 - `reveal` returns `true`, or `false` if there's no such node.

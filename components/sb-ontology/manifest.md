@@ -111,15 +111,6 @@ Classes: `sb-ontology__bar`, `sb-ontology__group`, `sb-ontology__summary`, `sb-o
 
 Boxes carry `data-ref` with their class's or individual's id, links carry `from.relation.to` (`Fish.is.Animal` for a subclass link), and rows in the details carry `owner.property`, so a sandbox can find them (see the [locating practice](../../practices/locating.md)). Only the current level and what `show` names are drawn; `reveal` switches level.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **Several of itself.** One ontology, several views, each with its own `show` and the paragraph it illustrates. Pointing at a thing lights it in every view it appears in.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce `sb-point`'s id, so a phrase in the prose and the thing in the drawing light each other up. Light a chain the model found by highlighting its links.
-- **[`sb-id`](../sb-id/manifest.md) codes as ids,** so a class or claim in the drawing and its pill in the prose are the same ref.
-- **[`sb-table`](../sb-table/manifest.md),** for the individuals of one class with all their values: on `sb-select` of a class, fill the table with its members.
-
 ## Notes
 
 - **Readability:** about 20 boxes a view, 30 at most (see above). The layout compares every box with every other, so it's quick for hundreds; it isn't meant for thousands.

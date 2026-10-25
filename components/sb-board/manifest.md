@@ -116,21 +116,11 @@ Classes: `sb-board__viewport` (`--dragging`, `--glide`), `sb-board__space`, `sb-
 
 Frames and marks carry `data-ref` with their ref, so a sandbox can find them (see the [locating practice](../../practices/locating.md)). Items are the sandbox's own elements, with their own `data-ref`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **Any component as an item:** [`sb-callout`](../sb-callout/manifest.md) for notes, [`sb-source`](../sb-source/manifest.md) for sources, [`sb-image`](../sb-image/manifest.md) for pictures, [`sb-choice`](../sb-choice/manifest.md) for decisions, a small diagram. Give each a `data-ref`.
-- **[`sb-stamp`](../sb-stamp/manifest.md)** on items, for where each stands: verified, received, agreed.
-- **[`sb-tour`](../sb-tour/manifest.md),** to tell a story around the board. The sandbox's `goTo` calls `reveal`, so a step can point at an item, a frame or a mark.
-- **[`sb-handoff`](../sb-handoff/manifest.md),** to give `changes` to the agent: one line per change, from `words`.
-- **[The highlighting practice](../../practices/highlighting.md).** Items are the sandbox's own parts, so they point and light up as its other parts do.
-
 ## Notes
 
 - **Readability:** made for a few to a few dozen things, gathered around one question. Make another board for the next question rather than one wall for everything.
 - **Not yet:** viewers drawing marks, moving frames, moving items with the keyboard, and showing less detail when zoomed out wait until a sandbox needs them.
-- **Desktop and tablet:** dragging and pinching need room; phones are out of scope, as for `sb-panel`.
+- **Desktop and tablet:** dragging and pinching need room; phones are out of scope.
 - **Dependencies:** none.
 - **Export:** safe for single-file export. Classic script, no fetches, no external assets. Handwriting uses fonts already on the viewer's computer.
 - **Accessibility:** the board is a focusable region, panned and zoomed with the keys above. Items keep their own content, in order. Marks' words are text, read in order after the items.

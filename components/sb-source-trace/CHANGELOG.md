@@ -1,5 +1,8 @@
 # sb-source-trace changelog
 
+## 0.1.4 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.1.3 · 2026-10-25
 - Demo: what's derived from a source is a readable copy of it (a recording's transcript, a spreadsheet's table), never the agent's analysis, which lives in the items, as the sources practice now says.
 

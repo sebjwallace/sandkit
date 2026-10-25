@@ -93,15 +93,6 @@ Classes: `sb-venn__svg`, `sb-venn__universe`, `sb-venn__universe-label`, `sb-ven
 
 The diagram is drawn at a fixed size (400 by 320 pixels for two sets, 480 by 410 for three), and shrinks to fit a narrower space.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-parameters`](../sb-parameters/manifest.md),** to change the rule or the rates behind the sets: set `items` or `counts` again and watch what moves.
-- **[`sb-table`](../sb-table/manifest.md),** for the items with a column per set, when viewers need to search or sort them; on `sb-select` of a region, filter the table to its `items`.
-- **[`sb-bars`](../sb-bars/manifest.md),** when the regions' exact sizes matter, since the circles are all the same size.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce refs from `sb-point`, so "mammals that lay eggs" in the prose and its region light each other up.
-
 ## Notes
 
 - **Layout:** fixed and symmetric; the circles don't change size with their counts. Four sets, and circles sized by count, wait until a sandbox needs them.

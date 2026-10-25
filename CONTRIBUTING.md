@@ -17,7 +17,7 @@ Every component, and every change to one, should hold to these. [DECISIONS.md](D
 - **Reveal, don't merely display.** A table that lists rules displays; one that highlights the rule that just fired, and why, reveals.
 - **Domain-agnostic.** A component gives a domain its tooling, and never names domain concepts.
 - **Driven by the model.** A component shows state derived from the sandbox's model, set through its properties. What viewers do comes out as events for the sandbox to act on, so the model stays the one source of truth.
-- **Independent.** Components never reference one another, not even optionally. Sandboxes combine them, using slots where a component accepts the sandbox's content, and "Works well with" suggestions in manifests.
+- **Independent.** Components never reference one another, not even optionally. Sandboxes combine them, using slots where a component accepts the sandbox's content, as the practices describe; a manifest never names another component.
 - **Extend before adding.** Before proposing a new component, check whether an existing one could do the job by growing its own capabilities, and say which you chose. A new component is for a job with its own needs, however similar it looks.
 - **Contained.** A custom element without Shadow DOM, prefixed `sb-`, with no globals beyond its tag, prefixed and documented CSS classes, and colours from the theme tokens.
 - **Small and clear.** Plain JavaScript, no build step, no installs. Code that reads almost like an explanation of itself, without growing bigger for the sake of it.
@@ -28,7 +28,7 @@ Every component, and every change to one, should hold to these. [DECISIONS.md](D
 ```
 components/sb-example/
   sb-example.js   the component; its first line names it, with its version and licence
-  manifest.md     the contract agents read: purpose, usage, data, members, events, styling, works well with, notes
+  manifest.md     the contract agents read: purpose, usage, data, members, events, styling, notes
   CHANGELOG.md    one entry per release, newest first
   test.html       tests of the public contract, including two instances side by side
   demo.html       About, then Examples in contrasting sandboxes

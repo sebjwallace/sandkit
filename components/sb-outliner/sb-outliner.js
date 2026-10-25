@@ -1,4 +1,4 @@
-// Sandkit sb-outliner 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-outliner 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A floating panel outlining the things on a page that can be pointed at, each opening into its
 // parts. Pointing at an entry announces its whole trace, so everything connected lights up across
 // the page; two pins per entry, a fill and an outline, keep traces lit while people work, follow

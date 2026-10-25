@@ -1,4 +1,4 @@
-// Sandkit sb-timeline 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-timeline 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Events laid out in time: moments and spans in lanes, so what overlapped shows, with a line for
 // now that leaves what hasn't happened yet faded. Viewers zoom and pan; setting `view` glides the
 // timeline to the stretch the prose is about.

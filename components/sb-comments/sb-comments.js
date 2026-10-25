@@ -1,4 +1,4 @@
-// Sandkit sb-comments 0.2.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-comments 0.2.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Comments from the people exploring a sandbox, each citing what it's about, sent back as one
 // markdown text. In comment mode, a click picks rather than acts: the component reports where,
 // the sandbox answers with the refs there, and the viewer writes what they think. Saved comments

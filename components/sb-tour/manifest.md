@@ -66,7 +66,7 @@ Setting `anchor` and `ready` never fires events.
 
 | Event | Detail | When |
 |---|---|---|
-| `sb-step` | `{ index, ref, element }` | A step starts, by `start`, Next or Back. Go to `ref` and set `anchor`. The same event and detail as `sb-walkthrough`'s, so a sandbox handles both alike. Bubbles. |
+| `sb-step` | `{ index, ref, element }` | A step starts, by `start`, Next or Back. Go to `ref` and set `anchor`. Bubbles. |
 | `sb-close` | `{ index, reason }` | The tour closed: `done` (finished), `close` (the Close button or `close()`) or `escape`. Bubbles. |
 
 ## Viewing
@@ -84,14 +84,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 Its own custom property, to set on the page: `--sb-tour-dim` (the dimming's colour; default a translucent black, so it reads alike in light and dark themes).
 
 Classes: `sb-tour__spotlight` (`--anchored`), `sb-tour__tip`, `sb-tour__heading`, `sb-tour__steps`, `sb-tour__missing`, `sb-tour__controls`, `sb-tour__count`, `sb-tour__button` (`--next`), `sb-tour__close`.
-
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[The locating practice](../../practices/locating.md).** Its `goTo` goes to a ref, opening closed tabs and folded branches on the way, and returns the place to point at. When a step means a particular view (the diagram rather than the outline), carry it on the step as `data-*` and call that view's `reveal` instead.
-- **[`sb-walkthrough`](../sb-walkthrough/manifest.md),** where something else fits: a walkthrough lays out its own views and tells a story across them; a tour points at the page as it already is, anywhere on it.
-- **The shell's header:** a "Take the tour" button in `slot="actions"`.
 
 ## Notes
 

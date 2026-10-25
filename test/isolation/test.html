@@ -7,8 +7,8 @@
 </head>
 <body>
   <script>
-    // Components never reference each other. Their scripts and demos must not mention another
-    // component's tag; manifests may, because suggestions there are only text.
+    // Components never reference each other. Their scripts, demos and manifests must not mention
+    // another component's tag; the practices say which go together.
     const COMPONENTS = ['sb-accordion', 'sb-annotate', 'sb-bars', 'sb-board', 'sb-c4', 'sb-callout', 'sb-chart', 'sb-choice', 'sb-code', 'sb-comments', 'sb-controls', 'sb-decision-tree', 'sb-dependencies', 'sb-discovery-card', 'sb-erd', 'sb-flowchart', 'sb-graph', 'sb-grid', 'sb-handoff', 'sb-id', 'sb-image', 'sb-inspect-mode', 'sb-json', 'sb-kanban', 'sb-log', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-notebook', 'sb-ontology', 'sb-outliner', 'sb-panel', 'sb-parameters', 'sb-person', 'sb-plane', 'sb-poll', 'sb-profile', 'sb-rule', 'sb-rules', 'sb-scenario', 'sb-scrubber', 'sb-sequence', 'sb-source', 'sb-source-trace', 'sb-sources', 'sb-stamp', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-tabs', 'sb-timeline', 'sb-tour', 'sb-trace-mode', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref'];
 
     // file:// pages can read sibling files with XHR when the runner allows file access.
@@ -38,7 +38,7 @@
 
     for (const component of COMPONENTS) {
       const others = COMPONENTS.filter((c) => c !== component);
-      for (const file of [`${component}.js`, 'demo.html']) {
+      for (const file of [`${component}.js`, 'demo.html', 'manifest.md']) {
         test(`${component}/${file} mentions no other component`, async () => {
           const source = await read(`../../components/${component}/${file}`).catch(() => null);
           if (source === null) return; // not every component has a demo yet

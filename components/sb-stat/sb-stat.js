@@ -1,4 +1,4 @@
-// Sandkit sb-stat 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-stat 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Headline figures: the few numbers that matter, each with how it changed since the last update
 // and whether that's good, how far it is to its target, and a tone when it needs attention.
 //

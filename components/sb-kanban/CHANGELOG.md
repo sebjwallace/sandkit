@@ -1,5 +1,8 @@
 # sb-kanban changelog
 
+## 0.2.1 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.2.0 · 2026-10-24
 - **Breaking:** renamed from `sb-board`. Replace every `sb-board` with `sb-kanban`: the script path (`components/sb-kanban/sb-kanban.js`), the tag, and the classes (`sb-board__card` becomes `sb-kanban__card`, and so on).
 

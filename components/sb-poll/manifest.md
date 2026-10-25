@@ -100,15 +100,6 @@ Its own custom property: `--sb-poll-option-width`, the narrowest an option card 
 
 Classes: `sb-poll__question`, `sb-poll__people`, `sb-poll__person` (`--waiting`), `sb-poll__name`, `sb-poll__status`, `sb-poll__form`, `sb-poll__label`, `sb-poll__options`, `sb-poll__option` (`aria-pressed` when chosen; `--highlighted`), `sb-poll__option-label`, `sb-poll__button`, `sb-poll__foot`, `sb-poll__summary`, `sb-poll__groups`, `sb-poll__group` (`--outcome`, `--highlighted`), `sb-poll__group-head`, `sb-poll__count`, `sb-poll__held`, `sb-poll__answer`, `sb-poll__answer-head`, `sb-poll__mark` (`--right`, `--wrong`), `sb-poll__why`, `sb-poll__note`, `sb-poll__nobody`. Options and groups carry `data-option`, and `data-ref` when given a ref; answers carry `data-person`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-person`](../sb-person/manifest.md)** in each `person:<id>` slot, so people show as their badges.
-- **[`sb-handoff`](../sb-handoff/manifest.md),** to send the revealed poll to an agent: give it `poll.describe()` as part of the prompt, and put the agent's replies to each answer in `notes`.
-- **[`sb-scenario`](../sb-scenario/manifest.md)** above a prediction, with the outcome step left out until the reveal; then [`sb-chart`](../sb-chart/manifest.md) or the model's own view, so people see why it went the way it did.
-- **[`sb-stat`](../sb-stat/manifest.md)** in a person slot beside a badge, for a rating shown as a figure with a bar.
-
 ## Notes
 
 - **Readability:** a poll is one question, with a handful of options and of people. Several questions are several polls.

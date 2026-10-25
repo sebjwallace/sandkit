@@ -1,4 +1,4 @@
-// Sandkit sb-chart 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-chart 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Values over time, as lines, with reference lines for thresholds and targets. The latest value
 // of each line is marked, so it's always clear where things stand now. Point anywhere to read the
 // values there; mark events in time; bring a line forward; show where a scrubbed history is.

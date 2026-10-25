@@ -1,4 +1,4 @@
-// Sandkit sb-sequence 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-sequence 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A sequence diagram: participants side by side, each with a lifeline, and the messages between
 // them in the order they happen. Marks the message happening now, so a conversation can be played.
 //

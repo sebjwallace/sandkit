@@ -1,4 +1,4 @@
-// Sandkit sb-json 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-json 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // JSON shown cleanly, with the parts that matter in the spotlight and the rest folded away, so
 // prose about a large payload can point at exactly the lines it means. Clicking a line shows its
 // path; pointing at one shows any note the sandbox wrote for it.

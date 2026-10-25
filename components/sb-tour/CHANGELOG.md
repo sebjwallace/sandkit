@@ -1,5 +1,8 @@
 # sb-tour changelog
 
+## 0.1.2 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.1.1 · 2026-10-20
 - A step scrolls the page to its part when the part isn't in full view.
 - The spotlight and tooltip follow the part as it moves or changes size, not only on scrolling and resizing.

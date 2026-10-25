@@ -80,16 +80,6 @@ Cards and columns carry `data-ref` with their id, beside `data-id` and `data-col
 
 Columns share the width, each at least 150 pixels; with more than fit, the board scrolls sideways.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-controls`](../sb-controls/manifest.md),** to run the model: on each tick, step it and set `items`, and each step's moves are marked.
-- **[`sb-chart`](../sb-chart/manifest.md),** for the column counts over time: the board shows where things are, the chart whether a queue is growing.
-- **[`sb-log`](../sb-log/manifest.md),** for what happened to each card, including moves the model refused and why.
-- **[`sb-rules`](../sb-rules/manifest.md),** for the rules that decide which moves are allowed.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce a card's ref from `sb-point`, so a card and its mentions elsewhere light up together.
-
 ## Notes
 
 - **Accessibility:** cards are focusable; Enter selects, and the arrow keys move on a movable board, with focus following the card. Each column is labelled with its count, and says when it's over its limit.

@@ -76,14 +76,6 @@ Each card carries `data-ref` with its source's id, so a sandbox can find it (see
 
 Give the element a height (for example `height: 600px`) so the cards scroll under the filters, or leave it to grow with its content. The cards fill as many columns as fit, each at least 230px wide.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-source`](../sb-source/manifest.md)** beside it, showing the open source: on `sb-open`, load the file and set its `source`, `content` or `url`, and its `passages` from the model's items.
-- **[`sb-modal`](../sb-modal/manifest.md)** to open the source material over the page, with this list and `sb-source` side by side inside it.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce `sb-point` ids, so pointing at a source's code anywhere lights its card.
-
 ## Notes
 
 - **Dependencies:** none.

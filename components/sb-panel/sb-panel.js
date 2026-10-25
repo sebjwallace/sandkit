@@ -1,4 +1,4 @@
-// Sandkit sb-panel 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-panel 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A frame that lets viewers rearrange a sandbox: wrap any content in a panel, and viewers can pop
 // it out into a floating window, drag and resize it, collapse it, make it full screen, and dock it
 // back where it started. The panel never looks inside its content.

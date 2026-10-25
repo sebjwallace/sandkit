@@ -70,13 +70,6 @@ Classes: `sb-erd__svg`, `sb-erd__entity` (`--highlighted`, and the tone), `sb-er
 
 Entities carry `data-ref` with their id, and fields with `entity.field`, so a sandbox can find them (see the [locating practice](../../practices/locating.md)).
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-table`](../sb-table/manifest.md),** for the records themselves. On `sb-select`, show the chosen entity's rows; highlight the column of a chosen field.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so a sentence about "who borrowed what" lights the fields that record it.
-
 ## Notes
 
 - **Lines leave the side of their row that faces the target** and enter the target's facing side. When boxes overlap side to side, or a field refers to its own entity, the line leaves and enters on the right, bowing out past both.

@@ -76,15 +76,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-surface`, `--sb-surface-2`, `--sb
 
 Classes: `sb-decision-tree__svg`, `sb-decision-tree__node` (`--question` or `--outcome`, the tone, `--on-path`, `--current`, `--off`, `--highlighted`; carries `data-node-id`, and `data-ref` with the same id so a sandbox can find it: see the [locating practice](../../practices/locating.md)), `sb-decision-tree__shape`, `sb-decision-tree__label`, `sb-decision-tree__branch`, `sb-decision-tree__answer` and `sb-decision-tree__otherwise` (all three `--taken`, `--off`, `--alternative`; carry `data-branch-id`, the id of the node they lead to), `sb-decision-tree__value` (carries `data-value-id`).
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-parameters`](../sb-parameters/manifest.md),** for the case's figures: on each change, run the model and set `trace`, so viewers move a figure and watch the case take another way.
-- **[`sb-table`](../sb-table/manifest.md),** for many cases: on the table's `sb-select`, trace the chosen row.
-- **[`sb-rules`](../sb-rules/manifest.md),** when the tree is written as rules too: on `sb-select`, mark the rule behind the node.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce a node's ref from `sb-point`, so a question and its mentions in the prose light up together.
-
 ## Notes
 
 - **Layout:** each outcome takes the next place across, and each question sits centred over its answers, so nothing overlaps. Answers sit on the branches, with room left for what they lead to.

@@ -1,4 +1,4 @@
-// Sandkit sb-tree 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-tree 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A tree of nested things, as in a file system or an outline: branches open and close, lines
 // join children to their parent, and everything a viewer can do, the sandbox can do too.
 //

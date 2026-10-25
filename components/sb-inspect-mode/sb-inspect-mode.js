@@ -1,4 +1,4 @@
-// Sandkit sb-inspect-mode 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-inspect-mode 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Inspect mode: point at a part of the page to be told exactly what it is. Pointing outlines the
 // innermost part the sandbox can explain and, after a moment, shows its explanation in a card at
 // the side: a definition, the data behind it, the rules it takes part in, whatever explains it

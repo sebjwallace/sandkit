@@ -1,5 +1,8 @@
 # sb-profile changelog
 
+## 0.1.2 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.1.1 · 2026-10-18
 - The manifest points to `sb-dependencies` for which fields go together.
 

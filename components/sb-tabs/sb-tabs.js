@@ -1,4 +1,4 @@
-// Sandkit sb-tabs 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-tabs 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Tabs over the panels inside it: chapters of a sandbox, views of a model, anything. Each panel is
 // a direct child titled by its `heading`; only the selected one shows. Tab sets only ever look at
 // their own direct children, so they nest freely.

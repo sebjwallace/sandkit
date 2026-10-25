@@ -95,16 +95,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 
 Classes: `sb-timeline__frame` (`--dragging`), `sb-timeline__label` and `sb-timeline__track` (both `--highlighted`; carry `data-lane`), `sb-timeline__event` (`--point`, `--span`, `--future`, `--ongoing`, `--highlighted`; carries `data-id` and `data-tone`, and `data-ref` with the event's id so a sandbox can find it: see the [locating practice](../../practices/locating.md); a lane's label carries `data-ref` with the lane's id), `sb-timeline__overlay`, `sb-timeline__grid`, `sb-timeline__now`, `sb-timeline__now-label`, `sb-timeline__axis`, `sb-timeline__tick`, `sb-timeline__tools`, `sb-timeline__tool`, `sb-timeline__empty`. While gliding, the element has `sb-timeline--glide`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-scrubber`](../sb-scrubber/manifest.md),** to play history at a steady pace: set `now` on its `sb-change`, and move the scrubber on the timeline's `sb-now`.
-- **[`sb-controls`](../sb-controls/manifest.md),** to run a model that adds events as it goes: on each tick, step it and set `events` and `now`.
-- **[`sb-log`](../sb-log/manifest.md),** for the same events as a list with their detail: select an event in one and highlight it in the other.
-- **[`sb-chart`](../sb-chart/manifest.md),** for a measure over the same stretch: give both the same range, and set the chart's `current` to `now`.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce an event's ref from `sb-point`, so an event and its mentions elsewhere light up together. Prose can set `view` to glide to the stretch it is talking about.
-
 ## Notes
 
 - **Accessibility:** events are focusable, labelled with their time and note; Enter selects. On a scrubbable timeline, the now line is a focusable slider stepped by the arrow keys.

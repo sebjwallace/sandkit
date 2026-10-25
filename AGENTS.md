@@ -9,7 +9,7 @@ Sandkit is a toolkit for domain sandboxing. Read `README.md` for what it is, `DE
 - **One small step at a time, with the author deciding.** Propose briefly, recommend, then build. Keep answers short.
 - **Simplicity first.** Push back on anything, including the author's own ideas, that adds complexity it doesn't earn.
 - **Code that reads clearly:** small named helpers, comments only where intent isn't obvious, no cleverness, no bloat.
-- **Components never reference each other.** Composition happens in sandboxes, through slots, the `sb-highlight` event, and "Works well with" suggestions in manifests. `test/isolation` enforces it.
+- **Components never reference each other.** Composition happens in sandboxes, through slots and the `sb-highlight` event, as the practices describe; a manifest never names another component. `test/isolation` enforces it.
 
 ## Adding or changing a component
 

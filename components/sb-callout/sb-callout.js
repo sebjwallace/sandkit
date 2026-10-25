@@ -1,4 +1,4 @@
-// Sandkit sb-callout 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-callout 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A block that stands out from the text around it, like a textbook's "Definition" box: for
 // definitions, notes, tips, questions, answers and warnings. Its content is whatever is inside it.
 //

@@ -76,15 +76,6 @@ Classes: `sb-table__bar`, `sb-table__search`, `sb-table__count`, `sb-table__scro
 
 Give the element a height (for example `max-height: 320px`) so a long table scrolls under its headings.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-controls`](../sb-controls/manifest.md) or [`sb-scrubber`](../sb-scrubber/manifest.md).** On each step, set `rows` again, and the table marks what that step changed.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so pointing at a thing in the prose lights up its row, column or cell.
-- **[`sb-chart`](../sb-chart/manifest.md),** for the same values over time: the table shows where things stand and what just changed, the chart how they got there. Listen for `sb-select` to pick which row the chart follows.
-- **[`sb-parameters`](../sb-parameters/manifest.md)** to change values, since the table doesn't edit them.
-
 ## Notes
 
 - **Dependencies:** none.

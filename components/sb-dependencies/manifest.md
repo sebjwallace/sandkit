@@ -110,14 +110,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 
 Classes: `sb-dependencies__summary`, `sb-dependencies__heading`, `sb-dependencies__list`, `sb-dependencies__row` (`--near`), `sb-dependencies__item` (`--gone`), `sb-dependencies__field`, `sb-dependencies__strength`, `sb-dependencies__mark`, `sb-dependencies__exceptions`, `sb-dependencies__samples`, `sb-dependencies__more`, `sb-dependencies__skipped`, `sb-dependencies__empty`. Every field name carries `data-ref` with its path, so a sandbox can find a field everywhere it's mentioned (see the [locating practice](../../practices/locating.md)); a sandbox that gives fields codes maps them itself.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-profile`](../sb-profile/manifest.md),** for what each field holds. Give both the same samples, and narrow both together.
-- **[`sb-table`](../sb-table/manifest.md),** for the samples themselves: on `sb-select`, filter the table's rows to `e.detail.samples`.
-- **[`sb-graph`](../sb-graph/manifest.md),** for the rules as arrows: a node per field and an edge per `determines` finding, leaving out those with `via` so chains read as chains.
-
 ## Notes
 
 - **Dependencies:** none.

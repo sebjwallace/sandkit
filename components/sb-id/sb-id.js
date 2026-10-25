@@ -1,4 +1,4 @@
-// Sandkit sb-id 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-id 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A short identifying code, shown as a pill. Hover or focus shows what it refers to; clicking it
 // highlights every mention of it on the page. Hovering also announces the code page-wide, so
 // anything else marked with it can light up. Supports the identifiers and highlighting practices

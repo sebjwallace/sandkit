@@ -1,4 +1,4 @@
-// Sandkit sb-ontology 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-ontology 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Kinds of things and how they relate: classes, the individuals of each and the relations between
 // them, a few at a time, with what each kind inherits and the problems the model has found.
 //

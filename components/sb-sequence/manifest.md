@@ -77,14 +77,6 @@ Classes: `sb-sequence__svg`, `sb-sequence__participant` (`--highlighted`), `sb-s
 
 Participants, and messages and notes given an `id`, carry `data-ref` with it, so a sandbox can find them (see the [locating practice](../../practices/locating.md)). A message known only by its position has none.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-controls`](../sb-controls/manifest.md) or [`sb-scrubber`](../sb-scrubber/manifest.md),** to play the conversation: on each step, set `current` to the next message.
-- **[`sb-log`](../sb-log/manifest.md),** for the full record as it runs. On the log's `sb-select`, set `current` to the message the entry concerns.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight` when the prose mentions a participant or a message.
-
 ## Notes
 
 - **Layout:** lifelines are spaced to fit the heads and every label between them; a label spanning several lifelines widens each gap evenly.

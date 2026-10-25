@@ -97,14 +97,6 @@ Classes: `sb-c4__path`, `sb-c4__step` (the current one has `aria-current`), `sb-
 
 Boxes carry `data-ref` with their element's id, and a line carrying a single relationship with an `id` carries that id, so a sandbox can find them (see the [locating practice](../../practices/locating.md)). Only the current view is drawn, so an element inside a box that hasn't been entered isn't on the page to find; `reveal` goes to it.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-tree`](../sb-tree/manifest.md),** as an outline of the same model: on the tree's `sb-select`, `reveal` the element; on `sb-navigate`, `reveal` the path in the tree.
-- **[`sb-sequence`](../sb-sequence/manifest.md),** for one request through the parts: highlight the relationship of the sequence's current message.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, or call `reveal` when the prose names a part.
-
 ## Notes
 
 - **Size:** drawn at its real size, never scaled. It takes the width of its container, and a wider view scrolls within it.

@@ -1,4 +1,4 @@
-// Sandkit sb-choice 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-choice 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A decision as a card: the options weighed with their pros and cons, the one chosen, the reason,
 // who decided and when. With `editable`, a group records one in a workshop; the card fires the
 // whole decision and keeps nothing itself.

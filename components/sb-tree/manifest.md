@@ -78,15 +78,6 @@ Classes: `sb-tree__group`, `sb-tree__item` (`--selected`, `--highlighted`, `--ho
 
 Give the element a height (for example `max-height: 320px`) so a long tree scrolls.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-table`](../sb-table/manifest.md),** for the contents of what's chosen: on `sb-select`, show the selected branch's children, with their details, as rows.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so mentioning a node in the prose points at it, even when it's folded away.
-- **[The locating practice](../../practices/locating.md).** A sandbox's `goTo` finds a node by its `data-ref` and calls `reveal`, even when the tree sits in a closed tab.
-- **[`sb-log`](../sb-log/manifest.md),** when the model acts on nodes: on the log's `sb-select`, `reveal` and select the node the entry concerns.
-
 ## Notes
 
 - **Dependencies:** none.

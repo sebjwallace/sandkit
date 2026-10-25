@@ -69,14 +69,6 @@ Its own custom property: `--sb-stat-width`, the narrowest a tile gets before the
 
 Classes: `sb-stat__tile` (`--highlighted`; carries `data-tone`), `sb-stat__label`, `sb-stat__figure`, `sb-stat__value`, `sb-stat__unit`, `sb-stat__change` (carries `data-verdict`: `good`, `bad` or `neutral`), `sb-stat__meter`, `sb-stat__fill`, `sb-stat__target`, `sb-stat__note`, `sb-stat__empty`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-chart`](../sb-chart/manifest.md),** for how the figures got here: the figures say where things stand, the chart the history. On `sb-select`, show the chosen figure's line.
-- **[`sb-controls`](../sb-controls/manifest.md) or [`sb-parameters`](../sb-parameters/manifest.md):** set the stats on every step or change, and each figure says what that step did.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight` when the prose mentions a figure.
-
 ## Notes
 
 - **Dependencies:** none.

@@ -1,4 +1,4 @@
-// Sandkit sb-scenario 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-scenario 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A behaviour scenario as a card: its code, its title, and Given / When / Then steps written
 // clearly, each step pointable on its own. The model can say which steps played out as expected, and what actually happened.
 //

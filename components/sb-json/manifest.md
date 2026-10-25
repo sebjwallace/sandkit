@@ -77,14 +77,6 @@ Its own custom property, to set on the element: `--sb-json-height` (the code's g
 
 Classes: `sb-json__bar`, `sb-json__path` (`--empty`), `sb-json__toggle`, `sb-json__note` (the card), `sb-json__code`, `sb-json__line` (`--spotlit`, `--selected`, `--hovered`, `--highlighted`, `--noted`), `sb-json__gap` (`--holds-highlight`), `sb-json__gutter`, `sb-json__text`, `sb-json__key`, `sb-json__string`, `sb-json__number`, `sb-json__literal`, `sb-json__punct`, `sb-json__empty`. Lines carry `data-path`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[The highlighting practice](../../practices/highlighting.md).** Use paths as refs. Route `sb-highlight` to `highlight` for words that point, and set `spotlight` for words that are clicked, so the prose narrows the JSON to what it's discussing.
-- **[`sb-walkthrough`](../sb-walkthrough/manifest.md),** to step through a payload: on `sb-step`, set `spotlight` to the paths the step is about.
-- **[`sb-sequence`](../sb-sequence/manifest.md) or [`sb-log`](../sb-log/manifest.md),** for messages: on `sb-select`, show the chosen message's body as `value`.
-
 ## Notes
 
 - **Dependencies:** none.

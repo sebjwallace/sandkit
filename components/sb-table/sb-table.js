@@ -1,4 +1,4 @@
-// Sandkit sb-table 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-table 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Rows and columns to sort, search and filter, with the cells that just changed marked, so a
 // step of the model shows what it changed rather than only how things now stand.
 //

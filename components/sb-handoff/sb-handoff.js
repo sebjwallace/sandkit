@@ -1,4 +1,4 @@
-// Sandkit sb-handoff 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-handoff 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Handing something over to the agent and showing what comes back: what's been sent, Copy as
 // prompt, the prompt itself on the page, and the agent's reply once the sandbox has it.
 //

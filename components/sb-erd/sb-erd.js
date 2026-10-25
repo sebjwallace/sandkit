@@ -1,4 +1,4 @@
-// Sandkit sb-erd 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-erd 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // An entity relationship diagram whose lines start at the very field that holds the reference
 // and end at the very field it refers to, so every line says exactly which field points where.
 //

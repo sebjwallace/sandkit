@@ -12,7 +12,7 @@ Use this component through the interface below. You don't need to read its sourc
 <script src="components/sb-panel/sb-panel.js"></script>
 
 <sb-panel id="rules" heading="Rules">
-  <sb-rules></sb-rules>
+  <table>…</table>
 </sb-panel>
 ```
 
@@ -51,13 +51,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 Classes: `sb-panel__bar`, `sb-panel__heading`, `sb-panel__button`, `sb-panel__body`, `sb-panel__placeholder`. The element carries `floating` and `collapsed` attributes when they apply.
 
 The body scrolls when its content is taller than the panel. Give a docked panel a height in the sandbox's layout if it should scroll there too.
-
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **Any component that people want to keep in view while they explore,** such as [`sb-rules`](../sb-rules/manifest.md), [`sb-log`](../sb-log/manifest.md) or [`sb-chart`](../sb-chart/manifest.md): float it beside the part of the sandbox they're working with.
-- **[`sb-chart`](../sb-chart/manifest.md) and [`sb-graph`](../sb-graph/manifest.md)** fit themselves to the panel's width, so they stay readable as a floating panel is resized.
 
 ## Notes
 

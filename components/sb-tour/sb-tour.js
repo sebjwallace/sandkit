@@ -1,4 +1,4 @@
-// Sandkit sb-tour 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-tour 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A guided tour of the page as it stands: a tooltip beside one thing at a time, with the rest of
 // the page dimmed, and Next moving on. Steps are HTML children naming what they point at; the
 // sandbox goes there and hands the tour the element, so the tour never searches the page.

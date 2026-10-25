@@ -1,4 +1,4 @@
-// Sandkit sb-modal 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-modal 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A window over the page that holds attention until it is closed: an explanation, a decision or
 // a closer look. Modals stack, each over the last. Built on the browser's own modal dialog, which keeps focus inside,
 // closes on Escape and returns focus when done. Its content is whatever is inside it.

@@ -99,14 +99,6 @@ Its own custom property: `--sb-code-height`, the code's greatest height before i
 
 Classes: `sb-code__bar`, `sb-code__button`, `sb-code__slider`, `sb-code__count`, `sb-code__note`, `sb-code__body`, `sb-code__code`, `sb-code__line` (`--current`, `--highlighted`), `sb-code__number`, `sb-code__text`, `sb-code__comment`, `sb-code__string`, `sb-code__number-literal`, `sb-code__keyword`, `sb-code__literal`, `sb-code__name` (`--variable`, `--highlighted`), `sb-code__pane` (the variables, a `<details>`), `sb-code__toggle` (its heading), `sb-code__variables`, `sb-code__variable` (`--changed`, `--highlighted`, `--open`), `sb-code__empty`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-scrubber`](../sb-scrubber/manifest.md),** to play the trace at a steady pace: a range from 0 to the last step, setting `step` on `sb-change`.
-- **A picture of the data,** such as [`sb-table`](../sb-table/manifest.md) or [`sb-matrix`](../sb-matrix/manifest.md): on `sb-step`, show `e.detail.entry.variables` there too, so the code and the data move together.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so the prose can point at lines and variables, and announce the ref a line stands for from `sb-point`, so pointing at the code lights up what it concerns.
-
 ## Notes
 
 - **The model is the source of truth.** The trace is recorded by the model, never written by hand, so the two can't disagree. Running real code to produce a trace automatically may come later, as a separate tool.

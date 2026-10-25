@@ -112,21 +112,12 @@ The panel floats at the top right, below the header, 290px wide; position it, or
 
 Classes: `sb-outliner__bar`, `sb-outliner__grip`, `sb-outliner__title`, `sb-outliner__button`, `sb-outliner__body`, `sb-outliner__hint`, `sb-outliner__list`, `sb-outliner__heading`, `sb-outliner__entry`, `sb-outliner__parts`, `sb-outliner__caret`, `sb-outliner__label`, `sb-outliner__pin` (`--fill`, `--outline`), `sb-outliner__empty`. Entries carry `sb-outliner__entry--pointed`, `--lit`, `--pinned-fill` and `--pinned-outline` when they apply. `sb-outliner__glowing` carries the glow, as above.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **The shell's `panels` slot,** for a button in the header that opens and closes it.
-- **[`sb-inspect-mode`](../sb-inspect-mode/manifest.md):** its entries carry `data-ref`, so inspecting them says what each thing is.
-- **Components with a `highlight` property,** such as [`sb-graph`](../sb-graph/manifest.md) or [`sb-rules`](../sb-rules/manifest.md): route `sb-highlight`'s `refs` and `sb-pins`' lists to them, as the highlighting practice describes.
-- **[`sb-tree`](../sb-tree/manifest.md),** instead, for things inside things to browse rather than traces to keep lit.
-
 ## Notes
 
 - **Readable outlines:** list the things people reason about, with values in their labels ("Demand: 30 MW"), not every element on the page. Split a big page's outline by heading.
 - **Trace both ways:** an input should light what it feeds; an output what decided it.
 - **Never searches the page:** it lights only its own entries, and leaves the page to the sandbox.
-- **Components that light on `sb-highlight`,** such as `sb-id`, still light only for `ref`, not for the whole of `refs`.
+- **Components that light on `sb-highlight`** still light only for `ref`, not for the whole of `refs`.
 - **Not yet:** nesting deeper than one level, building the outline from the page's `data-ref`s, more than two kinds of pin, remembering where the panel was dragged.
 - **Dependencies:** none.
 - **Export:** safe for single-file export. Classic script, no fetches, no external assets.

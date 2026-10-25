@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.56 · 2026-10-25
+- **Manifests name no other component.** Every component's "Works well with" section is gone, and the few manifests naming another in passing say it in plain words, so components stay agnostic of each other even in suggestions (a patch version for each). The practices say which components go together; `test/isolation` now checks manifests too. The decision, the contributing guide, `AGENTS.md`, the readme, the building guide and the template's `AGENTS.md` say so.
+
 ## 0.2.55 · 2026-10-25
 - Fifty-eight components: added `sb-discovery-card`, one card of domain discovery in 26 kinds, compact, normal or expanded, in a new Discovery section of the catalog.
 - A new practice, `practices/domain-discovery.md`: discovering a domain on purpose, an iteration at a time, with a record of cards that are never edited, the kinds and what each is for, weighing claims, growing and trying the model, feedback, and showing the cards.

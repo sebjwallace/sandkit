@@ -47,7 +47,7 @@ What the people behind this sandbox treat as confidential, personal or otherwise
 - **Use them through their manifests** (`lib/sandkit/components/<name>/manifest.md`, `lib/sandkit/shell/manifest.md`). Don't read their source: it costs about three times as much as the manifest, which says all you need to use them.
 - **Don't edit anything in `lib/`.** It is a copy, and may be replaced when Sandkit is updated.
 - **To change a component, eject it:** copy its folder into `components/`, rename it (replace every occurrence of its tag name, e.g. `sb-log`, with a new one), note where it came from at the top of the file, and point the pages that use it at the new copy. From then on it belongs to this sandbox.
-- **Combine components in the page,** never inside each other. Each manifest's "Works well with" section suggests pairings and how to wire them.
+- **Combine components in the page,** never inside each other. The practices say which components go together and how to wire them.
 
 ## This sandbox's components
 

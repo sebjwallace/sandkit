@@ -57,7 +57,7 @@ Setting properties never fires the events below; they are for what viewers do.
 
 | Event | Detail | When |
 |---|---|---|
-| `sb-open` | `{ id }` | A viewer clicks a source. Open it, for example in [`sb-source`](../sb-source/manifest.md) in a modal. The trace stays as it is. Bubbles. |
+| `sb-open` | `{ id }` | A viewer clicks a source. Open it, for example on its own sheet in a modal. The trace stays as it is. Bubbles. |
 | `sb-follow` | `{ id }` | A viewer clicks an item, and the trace has moved to it. Bubbles. |
 | `sb-back` | `{ id }` | A viewer clicks Back or a crumb, and the trace has gone back to that subject. Bubbles. |
 | `sb-point` | `{ id }`, `id` `null` when pointing stops | A viewer points at a node (hover or focus). Bubbles. |
@@ -80,15 +80,6 @@ Classes: `sb-source-trace__trail`, `sb-source-trace__back`, `sb-source-trace__cr
 Each node carries `data-ref` with its id, so a sandbox can find it (see the [locating practice](../../practices/locating.md)).
 
 Give the element a height (for example `height: 70vh`) so a big graph scrolls inside it, or leave it to grow with its content.
-
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-modal`](../sb-modal/manifest.md)** to open the trace over the page when someone asks why a thing is there, and a second modal over it for the source.
-- **[`sb-source`](../sb-source/manifest.md)** to open a source on `sb-open`: set its `source`, the file's `content` or `url`, and as `passages` every citation of that source in `model.items`, so all the words the model rests on are marked.
-- **[`sb-trace-mode`](../sb-trace-mode/manifest.md),** Trace in the shell's mode picker: while it's on, pointing outlines anything whose `data-ref` is in `model.items`, and a click asks for the trace instead of acting. Open this in an `sb-modal` on its `sb-pick`. `examples/control-room/` shows it.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce `sb-point` ids, so pointing at a node lights the same thing elsewhere on the page.
 
 ## Notes
 

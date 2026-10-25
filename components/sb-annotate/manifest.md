@@ -64,13 +64,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-ac
 
 Classes: `sb-annotate__legend`, `sb-annotate__key` (`--highlighted`; carries `data-kind`), `sb-annotate__swatch`, `sb-annotate__count`, `sb-annotate__card`, `sb-annotate__kind`, `sb-annotate__note`. Marks carry their tone as a class (`sb-annotate--bad`), which sets `--sb-annotate-tone`, and `sb-annotate--pointed`, `--highlighted`, `--pinned` and `--faded` when they apply.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-point` refs into `sb-highlight`, and `sb-highlight` refs to `highlight`, so a mark in a transcript lights up the part of the model it concerns, and prose can point at the mark.
-- **[`sb-log`](../sb-log/manifest.md) or [`sb-table`](../sb-table/manifest.md),** for the things the text is about: on `sb-select`, select the entry or row the pinned mark refers to.
-
 ## Notes
 
 - **Use marks sparingly.** Text marked everywhere has nothing standing out; mark what a reader would otherwise miss.

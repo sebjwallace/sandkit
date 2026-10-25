@@ -1,4 +1,4 @@
-// Sandkit sb-matrix 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-matrix 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A matrix, or a vector (a matrix with one column), shown as a block of numbers in brackets, inline
 // in a sentence or on its own. Entries can be edited, and rows, columns or cells highlighted and
 // coloured, so the numbers can point at what they mean elsewhere in the sandbox.
