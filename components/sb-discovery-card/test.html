@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-discovery-card tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-discovery-card.js"></script>
+  <script src="sb-discovery-card.js"></script>
+</head>
+<body>
+  <script>
+    const CLAIM = {
+      id: 'CLM-1',
+      kind: 'claim',
+      status: 'contested',
+      byline: 'Raised by the river trust',
+      badges: [{ text: 'observed', title: 'Basis' }, { text: '+3', tone: 'warn' }],
+      text: 'Otters have left the upper Teme.',
+      notes: ['updated: new material arrived'],
+      file: 'claims/CLM-1.md',
+      strips: [{ tone: 'main', label: 'Claim', text: 'Otters have left the upper Teme.' }, { tone: 'answer', label: 'Answer', text: 'No.' }],
+      folds: [
+        { label: 'Sources', items: [{ passage: { source: 'SRC-1', stance: '+', quote: 'spraint at 4 of 18 sites', note: '= 8' } }, { passage: { source: 'SRC-4', stance: '-', quote: 'DNA at 9 of 12' } }] },
+        { label: 'Rests on it', items: [{ card: { id: 'ASM-1', kind: 'assumption', status: 'refuted', text: 'Fewer spraints, fewer otters', marks: ['assumed'] } }, 'And a note.'] },
+      ],
+      created: '2026-03-05T14:20',
+      by: 'Agent',
+      iteration: 1,
+      meta: [{ label: 'Prompted by', text: 'INV-2' }],
+    };
+    const SOURCE = { id: 'SRC-1', kind: 'source', format: 'data', text: 'Spraint survey', file: 'sources/spraint.csv' };
+
+    const card = (data = CLAIM, attributes = '') => {
+      const element = mount(`<sb-discovery-card ${attributes}></sb-discovery-card>`);
+      element.card = data;
+      return element;
+    };
+    const part = (element, name) => element.querySelector(`.sb-discovery-card__${name}`);
+    const text = (element, name) => part(element, name)?.textContent.trim() ?? null;
+    const all = (element, name) => [...element.querySelectorAll(`.sb-discovery-card__${name}`)].map((el) => el.textContent.trim());
+    const folds = (element) => [...element.querySelectorAll('.sb-discovery-card__fold')];
+    const hearHighlights = () => {
+      const heard = [];
+      const listener = (e) => heard.push(e.detail.ref);
+      document.addEventListener('sb-highlight', listener);
+      return { heard, stop: () => document.removeEventListener('sb-highlight', listener) };
+    };
+
+    // ---- The card itself ----
+
+    test('draws nothing until it has a card', () => {
+      assertEqual(mount('<sb-discovery-card></sb-discovery-card>').children.length, 0);
+    });
+
+    test('carries its code, kind and status, and clears them with the card', () => {
+      const element = card();
+      assertEqual([element.dataset.ref, element.dataset.kind, element.dataset.status], ['CLM-1', 'claim', 'contested']);
+      element.card = null;
+      assertEqual([element.dataset.ref, element.dataset.kind, element.dataset.status, element.children.length], [undefined, undefined, undefined, 0]);
+    });
+
+    test('names its kind on the icon, and draws a kind it doesn’t know with a plain one', () => {
+      assertEqual(part(card(), 'icon').title, 'Claim');
+      assertEqual(part(card({ id: 'X-1', kind: 'hunch' }), 'icon').title, 'hunch');
+    });
+
+    // ---- Normal ----
+
+    test('is normal by default: the header, the strips, then folds closed and counted', () => {
+      const element = card();
+      assertEqual(element.variant, 'normal');
+      assertEqual(text(element, 'id'), 'CLM-1');
+      assertEqual(text(element, 'byline'), 'Raised by the river trust');
+      assertEqual(all(element, 'badges > *'), ['observed', '+3', 'contested']);
+      assertEqual(all(element, 'strip .sb-discovery-card__label'), ['Claim', 'Answer']);
+      assert(part(element, 'strip--answer'), 'a strip wears its tone');
+      assertEqual(folds(element).map((f) => [f.querySelector('summary').textContent, f.open]), [['Sources · 2', false], ['Rests on it · 2', false]]);
+      assertEqual(part(element, 'body--split'), null);
+    });
+
+    test('a badge given a tone carries it', () => {
+      assertEqual([...card().querySelectorAll('.sb-discovery-card__badge')].map((b) => b.dataset.tone ?? null), [null, 'warn']);
+    });
+
+    test('a fold the viewer opened stays open when the card is set again', () => {
+      const element = card();
+      folds(element)[1].open = true;
+      folds(element)[1].dispatchEvent(new Event('toggle'));
+      element.card = { ...CLAIM, status: 'refuted' };
+      assertEqual(folds(element).map((f) => f.open), [false, true]);
+    });
+
+    // ---- Compact ----
+
+    test('compact: icon, code, status, words, notes and file, and its marks', () => {
+      const element = card({ ...CLAIM, marks: ['carried'] }, 'variant="compact"');
+      const compact = part(element, 'compact');
+      assertEqual(compact.tagName, 'DIV');
+      assertEqual([text(element, 'id'), text(element, 'status'), text(element, 'compact-text'), text(element, 'note'), text(element, 'file')],
+        ['CLM-1', 'contested', 'Otters have left the upper Teme.', 'updated: new material arrived', 'claims/CLM-1.md']);
+      assert(compact.classList.contains('sb-discovery-card__compact--carried'), 'marked carried');
+      assertEqual(part(element, 'strip'), null);
+    });
+
+    test('compact and openable, it’s a button asking the sandbox to open it', () => {
+      const element = card(CLAIM, 'variant="compact" openable');
+      const opened = recordEvents(document, 'sb-open');
+      part(element, 'compact').click();
+      assertEqual(part(element, 'compact').tagName, 'BUTTON');
+      assertEqual(opened.map((e) => e.detail), [{ ref: 'CLM-1' }]);
+    });
+
+    // ---- Expanded ----
+
+    test('expanded: every fold open, beside the strips', () => {
+      const element = card(CLAIM, 'variant="expanded"');
+      assertEqual(folds(element).map((f) => f.open), [true, true]);
+      const columns = element.querySelectorAll('.sb-discovery-card__body--split > .sb-discovery-card__column');
+      assertEqual([columns.length, columns[0].querySelectorAll('.sb-discovery-card__strip').length, columns[1].querySelectorAll('.sb-discovery-card__fold').length], [2, 2, 2]);
+    });
+
+    test('expanded with no folds, the strips keep the whole width', () => {
+      const element = card({ ...CLAIM, folds: [] }, 'variant="expanded"');
+      assertEqual(part(element, 'body--split'), null);
+      assertEqual(element.querySelectorAll('.sb-discovery-card__body > .sb-discovery-card__strip').length, 2);
+    });
+
+    test('changing the variant redraws the card', () => {
+      const element = card();
+      element.variant = 'compact';
+      assert(part(element, 'compact'), 'compact after the change');
+    });
+
+    // ---- Sources ----
+
+    test('a source is always compact, on paper, its page marked with its format', () => {
+      for (const variant of ['compact', 'normal', 'expanded']) {
+        const element = card(SOURCE, `variant="${variant}"`);
+        assert(element.querySelector('.sb-discovery-card__paper > .sb-discovery-card__compact'), `${variant} is compact on paper`);
+        assertEqual(part(element, 'card'), null);
+      }
+      assertEqual(part(card(SOURCE), 'icon').title, 'Source · data');
+      assertEqual(text(card(SOURCE), 'format'), 'data');
+    });
+
+    // ---- What folds hold ----
+
+    test('a passage is on paper, with its stance, source, note and words', () => {
+      const [first, second] = card().querySelectorAll('.sb-discovery-card__paper');
+      assertEqual(first.dataset.ref, 'SRC-1');
+      assertEqual([text(first, 'stance'), text(first, 'source'), text(first, 'passage-note'), text(first, 'quote')], ['+', 'SRC-1', '= 8', '“spraint at 4 of 18 sites”']);
+      assertEqual([part(first, 'stance').dataset.stance, text(second, 'stance'), part(second, 'stance').dataset.stance], ['yes', '−', 'no']);
+    });
+
+    test('clicking a passage asks the sandbox to open its source at the words', () => {
+      const element = card();
+      const opened = recordEvents(element, 'sb-open');
+      part(element, 'slip').click();
+      assertEqual(opened.map((e) => e.detail), [{ ref: 'SRC-1', quote: 'spraint at 4 of 18 sites' }]);
+    });
+
+    test('another card in a fold is drawn compact, and opens by its code', () => {
+      const element = card();
+      const inner = element.querySelector('.sb-discovery-card__item > .sb-discovery-card__compact');
+      assertEqual([inner.dataset.ref, inner.tagName, text(inner, 'id')], ['ASM-1', 'BUTTON', 'ASM-1']);
+      assert(inner.classList.contains('sb-discovery-card__compact--assumed'), 'keeps its marks');
+      const opened = recordEvents(element, 'sb-open');
+      inner.click();
+      assertEqual(opened.map((e) => e.detail), [{ ref: 'ASM-1' }]);
+    });
+
+    test('a line of text in a fold is shown as it is', () => {
+      assertEqual(text(card().querySelectorAll('.sb-discovery-card__item')[3], 'text'), 'And a note.');
+    });
+
+    test('options weighed: the chosen one marked in words', () => {
+      const element = card({ id: 'DEC-1', kind: 'decision', folds: [{ label: 'Options', items: [
+        { option: { title: 'Spraint', pros: ['Cheap'], cons: ['Rests on ASM-1'] } },
+        { option: { title: 'eDNA', pros: ['Direct'], chosen: true, ref: 'DEC-1.b' } },
+      ] }] });
+      const options = [...element.querySelectorAll('.sb-discovery-card__option')];
+      assertEqual(options.map((o) => o.classList.contains('sb-discovery-card__option--chosen')), [false, true]);
+      assertEqual([text(options[1], 'chosen'), options[1].dataset.ref], ['✓ Chosen', 'DEC-1.b']);
+      assertEqual([all(options[0], 'point--pro'), all(options[0], 'point--con')], [['Cheap'], ['Rests on ASM-1']]);
+    });
+
+    test('a slot’s content shows where a fold names it, and stays when the card is set again', () => {
+      const element = mount('<sb-discovery-card variant="expanded"><ol slot="steps"><li>Given a cold outage</li></ol></sb-discovery-card>');
+      const data = { id: 'SCN-2', kind: 'scenario', folds: [{ label: 'Steps', items: [{ slot: 'steps' }] }] };
+      element.card = data;
+      assertEqual(element.querySelector('.sb-discovery-card__fold li li').textContent, 'Given a cold outage');
+      assertEqual(text(element, 'fold > summary'), 'Steps');
+      element.card = { ...data };
+      assertEqual(element.querySelectorAll('ol[slot="steps"]').length, 1);
+    });
+
+    // ---- Its own record ----
+
+    test('the footer: created, by whom, the iteration, the file, then anything else', () => {
+      const pairs = [...card().querySelectorAll('.sb-discovery-card__meta')].map((m) => [text(m, 'meta-label'), text(m, 'meta-text')]);
+      assertEqual(pairs, [['Created', '5 Mar 2026, 14:20 by Agent'], ['Iteration', '1'], ['File', 'claims/CLM-1.md'], ['Prompted by', 'INV-2']]);
+    });
+
+    test('with nothing to record, no footer; a when in another form is shown as given', () => {
+      assertEqual(part(card({ id: 'X-1', kind: 'claim' }), 'foot'), null);
+      assertEqual(text(card({ id: 'X-1', kind: 'claim', created: 'last spring' }), 'meta-text'), 'last spring');
+    });
+
+    // ---- Pointing and lighting ----
+
+    test('lights itself for its own code, and the parts of its folds for theirs', () => {
+      const element = card();
+      element.highlight = ['CLM-1'];
+      assert(element.classList.contains('sb-discovery-card--highlighted'), 'the card is lit');
+      element.highlight = ['SRC-4', 'ASM-1'];
+      assert(!element.classList.contains('sb-discovery-card--highlighted'), 'the card is no longer lit');
+      assertEqual([...element.querySelectorAll('.sb-discovery-card__part--highlighted')].map((p) => p.dataset.ref), ['SRC-4', 'ASM-1']);
+    });
+
+    test('lighting never redraws, so open folds stay open', () => {
+      const element = card();
+      folds(element)[0].open = true;
+      element.highlight = ['SRC-1'];
+      assert(folds(element)[0].open, 'still open');
+    });
+
+    test('pointing announces what’s pointed at, page-wide, and nothing once it leaves', () => {
+      const element = card();
+      const { heard, stop } = hearHighlights();
+      part(element, 'slip').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      part(element, 'slip').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      part(element, 'strip').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      element.dispatchEvent(new PointerEvent('pointerleave'));
+      stop();
+      assertEqual(heard, ['SRC-1', 'CLM-1', null]);
+    });
+
+    // ---- Safety and instances ----
+
+    test('displays text as text, never as markup', () => {
+      const x = '<b>x</b>';
+      const element = card({ id: x, kind: x, status: x, byline: x, badges: [{ text: x, title: x }], text: x, notes: [x], file: x,
+        strips: [{ tone: 'main', label: x, text: x }],
+        folds: [{ label: x, items: [x, { passage: { source: x, quote: x, note: x } }, { card: { id: x, kind: x, text: x } }, { option: { title: x, pros: [x], cons: [x] } }] }],
+        created: x, by: x, iteration: x, meta: [{ label: x, text: x }] }, 'variant="expanded"');
+      assertEqual(element.querySelectorAll('b').length, 0);
+      assertEqual(text(element, 'byline'), x);
+      element.variant = 'compact';
+      assertEqual(element.querySelectorAll('b').length, 0);
+      assertEqual(text(element, 'compact-text'), x);
+    });
+
+    test('two cards on one page keep their own card, variant, highlight and open folds', () => {
+      mount('<div><sb-discovery-card></sb-discovery-card><sb-discovery-card variant="compact"></sb-discovery-card></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-discovery-card');
+      a.card = CLAIM;
+      b.card = { ...CLAIM, id: 'CLM-2' };
+      a.highlight = ['CLM-1'];
+      folds(a)[0].open = true;
+      folds(a)[0].dispatchEvent(new Event('toggle'));
+      b.variant = 'normal';
+      assertEqual([a.dataset.ref, b.dataset.ref], ['CLM-1', 'CLM-2']);
+      assertEqual([a.classList.contains('sb-discovery-card--highlighted'), b.classList.contains('sb-discovery-card--highlighted')], [true, false]);
+      assertEqual([folds(a)[0].open, folds(b)[0].open], [true, false]);
+    });
+
+    test('loading the same script twice is harmless and quiet', () => {
+      assertEqual(consoleErrors, []);
+    });
+  </script>
+</body>
+</html>

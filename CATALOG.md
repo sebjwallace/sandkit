@@ -30,6 +30,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [Sources](practices/sources.md) | The material a sandbox was built from: `sources/` with one catalogue, an inbox to process, citations of passages from the model's `ITEMS`, and checking them. Supported by `tools/sources.mjs` and `tools/serve.mjs`. |
 | [Modes](practices/modes.md) | Other ways of using a sandbox for a while, such as commenting or tracing: one shape for every mode, and one at a time through the page-wide `sb-mode` event. Supported by the modes below. |
 | [Workshops](practices/workshops.md) | Working through a sandbox's model with the people who know the subject, until they understand it, have corrected it and own it: principles, roles, preparing, the workshop page, activities (predict and reveal, confidence checks, forks, checking sources, questions, decisions), the round trip with the agent, and closing. Supported by `sb-notebook`, `sb-person`, `sb-poll`, `sb-handoff` and `sb-choice`. |
+| [Domain discovery](practices/domain-discovery.md) | Discovering a domain on purpose, an iteration at a time: a record of cards that are never edited, each kind and what it's for, weighing claims, growing and trying the model, feedback from people who know the domain, and showing the cards. Supported by `sb-discovery-card`. |
 | [Feedback](practices/feedback.md) | Collecting comments with `sb-comments`, and what the agent does on receiving them: saved as sources, `FB-` codes, answered in the journal. Supported by `sb-comments`. |
 
 ## Shell
@@ -47,6 +48,14 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 | [`sb-comments`](components/sb-comments/manifest.md) | Comments from the people exploring a sandbox: choose Comment, click any part and say what you think; each comment cites its refs, view, version and state, and all are copied as one prompt or downloaded. |
 | [`sb-inspect-mode`](components/sb-inspect-mode/manifest.md) | What something is: choose Inspect, point at any part and a card at the side says what it is and how it stands now, in whatever way the sandbox explains it best; a click holds it. |
 | [`sb-trace-mode`](components/sb-trace-mode/manifest.md) | Why something is there: choose Trace, and pointing outlines every part the model can trace; a click asks the sandbox to show its trace instead of acting. |
+
+## Discovery
+
+Components for domain discovery. They know the method's kinds, which belong to discovery rather than to any subject; read the [domain discovery practice](practices/domain-discovery.md) first.
+
+| Component | What it does |
+|---|---|
+| [`sb-discovery-card`](components/sb-discovery-card/manifest.md) | One card of discovery, in 26 kinds each with its icon and tone: compact on a board, normal, or expanded in a modal; what it means in strips, what it rests on in folds of passages, cards, options and slots; sources always compact, on paper; when, by whom and in which iteration it was made. |
 
 ## Components
 
