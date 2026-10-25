@@ -2,6 +2,8 @@
 
 The Domain Discovery Engine demo models discovering how Ashford International's departure board decides what to show (the domain from `../departure-board`), as iterations of a loop, each on three boards: What we know, Where we're going, and What we're building (the foundry).
 
+This file is the short running log. The full account is in `README.md` (every concept and principle), `NEXT-STEPS.md` (each plan item in detail), `CARDS-SPEC.md` (the cards as one Sandkit component) and `ENGINE.md` (how `index.html` is built and extended). Keep them in step: a principle or plan item added here goes there in full.
+
 ## Principles settled so far
 
 - **Cards are never edited, only superseded or tested by later cards.** What follows from them (standing, refuted, done, review) is worked out for each iteration, so the iterations stay an audit trail.
