@@ -35,6 +35,7 @@
   <script src="records/inferences.js"></script>
   <script src="records/definitions.js"></script>
   <script src="records/opinions.js"></script>
+  <script src="records/feedback.js"></script>
   <script src="records/decisions.js"></script>
   <script src="records/goals.js"></script>
   <script src="records/predictions.js"></script>
@@ -224,6 +225,7 @@
       { id: 'SRC-13', iteration: 2, name: 'Station team', title: 'Station team minute, 6 November', summary: 'The station team’s resolutions after October’s results.', path: 'sources/minutes/station-team-2026-11-06.pdf', format: 'document', role: 'decision', speaksTo: 'what should be', asOf: '6 Nov 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
       { id: 'SRC-14', iteration: 2, name: 'Signalling control', title: 'Letter of agreement, platform-change notice', summary: 'Signalling control and the station team agree how much notice of a platform change each gives.', path: 'sources/agreements/platform-change-notice.pdf', format: 'document', role: 'decision', speaksTo: 'what should be', asOf: '5 Nov 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
       { id: 'SRC-15', iteration: 2, name: 'Sandbox model', title: 'Model run: October’s platform changes, replayed', summary: 'The board’s model replaying every platform change in October with PA announcements and seven minutes’ notice from signalling.', path: 'sources/runs/replay-2026-10.csv', format: 'data', role: 'record', asOf: '7 Nov 2026', grade: { value: 4, why: 'First-hand, unknown and clean.', aspects: { distance: 'first-hand', trust: 'unknown', clarity: 'clean' } } },
+      { id: 'SRC-16', iteration: 2, name: 'Platform dispatcher', title: 'Comments on the prototype, 3 November', summary: 'The afternoon dispatcher tried the prototype of iteration 1 in comment mode and said what she thought.', path: 'sources/feedback/prototype-comments-2026-11-03.md', format: 'annotations', role: 'record', asOf: '3 Nov 2026', grade: { value: 4, why: 'First-hand, from someone who runs the board every afternoon; on a prototype, not the real board.' } },
     ];
 
     // Each assertion: what the passage says to the claim, '+' (yes) or '−' (no), and its words.
@@ -682,6 +684,13 @@ From 9 November 2026.
 2. The station team will announce each confirmed change on the PA and the departure board at once.
 3. Either side may ask to review these terms at three months' notice.
 `,
+      'SRC-16': `Comments on the prototype, 3 November
+Platform dispatcher, on the model of iteration 1, scrubbing through the afternoon.
+
+1. (14:22, the Ely line) It moved from 10 to 11 and it only says it's late. People will stand on 10.
+2. (14:10, the Reading line) Cancelled due to a shortage of train crew. That reads the way we say it on the PA.
+3. (the whole board) Where are the calling points? Passengers always ask.
+`,
       'SRC-15': `result,platform changes
 Announced at least five minutes before departure,31
 Announced under five minutes before departure,3
@@ -711,7 +720,7 @@ Not announced,0
     const discovery = () => engine ??= createDiscovery({ sources: SOURCES, claims: CLAIMS, questions: QUESTIONS, assumptions: ASSUMPTIONS,
       inferences: INFERENCES, observations: OBSERVATIONS, predictions: PREDICTIONS, outcomes: OUTCOMES, investigations: INVESTIGATIONS,
       experiments: EXPERIMENTS, actions: ACTIONS, decisions: DECISIONS, goals: GOALS, metrics: METRICS, definitions: DEFINITIONS,
-      opinions: OPINIONS, agreements: AGREEMENTS, constraints: CONSTRAINTS, risks: RISKS, awaited: AWAITED, entities: ENTITIES,
+      opinions: OPINIONS, feedback: FEEDBACK, agreements: AGREEMENTS, constraints: CONSTRAINTS, risks: RISKS, awaited: AWAITED, entities: ENTITIES,
       primitives: PRIMITIVES, scenarios: SCENARIOS, rules: RULES,
       model: { versions: MODEL, candidates: CANDIDATES } });
 
@@ -965,6 +974,23 @@ Not announced,0
       );
     }
 
+    // Feedback: what someone who knows the domain said of one version of the model, whether it works
+    // or is wrong, and what came of it by the iteration shown: what answers it, or why it was declined.
+    function feedbackCard(comment, k = Infinity) {
+      const [said, words] = comment.said;
+      const about = comment.about === 'prototype' ? 'the prototype' : `${comment.about}, ${itemOf(comment.about).name}`;
+      const answers = [...SCENARIOS, ...RULES].filter(test => test.foundedOn.includes(comment.id) && iterationOf(test.id) <= k);
+      return card(
+        cardHead('feedback', comment.id, `Said by the ${comment.who.toLowerCase()} · on the model of iteration ${comment.version}`, [statusBadge(statusOf(comment, k))]),
+        strip('main', 'Feedback', comment.text),
+        strip(comment.verdict === 'works' ? 'answer' : 'warn', comment.verdict === 'works' ? 'Says it works' : 'Says it’s wrong', `About ${about}.`),
+        ...(comment.declined ? [strip('note', 'Declined', comment.declined)] : []),
+        ...(!comment.declined && !answers.length ? [strip('unresolved', 'Not answered yet', 'Nothing is founded on it yet.')] : []),
+        sources(cite([{ source: said, quote: words }]), 'No sources'),
+        ...(answers.length ? [fold('Answered by', answers.map(test => ({ card: faceOf({ id: test.id, ...asOf(test.id, k) }) })))] : []),
+      );
+    }
+
     // An investigation: what it seeks, how, who looks and in what form, and what it has found, by
     // the iteration shown.
     function investigationCard(investigation, k = Infinity) {
@@ -1201,9 +1227,9 @@ Not announced,0
     // answers what shaped a decision or what it brought about. What we're building: parts of the
     // model, proposed, integrated or rejected. The later boards rest on the first, so each starts
     // with the cards it cites from elsewhere, folded to their codes; links among those stay put.
-    const kindOf = id => id.slice(0, 3);
+    const kindOf = id => id.split('-')[0];
     const awaitedFor = kinds => id => id.startsWith('NEXT') && kinds.includes(kindOf(itemOf(id).for));
-    const KNOWING = ['INV', 'OBS', 'MET', 'CLM', 'DEF', 'OPN', 'INF', 'ASM', 'QST'];
+    const KNOWING = ['INV', 'OBS', 'MET', 'CLM', 'DEF', 'OPN', 'FB', 'INF', 'ASM', 'QST'];
     const PARTS = ['ENT', 'PRM'];
     const TESTS = ['SCN', 'RUL'];
     const BUILDING = [...PARTS, ...TESTS, 'RUN'];
@@ -1218,7 +1244,7 @@ Not announced,0
       { title: 'What we know', columns: [
         { title: 'Gathered', holds: (id, k) => kindOf(id) === 'SRC' || (kindOf(id) === 'INV' && statusOf(itemOf(id), k) === 'done') },
         { title: 'Captured', holds: id => kindOf(id) === 'OBS' },
-        { title: 'Interpreted', holds: id => ['MET', 'CLM', 'DEF', 'OPN'].includes(kindOf(id)) },
+        { title: 'Interpreted', holds: id => ['MET', 'CLM', 'DEF', 'OPN', 'FB'].includes(kindOf(id)) },
         { title: 'Reasoned', holds: id => kindOf(id) === 'INF' },
         { title: 'Assumed', holds: id => kindOf(id) === 'ASM' },
         { title: 'Open', holds: id => kindOf(id) === 'QST' },
@@ -1255,7 +1281,7 @@ Not announced,0
     const iterationOf = id => itemOf(id).iteration;
 
     function itemOf(id) {
-      return [...SOURCES, ...AWAITED, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...runs(), ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].find(item => item.id === id);
+      return [...SOURCES, ...AWAITED, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...FEEDBACK, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...runs(), ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].find(item => item.id === id);
     }
 
     // A card as it stood in one iteration: a claim weighed on what had arrived by then.
@@ -1291,6 +1317,7 @@ Not announced,0
       if (id.startsWith('INF')) return { kind: 'inference', text: item.text, status: statusOf(item, k) };
       if (id.startsWith('DEF')) return { kind: 'definition', text: `${item.term}: ${item.meaning}` };
       if (id.startsWith('OPN')) return { kind: 'opinion', text: item.text };
+      if (id.startsWith('FB')) return { kind: 'feedback', text: item.text, status: statusOf(item, k) };
       if (id.startsWith('QST')) return { kind: 'question', text: item.text, status: statusOf(item, k) };
       if (id.startsWith('DEC')) return { kind: 'decision', text: item.decided, status: statusOf(item, k) };
       if (id.startsWith('ACT')) return { kind: 'action', text: item.text, status: statusOf(item, k) };
@@ -1330,7 +1357,7 @@ Not announced,0
     // The order cards stand in their columns: investigations before the sources they gathered, then
     // the rest kind by kind.
     const ORDER = [...INVESTIGATIONS, ...SOURCES, ...AWAITED, ...PRIMITIVES, ...ENTITIES, ...runs(), ...SCENARIOS, ...RULES, ...OBSERVATIONS,
-      ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...GOALS,
+      ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...FEEDBACK, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...GOALS,
       ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id);
 
     function drawFlow(root) {
@@ -1364,7 +1391,7 @@ Not announced,0
       good: ['supports', 'answers', 'bears out', 'meets', 'aims', 'defines', 'founds'],
       bad: ['disputes', 'refutes', 'doubts', 'doesn’t meet', 'fails'],
       warn: ['states', 'constrains', 'imposes', 'partly meets'],
-      muted: ['gathered', 'captures', 'records', 'informs', 'awaits', 'reading of', 'run in', 'tried in', 'voices', 'sets', 'measures', 'shows', 'raises', 'part of'],
+      muted: ['gathered', 'captures', 'records', 'informs', 'says it should', 'says it shouldn’t', 'awaits', 'reading of', 'run in', 'tried in', 'voices', 'sets', 'measures', 'shows', 'raises', 'part of'],
     };
     const toneOfLink = label => Object.keys(LINK_TONES).find(tone => LINK_TONES[tone].includes(label)) ?? 'accent';
 
@@ -1771,7 +1798,7 @@ Not announced,0
 
     function cardOf(id, k) {
       const item = itemOf(id);
-      switch (id.slice(0, 3)) {
+      switch (kindOf(id)) {
         case 'CLM': return claimCard(item, k);
         case 'QST': return questionCard(item, k);
         case 'GOL': return goalCard(item, k);
@@ -1791,6 +1818,7 @@ Not announced,0
         case 'INF': return inferenceCard(item, k);
         case 'DEF': return definitionCard(item);
         case 'OPN': return opinionCard(item);
+        case 'FB': return feedbackCard(item, k);
         case 'OUT': return outcomeCard(item);
         case 'DEC': return decisionCard(item, k);
         case 'ACT': return actionCard(item, k);
@@ -1836,7 +1864,7 @@ Not announced,0
       }
       for (const item of [...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...ASSUMPTIONS, ...DEFINITIONS, ...EXPERIMENTS]) add(item.id, ...item.setIn);
       for (const observation of OBSERVATIONS) add(observation.id, ...observation.at);
-      for (const opinion of OPINIONS) add(opinion.id, ...opinion.said);
+      for (const item of [...OPINIONS, ...FEEDBACK]) add(item.id, ...item.said);
       for (const item of [...OUTCOMES, ...DECISIONS, ...ACTIONS, ...RISKS]) {
         for (const { source, quote } of item.sources) add(item.id, source, quote);
       }

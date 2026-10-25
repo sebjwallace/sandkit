@@ -51,4 +51,12 @@ const SCENARIOS = [
       const at = announcement.announcedAt().text;
       return [null, null, { ok: announcement.inTime() && at <= '14:10', actual: `announced at ${at}` }];
     } },
+  { id: 'SCN-7', created: '2026-11-04T10:50', by: 'Agent', iteration: 2, title: 'A late train that moved platform says it moved', foundedOn: ['FB-1'],
+    steps: [{ keyword: 'Given', text: 'the 14:25 to Ely is 6 minutes late and moved from platform 10 to 11' },
+      { keyword: 'Then', text: 'its message line says "Platform changed to 11"' }],
+    play: M => {
+      const train = trainFor(M, { time: '14:25', destination: 'Ely', delay: 6, platform: 11, planned: 10, reason: 'an earlier fault' });
+      const message = new M.Board([train]).messageFor(train);
+      return [null, { ok: message.startsWith('Platform changed to 11'), actual: message || 'an empty message line' }];
+    } },
 ];
