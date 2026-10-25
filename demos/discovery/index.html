@@ -114,6 +114,9 @@
     .object-wide { overflow-x: auto; }
     .object-wide sb-erd { display: block; min-width: 440px; }
     .object-call { margin: 0; font-weight: 600; }
+    .tested-by { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+    .tested-by-row { display: grid; gap: 4px; align-content: start; }
+    .tested-by-used { color: var(--sb-muted); font: 11.5px ui-monospace, Menlo, Consolas, monospace; }
     .card-icon--entity { --tone: var(--sb-accent); }
     .card-icon--primitive { --tone: var(--sb-muted); }
     .status[data-status="proposed"] { --tone: var(--sb-accent); }
@@ -1413,12 +1416,56 @@ Not announced,0
     // fails for. A scenario the model can't even play fails every step it checks, saying why.
     function scenarioResults(scenario, k = Infinity) {
       try {
-        return scenario.play(classesAt(k));
+        // What actually happened is only worth saying where it wasn't what was expected.
+        return scenario.play(classesAt(k)).map(result => result?.ok ? { ok: true } : result);
       } catch (error) {
         return scenario.steps.map(step => step.keyword === 'Given' ? null : { ok: false, actual: error.message });
       }
     }
     const ruleFailures = (rule, k = Infinity) => rule.check(classesAt(k));
+
+    // A test run with the model's classes watched: every object made, method called and field read
+    // is noted against the part it belongs to, so what a test exercises comes from running it, never
+    // from a list. Methods run with the watched object as this, so calls inside the model are caught
+    // too. Kept per test and iteration, since the model and the test are fixed for both.
+    const watchedRuns = new Map();
+    function watchedRun(test, k) {
+      const key = `${test.id}@${k}`;
+      if (watchedRuns.has(key)) return watchedRuns.get(key);
+      const touched = new Map();
+      const noteOf = id => touched.get(id) ?? touched.set(id, { made: false, calls: new Set(), reads: new Set() }).get(id);
+      const watch = (id, cls) => new Proxy(cls, {
+        construct(target, args, newTarget) {
+          noteOf(id).made = true;
+          const made = Reflect.construct(target, args, newTarget === watched[asClassName(itemOf(id).name)] ? target : newTarget);
+          return new Proxy(made, {
+            get(object, name, receiver) {
+              const value = Reflect.get(object, name, receiver);
+              if (typeof name === 'string' && name !== 'constructor') {
+                if (typeof value === 'function') noteOf(id).calls.add(name);
+                else if (Object.hasOwn(object, name)) noteOf(id).reads.add(name);
+              }
+              return value;
+            },
+          });
+        },
+      });
+      const watched = Object.fromEntries(Object.entries(modelAt(k).parts).map(([id, cls]) => [asClassName(itemOf(id).name), watch(id, cls)]));
+      try {
+        test.id.startsWith('SCN') ? test.play(watched) : test.check(watched);
+      } catch {
+        // A test the model can't run still touched whatever it reached first.
+      }
+      watchedRuns.set(key, touched);
+      return touched;
+    }
+
+    // The tests that exercise a part by an iteration: for an entity, any that made it or called it;
+    // for a primitive, only those that read its value, since every train is built from primitives.
+    function testsOf(part, k) {
+      return [...SCENARIOS, ...RULES].filter(t => iterationOf(t.id) <= k).map(test => ({ test, touch: watchedRun(test, k).get(part) }))
+        .filter(({ touch }) => touch && (part.startsWith('ENT') ? touch.made || touch.calls.size : touch.reads.size));
+    }
     function testStatus(test, k = Infinity) {
       const failed = test.id.startsWith('SCN') ? scenarioResults(test, k).some(r => r && !r.ok) : ruleFailures(test, k).length > 0;
       return failed ? 'failing' : 'passing';
@@ -2493,6 +2540,7 @@ Not announced,0
         ...(isEntity
           ? [panel('Code', ...codeView(cls)), panel('Relations', relationsView(part, k)), panel('Over time', overTimeView(object))]
           : [panel('Constraints', constraintsView(part, cls)), ...(values ? [panel('Values seen', values)] : []), panel('Code', ...codeView(cls))]),
+        panel('Tested by', testedByView(part, k)),
         panel('Definition', definitionView(part)),
         panel('Provenance', provenanceView(part)),
       ];
@@ -2601,6 +2649,24 @@ Not announced,0
         return value === null ? { id: ref, label: `${label} (unknown)`, value: 0, tone: 'warn' } : { id: ref, label, value };
       });
       return bars;
+    }
+
+    // Tested by: the scenarios and rules that exercised this part when they ran against the model of
+    // the iteration shown, what each used of it, and whether it passed. Each opens in full.
+    function testedByView(part, k) {
+      const found = testsOf(part, k);
+      if (!found.length) return el('p', 'nobody', 'No scenario or rule exercises it yet.');
+      const list = el('div', 'tested-by');
+      for (const { test, touch } of found) {
+        const face = nodeCard({ id: test.id, ...asOf(test.id, k) }, 'button');
+        face.type = 'button';
+        face.addEventListener('click', () => openCard(test.id));
+        const used = [...touch.calls].map(name => `${name}()`).concat([...touch.reads]);
+        const row = el('div', 'tested-by-row');
+        row.append(face, el('span', 'tested-by-used', used.length ? `Used: ${used.join(', ')}` : 'Made it'));
+        list.append(row);
+      }
+      return list;
     }
 
     // Definition: the definition its name is founded on, in sb-callout, or a warning that there's none.
