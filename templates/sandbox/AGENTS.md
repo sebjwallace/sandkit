@@ -8,8 +8,9 @@ This folder is a domain sandbox: a small, self-contained application that houses
 2. **Where it stands,** below.
 3. **`JOURNAL.md`,** what changed and why, newest first. Read only as far back as you need.
 4. **`lib/sandkit/practices/building-a-sandbox.md`,** the method this sandbox follows.
-5. **`lib/sandkit/practices/workshops.md`,** when asked to workshop the sandbox: to review, correct or hand over its model with the people who know the subject.
-6. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
+5. **Any other practice the sandbox follows,** such as `lib/sandkit/practices/domain-discovery.md` when it discovers a domain.
+6. **`lib/sandkit/practices/workshops.md`,** when asked to workshop the sandbox: to review, correct or hand over its model with the people who know the subject.
+7. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
 
 ## Where it stands
 
@@ -35,6 +36,7 @@ What the people behind this sandbox treat as confidential, personal or otherwise
 | `sandbox.js` | The sandbox's name, goal and pages, set on the shell. Every page includes it. |
 | `model.js` | The domain model. Code that runs, with no UI. Shared by every page. |
 | `sources/` | The material this sandbox was built from, described in `catalogue.json`, with new arrivals in `inbox/`. See `lib/sandkit/practices/sources.md`. |
+| `records/` | In a discovery sandbox, what was written from the sources: claims, questions, decisions and the rest, one script per kind. See `lib/sandkit/practices/domain-discovery.md`. |
 | `data/` | Data the pages use, as scripts that set it on the model (never fetched), if any. |
 | `JOURNAL.md` | What changed and why, one entry per version, newest first. |
 | `style.css` | The sandbox's own styles, using the theme tokens (`--sb-*`) as `lib/sandkit/STYLE.md` describes. |
@@ -61,7 +63,7 @@ Parts of the surface this sandbox made its own, once they were needed in more th
 - **Journal every change.** After any meaningful change, add an entry to `JOURNAL.md`, update Where it stands, and commit if the folder uses Git (tagging a breaking version). See `lib/sandkit/practices/journal.md`.
 - **A page per part worth sharing on its own,** once the sandbox grows: each listed in `sandbox.js`, sharing `model.js`, and including only what it uses, so it can be exported alone. See `lib/sandkit/practices/pages.md`.
 - **Exporting a page:** when asked, run `node lib/sandkit/tools/export.mjs <page>.html` from this folder (the page's Export button gives people the prompt), then report where it saved, every file that went in with its size, and any warnings.
-- **Sources are screened, catalogued and cited.** Screen every source before using it, wherever it came from, and raise anything sensitive with the person. Process `sources/inbox/` when it isn't empty, cite passages from the model's `ITEMS`, and run `node lib/sandkit/tools/sources.mjs check .` after. See `lib/sandkit/practices/sources.md`.
+- **Sources are screened, catalogued and cited.** Screen every source before using it, wherever it came from, and raise anything sensitive with the person. Process `sources/inbox/` when it isn't empty, cite passages from the model's `ITEMS` (or, in a discovery sandbox, from its records), and run `node lib/sandkit/tools/sources.mjs check .` after. See `lib/sandkit/practices/sources.md`.
 - **Serving:** features that read or write the sandbox's files need `node lib/sandkit/tools/serve.mjs .` (then open the address it prints). Everything else works by double-clicking.
 - **Declare everything, then start.** Page scripts declare their state and functions first, and start the sandbox in one marked section at the end.
 - **Codes for what people discuss.** Rules, entities, claims and sources get stable codes (see `lib/sandkit/practices/identifiers.md`), issued in the model and cited everywhere.

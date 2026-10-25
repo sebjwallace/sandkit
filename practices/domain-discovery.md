@@ -23,11 +23,14 @@ Everything discovery records is a card with a code, whose prefix names its kind 
 
 ## Setting up
 
-A discovery sandbox uses the card, the board and the engine, beside whatever else its subject needs. With Node:
+A discovery sandbox uses the card, the board and the engine, and opens cards in [`sb-modal`](../components/sb-modal/manifest.md) and sources in [`sb-source`](../components/sb-source/manifest.md), beside whatever else its subject needs. With Node:
 
 ```sh
-node <sandkit>/tools/setup.mjs <sandbox-folder> sb-discovery-card sb-discovery-board discovery
+node <sandkit>/tools/setup.mjs <sandbox-folder> sb-discovery-card sb-discovery-board sb-modal sb-source discovery
 ```
+
+- **Where things live:** sources in `sources/`, records in `records/` (below), and the model in `model.js`: its classes, every version and candidate as `MODEL = { versions, candidates }` for the engine, and any helpers its scenarios and rules use to build things. It needs no `createModel` or `ITEMS`: the engine runs it, and the records cite the sources.
+- **Serve it.** The engine weighs claims on the grades in `sources/catalogue.json`, which a page can read only when served (`node lib/sandkit/tools/serve.mjs .`). Say so whenever you tell someone how to open it.
 
 ## Records
 

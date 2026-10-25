@@ -84,6 +84,8 @@ sources/
 | `copies` | The source this one repeats, such as a newsletter passing on a forum post. It adds nothing of its own, so it's counted as that one. |
 | `grade` | How far this source can be trusted, as whoever catalogued it judges: `{ "value": 4, "why": "First-hand, from the dispatcher on shift, though recalled a week later.", "aspects": { "distance": "first-hand" } }`. `value` from 1 (weak) to 5 (strong), 3 ordinary; `why` is required, since a grade without a reason is a conclusion nobody can check; `aspects`, optional, any dimensions that matter in this subject. Leave it out until it's been judged. |
 | `speaksTo` | `how things are` (the default) or `what should be`, for a plan, manual or policy: what should happen isn't evidence of what does. |
+| `iteration` | In a discovery sandbox, the iteration it arrived in (see [domain discovery](domain-discovery.md)). |
+| `gatheredBy` | In a discovery sandbox, the investigation that gathered it. |
 
 Keep to these fields. Write dates as `yyyy-mm-dd`.
 
