@@ -587,30 +587,10 @@
     ];
 
     // Candidate versions of the model: a proposal tried in an iteration against every scenario and
-    // rule, beside the model as it stands. The difference between the two is the trial's verdict.
+    // rule, beside the model as it stands. The engine runs them all, and says what each trial found.
     const CANDIDATES = [
       { iteration: 2, tries: 'ENT-4', parts: { ...MODEL[1].parts, 'ENT-4': Announcement } },
     ];
-
-    // Runs: every scenario and rule run against a model, one run for each version of the model and
-    // one for each candidate. Never written, only worked out, and reproducible since every version
-    // is kept: each version is compared with the one before, each candidate with the model it would
-    // join. What it changes is the reason a part is in a run.
-    const RUNS = [
-      ...MODEL.map((version, i) => ({ iteration: version.iteration, parts: version.parts, against: MODEL[i - 1]?.parts ?? null,
-        changes: Object.keys(version.parts).filter(id => version.parts[id] !== MODEL[i - 1]?.parts[id]) })),
-      ...CANDIDATES.map(c => ({ iteration: c.iteration, parts: c.parts, tries: c.tries, against: MODEL.filter(v => v.iteration <= c.iteration).pop().parts, changes: [c.tries] })),
-    ].map((run, i) => ({ id: `RUN-${i + 1}`, ...run }));
-
-    // Entities and domain primitives proposed for the model: a name, what it's for, and the cards
-    // it's founded on. That's all anyone writes; once integrated, the rest is drawn from its class.
-    // A proposal that doesn't earn its place is rejected, with why, and stays on record.
-
-
-    // The model's classes by name, as they stood by an iteration, so tests read naturally.
-    const asClassName = name => name.split(/\s+/).map(word => word[0].toUpperCase() + word.slice(1)).join('');
-    const classesOf = parts => Object.fromEntries(Object.entries(parts).map(([id, cls]) => [asClassName(itemOf(id).name), cls]));
-    const classesAt = k => classesOf(modelAt(k).parts);
 
     // A train for a test, its fields given plainly and turned into the model's primitives.
     function trainFor(M, fields) {
@@ -899,31 +879,11 @@ Not announced,0
       experiments: EXPERIMENTS, actions: ACTIONS, decisions: DECISIONS, goals: GOALS, metrics: METRICS, definitions: DEFINITIONS,
       opinions: OPINIONS, agreements: AGREEMENTS, constraints: CONSTRAINTS, risks: RISKS, awaited: AWAITED, entities: ENTITIES,
       primitives: PRIMITIVES, scenarios: SCENARIOS, rules: RULES,
-      // What only the model knows, until the engine does: the runs, an entity's primitives and a run's
-      // changes, when a part or a test comes back, and which runs show a test.
-      also: {
-        records: RUNS,
-        inputs: id => id.startsWith('ENT') ? primitivesOf(id) : id.startsWith('RUN') ? itemOf(id).changes : [],
-        appearances: modelAppearances,
-        linksInto: (id, k) => ['SCN', 'RUL'].includes(id.slice(0, 3)) ? runsShowing(itemOf(id), k).map(run => run.id) : [],
-      } });
+      model: { versions: MODEL, candidates: CANDIDATES } });
 
     // Every link, from what something rests on to what rests on it, as the engine finds them.
     const links = () => discovery().links().map(({ from, to }) => [from, to]);
 
-    // The iterations a part of the model, or a test of it, comes back in: a part when its version or
-    // stage changes, a test when what it says against the model does.
-    function modelAppearances(id) {
-      if (['SCN', 'RUL'].includes(id.slice(0, 3))) {
-        return MODEL.filter((version, i) => i && testOutcome(itemOf(id), version.iteration) !== testOutcome(itemOf(id), MODEL[i - 1].iteration))
-          .map(version => version.iteration);
-      }
-      if (['ENT', 'PRM'].includes(id.slice(0, 3))) {
-        return [...MODEL.filter((version, i) => i && version.parts[id] !== MODEL[i - 1].parts[id]).map(version => version.iteration),
-          ...(itemOf(id).rejected ? [itemOf(id).rejected.in] : [])];
-      }
-      return [];
-    }
     const weighed = (claim, k = Infinity) => discovery().weigh(claim.id, { asOf: k, reliedOn: reliedOnBy(claim).length > 0 });
 
     // Every status is the engine's too: a record's, as of an iteration.
@@ -933,173 +893,15 @@ Not announced,0
     const reviewReasons = (decision, k = Infinity) => discovery().reviewReasons(decision.id, { asOf: k })
       .map(r => r.why === 'predicted' ? `${r.ref}, what it predicted, was not borne out.` : `${r.ref}, which it rests on, is now ${r.now}.`);
 
-    // The model as it stood by an iteration, and a part's stage in it: integrated once a version
-    // of the model holds it, rejected once turned down, trying once a candidate model tries it,
-    // proposed until then.
-    const modelAt = k => MODEL.filter(version => version.iteration <= k).pop();
-    const candidateOf = (id, k) => CANDIDATES.find(c => c.tries === id && c.iteration <= k);
-    function partStage(part, k = Infinity) {
-      if (part.rejected && part.rejected.in <= k) return 'rejected';
-      if (modelAt(k)?.parts[part.id]) return 'integrated';
-      return candidateOf(part.id, k) ? 'trying' : 'proposed';
-    }
+    // The model, its runs and its trials, as the engine runs them.
+    const model = (k = Infinity) => discovery().model(k);
+    const runOf = id => discovery().run(id);
+    const runs = () => discovery().runs().map(runOf);
+    const trialOf = (part, k) => runs().find(run => run.tries === part && run.iteration <= k);
 
-    // Decisions in code: every point where it chooses (if, case, &&, ||, ??, and the ternary ?),
-    // counted in its source with strings and comments taken out, so writing it densely changes
-    // nothing; only fewer real choices count.
-    function decisionsIn(source) {
-      const code = source.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/`(?:\\.|[^`\\])*`|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"/g, '""');
-      return (code.match(/\bif\b|\bcase\b|&&|\|\||\?\?|\?(?![.?])/g) ?? []).length;
-    }
-    // A class and every class it extends, oldest first.
-    function chainOf(cls) {
-      const chain = [];
-      for (let c = cls; c && c.toString().startsWith('class'); c = Object.getPrototypeOf(c)) chain.unshift(c);
-      return chain;
-    }
-    const classesIn = parts => [...new Set(Object.values(parts).flatMap(chainOf))];
-    const methodsOf = cls => Object.getOwnPropertyNames(cls.prototype).filter(name => name !== 'constructor' && typeof cls.prototype[name] === 'function');
-    const modelDecisions = parts => classesIn(parts).reduce((sum, cls) => sum + decisionsIn(cls.toString()), 0);
-    // The method holding the most decisions: where code would crowd if compression were chased.
-    function busiestMethod(parts) {
-      return classesIn(parts).flatMap(cls => methodsOf(cls).map(name => ({ name: `${cls.name}.${name}`, decisions: decisionsIn(cls.prototype[name].toString()) })))
-        .reduce((most, method) => method.decisions > most.decisions ? method : most, { name: 'none', decisions: 0 });
-    }
-
-    // Whether a test passes against a set of parts, such as a candidate model.
-    function passesWith(test, parts) {
-      const M = classesOf(parts);
-      try {
-        return test.id.startsWith('SCN') ? test.play(M).every(r => !r || r.ok) : test.check(M).length === 0;
-      } catch {
-        return false;
-      }
-    }
-
-    // What a change of model does to the tests written by an iteration: those it newly meets,
-    // those it breaks, and how many parts it adds. One change meeting many is a sign of real structure.
-    function compare(before, after, k) {
-      const tests = [...SCENARIOS, ...RULES].filter(t => iterationOf(t.id) <= k);
-      return {
-        met: tests.filter(t => !passesWith(t, before) && passesWith(t, after)),
-        broken: tests.filter(t => passesWith(t, before) && !passesWith(t, after)),
-        added: Object.keys(after).length - Object.keys(before).length,
-        decisions: modelDecisions(after) - modelDecisions(before),
-        // Decisions added to parts that were already there, as against those arriving with new parts.
-        inPlace: modelDecisions(onlyParts(after, before)) - modelDecisions(before),
-      };
-    }
-    const onlyParts = (parts, kept) => Object.fromEntries(Object.entries(parts).filter(([id]) => id in kept));
-
-    // What kind of change it was, judged by what it met against what it added: real structure meets
-    // more for no more choices; a patch adds a choice to existing code to meet one test; a new part
-    // meeting a new need, the rest untouched, is new capability.
     const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
-    function changeKind({ met, broken, decisions, added, inPlace }) {
-      if (broken.length) return 'it breaks what was met';
-      if (!met.length) return decisions > 0 ? 'more decisions, nothing more met' : 'nothing more met';
-      if (decisions <= 0) return 'more met for no more decisions: structure';
-      if (added > 0 && inPlace <= 0) return 'met by a new part, the rest untouched: new capability';
-      if (met.length === 1) return 'a patch, adding to existing code to meet one test';
-      return decisions < met.length ? 'one change, many met: structure' : 'met by adding decisions';
-    }
-    const trialOf = candidate => compare(modelAt(candidate.iteration).parts, candidate.parts, candidate.iteration);
-
-    // What a run found: each test written by its iteration, met or not, the model's size and busiest
-    // method, the comparison with what it's set against, and the new tests met on arrival.
-    function runResults(run) {
-      const tests = [...SCENARIOS, ...RULES].filter(t => iterationOf(t.id) <= run.iteration);
-      const met = tests.filter(t => passesWith(t, run.parts));
-      const arrived = run.against && !run.tries ? tests.filter(t => iterationOf(t.id) === run.iteration) : [];
-      return {
-        tests, met, notMet: tests.filter(t => !met.includes(t)),
-        decisions: modelDecisions(run.parts), busiest: busiestMethod(run.parts),
-        change: run.against ? compare(run.against, run.parts, run.iteration) : null,
-        arrived, metOnArrival: arrived.filter(t => passesWith(t, run.against)),
-      };
-    }
-    const earnsItsPlace = change => change.met.length > 0 && !change.broken.length;
-    function trialVerdict(trial) {
-      const ids = tests => tests.map(t => t.id).join(', ') || 'nothing';
-      const earns = trial.met.length > 0 && !trial.broken.length;
-      return `In a candidate model it newly meets ${ids(trial.met)} and breaks ${ids(trial.broken)}, for ${plural(trial.added, 'more part')} and ${plural(trial.decisions, 'more decision')}: ${changeKind(trial)}. ${earns ? 'It earns its place.' : 'It doesn’t earn its place yet.'}`;
-    }
-    // The definition a part's name rests on: one it's founded on, defining that very word.
-    const definitionOf = part => DEFINITIONS.find(d => part.foundedOn.includes(d.id) && d.term.toLowerCase() === part.name.toLowerCase());
-    const partOfClass = (cls, k) => Object.entries(modelAt(k)?.parts ?? {}).find(([, c]) => c === cls)?.[0];
-    // The primitives an entity's properties are made of, in any version of the model.
-    const primitivesOf = id => [...new Set(MODEL.flatMap(version => Object.values(version.parts[id]?.properties ?? {})
-      .map(type => typeof type === 'string' ? null : partOfClass(type, version.iteration)).filter(Boolean)))];
-
-    // A test run against the model of an iteration: a scenario's step results, or the trains a rule
-    // fails for. A scenario the model can't even play fails every step it checks, saying why.
-    function scenarioResults(scenario, k = Infinity) {
-      try {
-        // What actually happened is only worth saying where it wasn't what was expected.
-        return scenario.play(classesAt(k)).map(result => result?.ok ? { ok: true } : result);
-      } catch (error) {
-        return scenario.steps.map(step => step.keyword === 'Given' ? null : { ok: false, actual: error.message });
-      }
-    }
-    const ruleFailures = (rule, k = Infinity) => rule.check(classesAt(k));
-
-    // A test run with the model's classes watched: every object made, method called and field read
-    // is noted against the part it belongs to, so what a test exercises comes from running it, never
-    // from a list. Methods run with the watched object as this, so calls inside the model are caught
-    // too. Kept per test and iteration, since the model and the test are fixed for both.
-    const watchedRuns = new Map();
-    function watchedRun(test, k) {
-      const key = `${test.id}@${k}`;
-      if (watchedRuns.has(key)) return watchedRuns.get(key);
-      const touched = new Map();
-      const noteOf = id => touched.get(id) ?? touched.set(id, { made: false, calls: new Set(), reads: new Set() }).get(id);
-      const watch = (id, cls) => new Proxy(cls, {
-        construct(target, args, newTarget) {
-          noteOf(id).made = true;
-          const made = Reflect.construct(target, args, newTarget === watched[asClassName(itemOf(id).name)] ? target : newTarget);
-          return new Proxy(made, {
-            get(object, name, receiver) {
-              const value = Reflect.get(object, name, receiver);
-              if (typeof name === 'string' && name !== 'constructor') {
-                if (typeof value === 'function') noteOf(id).calls.add(name);
-                else if (Object.hasOwn(object, name)) noteOf(id).reads.add(name);
-              }
-              return value;
-            },
-          });
-        },
-      });
-      const watched = Object.fromEntries(Object.entries(modelAt(k).parts).map(([id, cls]) => [asClassName(itemOf(id).name), watch(id, cls)]));
-      try {
-        test.id.startsWith('SCN') ? test.play(watched) : test.check(watched);
-      } catch {
-        // A test the model can't run still touched whatever it reached first.
-      }
-      watchedRuns.set(key, touched);
-      return touched;
-    }
-
-    // The tests that exercise a part by an iteration: for an entity, any that made it or called it;
-    // for a primitive, only those that read its value, since every train is built from primitives.
-    const exercises = (part, touch) => touch && (part.startsWith('ENT') ? touch.made || touch.calls.size : touch.reads.size);
-    function testsOf(part, k) {
-      return [...SCENARIOS, ...RULES].filter(t => iterationOf(t.id) <= k).map(test => ({ test, touch: watchedRun(test, k).get(part) }))
-        .filter(({ touch }) => exercises(part, touch));
-    }
-
-    // The runs of an iteration that say something about a test: the model's run, always, and a
-    // trial's where it newly meets it.
-    const runsShowing = (test, k) => RUNS.filter(run => run.iteration === k && (!run.tries || runResults(run).change.met.includes(test)));
-    function testStatus(test, k = Infinity) {
-      const failed = test.id.startsWith('SCN') ? scenarioResults(test, k).some(r => r && !r.ok) : ruleFailures(test, k).length > 0;
-      return failed ? 'failing' : 'passing';
-    }
-    // A test's status as the foundry says it: a specification the model has met, or not yet.
-    const testWord = test => (k = Infinity) => testStatus(test, k) === 'passing' ? 'met' : 'not met';
-
-    // What a test said, in full, so a change in how it fails shows as a change too.
-    const testOutcome = (test, k) => JSON.stringify(test.id.startsWith('SCN') ? scenarioResults(test, k) : ruleFailures(test, k));
+    const listed = ids => ids.join(', ') || 'nothing';
+    const trialVerdict = change => `In a candidate model it newly meets ${listed(change.met)} and breaks ${listed(change.broken)}, for ${plural(change.added, 'more part')} and ${plural(change.decisions, 'more decision')}: ${change.kind}. ${change.earnsItsPlace ? 'It earns its place.' : 'It doesn’t earn its place yet.'}`;
 
     const gatheredBy = (investigation, k = Infinity) => SOURCES.filter(s => s.gatheredBy === investigation.id && iterationOf(s.id) <= k);
 
@@ -1435,20 +1237,20 @@ Not announced,0
     // compared with and what kind of change that is, the new tests met on arrival, and for a trial a
     // recommendation. People decide; the run is the evidence.
     function runCard(run) {
-      const r = runResults(run), ids = tests => tests.map(t => t.id).join(', ') || 'none';
+      const r = run, ids = tests => tests.join(', ') || 'none';
       const what = run.tries ? `Iteration ${run.iteration}’s model with ${run.tries}` : `The model of iteration ${run.iteration}`;
-      const tests = r.tests.map(test => ({ card: faceOf({ id: test.id, ...asOf(test.id, run.iteration) }) }));
+      const tests = r.tests.map(test => ({ card: faceOf({ id: test, ...asOf(test, run.iteration) }) }));
       return card(
-        cardHead('run', run.id, what, run.tries ? [statusBadge(earnsItsPlace(r.change) ? 'earns its place' : 'not yet')] : [facet(`${r.met.length} of ${r.tests.length} met`)]),
+        cardHead('run', run.id, what, run.tries ? [statusBadge(r.change.earnsItsPlace ? 'earns its place' : 'not yet')] : [facet(`${r.met.length} of ${r.tests.length} met`)]),
         strip('main', 'Run', `Every scenario and rule written by iteration ${run.iteration}, run against ${what.toLowerCase()}.`),
         strip('note', 'The model', `${plural(Object.keys(run.parts).length, 'part')}, ${plural(r.decisions, 'decision')} · ${r.met.length} of ${r.tests.length} met, ${(r.met.length / r.decisions).toFixed(2)} per decision · busiest: ${r.busiest.name}, ${plural(r.busiest.decisions, 'decision')}`),
         strip('answer', 'Met', ids(r.met)),
         ...(r.notMet.length ? [strip('warn', 'Not met', ids(r.notMet))] : []),
         ...(r.change ? [strip('expect', run.tries ? `Against the model of iteration ${run.iteration}` : `Against iteration ${run.iteration - 1}`,
-          `Newly met: ${ids(r.change.met)}. Broken: ${ids(r.change.broken)}. ${plural(r.change.added, 'part')} and ${plural(r.change.decisions, 'decision')} more: ${changeKind(r.change)}.`)] : []),
+          `Newly met: ${ids(r.change.met)}. Broken: ${ids(r.change.broken)}. ${plural(r.change.added, 'part')} and ${plural(r.change.decisions, 'decision')} more: ${r.change.kind}.`)] : []),
         ...(r.arrived.length ? [strip('note', 'Met on arrival', `${r.metOnArrival.length} of ${r.arrived.length} new tests met with no change to the model.`)] : []),
-        ...(run.tries ? [strip(earnsItsPlace(r.change) ? 'answer' : 'warn', 'Recommendation',
-          earnsItsPlace(r.change) ? `${run.tries} earns its place. Integrating it is a decision for people.` : `${run.tries} doesn’t earn its place yet.`)] : []),
+        ...(run.tries ? [strip(r.change.earnsItsPlace ? 'answer' : 'warn', 'Recommendation',
+          r.change.earnsItsPlace ? `${run.tries} earns its place. Integrating it is a decision for people.` : `${run.tries} doesn’t earn its place yet.`)] : []),
         fold('Tests', tests),
       );
     }
@@ -1456,12 +1258,12 @@ Not announced,0
     // An entity: proposed with a name, a purpose and what it's founded on; once integrated, its
     // properties and behaviour come from its class in the model, with any later change noted.
     function entityCard(entity, k = Infinity) {
-      const cls = modelAt(k)?.parts[entity.id] ?? candidateOf(entity.id, k)?.parts[entity.id];
+      const cls = model(k).parts[entity.id] ?? trialOf(entity.id, k)?.parts[entity.id];
       const typeOf = type => typeof type === 'string' ? type
-        : Array.isArray(type) ? `list of ${type[0].title} (${partOfClass(type[0], k)})` : `${type.title} (${partOfClass(type, k)})`;
+        : Array.isArray(type) ? `list of ${type[0].title} (${discovery().partOfClass(type[0], k)})` : `${type.title} (${discovery().partOfClass(type, k)})`;
       const changes = MODEL.filter(version => version.iteration <= k && version.changedBy?.[entity.id]);
       return card(
-        cardHead('entity', entity.id, `Proposed by ${entity.proposedBy}${definitionOf(entity) ? ` · defined by ${definitionOf(entity).id}` : ''}${cls ? ` · class ${cls.name}` : ''}`, [statusBadge(partStage(entity, k))]),
+        cardHead('entity', entity.id, `Proposed by ${entity.proposedBy}${discovery().definitionOf(entity.id) ? ` · defined by ${discovery().definitionOf(entity.id).id}` : ''}${cls ? ` · class ${cls.name}` : ''}`, [statusBadge(statusOf(entity, k))]),
         strip('main', 'Entity', entity.name),
         strip('note', 'Purpose', entity.purpose),
         ...(cls ? [
@@ -1477,10 +1279,10 @@ Not announced,0
     // A domain primitive: proposed the same way; once integrated, its constraints come from its
     // class, and the entities it's part of from theirs.
     function primitiveCard(primitive, k = Infinity) {
-      const cls = modelAt(k)?.parts[primitive.id];
-      const partOf = ENTITIES.filter(e => modelAt(k)?.parts[e.id] && primitivesOf(e.id).includes(primitive.id)).map(e => `${e.id}: ${e.name}`);
+      const cls = model(k).parts[primitive.id];
+      const partOf = ENTITIES.filter(e => model(k).parts[e.id] && discovery().primitivesOf(e.id).includes(primitive.id)).map(e => `${e.id}: ${e.name}`);
       return card(
-        cardHead('primitive', primitive.id, `Proposed by ${primitive.proposedBy}${definitionOf(primitive) ? ` · defined by ${definitionOf(primitive).id}` : ''}${cls ? ` · class ${cls.name}` : ''}`, [statusBadge(partStage(primitive, k))]),
+        cardHead('primitive', primitive.id, `Proposed by ${primitive.proposedBy}${discovery().definitionOf(primitive.id) ? ` · defined by ${discovery().definitionOf(primitive.id).id}` : ''}${cls ? ` · class ${cls.name}` : ''}`, [statusBadge(statusOf(primitive, k))]),
         strip('main', 'Domain primitive', primitive.name),
         strip('note', 'Purpose', primitive.purpose),
         ...(cls ? [
@@ -1497,9 +1299,9 @@ Not announced,0
     function scenarioCard(scenario, k = Infinity) {
       const view = document.createElement('sb-scenario');
       view.scenario = { code: scenario.id, title: scenario.title, steps: scenario.steps };
-      view.results = scenarioResults(scenario, k);
+      view.results = discovery().results(scenario.id, { asOf: k });
       return card(
-        cardHead('scenario', scenario.id, `Played against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(testWord(scenario)(k))]),
+        cardHead('scenario', scenario.id, `Played against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(statusOf(scenario, k))]),
         strip('main', 'Scenario', scenario.title),
         viewFold('Steps', view),
         fold('Founded on', cardRows(scenario.foundedOn, k)),
@@ -1511,11 +1313,11 @@ Not announced,0
     function ruleCard(rule, k = Infinity) {
       const view = document.createElement('sb-rule');
       view.rule = { kind: rule.kind, code: rule.id, title: rule.title, lines: rule.lines };
-      const failures = ruleFailures(rule, k);
+      const failures = discovery().results(rule.id, { asOf: k });
       view.status = failures.length ? 'broken' : 'holds';
       const breaks = failures.length ? [strip('warn', 'Breaks for', failures.join('; ') + '.')] : [];
       return card(
-        cardHead('rule', rule.id, `Checked against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(testWord(rule)(k))]),
+        cardHead('rule', rule.id, `Checked against ${k === Infinity ? 'the latest model' : `the model of iteration ${k}`}`, [statusBadge(statusOf(rule, k))]),
         strip('main', 'Rule', rule.title),
         viewFold('The rule', view),
         ...breaks,
@@ -1526,10 +1328,10 @@ Not announced,0
     // How a proposal stands: flagged if nothing defines its name, then still proposed, or rejected
     // and why, when it isn't in the model.
     function partEnding(part, k) {
-      const stage = partStage(part, k);
-      const undefinedName = definitionOf(part) ? [] : [strip('warn', 'No definition', `Nothing defines “${part.name}”. The model’s words should be the domain’s, each defined once.`)];
+      const stage = statusOf(part, k);
+      const undefinedName = discovery().definitionOf(part.id) ? [] : [strip('warn', 'No definition', `Nothing defines “${part.name}”. The model’s words should be the domain’s, each defined once.`)];
       if (stage === 'rejected') return [...undefinedName, strip('warn', 'Rejected', part.rejected.why)];
-      if (stage === 'trying') return [...undefinedName, strip('expect', 'Trial', trialVerdict(trialOf(candidateOf(part.id, k))))];
+      if (stage === 'trying') return [...undefinedName, strip('expect', 'Trial', trialVerdict(trialOf(part.id, k).change))];
       if (stage === 'proposed') return [...undefinedName, strip('unresolved', 'Not in the model yet', 'Proposed; it becomes part of the model once integrated.')];
       return undefinedName;
     }
@@ -1660,13 +1462,13 @@ Not announced,0
       { title: 'What we’re building', columns: [
         { title: 'Founded on', grounds: true, holds: id => !BUILDING.includes(kindOf(id))
           && links().some(([from, to]) => from === id && BUILDING.includes(kindOf(to))) },
-        { title: 'Proposed', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'proposed' },
-        { title: 'Trying', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'trying' },
-        { title: 'Integrated', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'integrated' },
+        { title: 'Proposed', holds: (id, k) => PARTS.includes(kindOf(id)) && statusOf(itemOf(id), k) === 'proposed' },
+        { title: 'Trying', holds: (id, k) => PARTS.includes(kindOf(id)) && statusOf(itemOf(id), k) === 'trying' },
+        { title: 'Integrated', holds: (id, k) => PARTS.includes(kindOf(id)) && statusOf(itemOf(id), k) === 'integrated' },
         { title: 'Runs', holds: id => kindOf(id) === 'RUN' },
-        { title: 'Met', holds: (id, k) => TESTS.includes(kindOf(id)) && testStatus(itemOf(id), k) === 'passing' },
-        { title: 'Not met yet', holds: (id, k) => TESTS.includes(kindOf(id)) && testStatus(itemOf(id), k) === 'failing' },
-        { title: 'Rejected', holds: (id, k) => PARTS.includes(kindOf(id)) && partStage(itemOf(id), k) === 'rejected' },
+        { title: 'Met', holds: (id, k) => TESTS.includes(kindOf(id)) && statusOf(itemOf(id), k) === 'met' },
+        { title: 'Not met yet', holds: (id, k) => TESTS.includes(kindOf(id)) && statusOf(itemOf(id), k) === 'not met' },
+        { title: 'Rejected', holds: (id, k) => PARTS.includes(kindOf(id)) && statusOf(itemOf(id), k) === 'rejected' },
       ] },
     ];
 
@@ -1680,7 +1482,7 @@ Not announced,0
     const iterationOf = id => itemOf(id).iteration;
 
     function itemOf(id) {
-      return [...SOURCES, ...AWAITED, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...RUNS, ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].find(item => item.id === id);
+      return [...SOURCES, ...AWAITED, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...runs(), ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].find(item => item.id === id);
     }
 
     // A card as it stood in one iteration: a claim weighed on what had arrived by then.
@@ -1700,14 +1502,13 @@ Not announced,0
       if (id.startsWith('EXP')) return { kind: 'experiment', text: item.text, status: statusOf(item, k) };
       if (id.startsWith('INV')) return { kind: 'investigation', text: item.text, status: statusOf(item, k) };
       if (id.startsWith('RUN')) {
-        const r = runResults(item);
-        return item.tries ? { kind: 'run', text: `Trying ${item.tries}: newly meets ${r.change.met.map(t => t.id).join(', ') || 'nothing'}, breaks ${r.change.broken.map(t => t.id).join(', ') || 'nothing'}`, status: earnsItsPlace(r.change) ? 'earns its place' : 'not yet' }
-          : { kind: 'run', text: `${r.met.length} of ${r.tests.length} met, ${plural(r.decisions, 'decision')}${r.change ? `: ${changeKind(r.change)}` : ''}` };
+        return item.tries ? { kind: 'run', text: `Trying ${item.tries}: newly meets ${listed(item.change.met)}, breaks ${listed(item.change.broken)}`, status: item.change.earnsItsPlace ? 'earns its place' : 'not yet' }
+          : { kind: 'run', text: `${item.met.length} of ${item.tests.length} met, ${plural(item.decisions, 'decision')}${item.change ? `: ${item.change.kind}` : ''}` };
       }
-      if (id.startsWith('SCN')) return { kind: 'scenario', text: item.title, status: testWord(item)(k) };
-      if (id.startsWith('RUL')) return { kind: 'rule', text: item.title, status: testWord(item)(k) };
+      if (id.startsWith('SCN')) return { kind: 'scenario', text: item.title, status: statusOf(item, k) };
+      if (id.startsWith('RUL')) return { kind: 'rule', text: item.title, status: statusOf(item, k) };
       if (['ENT', 'PRM'].includes(id.slice(0, 3))) return { kind: id.startsWith('ENT') ? 'entity' : 'primitive',
-        text: `${item.name}: ${item.purpose}`, status: partStage(item, k), note: definitionOf(item) ? undefined : 'no definition of its name' };
+        text: `${item.name}: ${item.purpose}`, status: statusOf(item, k), note: discovery().definitionOf(id) ? undefined : 'no definition of its name' };
       if (id.startsWith('MET')) {
         const latest = OBSERVATIONS.filter(o => o.metric === id && iterationOf(o.id) <= k).pop();
         return { kind: 'metric', text: latest ? `${item.name}: ${latest.value} in ${latest.when}` : item.name };
@@ -1755,7 +1556,7 @@ Not announced,0
 
     // The order cards stand in their columns: investigations before the sources they gathered, then
     // the rest kind by kind.
-    const ORDER = [...INVESTIGATIONS, ...SOURCES, ...AWAITED, ...PRIMITIVES, ...ENTITIES, ...RUNS, ...SCENARIOS, ...RULES, ...OBSERVATIONS,
+    const ORDER = [...INVESTIGATIONS, ...SOURCES, ...AWAITED, ...PRIMITIVES, ...ENTITIES, ...runs(), ...SCENARIOS, ...RULES, ...OBSERVATIONS,
       ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...GOALS,
       ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id);
 
@@ -1797,12 +1598,12 @@ Not announced,0
     // The model in a line: how big it is, how much of what it's asked to do it does, what the last
     // change did, and what trials found. The compression signal, so far.
     function modelSummary(k) {
-      const parts = modelAt(k).parts, decisions = modelDecisions(parts), busiest = busiestMethod(parts);
+      const { parts, decisions, busiest } = model(k);
       const tests = [...SCENARIOS, ...RULES].filter(t => iterationOf(t.id) <= k);
-      const met = tests.filter(t => testStatus(t, k) === 'passing').length;
+      const met = tests.filter(t => statusOf(t, k) === 'met').length;
       const state = `The model at iteration ${k}: ${Object.keys(parts).length} parts, ${decisions} decisions · ${met} of ${tests.length} scenarios and rules met, ${(met / decisions).toFixed(2)} per decision · busiest: ${busiest.name}, ${busiest.decisions} decisions`;
-      const runs = RUNS.filter(run => run.iteration === k).map(run => run.tries ? `${run.id} (trying ${run.tries})` : run.id);
-      return `${state} · runs: ${runs.join(', ')}`;
+      const ran = runs().filter(run => run.iteration === k).map(run => run.tries ? `${run.id} (trying ${run.tries})` : run.id);
+      return `${state} · runs: ${ran.join(', ')}`;
     }
 
 
@@ -1847,11 +1648,11 @@ Not announced,0
     }
 
     function drawPrototype() {
-      const k = shown.iteration, M = classesAt(k), clock = clockAt(prototype.minute);
+      const k = shown.iteration, M = model(k).classes, clock = clockAt(prototype.minute);
       const trains = trainsAt(clock).map(fields => trainFor(M, fields));
       const board = new M.Board(trains, new M.ClockTime(clock));
       const lines = trains.filter(t => board.shows(t)).sort((a, b) => a.time.text.localeCompare(b.time.text));
-      const partOf = cls => partOfClass(cls, k);
+      const partOf = cls => discovery().partOfClass(cls, k);
       const objects = { BOARD: { instance: board, cls: M.Board } };
       for (const t of lines) {
         objects[t.id] = { instance: t, cls: M.Train };
@@ -1948,7 +1749,7 @@ Not announced,0
       const clock = clockAt(prototype.minute);
       const json = document.createElement('sb-json');
       json.value = plainOf(instance);
-      json.spotlight = instance instanceof classesAt(shown.iteration).Board ? ['clock']
+      json.spotlight = instance instanceof model(shown.iteration).classes.Board ? ['clock']
         : [...new Set(FEED.filter(u => u.train === instance.id && u.at <= clock).flatMap(u => Object.keys(u.set)))];
       const call = object.call ? [el('p', 'object-call', `${object.call}(${object.train.time.text} ${object.train.destination}) gives “${object.value || 'nothing'}”`)] : [];
       return [...call, json, ...behaviourNow(instance, cls)];
@@ -1957,12 +1758,12 @@ Not announced,0
     // Code: the class's own source, and the class it extends, coloured by sb-code, each with the
     // decisions it holds.
     function codeView(cls) {
-      return chainOf(cls).flatMap(c => {
+      return discovery().decisionsIn(cls).flatMap(({ cls: c, decisions, methods }) => {
         const code = document.createElement('sb-code');
         code.setAttribute('variables', 'none');
         code.code = dedent(c.toString());
-        const counts = methodsOf(c).map(name => `${name}() ${decisionsIn(c.prototype[name].toString())}`);
-        const summary = el('p', 'object-call', `${c.name}: ${plural(decisionsIn(c.toString()), 'decision')}${counts.length ? ` · ${counts.join(', ')}` : ''}`);
+        const counts = methods.map(method => `${method.name}() ${method.decisions}`);
+        const summary = el('p', 'object-call', `${c.name}: ${plural(decisions, 'decision')}${counts.length ? ` · ${counts.join(', ')}` : ''}`);
         return [summary, code];
       });
     }
@@ -1976,12 +1777,12 @@ Not announced,0
         ? Object.entries(cls.properties).map(([name, type]) => {
             const target = Array.isArray(type) ? type[0] : type;
             return typeof target === 'string' ? { name, type: target }
-              : { name, type: Array.isArray(type) ? `${target.title} list` : target.title, references: partOfClass(target, k) };
+              : { name, type: Array.isArray(type) ? `${target.title} list` : target.title, references: discovery().partOfClass(target, k) };
           })
         : Object.entries(sample(cls)).map(([name, value]) => ({ name, type: value === null ? 'number or unknown' : typeof value }));
       // Primitives in one column, entities in the next, each stacked by its number of fields.
       const columns = { PRM: { x: 0, y: 0 }, ENT: { x: 230, y: 0 } };
-      const entities = Object.entries(modelAt(k).parts).map(([id, cls]) => {
+      const entities = Object.entries(model(k).parts).map(([id, cls]) => {
         const fields = fieldsOf(cls), at = columns[id.slice(0, 3)];
         const placed = { id, name: itemOf(id).name, fields, x: at.x, y: at.y };
         at.y += 60 + fields.length * 26;
@@ -2035,12 +1836,12 @@ Not announced,0
     // Tested by: the scenarios and rules that exercised this part when they ran against the model of
     // the iteration shown, what each used of it, and whether it passed. Each opens in full.
     function testedByView(part, k) {
-      const found = testsOf(part, k);
+      const found = discovery().exercisedBy(part, { asOf: k });
       if (!found.length) return el('p', 'nobody', 'No scenario or rule exercises it yet.');
       const list = el('div', 'tested-by');
-      for (const { test, touch } of found) {
-        const face = nodeCard({ id: test.id, ...asOf(test.id, k) }, true);
-        const used = [...touch.calls].map(name => `${name}()`).concat([...touch.reads]);
+      for (const { test, calls, reads } of found) {
+        const face = nodeCard({ id: test, ...asOf(test, k) }, true);
+        const used = calls.map(name => `${name}()`).concat(reads);
         const row = el('div', 'tested-by-row');
         row.append(face, el('span', 'tested-by-used', used.length ? `Used: ${used.join(', ')}` : 'Made it'));
         list.append(row);
@@ -2050,7 +1851,7 @@ Not announced,0
 
     // Definition: the definition its name is founded on, in sb-callout, or a warning that there's none.
     function definitionView(part) {
-      const definition = definitionOf(itemOf(part));
+      const definition = discovery().definitionOf(part);
       const callout = document.createElement('sb-callout');
       if (!definition) {
         callout.setAttribute('kind', 'warning');
@@ -2197,7 +1998,7 @@ Not announced,0
       if (kind(from) === 'INV' && kind(to) === 'SRC') return 'gathered';
       if (kind(from) === 'PRM' && kind(to) === 'ENT') return 'part of';
       if (kind(to) === 'RUN') return itemOf(to).tries ? 'tried in' : 'run in';
-      if (kind(from) === 'RUN') return passesWith(itemOf(to), itemOf(from).parts) ? 'meets' : 'doesn’t meet';
+      if (kind(from) === 'RUN') return runOf(from).met.includes(to) ? 'meets' : 'doesn’t meet';
       if (['ENT', 'PRM', 'SCN', 'RUL'].includes(kind(to))) return 'founds';
       if (kind(to) === 'INV') return 'prompts';
       if (kind(to) === 'EXP') return 'calls for';

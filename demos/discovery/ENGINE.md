@@ -17,7 +17,7 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
    - **the records,** in `records/`, one script per kind, loaded before the page's script: `claims.js`, `questions.js`, `decisions.js` and the rest, `awaited.js`, and for the model `entities.js`, `primitives.js`, `scenarios.js` and `rules.js`. Each record carries `created`, `by` and `iteration`.
 4. **The model:**
    - classes `Delay`, `Platform`, `ClockTime`, `Train`, `Board`, `BoardWithPlatformChanges` and `Announcement`;
-   - versions and runs: `MODEL`, `CANDIDATES` and `RUNS` (derived);
+   - versions: `MODEL` and `CANDIDATES`, handed to the engine, which works out the runs;
    - proposals: `ENTITIES` and `PRIMITIVES`.
 5. **Tests and the afternoon:**
    - the afternoon's data: `AFTERNOON` (for rules), `TIMETABLE` and `FEED` (for the prototype);
@@ -26,14 +26,13 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
 6. **Source texts:** `SOURCE_TEXT` (inline, because a page opened from disk can't read files) and `STILLS`, drawn as SVG.
 7. **Working things out:**
    - **claims:** weighed by the discovery engine (`engines/discovery`): `discovery()` makes it from the sources and claims, `weighed(claim, k)` asks it how a claim stood as of an iteration;
-   - **derived statuses:** the engine's too: `statusOf(item, k)` asks it for any record's status, and `reviewReasons(decision, k)` puts its reasons for reviewing a decision into words. The model's own, `partStage` and `testStatus`, are still the page's;
-   - **compression:** `decisionsIn`, `modelDecisions`, `busiestMethod`, `compare`, `changeKind`, `runResults`;
-   - **watched runs:** `watchedRun`, `testsOf`.
+   - **derived statuses:** the engine's too: `statusOf(item, k)` asks it for any record's status, and `reviewReasons(decision, k)` puts its reasons for reviewing a decision into words. So is a part's stage and whether a test is met;
+   - **the model:** the engine's too: `model(k)` (its parts, classes by name, decisions and busiest method), `runs()` and `runOf(id)` (what each run found, and the change it made), `trialOf(part, k)`, and `trialVerdict(change)`, which puts a trial into words. Test results, what each test exercised, a part's primitives and definition, and the decisions in a class are asked for where they're shown (`discovery().results`, `exercisedBy`, `primitivesOf`, `definitionOf`, `decisionsIn`).
 8. **Card helpers,** which prepare a card's data for `sb-discovery-card` and draw nothing: `cardHead`, `strip`, `statusBadge`, `facet`, `fold`, `viewFold` (a fold holding a component, slotted in), `sources`, `cite`, `passage`, `assertionItem`, `basisBadge`, `scoreBadge`, and `card`, which adds the iteration the card was raised in. Plus `el`, and `icon`, `sourceIcon` and `formatBadge` for the source cards and the object view.
 9. **Card builders:** one per kind, `claimCard(item, k)` … `riskCard(item)`, each returning the card's data, and `cardOf(id, k)`, which dispatches on the prefix.
 10. **Boards and iterations:**
     - kinds and boards: the prefix lists (`KNOWING`, `PARTS`, `TESTS`, `BUILDING`, `DIRECTION`) and `BOARDS`;
-    - links: the engine's (`links()` asks it); what only the model knows is handed to it in `also`, with `modelAppearances`;
+    - links: the engine's (`links()` asks it), the model's included;
     - iterations: `ITERATIONS` (their titles), `iterationOf` (read from the record), `itemOf`;
     - drawing them: `asOf(id, k)` (a card's face as of an iteration), `faceOf` (its compact data), `drawCard` (any card, in a variant, with its slots), `nodeCard`, `ORDER` (the order cards stand in their columns) and `drawFlow`, which asks the engine what the iteration shows and gives the page's one `sb-discovery-board` its cards, columns and links.
 11. **The prototype and object view:** `drawPrototype`, `showObject`, and one function per tab (`nowView`, `codeView`, `relationsView`, `overTimeView`, `constraintsView`, `valuesSeenView`, `testedByView`, `definitionView`, `provenanceView`/`provenanceItems`), plus `wirePrototype`.
@@ -45,8 +44,9 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
 ```
 sources + records + model classes
    │
-   └─ the discovery engine (engines/discovery), handed the model's runs and what only it knows
+   └─ the discovery engine (engines/discovery), handed the model's versions and candidates
         ├─ weigh(claim, k), status(id, k), reviewReasons(decision, k)
+        ├─ model(k), runs(), run(id)   the model, every run against every test, and the compression signal
         ├─ links()          every link, from what something rests on to what rests on it
         └─ iteration(k)     the cards it shows (raised, updated or carried) and the links among them
              │
