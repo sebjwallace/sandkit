@@ -1,4 +1,4 @@
-// Sandkit discovery 0.2.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit discovery 0.2.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The engine of domain discovery: the method's rules, written once. Given the sandbox's records,
 // it works out what follows from them, the same way every time, so a record holds only what
 // someone wrote and never a conclusion. It draws nothing and knows no component.
@@ -378,7 +378,9 @@
       return chain;
     }
     const classesIn = (parts) => [...new Set(Object.values(parts).flatMap(chainOf))];
-    const methodsOf = (cls) => Object.getOwnPropertyNames(cls.prototype).filter((name) => name !== 'constructor' && typeof cls.prototype[name] === 'function');
+    // Its methods, read without calling anything: a getter on the prototype has no object to run on.
+    const methodsOf = (cls) => Object.getOwnPropertyNames(cls.prototype)
+      .filter((name) => name !== 'constructor' && typeof Object.getOwnPropertyDescriptor(cls.prototype, name).value === 'function');
     const decisionsOf = (parts) => classesIn(parts).reduce((sum, cls) => sum + countDecisions(cls.toString()), 0);
     // The method holding the most decisions: where code would crowd if compression were chased.
     const busiestOf = (parts) => classesIn(parts)

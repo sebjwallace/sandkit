@@ -1,5 +1,8 @@
 # discovery changelog
 
+## 0.2.1 · 2026-10-25
+- Counting a class's decisions no longer runs its getters, which threw without an object to run on.
+
 ## 0.2.0 · 2026-10-25
 - Runs the model being built. `createDiscovery` takes `model: { versions, candidates }` and works out a run for each: `runs()`, `run(id)` (the tests met, the change against what it's set against, of what kind, and whether a trial earns its place), `model(k)` (its parts, classes by name, and the compression signal), `results(id)`, `exercisedBy(id)`, `decisionsIn(cls)`, `partOfClass`, `primitivesOf` and `definitionOf`. `status` gives a part's stage and whether a scenario or rule is met. Runs are records, and link like any other.
 - Breaking: `also` is gone. Hand the engine `model: { versions, candidates }` in its place.

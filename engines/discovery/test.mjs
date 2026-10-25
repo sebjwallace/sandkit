@@ -382,6 +382,18 @@ test('decisions are counted in the code with strings and comments taken out', ()
     [['Holt', 0, [{ name: 'occupied', decisions: 0 }]], ['HoltWithFreshness', 1, [{ name: 'occupied', decisions: 1 }]]]);
 });
 
+test('a class’s getters are left alone when its decisions are counted', () => {
+  class Minutes {
+    constructor(text) { this.text = text; }
+    get total() { return this.text.trim() ? Number(this.text) : 0; }
+    later(other) { return this.total > other.total; }
+  }
+  const timed = createDiscovery({ primitives: [{ id: 'PRM-1', iteration: 1, name: 'minutes', foundedOn: [] }],
+    model: { versions: [{ iteration: 1, parts: { 'PRM-1': Minutes } }] } });
+  assertEqual(timed.decisionsIn(Minutes)[0].methods, [{ name: 'later', decisions: 0 }]);
+  assertEqual(timed.model(1).decisions, 1, 'the getter’s choice still counts in the class');
+});
+
 test('a run for each version of the model and each candidate', () => {
   assertEqual(river.runs(), ['RUN-1', 'RUN-2', 'RUN-3']);
   assertEqual(['RUN-1', 'RUN-2', 'RUN-3'].map((id) => river.run(id)).map(({ iteration, tries, changes }) => [iteration, tries, changes]),
