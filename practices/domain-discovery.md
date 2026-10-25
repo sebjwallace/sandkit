@@ -123,7 +123,7 @@ Write the model's classes, keep every version, and hand them to the [discovery e
 
 ## Feedback
 
-People who know the domain try the prototype or a run and say what they think. Their comments arrive as a feedback file, saved as source material (see the [feedback practice](feedback.md)). Each comment you act on becomes a feedback card: its `FB-` code, who said it, what it's about (a part of the model or the prototype), the model version and state it was made on, whether it says the model works or is wrong, and the passage. Answer it with what came of it, most often a scenario or rule founded on it, so their expectation becomes a test. A comment not acted on is declined, with the reason.
+People who know the domain try the prototype or a run and say what they think. Their comments arrive as a feedback file, saved as source material (see the [feedback practice](feedback.md)). Each comment becomes a feedback record: its `FB-` code, the passage (`said: [sourceId, 'the words']`), `who` said it, what it's `about` (a part of the model, or `prototype`), the `version` of the model it was made on (an iteration) and any state worth keeping in `meta`, and its `verdict`, `works` or `wrong`. Answer it with what came of it, most often a scenario or rule founded on it (`foundedOn: ['FB-1']`), so their expectation becomes a test. A comment not acted on is written `declined`, with the reason. The [discovery engine](../engines/discovery/manifest.md) works out whether it's open, answered or declined.
 
 ## Showing cards
 
@@ -146,7 +146,7 @@ Each iteration is laid out on three boards in [`sb-discovery-board`](../componen
 
 - **Columns hold a card's role in the iteration, not its kind.** An investigation is under way until a source it gathered arrives, then gathered; a prediction is brought about in the iteration its decision made it, and in force after.
 - **Links are signal, not noise.** Every link answers a question: what supports or disputes a claim, what shaped a decision or what it brought about, what a part is founded on. Label each with what it means: the [discovery engine](../engines/discovery/manifest.md) gives every link its meaning (`means`: "supports", "founds", "brings about"), to use as it is or say your own way. What brought a card about is linked only in the iteration where it did; afterwards it stands in force, and that history stays on the card.
-- **Tone links by what they mean,** so a chain reads before its labels do: what supports, answers or bears out in `good`; what disputes, refutes or puts in doubt in `bad`; what rests on an assumption or constrains in `warn`; bookkeeping, such as gathered, captures or informs, `muted`; the rest the default accent.
+- **Tone links by what they mean,** so a chain reads before its labels do: what supports, answers or bears out in `good`; what disputes, refutes or puts in doubt in `bad`; what rests on an assumption or constrains in `warn`; bookkeeping, such as gathered, captures or informs, and what a plan says should be, `muted`, since it shows but doesn't count; the rest the default accent.
 - **A grounding column holds only cards linked to the board's own,** folded, and links between two grounding cards are left out.
 - **Set the board again for each iteration:** its cards (compact, `openable`, as of that iteration), its columns and its links. Carried cards keep the `carried` mark.
 - **Fold cards with their column,** so a folded column shows each card's icon and code:

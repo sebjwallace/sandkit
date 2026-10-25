@@ -477,3 +477,40 @@ test('a run, scenario or rule it doesn’t have throws', () => {
   assertThrows(() => river.run('RUN-9'), 'an unknown run throws');
   assertThrows(() => river.results('ENT-1'), 'a part isn’t a test');
 });
+
+// ---- Feedback ----
+
+// Wardens try the model of iteration 1 and comment; the comments are saved as a source in iteration 2.
+const heard = createDiscovery({
+  sources: [
+    { id: 'SRC-1', iteration: 1, format: 'document', speaksTo: 'what should be' },
+    { id: 'SRC-2', iteration: 2, format: 'annotations' },
+  ],
+  claims: [{ id: 'CLM-1', iteration: 1, assertions: { 'SRC-1': ['+', 'every holt is surveyed in spring'] } }],
+  entities: [{ id: 'ENT-1', iteration: 1, name: 'holt', foundedOn: [] }],
+  feedback: [
+    { id: 'FB-1', iteration: 2, said: ['SRC-2', 'an old spraint doesn’t mean they’re back'], about: 'ENT-1', verdict: 'wrong' },
+    { id: 'FB-2', iteration: 2, said: ['SRC-2', 'occupied reads right'], about: 'ENT-1', verdict: 'works' },
+    { id: 'FB-3', iteration: 2, said: ['SRC-2', 'show the survey dates too'], about: 'prototype', verdict: 'wrong', declined: 'Dates are out of this sandbox’s scope.' },
+  ],
+  scenarios: [{ id: 'SCN-1', iteration: 3, foundedOn: ['FB-1'], steps: [], play: () => [] }],
+});
+const meansIn = (d, from, to) => d.links().find((l) => l.from === from && l.to === to)?.means;
+
+test('feedback is open, answered once something is founded on it, or declined as written', () => {
+  assertEqual(['FB-1', 'FB-2', 'FB-3'].map((id) => heard.status(id, { asOf: 2 })), ['open', 'open', 'declined']);
+  assertEqual(heard.status('FB-1', { asOf: 3 }), 'answered');
+});
+
+test('feedback is voiced in a source, says the model is wrong or works, and founds what answers it', () => {
+  assertEqual([meansIn(heard, 'SRC-2', 'FB-1'), meansIn(heard, 'FB-1', 'ENT-1'), meansIn(heard, 'FB-2', 'ENT-1'), meansIn(heard, 'FB-1', 'SCN-1')],
+    ['voices', 'disputes', 'bears out', 'founds']);
+});
+
+test('feedback about the prototype, which isn’t a record, links only to where it was said', () => {
+  assertEqual(heard.links().filter((l) => l.from === 'FB-3' || l.to === 'FB-3').map((l) => `${l.from}→${l.to}`), ['SRC-2→FB-3']);
+});
+
+test('a source saying what should be says so of a claim, without supporting or disputing it', () => {
+  assertEqual(meansIn(heard, 'SRC-1', 'CLM-1'), 'says it should');
+});

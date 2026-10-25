@@ -35,7 +35,7 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 
 ## What it takes
 
-`createDiscovery({ sources, claims, questions, assumptions, inferences, observations, predictions, outcomes, investigations, experiments, actions, decisions, goals, metrics, definitions, opinions, agreements, constraints, risks, awaited, entities, primitives, scenarios, rules, model })`. Give it the kinds the sandbox has; any left out is empty. Each list is plain records, each saying the `iteration` it was raised in; the engine never changes them.
+`createDiscovery({ sources, claims, questions, assumptions, inferences, observations, predictions, outcomes, investigations, experiments, actions, decisions, goals, metrics, definitions, opinions, feedback, agreements, constraints, risks, awaited, entities, primitives, scenarios, rules, model })`. Give it the kinds the sandbox has; any left out is empty. Each list is plain records, each saying the `iteration` it was raised in; the engine never changes them.
 
 **A source**, as discovery weighs it, from its entry in the catalogue (see the [sources practice](../../practices/sources.md)):
 
@@ -65,8 +65,9 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 | experiment | the observations whose `resultOf` names it |
 | action | `status`, as written, and `done`, the source or record showing it's done |
 | decision | `status`, as written, and `restsOn: [id, …]` |
+| feedback | `said: [sourceId, 'the words']`, `about` (what it's about), `verdict` (`works` or `wrong`), `declined` (the reason, when not acted on), and the records founded on it |
 
-**What each kind rests on,** which makes the links: a claim on its passages' sources, and it informs questions (`informs`); a question on the source raising it (`raisedBy`) and those answering it; a decision on `restsOn` and its cited `sources`; an action and a risk on what brought them about (`from`) and their sources; a prediction and an experiment on `from`, an experiment also on its source (`setIn`); a goal, assumption, definition, agreement and constraint on the source setting them (`setIn`, `said` for an opinion), an agreement or constraint also on `from`; an inference on its `premises`; an observation on the source it was read from (`at`), and it bears on what it `tests`, its experiment (`resultOf`) and its `metric`; an outcome on `from` and its sources, and it bears on what it's measured `against`; an investigation on what prompted it (`prompt`), and a source on the investigation that gathered it (`gatheredBy`); entities, primitives, scenarios and rules on what they're `foundedOn`; awaited material on what it's `for`.
+**What each kind rests on,** which makes the links: a claim on its passages' sources, and it informs questions (`informs`); a question on the source raising it (`raisedBy`) and those answering it; a decision on `restsOn` and its cited `sources`; an action and a risk on what brought them about (`from`) and their sources; a prediction and an experiment on `from`, an experiment also on its source (`setIn`); a goal, assumption, definition, agreement and constraint on the source setting them (`setIn`, `said` for an opinion), an agreement or constraint also on `from`; an inference on its `premises`; an observation on the source it was read from (`at`), and it bears on what it `tests`, its experiment (`resultOf`) and its `metric`; an outcome on `from` and its sources, and it bears on what it's measured `against`; an investigation on what prompted it (`prompt`), and a source on the investigation that gathered it (`gatheredBy`); entities, primitives, scenarios and rules on what they're `foundedOn`; awaited material on what it's `for`; feedback on the source it was `said` in, and it bears on what it's `about`.
 
 **The model**, `model: { versions, candidates }`, the classes the sandbox writes, handed in since the engine can't know them:
 
@@ -112,9 +113,10 @@ The parts, scenarios and rules it reads:
 
 | Link | Means |
 |---|---|
-| a source to a claim | `supports` or `disputes`, by its passage's stance |
+| a source to a claim | `supports` or `disputes`, by its passage's stance; from a source that speaks to what should be, `says it should` or `says it shouldn’t`, since it isn't counted |
 | a source to a question | `asks` (raising it) or `answers` |
-| a source to a goal, constraint, agreement, experiment, observation, assumption, definition or opinion | `sets`, `imposes`, `records`, `records`, `captures`, `states`, `defines`, `voices` |
+| a source to a goal, constraint, agreement, experiment, observation, assumption, definition, opinion or feedback | `sets`, `imposes`, `records`, `records`, `captures`, `states`, `defines`, `voices`, `voices` |
+| feedback to what it's about | `bears out` (it works) or `disputes` (it's wrong) |
 | a source to anything else | `records` if its catalogue `role` is `decision`, else `informs` |
 | an observation to an assumption | `bears out` or `refutes`; to a prediction, `supports` or `doubts`; to an experiment, `result` |
 | into a metric; an investigation to a source | `reading of`; `gathered` |
@@ -152,6 +154,7 @@ Anything else `rests on`. Use the words as they are, or say them the sandbox's w
 | action | `done` once what shows it has arrived; until then its written `status` |
 | decision | `review` when it has review reasons; otherwise its written `status`. Grounds already in doubt when it was taken were part of its reasoning, not a reason. |
 | outcome | its `result` |
+| feedback | `declined` when written so; `answered` once a record founded on it has been raised; `open` until then |
 | entity, primitive | `rejected` once turned down; `integrated` once a version of the model holds it; `trying` once a candidate tries it; `proposed` until then |
 | scenario, rule | `met` when it passes against the model as it stood; `not met` otherwise |
 

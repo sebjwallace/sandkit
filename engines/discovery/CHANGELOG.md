@@ -1,5 +1,8 @@
 # discovery changelog
 
+## 0.2.3 · 2026-10-25
+- Takes feedback: a comment on the model, voiced in a source, saying it works or is wrong, with its status worked out (`open`, `answered` once something is founded on it, `declined`). A source that speaks to what should be `says it should` of a claim, rather than supporting it, since it isn't counted.
+
 ## 0.2.2 · 2026-10-25
 - Every link says what it means (`means`: `supports`, `founds`, `meets`, …), in `links()` and `iteration(k)`, so a sandbox no longer works it out to label its boards.
 

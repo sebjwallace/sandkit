@@ -1,4 +1,4 @@
-// Sandkit discovery 0.2.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit discovery 0.2.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The engine of domain discovery: the method's rules, written once. Given the sandbox's records,
 // it works out what follows from them, the same way every time, so a record holds only what
 // someone wrote and never a conclusion. It draws nothing and knows no component.
@@ -55,6 +55,7 @@
     inference: (r) => (r.premises ?? []).map((id) => [id, r.id]),
     definition: (r) => [[r.setIn?.[0], r.id]],
     opinion: (r) => [[r.said?.[0], r.id]],
+    feedback: (r) => [[r.said?.[0], r.id], [r.id, r.about]],
     outcome: (r) => [...[r.from ?? []].flat(), ...cites(r.sources)].map((id) => [id, r.id]).concat([[r.id, r.against]]),
     agreement: (r) => [[r.setIn?.[0], r.id], [r.from, r.id]],
     constraint: (r) => [[r.setIn?.[0], r.id], [r.from, r.id]],
@@ -67,7 +68,7 @@
 
   function createDiscovery({ sources = [], claims = [], questions = [], assumptions = [], inferences = [], observations = [],
     predictions = [], outcomes = [], investigations = [], experiments = [], actions = [], decisions = [], goals = [], metrics = [],
-    definitions = [], opinions = [], agreements = [], constraints = [], risks = [], awaited = [], entities = [], primitives = [],
+    definitions = [], opinions = [], feedback = [], agreements = [], constraints = [], risks = [], awaited = [], entities = [], primitives = [],
     scenarios = [], rules = [], model: { versions = [], candidates = [] } = {} } = {}) {
     // The model being built: one version per iteration, `{ iteration, parts: { partId: Class } }`,
     // and candidates trying a proposal, `{ iteration, tries, parts }`. Every version is kept, so every
@@ -154,7 +155,7 @@
     const lists = { claim: claims, question: questions, assumption: assumptions, inference: inferences, observation: observations,
       prediction: predictions, outcome: outcomes, investigation: investigations, experiment: experiments, action: actions, decision: decisions,
       goal: goals, metric: metrics, definition: definitions, opinion: opinions, agreement: agreements, constraint: constraints, risk: risks,
-      awaited, entity: entities, primitive: primitives, scenario: scenarios, rule: rules, run: runs };
+      awaited, feedback, entity: entities, primitive: primitives, scenario: scenarios, rule: rules, run: runs };
     const recordOf = new Map(Object.entries(lists).flatMap(([kind, list]) => list.map((record) => [record.id, { kind, record }])));
     const kindOf = (id) => recordOf.get(id)?.kind;
 
@@ -190,6 +191,9 @@
       action: (action, asOf) => (action.done && arrivedById(action.done, asOf) ? 'done' : action.status),
       decision: (decision, asOf) => (reviewReasons(decision.id, { asOf }).length ? 'review' : decision.status),
       outcome: (outcome) => outcome.result,
+      // Feedback is declined when written so, with the reason; answered once something is founded on it.
+      feedback: (comment, asOf) => (comment.declined ? 'declined'
+        : [...recordOf.values()].some(({ record }) => record.foundedOn?.includes(comment.id) && iterationOf(record.id) <= asOf) ? 'answered' : 'open'),
       entity: (part, asOf) => stage(part, asOf),
       primitive: (part, asOf) => stage(part, asOf),
       scenario: (test, asOf) => (passesWith(test, modelAt(asOf).parts) ? 'met' : 'not met'),
@@ -254,7 +258,7 @@
     // a source supports or disputes a claim, a run meets a test or doesn't, a decision brings about
     // an action. The sandbox chooses how to say it and how to tone it.
     const FROM_SOURCE = { goal: 'sets', constraint: 'imposes', agreement: 'records', experiment: 'records', observation: 'captures',
-      assumption: 'states', definition: 'defines', opinion: 'voices' };
+      assumption: 'states', definition: 'defines', opinion: 'voices', feedback: 'voices' };
     const INTO = { entity: 'founds', primitive: 'founds', scenario: 'founds', rule: 'founds', investigation: 'prompts',
       experiment: 'calls for', inference: 'premise' };
     const LATER_INTO = { outcome: 'shows', question: 'informs', action: 'calls for', constraint: 'brings about', agreement: 'brings about',
@@ -266,6 +270,8 @@
       const record = (id) => recordOf.get(id)?.record;
       if (b === 'awaited') return 'awaits';
       if (a === 'source') {
+        // What should be is no evidence of what is, so a plan says, without supporting or disputing.
+        if (b === 'claim' && sourceOf.get(from).speaksTo === 'what should be') return isNo(record(to).assertions[from][0]) ? 'says it shouldn’t' : 'says it should';
         if (b === 'claim') return isNo(record(to).assertions[from][0]) ? 'disputes' : 'supports';
         if (b === 'question') return record(to).raisedBy?.[0] === from ? 'asks' : 'answers';
         return FROM_SOURCE[b] ?? (sourceOf.get(from).role === 'decision' ? 'records' : 'informs');
@@ -277,6 +283,7 @@
       if (b === 'metric') return 'reading of';
       if (a === 'investigation' && b === 'source') return 'gathered';
       if (a === 'primitive' && b === 'entity') return 'part of';
+      if (a === 'feedback' && to === record(from).about) return record(from).verdict === 'wrong' ? 'disputes' : 'bears out';
       if (b === 'run') return record(to).tries ? 'tried in' : 'run in';
       if (a === 'run') return run(from).met.includes(to) ? 'meets' : 'doesn’t meet';
       if (INTO[b]) return INTO[b];
@@ -287,6 +294,8 @@
     }
 
     // Every link, from what something rests on to what rests on it, each once, with what it means.
+    // Only between what it has: feedback about the prototype, say, links to nothing.
+    const known = (id) => sourceOf.has(id) || recordOf.has(id);
     let allLinks = null;
     function links() {
       if (allLinks) return allLinks;
@@ -294,7 +303,7 @@
         ...[...recordOf.values()].flatMap(({ kind, record }) => (EDGES[kind]?.(record) ?? [])),
         ...sources.filter((s) => s.gatheredBy).map((s) => [s.gatheredBy, s.id]),
         ...[...recordOf.keys()].flatMap((id) => more.inputs(id).map((from) => [from, id])),
-      ].filter(([from, to]) => from && to);
+      ].filter(([from, to]) => known(from) && known(to));
       const seen = new Set();
       allLinks = pairs.filter(([from, to]) => !seen.has(`${from} ${to}`) && seen.add(`${from} ${to}`))
         .map(([from, to]) => ({ from, to, means: meaningOf(from, to) }));

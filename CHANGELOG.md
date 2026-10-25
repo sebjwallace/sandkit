@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.65 · 2026-10-25
+- `engines/discovery` 0.2.3 takes feedback and works out its status, and words a plan's link to a claim as what it says should be. The domain discovery practice says how feedback is recorded, and tones those links muted.
+
 ## 0.2.64 · 2026-10-25
 - From a trial discovery sandbox: the sandbox template's AGENTS.md points to any other practice followed and lists `records/`; the domain discovery practice sets up `sb-modal` and `sb-source` too, says where the model lives and that a discovery page must be served; the sources practice lists the catalogue's `iteration` and `gatheredBy`.
 
