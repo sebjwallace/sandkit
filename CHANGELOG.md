@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.58 · 2026-10-25
+- `tools/setup.mjs` sets up engines as it does components, named by their folder (`node tools/setup.mjs <sandbox> discovery`): copied into `lib/sandkit/engines/` with their manifests and changelogs, given a script tag, recorded in `SOURCE.md` and kept on update. The building guide and the template's `AGENTS.md` say so, and the domain discovery practice gives the command for a discovery sandbox.
+
 ## 0.2.57 · 2026-10-25
 - Engines and records, decided: an engine is a method's rules written once, in `engines/` beside `components/`, one classic script with no DOM, knowing no component; what a sandbox writes is kept in `records/` beside `sources/`, never edited, each record carrying when, by whom and in which iteration it was made. The domain discovery practice gains a Records section.
 - The first engine, `engines/discovery` 0.1.0: weighing claims, from the records and each source's authored grade.

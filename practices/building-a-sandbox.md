@@ -37,10 +37,11 @@ Then sketch the chapters: one line each, starting with the most fundamental idea
 
 The sandbox lives in its own folder. Fetch Sandkit (for example `git clone --depth 1 https://github.com/sebjwallace/sandkit` into a temporary location).
 
-**If Node is available,** one command does all of the setup below, and running it again adds components or updates the copies:
+**If Node is available,** one command does all of the setup below, and running it again adds components or engines, or updates the copies. Name components by their tag and engines by their folder:
 
 ```sh
 node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
+node <sandkit>/tools/setup.mjs <sandbox-folder> discovery
 ```
 
 **Otherwise, copy by hand,** with a copy command (`cp`) or the file manager. Never copy by reading each file and writing it out: that puts every script's source into your context, which is the reading Sandkit exists to save.
@@ -49,6 +50,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 2. **Copy what the sandbox uses into `lib/sandkit/`, keeping Sandkit's own paths.** Links between manifests and practices then still work.
    - Always: `CATALOG.md`, `CHANGELOG.md`, `STYLE.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`, and `sb-comments` (below), which the template uses.
    - For each component used: `components/<name>/<name>.js`, `components/<name>/manifest.md` and `components/<name>/CHANGELOG.md`.
+   - For each engine used, when the sandbox follows a method that has one, such as domain discovery: `engines/<name>/<name>.js`, `engines/<name>/manifest.md` and `engines/<name>/CHANGELOG.md`, with a script tag for it like a component's.
    - Every practice the sandbox follows, from `practices/`.
    - Not tests or demos. They stay in Sandkit.
 3. **Record the source and versions** in `lib/sandkit/SOURCE.md`. Each version is the top entry of its changelog, and also appears in its script's first line.

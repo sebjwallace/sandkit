@@ -21,6 +21,14 @@ Everything discovery records is a card with a code, whose prefix names its kind 
 - **A card rests on passages,** not whole sources: the words it cites, with whether they say yes, no or ask.
 - **A new kind earns its place** only with parts or connections the others lack. Prefer a variant of an existing kind.
 
+## Setting up
+
+A discovery sandbox uses the card, the board and the engine, beside whatever else its subject needs. With Node:
+
+```sh
+node <sandkit>/tools/setup.mjs <sandbox-folder> sb-discovery-card sb-discovery-board discovery
+```
+
 ## Records
 
 What the agent or a person writes is kept as records, in the sandbox's `records/` folder, beside `sources/`:

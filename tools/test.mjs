@@ -83,6 +83,16 @@ test('running again adds components, keeps existing ones, and never duplicates t
   assert(read(sandbox, 'lib/sandkit/SOURCE.md').includes('components/sb-log/sb-log.js'), 'sb-log still recorded');
 });
 
+test('an engine is copied with its manifest and changelog, tagged once, recorded, and kept on update', (sandbox) => {
+  setup(sandbox, 'sb-log', 'discovery');
+  for (const file of ['discovery.js', 'manifest.md', 'CHANGELOG.md']) assert(existsSync(join(sandbox, `lib/sandkit/engines/discovery/${file}`)), `missing ${file}`);
+  setup(sandbox);
+  const html = read(sandbox, 'index.html');
+  assertEqual(html.split('\n').filter((line) => line.trim() === '<script src="lib/sandkit/engines/discovery/discovery.js"></script>').length, 1);
+  const source = read(sandbox, 'lib/sandkit/SOURCE.md');
+  assert(/- discovery \d+\.\d+\.\d+/.test(source) && source.includes('- engines/discovery/discovery.js'), 'its version and files recorded');
+});
+
 test('a new sandbox gets sandbox.js, the page template, the sources folder, and the export, serve and sources tools', (sandbox) => {
   setup(sandbox);
   for (const file of ['sandbox.js', 'lib/sandkit/templates/page.html', 'lib/sandkit/tools/export.mjs', 'lib/sandkit/tools/serve.mjs', 'lib/sandkit/tools/sources.mjs', 'sources/catalogue.json', 'sources/inbox/.gitkeep', 'lib/sandkit/shell/sb-export.js']) {
@@ -123,7 +133,7 @@ test('SOURCE.md records the repository, commit, date and every file copied', (sa
 
 test('an unknown component is refused before anything is copied', (sandbox) => {
   const result = setup(sandbox, 'sb-nothing');
-  assert(!result.ok && result.output.includes('no component called sb-nothing'), 'explains');
+  assert(!result.ok && result.output.includes('no component or engine called sb-nothing'), 'explains');
   assert(!existsSync(join(sandbox, 'index.html')), 'nothing copied');
 });
 

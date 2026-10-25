@@ -2,13 +2,14 @@
 // Sets up a sandbox with Sandkit's files, or updates them. No dependencies: just Node.
 //
 //   node tools/setup.mjs path/to/sandbox sb-id sb-log
+//   node tools/setup.mjs path/to/sandbox discovery                   an engine, named by its folder
 //   node tools/setup.mjs path/to/sandbox sb-log --page stock.html    tags go on another page
 //
 // - A folder without an index.html starts from the template. Existing files are never overwritten.
 // - Copies the shell, the catalog, the style guide, the practices, the page template, the export, serve and sources tools, sb-comments
-//   (the template's comment mode), and each named component (plus any the sandbox already has) into lib/sandkit/, keeping Sandkit's paths, with
-//   their changelogs.
-// - Adds a script tag to index.html, or the page named, for each component named that doesn't have one yet.
+//   (the template's comment mode), and each named component or engine (plus any the sandbox already has) into lib/sandkit/, keeping Sandkit's
+//   paths, with their manifests and changelogs.
+// - Adds a script tag to index.html, or the page named, for each component or engine named that doesn't have one yet.
 // - Writes lib/sandkit/SOURCE.md, recording every version.
 // - When updating, reports what changed since the installed versions, breaking changes first.
 //
@@ -33,11 +34,12 @@ function setup(folder, requested, page = 'index.html') {
   if (isNew) cpSync(join(SANDKIT, 'templates', 'sandbox'), sandbox, { recursive: true, force: false });
   if (!existsSync(join(sandbox, page))) fail(`${folder} has no page called ${page}. Start one from lib/sandkit/templates/page.html.`);
 
-  const components = [...new Set([...EVERY_SANDBOX, ...componentsIn(lib), ...requested])];
-  const packages = ['shell', ...components].map(packageOf);
+  const components = [...new Set([...EVERY_SANDBOX, ...installedIn(lib, 'components'), ...requested.filter((name) => !isEngine(name))])];
+  const engines = [...new Set([...installedIn(lib, 'engines'), ...requested.filter(isEngine)])];
+  const packages = ['shell', ...components, ...engines].map(packageOf);
   const installed = Object.fromEntries(packages.map((p) => [p.name, versionIn(join(lib, p.script))]));
 
-  const files = [...ALWAYS_COPIED, ...practices(), ...components.flatMap(componentFiles)];
+  const files = [...ALWAYS_COPIED, ...practices(), ...components.flatMap(componentFiles), ...engines.flatMap(engineFiles)];
   for (const file of files) {
     mkdirSync(dirname(join(lib, file)), { recursive: true });
     cpSync(join(SANDKIT, file), join(lib, file));
@@ -47,7 +49,8 @@ function setup(folder, requested, page = 'index.html') {
   writeFileSync(join(lib, 'SOURCE.md'), sourceRecord(files, versions));
 
   console.log(isNew ? `Created ${folder} from the template.` : `Updated ${folder}.`);
-  console.log(`Copied ${files.length} files into lib/sandkit/${components.length ? `, with ${components.join(', ')}` : ''}.`);
+  const parts = [...components, ...engines.map((name) => `the ${name} engine`)];
+  console.log(`Copied ${files.length} files into lib/sandkit/${parts.length ? `, with ${parts.join(', ')}` : ''}.`);
   if (tagged.added.length) console.log(`Added script tags for ${tagged.added.join(', ')} to ${page}.`);
   if (tagged.missing.length) console.log(`Add script tags for ${tagged.missing.join(', ')} to ${page} yourself: no Sandkit script tag was found to place them after.`);
   reportChanges(versions.filter((v) => v.from && v.from !== v.to));
@@ -55,21 +58,26 @@ function setup(folder, requested, page = 'index.html') {
 
 // ---- What to copy ----
 
-// Only components with a manifest are ready for sandboxes; the rest are still in progress.
+// An engine is named by its folder in engines/, a component by its tag.
+const isEngine = (name) => existsSync(join(SANDKIT, 'engines', name));
+
+// Only components and engines with a manifest are ready for sandboxes; the rest are still in progress.
 function checkAvailable(name) {
-  const folder = join(SANDKIT, 'components', name);
+  const folder = join(SANDKIT, isEngine(name) ? 'engines' : 'components', name);
   if (existsSync(join(folder, 'manifest.md'))) return;
   if (existsSync(folder)) fail(`${name} is still in progress (see CATALOG.md), so it can't be set up yet.`);
-  fail(`Sandkit has no component called ${name}. See CATALOG.md for what's available.`);
+  fail(`Sandkit has no component or engine called ${name}. See CATALOG.md for what's available.`);
 }
 
-function componentsIn(lib) {
-  const folder = join(lib, 'components');
-  return existsSync(folder) ? readdirSync(folder) : [];
+function installedIn(lib, kind) {
+  const folder = join(lib, kind);
+  return existsSync(folder) ? readdirSync(folder).filter((name) => !name.startsWith('.')) : [];
 }
 
 const practices = () => readdirSync(join(SANDKIT, 'practices')).map((file) => `practices/${file}`);
 const componentFiles = (name) => [`components/${name}/${name}.js`, `components/${name}/manifest.md`, `components/${name}/CHANGELOG.md`];
+const engineFiles = (name) => [`engines/${name}/${name}.js`, `engines/${name}/manifest.md`, `engines/${name}/CHANGELOG.md`];
+const scriptOf = (name) => (isEngine(name) ? `engines/${name}/${name}.js` : `components/${name}/${name}.js`);
 
 // ---- Script tags ----
 
@@ -81,7 +89,7 @@ function addScriptTags(indexPath, components) {
   let html = readFileSync(indexPath, 'utf8');
   const added = [], missing = [];
   for (const name of components) {
-    const src = `lib/sandkit/components/${name}/${name}.js`;
+    const src = `lib/sandkit/${scriptOf(name)}`;
     const tags = [...html.matchAll(SANDKIT_TAG)];
     if (tags.some((tag) => tag[2] === src)) continue;
     const lastTag = tags.at(-1);
@@ -95,13 +103,13 @@ function addScriptTags(indexPath, components) {
 }
 
 // ---- Versions ----
-// A component's version is the top entry of its changelog, repeated in its script's first line
+// A component's or engine's version is the top entry of its changelog, repeated in its script's first line
 // ("// Sandkit sb-log 0.1.0 · …"), so a copied script always says what it is. The shell's two
 // scripts share one version.
 
 const packageOf = (name) => (name === 'shell'
   ? { name: 'shell', script: 'shell/sb-shell.js', changelog: 'shell/CHANGELOG.md' }
-  : { name, script: `components/${name}/${name}.js`, changelog: `components/${name}/CHANGELOG.md` });
+  : { name, script: scriptOf(name), changelog: scriptOf(name).replace(/[^/]+\.js$/, 'CHANGELOG.md') });
 
 function versionIn(scriptPath) {
   if (!existsSync(scriptPath)) return null;
@@ -181,5 +189,5 @@ const args = process.argv.slice(2);
 const pageAt = args.indexOf('--page');
 const page = pageAt >= 0 ? args.splice(pageAt, 2)[1] : 'index.html';
 const [folder, ...requested] = args;
-if (!folder || !page) fail('Usage: node tools/setup.mjs <sandbox-folder> [component ...] [--page <page.html>]');
+if (!folder || !page) fail('Usage: node tools/setup.mjs <sandbox-folder> [component or engine ...] [--page <page.html>]');
 setup(folder, requested, page);
