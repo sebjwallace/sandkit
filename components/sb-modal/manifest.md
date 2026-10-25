@@ -43,12 +43,15 @@ The content is moved inside the modal when it is built. To change it later, chan
 |---|---|
 | `heading` | The title at the top, which also names the modal for screen readers. Without one, only the close button is shown. |
 | `open` | Present while the modal is showing. |
+| `size` | `full` fills the window, leaving a margin of the page around it, so a click there still closes it. Without it, the modal takes its default size from its tokens (see Styling). |
+| `expandable` | Shows a button beside the close button that switches between the default size and full size. |
 
 ## Properties and methods
 
 | Member | Meaning |
 |---|---|
 | `open` | Get or set whether the modal is showing. Setting it fires no event. |
+| `size` | Get or set `'default'` or `'full'`. Mirrors the attribute; anything else is the default. Setting it fires no event. |
 | `show()` | Open it. |
 | `close()` | Close it. Fires no event. |
 
@@ -57,14 +60,15 @@ The content is moved inside the modal when it is built. To change it later, chan
 | Event | Detail | When |
 |---|---|---|
 | `sb-close` | `{ reason }` | The viewer closes the modal. `reason` is `close` (the × button, or a `data-close` with no value), `escape`, `backdrop`, or a `data-close` value. Fired after it has closed. Bubbles. |
+| `sb-size` | `{ size }` | The viewer switches size with the expandable button. `size` is `full` or `default`. Bubbles. |
 
 ## Styling
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-font`, `--sb-radius`.
 
-Its own token: `--sb-modal-width` (default `560px`); it never grows wider than the window.
+Its own tokens: `--sb-modal-width` (default `560px`) and `--sb-modal-height` (default: as tall as its content). Together they give the modal any size; it never grows beyond the window. Full size ignores them.
 
-Classes: `sb-modal__dialog` (a native `<dialog>`; its `::backdrop` dims the page), `sb-modal__header`, `sb-modal__title`, `sb-modal__close`, `sb-modal__body`, `sb-modal__actions`.
+Classes: `sb-modal__dialog` (a native `<dialog>`; its `::backdrop` dims the page; `--full` at full size), `sb-modal__header`, `sb-modal__title`, `sb-modal__size` (the expandable button, `aria-pressed="true"` at full size), `sb-modal__close`, `sb-modal__body`, `sb-modal__actions`.
 
 ## Works well with
 
@@ -77,10 +81,11 @@ Suggestions only: nothing here is wired in. The sandbox composes these itself.
 ## Notes
 
 - **Use them sparingly.** A modal interrupts. Keep it for what should stop the viewer; anything they might want beside the model belongs in the page, or in a panel.
+- **Room to look closely.** For content that rewards space, such as a source, a diagram or a wide table, make the modal `expandable`, or open it at `size="full"`.
 - **One at a time.** Opening a modal from inside another isn't supported.
 - **Built on the browser's own modal dialog,** which lies over everything, keeps keyboard focus inside, closes on Escape, and returns focus to where it was when it closes.
 - **A click on the backdrop closes it** only when the press began there too, so selecting text and letting go outside leaves it open.
 - **Dependencies:** none.
 - **Export:** safe for single-file export. Classic script, no fetches, no external assets.
-- **Accessibility:** a modal dialog, named by its heading; the close button is labelled "Close".
+- **Accessibility:** a modal dialog, named by its heading; the close button is labelled "Close", and the size button "Full size", pressed while full size.
 - **Renaming:** if another component on the page is already called `sb-modal`, the console says so. Replace every `sb-modal` in `sb-modal.js` (tag, classes and style id all use it) to give this copy a new name.

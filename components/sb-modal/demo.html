@@ -43,6 +43,12 @@
     .choice strong { display: block; font-size: 14px; }
     .choice span { font-size: 13px; color: var(--sb-muted); }
     .scenario { margin: 10px 0 0; font-size: 14px; }
+
+    /* A timetable */
+    .timetable { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .timetable th, .timetable td { padding: 4px 10px 4px 0; border-bottom: 1px solid var(--sb-surface-2); text-align: left; }
+    .timetable th { color: var(--sb-muted); font-weight: 600; }
+    .timetable .late { color: var(--sb-warn); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -60,7 +66,7 @@
       <ul>
         <li><strong>Explaining a moment as it happens.</strong> Pause the model when a shelf runs empty or a population crashes, and show why, with the numbers from that moment.</li>
         <li><strong>A choice before starting,</strong> such as a scenario or a starting point, where each answer leads somewhere different.</li>
-        <li><strong>A closer look</strong> at one log entry, table row or part of a diagram, without crowding the page.</li>
+        <li><strong>A closer look</strong> at one log entry, table row or part of a diagram, without crowding the page. Make it <code>expandable</code> when what's inside rewards room, such as a wide table or a source, so the viewer can widen it to nearly the whole window.</li>
       </ul>
 
       <h3>Where something else fits better</h3>
@@ -127,6 +133,22 @@ modal.addEventListener('sb-close', (e) =&gt; e.detail.reason === 'replay' &amp;&
         </div>
       </sb-modal>
     </section>
+
+    <section class="example">
+      <h2>A timetable, up close</h2>
+      <p class="note">A whole afternoon of departures is too wide for a small window. This modal is expandable: press the corners beside × to give it nearly the whole window, and again to bring it back.</p>
+      <div class="row">
+        <button type="button" class="button" id="open-timetable">See the afternoon's departures</button>
+        <span class="status" id="timetable-status"></span>
+      </div>
+
+      <sb-modal id="timetable" heading="Ashford International, departures 14:00 to 15:00" expandable>
+        <table class="timetable">
+          <thead><tr><th>Time</th><th>Destination</th><th>Calling at</th><th>Platform</th><th>Expected</th><th>Operator</th></tr></thead>
+          <tbody id="timetable-rows"></tbody>
+        </table>
+      </sb-modal>
+    </section>
   </main>
 
   <script>
@@ -189,6 +211,33 @@ modal.addEventListener('sb-close', (e) =&gt; e.detail.reason === 'replay' &amp;&
       document.getElementById('scenario').textContent = `${SCENARIOS[scenario]} ${note}`;
     }
 
+    // ---- A timetable: wide enough to want room ----
+
+    const DEPARTURES = [
+      ['14:02', 'Brighton', 'Tonbridge, Redhill, Gatwick Airport, Haywards Heath', '4', 'On time', 'Southern Coast'],
+      ['14:05', 'Cambridge', 'Maidstone, Rochester, London St Pancras, Stevenage', '2', 'Exp 14:08', 'Fen Line'],
+      ['14:12', 'Dover Priory', 'Folkestone Central, Folkestone West', '–', 'Delayed', 'Kent Coast'],
+      ['14:15', 'Gatwick Airport', 'Tonbridge, Edenbridge, Redhill', '9', 'On time', 'Southern Coast'],
+      ['14:20', 'Bedford', 'London St Pancras, Luton Airport Parkway, Harpenden, Luton', '–', 'On time', 'Midland Main'],
+      ['14:25', 'Ely', 'London St Pancras, Cambridge North, Waterbeach', '11', 'Exp 14:31', 'Fen Line'],
+      ['14:38', 'Hastings', 'Ham Street, Appledore, Rye, Winchelsea, Ore', '1', 'On time', 'Marshlink'],
+      ['14:44', 'Portsmouth Harbour', 'Tonbridge, Redhill, Horsham, Chichester, Havant', '12', 'On time', 'Southern Coast'],
+    ];
+
+    function showTimetable() {
+      const rows = document.getElementById('timetable-rows');
+      rows.replaceChildren(...DEPARTURES.map((cells) => {
+        const row = document.createElement('tr');
+        for (const text of cells) {
+          const cell = document.createElement('td');
+          cell.textContent = text;
+          if (/^(Exp|Delayed)/.test(text)) cell.className = 'late';
+          row.append(cell);
+        }
+        return row;
+      }));
+    }
+
     // ---- Start ----
 
     document.getElementById('next-day').addEventListener('click', nextDay);
@@ -205,8 +254,13 @@ modal.addEventListener('sb-close', (e) =&gt; e.detail.reason === 'replay' &amp;&
         showScenario(`(Closed by ${e.detail.reason}, so nothing changed.)`);
       }
     });
+    document.getElementById('open-timetable').addEventListener('click', () => document.getElementById('timetable').show());
+    document.getElementById('timetable').addEventListener('sb-size', (e) => {
+      document.getElementById('timetable-status').textContent = `Last switched to: ${e.detail.size}`;
+    });
     showShelf();
     showScenario();
+    showTimetable();
   </script>
 </body>
 </html>

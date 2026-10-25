@@ -150,6 +150,76 @@
       el.close();
     });
 
+    // ---- Size ----
+
+    const sizeButton = (el) => el.querySelector('.sb-modal__size');
+    const isFull = (el) => dialogOf(el).classList.contains('sb-modal__dialog--full');
+    const resizings = (el) => {
+      const sizes = [];
+      el.addEventListener('sb-size', (e) => sizes.push(e.detail.size));
+      return sizes;
+    };
+
+    test('at the default size, it is as tall as its content', () => {
+      const el = modal('open');
+      const height = dialogOf(el).getBoundingClientRect().height;
+      assert(height > 0 && height < window.innerHeight / 2, `height ${height} of ${window.innerHeight}`);
+      el.close();
+    });
+
+    test('starts at the default size, with no size button', () => {
+      const el = modal();
+      assertEqual(el.size, 'default');
+      assert(!isFull(el), 'not full');
+      assert(sizeButton(el).hidden, 'no size button');
+    });
+
+    test('the size attribute and property make it full size, and back', () => {
+      const el = modal('size="full"');
+      assert(el.size === 'full' && isFull(el), 'full from markup');
+      el.size = 'default';
+      assert(!el.hasAttribute('size') && !isFull(el), 'back by the property');
+      el.size = 'full';
+      assertEqual(el.getAttribute('size'), 'full');
+      assert(isFull(el), 'full by the property');
+    });
+
+    test('an unknown size is the default', () => {
+      const el = modal('size="huge"');
+      assert(el.size === 'default' && !isFull(el), 'default');
+    });
+
+    test('when expandable, its button switches size and says so', () => {
+      const el = modal('expandable open');
+      const sizes = resizings(el);
+      assert(!sizeButton(el).hidden, 'button shown');
+      assertEqual(sizeButton(el).getAttribute('aria-pressed'), 'false');
+      sizeButton(el).click();
+      assert(el.size === 'full' && isFull(el), 'full');
+      assertEqual(sizeButton(el).getAttribute('aria-pressed'), 'true');
+      sizeButton(el).click();
+      assert(el.size === 'default' && !isFull(el), 'default again');
+      assertEqual(sizes, ['full', 'default']);
+      assert(el.open, 'still open');
+      el.close();
+    });
+
+    test('becoming expandable later shows the button', () => {
+      const el = modal();
+      el.setAttribute('expandable', '');
+      assert(!sizeButton(el).hidden, 'button shown');
+      el.removeAttribute('expandable');
+      assert(sizeButton(el).hidden, 'button hidden');
+    });
+
+    test('changing size from code fires no event', () => {
+      const el = modal('expandable');
+      const sizes = resizings(el);
+      el.size = 'full';
+      el.size = 'default';
+      assertEqual(sizes, []);
+    });
+
     // ---- Several on a page ----
 
     test('two modals open and close independently', () => {
@@ -164,6 +234,8 @@
       assertEqual(reasons, ['close']);
       const ids = [...pair.querySelectorAll('.sb-modal__title')].map((t) => t.id);
       assert(ids[0] !== ids[1], 'title ids are unique');
+      two.size = 'full';
+      assert(two.querySelector('.sb-modal__dialog--full') && !one.querySelector('.sb-modal__dialog--full'), 'only the second full size');
       two.close();
     });
   </script>

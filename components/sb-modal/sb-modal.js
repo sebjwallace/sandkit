@@ -1,9 +1,9 @@
-// Sandkit sb-modal 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-modal 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A window over the page that holds attention until it is closed: an explanation, a decision or
 // a closer look, one at a time. Built on the browser's own modal dialog, which keeps focus inside,
 // closes on Escape and returns focus when done. Its content is whatever is inside it.
 //
-//   <sb-modal heading="Why did the shelf run empty?">
+//   <sb-modal heading="Why did the shelf run empty?" expandable>
 //     <p>Demand rose faster than the warehouse could reorder.</p>
 //     <button slot="actions" data-close="replay">Replay the week</button>
 //   </sb-modal>
@@ -27,13 +27,18 @@
   // Buttons in the actions get a plain look of low weight, so a sandbox's own button styles win.
   const CSS = `
     .sb-modal { display: contents; }
-    .sb-modal__dialog { box-sizing: border-box; flex-direction: column; width: min(var(--sb-modal-width, 560px), calc(100vw - 32px)); max-height: calc(100vh - 64px); padding: 0; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font-family: var(--sb-font, system-ui, sans-serif); box-shadow: 0 12px 40px rgb(0 0 0 / 0.25); }
+    .sb-modal__dialog { box-sizing: border-box; flex-direction: column; width: min(var(--sb-modal-width, 560px), calc(100vw - 32px)); height: var(--sb-modal-height, fit-content); max-height: calc(100vh - 64px); padding: 0; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font-family: var(--sb-font, system-ui, sans-serif); box-shadow: 0 12px 40px rgb(0 0 0 / 0.25); }
     .sb-modal__dialog[open] { display: flex; }
+    .sb-modal__dialog--full { width: calc(100vw - 48px); height: calc(100vh - 48px); max-height: none; }
     .sb-modal__dialog::backdrop { background: rgb(0 0 0 / 0.45); }
     .sb-modal__header { display: flex; align-items: center; gap: 12px; padding: 12px 12px 0 18px; }
     .sb-modal__title { flex: 1; margin: 0; font-size: 16px; font-weight: 700; }
     .sb-modal__close { margin-left: auto; padding: 2px 8px; border: none; border-radius: var(--sb-radius, 8px); background: none; color: var(--sb-muted, #616e7c); font: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
     .sb-modal__close:hover { background: var(--sb-surface-2, #eef0f3); color: var(--sb-text, #1f2933); }
+    .sb-modal__size { display: grid; place-items: center; margin-left: auto; padding: 5px; border: none; border-radius: var(--sb-radius, 8px); background: none; color: var(--sb-muted, #616e7c); cursor: pointer; }
+    .sb-modal__size[hidden] { display: none; }
+    .sb-modal__size:hover { background: var(--sb-surface-2, #eef0f3); color: var(--sb-text, #1f2933); }
+    .sb-modal__size:not([hidden]) + .sb-modal__close { margin-left: 0; }
     .sb-modal__body { flex: 1; min-height: 0; overflow: auto; padding: 10px 18px 18px; font-size: 14px; line-height: 1.55; }
     .sb-modal__body > :first-child { margin-top: 0; }
     .sb-modal__body > :last-child { margin-bottom: 0; }
@@ -48,11 +53,16 @@
     document.head.prepend(style); // first, so the sandbox's own stylesheet wins
   }
 
+  // Corners pointing out to fill the window, and in to come back to the usual size.
+  const icon = (path) => `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${path}"/></svg>`;
+  const GROW_ICON = icon('M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4');
+  const SHRINK_ICON = icon('M6 2v4H2M10 2v4h4M14 10h-4v4M2 10h4v4');
+
   let count = 0; // numbers each modal, so its title's id is unique in the page
 
   class SbModal extends HTMLElement {
     static origin = ORIGIN;
-    static observedAttributes = ['open', 'heading'];
+    static observedAttributes = ['open', 'heading', 'size', 'expandable'];
 
     connectedCallback() {
       addStyle();
@@ -72,7 +82,8 @@
     attributeChangedCallback(name) {
       if (!this._built) return;
       if (name === 'open') this._showOpen();
-      else this._showTitle();
+      else if (name === 'heading') this._showTitle();
+      else this._showSize();
     }
 
     // ---- Public API ----
@@ -80,6 +91,14 @@
     // Whether the modal is showing. Setting it fires no event: sb-close reports the viewer's closing.
     get open() { return this.hasAttribute('open'); }
     set open(value) { this.toggleAttribute('open', Boolean(value)); }
+
+    // 'default', sized by its tokens, or 'full', filling the window but for a margin. Setting it
+    // fires no event: sb-size reports the viewer's changes.
+    get size() { return this.getAttribute('size') === 'full' ? 'full' : 'default'; }
+    set size(value) {
+      if (value === 'full') this.setAttribute('size', 'full');
+      else this.removeAttribute('size');
+    }
 
     show() { this.open = true; }
     close() { this.open = false; }
@@ -95,6 +114,7 @@
       dialog.innerHTML = `
         <div class="sb-modal__header">
           <h2 class="sb-modal__title" id="${id}-title"></h2>
+          <button type="button" class="sb-modal__size" aria-label="Full size" title="Full size"></button>
           <button type="button" class="sb-modal__close" data-close aria-label="Close">×</button>
         </div>
         <div class="sb-modal__body"></div>
@@ -110,6 +130,7 @@
       dialog.addEventListener('pointerdown', (e) => { this._pressedBackdrop = e.target === dialog; });
       dialog.addEventListener('click', (e) => {
         if (e.target === dialog && this._pressedBackdrop) return this._dismiss('backdrop');
+        if (e.target.closest('.sb-modal__size')) return this._toggleSize();
         const closer = e.target.closest('[data-close]');
         if (closer) this._dismiss(closer.dataset.close || 'close');
       });
@@ -119,6 +140,7 @@
       });
 
       this._showTitle();
+      this._showSize();
       this._showOpen();
     }
 
@@ -129,6 +151,17 @@
       title.hidden = !heading;
       if (heading) this._dialog.setAttribute('aria-labelledby', title.id);
       else this._dialog.removeAttribute('aria-labelledby');
+    }
+
+    // The dialog at its size, and the size button, there only when the modal is expandable,
+    // pressed while it is full size.
+    _showSize() {
+      const full = this.size === 'full';
+      this._dialog.classList.toggle('sb-modal__dialog--full', full);
+      const button = this._dialog.querySelector('.sb-modal__size');
+      button.hidden = !this.hasAttribute('expandable');
+      button.setAttribute('aria-pressed', full);
+      button.innerHTML = full ? SHRINK_ICON : GROW_ICON;
     }
 
     // Opens or closes the dialog to match the open attribute. Only a dialog in the page can open,
@@ -142,6 +175,11 @@
     }
 
     // ---- Interaction ----
+
+    _toggleSize() {
+      this.size = this.size === 'full' ? 'default' : 'full';
+      this.dispatchEvent(new CustomEvent('sb-size', { bubbles: true, detail: { size: this.size } }));
+    }
 
     _dismiss(reason) {
       this.close();
