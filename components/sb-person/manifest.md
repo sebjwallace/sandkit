@@ -49,14 +49,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 
 Classes: `sb-person__badge`, `sb-person__icon`, `sb-person__text`, `sb-person__name`, `sb-person__role`. The element carries `sb-person--agent` and `sb-person--highlighted` when they apply, and `data-ref` with its `ref`, so a sandbox can find every badge for a person (see the [locating practice](../../practices/locating.md)).
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-poll`](../sb-poll/manifest.md),** in its person slots, so who has answered and who said what show as badges.
-- **[`sb-choice`](../sb-choice/manifest.md) and [`sb-notebook`](../sb-notebook/manifest.md),** beside them: a row of badges for who decided, or who was in the session.
-- **[`sb-stat`](../sb-stat/manifest.md),** beside a badge in a card, for one person's figure.
-
 ## Notes
 
 - **Dependencies:** none.

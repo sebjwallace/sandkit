@@ -103,14 +103,6 @@ Pointing and highlighting use the theme's `--sb-accent` and `--sb-accent-soft`, 
 
 Classes: the helpers above, `sb-wireframe__bar`, `sb-wireframe__step` (the showing one has `aria-current="true"`; `--holds-highlight`), and `sb-wireframe--pointed` and `sb-wireframe--highlighted` on parts. The content's own styles are deliberately weak, so any class of the sandbox's wins.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-sequence`](../sb-sequence/manifest.md) or [`sb-flowchart`](../sb-flowchart/manifest.md),** for what happens behind a screen: on `sb-navigate` or `sb-select`, set the diagram's current message or step; when the diagram moves, `reveal` the part that starts it.
-- **[`sb-log`](../sb-log/manifest.md),** to record each click and move as the viewer works through the flow.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-point` refs into `sb-highlight`, and `sb-highlight` refs to `highlight`, so prose and diagrams can point at a button and the button at them.
-
 ## Notes
 
 - **Not yet:** device frames, a sketchier hand-drawn look, and a map of how the screens link wait until a sandbox needs them.

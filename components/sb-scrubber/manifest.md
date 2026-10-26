@@ -2,7 +2,7 @@
 
 A bounded stretch of progress that people can scrub back and forth, or play at a steady pace: a transformation from start to finish, a year of seasons, a ball's flight, the stages of a process. Named marks pick out the moments that matter, and clicking one jumps there.
 
-Use it when progress has a beginning and an end. For a model that steps forward without end, use [`sb-controls`](../sb-controls/manifest.md) instead.
+Use it when progress has a beginning and an end. For a model that steps forward without end, use play controls that keep a clock instead.
 
 Use this component through the interface below. You don't need to read its source.
 
@@ -52,13 +52,6 @@ Use this component through the interface below. You don't need to read its sourc
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-radius`.
 
 Classes: `sb-scrubber__play`, `sb-scrubber__input`, `sb-scrubber__label`, `sb-scrubber__marks`, `sb-scrubber__mark` (with `--current` when the scrubber is exactly there).
-
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-plane`](../sb-plane/manifest.md),** to scrub through a transformation: set the plane's `progress` from `sb-change`.
-- **[`sb-chart`](../sb-chart/manifest.md),** with a reference line at the scrubber's value to show where in a history the viewer is looking.
 
 ## Notes
 

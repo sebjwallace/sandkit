@@ -1,5 +1,8 @@
 # sb-panel changelog
 
+## 0.1.4 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.1.3 · 2026-10-18
 - A panel with the `hidden` attribute is hidden; its own display style no longer overrides it.
 

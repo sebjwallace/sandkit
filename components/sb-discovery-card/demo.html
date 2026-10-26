@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-discovery-card demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-discovery-card.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 1100px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .label { margin: 0 0 6px; color: var(--sb-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+    .label span { font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+    /* Every kind, a column per part of discovery. */
+    .kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 6px 0 10px; }
+    .kinds .cards { display: grid; gap: 6px; align-content: start; }
+
+    /* Each example: its cards to pick from, then the one picked in all three variants. */
+    .picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; padding: 10px; border-radius: var(--sb-radius); background: var(--sb-bg); }
+    .pick { border-radius: var(--sb-radius); }
+    .pick.is-picked { outline: 2px solid var(--sb-accent); outline-offset: 2px; }
+    .stage { display: grid; grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); gap: 16px 20px; align-items: start; margin-top: 16px; }
+    .stage > * { min-width: 0; }
+    .stage .is-wide { grid-column: 1 / -1; }
+    @media (max-width: 640px) { .stage { grid-template-columns: 1fr; } }
+    .steps { margin: 0; padding-left: 20px; font-size: 13px; }
+    .steps b { color: var(--sb-accent); }
+    .said { margin: 14px 0 0; padding: 8px 12px; border-radius: var(--sb-radius); background: var(--sb-surface-2); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-discovery-card">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>One card of domain discovery: a source, a claim, a question, a decision, a run, each kind with its own look.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <section class="guide">
+      <p>Domain discovery keeps its record as cards. Every source gathered, every claim made from it, every question still open, every decision taken and every part of the model it leads to is a card with a code. Cards are never edited: a later card supersedes or tests an earlier one, so the record shows what was known and decided at every step.</p>
+      <p>This component draws one card. Each kind has its own icon and tone, so many of them read at a glance, and source material is always paper. The card works nothing out: whether a claim is corroborated or contested, a decision under review or a test met is for the sandbox to decide, as of whichever iteration it's showing. The card shows what it's given. The <a href="../../practices/domain-discovery.md">domain discovery practice</a> says what each kind is for.</p>
+
+      <p class="label" style="margin-top: 14px">Every kind</p>
+      <div class="kinds" id="kinds"></div>
+
+      <h3>Three variants</h3>
+      <ul>
+        <li><strong>Compact,</strong> on a board: its icon, code, status and a few words, small enough for twenty side by side.</li>
+        <li><strong>Normal,</strong> the default: the whole card, with what it means in strips and what it rests on folded away.</li>
+        <li><strong>Expanded,</strong> in a modal or near full screen: the strips on one side and every fold open on the other.</li>
+      </ul>
+      <p>A source is always compact. Shown in full, it's the source material itself, so the sandbox opens it in its own view; the <a href="../../practices/domain-discovery.md">domain discovery practice</a> says how.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Boards of discovery,</strong> compact cards in columns by their role in an iteration.</li>
+        <li><strong>Opening one thing fully,</strong> expanded, with its evidence beside it.</li>
+        <li><strong>Standing in for a card elsewhere:</strong> in a trace, in a run's list of tests, in what a decision rests on.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li>A decision a group is recording in a workshop: a decision card that can be edited. Discovery cards are never edited.</li>
+        <li>A source's own text, with the passages marked where they are: a source view. A catalogue of every source: a sources list.</li>
+        <li>Why something is there, as one graph back to its sources: a source trace, which can draw its nodes as compact cards.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <p>Give it a card. Only <code>id</code> and <code>kind</code> are needed. See the <a href="manifest.md">manifest</a> for the full contract.</p>
+      <pre>&lt;sb-discovery-card variant="compact" openable&gt;&lt;/sb-discovery-card&gt;
+
+card.card = {
+  id: 'CLM-1',
+  kind: 'claim',
+  status: 'contested',                          // worked out by the sandbox
+  badges: [{ text: 'observed', title: 'Basis' }, { text: '+3', tone: 'warn' }],
+  text: 'Otters have left the upper Teme.',     // the compact card's words
+  strips: [{ tone: 'main', label: 'Claim', text: 'Otters have left the upper Teme.' }],
+  folds: [{ label: 'Sources', items: [
+    { passage: { source: 'SRC-1', stance: '+', quote: 'spraint at 4 of 18 sites' } },
+  ] }],
+  created: '2026-03-05T14:20',                  // the card's own record: every card has these three
+  by: 'Agent',
+  iteration: 1,
+  meta: [{ label: 'Prompted by', text: 'INV-2' }], // and anything else worth keeping
+};
+card.addEventListener('sb-open', (e) =&gt; open(e.detail.ref, e.detail.quote));</pre>
+      <p>Fold items are text, a passage, another card (drawn compact), an option weighed, or a slot holding whatever the sandbox puts there.</p>
+
+      <h3>Making it reveal, not just record</h3>
+      <ul>
+        <li><strong>Show it as of an iteration.</strong> Step back and the sandbox sets each card again as it stood then. Seeing a claim turn from corroborated to contested is the point.</li>
+        <li><strong>Say who made it, and when.</strong> Most cards are written by the agent, so each carries when it was created, by whom and in which iteration, as source material carries its own details, and the agent adds whatever else is worth keeping. The byline says where it came from in the world; the footer says who recorded it.</li>
+        <li><strong>Lead with the main strip.</strong> The claim, the question, the decision taken: the card should read in one line.</li>
+        <li><strong>Fold the evidence, don't hide it.</strong> Every card says what it rests on, and every passage opens its source at the words.</li>
+        <li><strong>Route pointing both ways.</strong> Pointing at a passage or a compact card announces its code, so the same thing lights up everywhere it appears.</li>
+      </ul>
+    </section>
+
+    <h2 class="part">Examples</h2>
+
+    <section class="example" id="otters">
+      <h2>Where have the otters gone?</h2>
+      <p>A river trust wondered whether otters had left the upper Teme, and found they hadn't. Pick a card to see it in all three variants; inside a card, click another card's code to go to it, or a passage to open its source.</p>
+      <div class="picker"></div>
+      <div class="stage"></div>
+      <div class="said">Pick a card, or click inside one.</div>
+    </section>
+
+    <section class="example" id="feeder">
+      <h2>Why does the Northfield feeder trip on cold mornings?</h2>
+      <p>A network team models a feeder that trips when power comes back after a winter outage: what they built, what they agreed and decided, and what a control room engineer told them. The scenario holds its steps in a slot.</p>
+      <div class="picker"></div>
+      <div class="stage"></div>
+      <div class="said">Pick a card, or click inside one.</div>
+    </section>
+  </main>
+
+  <script>
+    // ---- Every kind ----
+
+    const KINDS = {
+      'What we know': [
+        ['SRC', 'source', 'Material gathered from the world'],
+        ['SRC-n.n', 'excerpt', 'A piece of a source, picked out'],
+        ['INV', 'investigation', 'Learning on purpose by finding what’s there'],
+        ['OBS', 'observation', 'A reading taken straight from a source'],
+        ['MET', 'metric', 'A quantity tracked over time'],
+        ['CLM', 'claim', 'A statement about how things are'],
+        ['DEF', 'definition', 'What a word in the domain means'],
+        ['OPN', 'opinion', 'A view someone holds'],
+        ['INF', 'inference', 'A conclusion reasoned from premises'],
+        ['ASM', 'assumption', 'Taken as true without evidence'],
+        ['QST', 'question', 'Something still open'],
+        ['FB', 'feedback', 'What someone said of the model, on one version'],
+        ['NEXT', 'awaited', 'Material asked for, not yet arrived'],
+      ],
+      'Where we’re going': [
+        ['OUT', 'outcome', 'What actually happened'],
+        ['GOL', 'goal', 'Where we’re trying to get to'],
+        ['PRD', 'prediction', 'A decision’s bet on what it brings about'],
+        ['AGR', 'agreement', 'Terms between parties'],
+        ['CON', 'constraint', 'Something that rules options out'],
+        ['DEC', 'decision', 'One option taken of several'],
+        ['EXP', 'experiment', 'A test run on purpose'],
+        ['ACT', 'action', 'Something to do'],
+        ['RSK', 'risk', 'Something that might go wrong'],
+      ],
+      'What we’re building': [
+        ['ENT', 'entity', 'A thing with identity, state and behaviour'],
+        ['PRM', 'primitive', 'A small value with constraints'],
+        ['SCN', 'scenario', 'Given, When, Then, played on the model'],
+        ['RUL', 'rule', 'A mandate or a condition, checked on the model'],
+        ['RUN', 'run', 'Every test against one version of the model'],
+      ],
+    };
+
+    function cardElement(card, variant, attributes = {}) {
+      const element = document.createElement('sb-discovery-card');
+      element.setAttribute('variant', variant);
+      for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
+      element.card = card;
+      return element;
+    }
+
+    document.getElementById('kinds').append(...Object.entries(KINDS).map(([part, kinds]) => {
+      const group = document.createElement('div');
+      const label = Object.assign(document.createElement('p'), { className: 'label', textContent: part });
+      const cards = Object.assign(document.createElement('div'), { className: 'cards' });
+      cards.append(...kinds.map(([id, kind, text]) =>
+        cardElement({ id, kind, text, marks: kind === 'awaited' ? ['awaited'] : [] }, 'compact')));
+      group.append(label, cards);
+      return group;
+    }));
+
+    // ---- The sandbox's part: each example's cards, as plain data ----
+
+    const passage = (source, stance, quote, note, excerpt) => ({ passage: { excerpt, source, stance, quote, note } });
+
+    // A photo of the control room's load trend, drawn here so the demo needs no files.
+    const LOAD_TREND = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="480" height="240">
+      <rect width="480" height="240" fill="#16202a"/><path d="M0 60H480M0 120H480M0 180H480" stroke="#2c3a48"/>
+      <path d="M0 196h20v-2h30v1h40v-1h50v-6h12v-74h6v12h6v12h10v40h8v14h22v2h40v-1h60v1h60v-1h130" fill="none" stroke="#5ec4ff" stroke-width="3"/>
+      <path d="M0 158H480" stroke="#ff6b6b" stroke-dasharray="6 5"/><text x="8" y="152" fill="#ff6b6b" font-family="sans-serif" font-size="12">2× rating</text></svg>`);
+    const card = (id) => ({ card: id });  // another card in a fold, by its code; filled in below
+    const made = (created, iteration, by = 'Agent') => ({ created, iteration, by });
+
+    const OTTERS = {
+      cards: [
+        { id: 'SRC-1', kind: 'source', format: 'data', text: 'Otter spraint survey, upper Teme, 2019 and 2025', file: 'sources/spraint-survey.csv' },
+        { id: 'SRC-1.2', kind: 'excerpt', text: 'The three sites above Knighton', format: 'data',
+          excerpt: { source: 'SRC-1', columns: ['site', '2019', '2025'], rows: [['Knighton bridge', 'fresh', 'none'], ['Bucknell weir', 'fresh', 'none'], ['Lingen ford', 'fresh', 'old']] },
+          ...made('2026-03-06T09:30', 1) },
+        { id: 'SRC-2.1', kind: 'excerpt', format: 'notes', excerpt: { source: 'SRC-2', quote: 'not seen one above Knighton bridge all year' }, ...made('2026-03-06T09:42', 1) },
+        { id: 'INV-1', kind: 'investigation', status: 'done', text: 'Sample the river’s water for otter DNA',
+          byline: 'Run by Amara Osei', strips: [{ tone: 'main', label: 'Investigation', text: 'Sample the river’s water at 12 upper sites for otter DNA.' },
+            { tone: 'note', label: 'Why', text: 'Spraint counts can’t tell missing otters from otters marking less.' },
+            { tone: 'answer', label: 'Gathered', text: 'SRC-4, the lab’s results, in May.' }],
+          folds: [{ label: 'Prompted by', items: [card('QST-1')] }, { label: 'Gathered', items: [card('SRC-4')] }],
+          ...made('2026-03-12T10:20', 1) },
+        { id: 'OBS-1', kind: 'observation', text: 'Otter DNA at 9 of 12 upper sites', byline: 'Read from SRC-4',
+          strips: [{ tone: 'main', label: 'Observation', text: 'Otter DNA at 9 of 12 upper sites, spring 2026.' },
+            { tone: 'note', label: 'Reading of', text: 'MET-1, upper sites with signs of otters.' },
+            { tone: 'warn', label: 'Tests ASM-1 · against', text: 'The otters are there, though spraint is rare.' }],
+          folds: [{ label: 'Sources', items: [passage('SRC-4', '+', 'otter DNA detected at 9 of 12 sampling points above Knighton')] }],
+          ...made('2026-05-14T17:02', 2), meta: [{ label: 'Read from', text: 'rows 1–12 of edna-results.csv' }] },
+        { id: 'MET-1', kind: 'metric', text: 'Upper sites with signs of otters, out of 12', badges: [{ text: '9 of 12', tone: 'accent', title: 'Latest reading' }],
+          byline: 'Tracked by the river trust',
+          strips: [{ tone: 'main', label: 'Metric', text: 'Upper sites with signs of otters, out of 12' }, { tone: 'note', label: 'Counted', text: 'Each spring.' },
+            { tone: 'answer', label: 'Latest reading', text: '9 of 12, spring 2026 (OBS-1).' }],
+          folds: [{ label: 'Readings', items: [card('OBS-1')] }, { label: 'Targeted by', items: [card('GOL-1')] }],
+          ...made('2026-03-05T15:00', 1) },
+        { id: 'CLM-1', kind: 'claim', status: 'contested', text: 'Otters have left the upper Teme.', file: 'claims/CLM-1.md',
+          byline: 'Raised by the river trust', badges: [{ text: 'observed', title: 'Basis: what holds it up' }, { text: '+3', tone: 'warn', title: 'Score' }],
+          strips: [{ tone: 'main', label: 'Claim', text: 'Otters have left the upper Teme.' },
+            { tone: 'note', label: 'Summary', text: 'The surveys and the anglers say so; the eDNA says they’re still there.' }],
+          folds: [{ label: 'Sources', items: [
+            passage('SRC-1', '+', 'spraint at 4 of 18 sites, down from 15 of 18 in 2019', '= 8'),
+            passage('SRC-2', '+', 'not seen one above Knighton bridge all year', '= 4', 'SRC-2.1'),
+            passage('SRC-4', '−', 'otter DNA detected at 9 of 12 sampling points above Knighton', '= 9'),
+          ] }],
+          ...made('2026-03-05T14:20', 1) },
+        { id: 'DEF-1', kind: 'definition', text: 'Spraint: an otter’s dropping, left on rocks to mark its range',
+          byline: 'Set in SRC-5, a field guide', strips: [{ tone: 'main', label: 'Spraint', text: 'An otter’s dropping, left on rocks and at crossings to mark its range.' }],
+          folds: [{ label: 'Set in', items: [passage('SRC-5', null, 'Spraints are deposited as territorial markers, most densely where food is contested.')] }],
+          ...made('2026-03-05T14:10', 1) },
+        { id: 'OPN-1', kind: 'opinion', text: 'The 2023 discharges drove the otters off', byline: 'Held by Tom Reyes, angler',
+          strips: [{ tone: 'main', label: 'Opinion', text: 'The 2023 discharges drove the otters off the upper river.' }],
+          folds: [{ label: 'Said in', items: [passage('SRC-2', null, 'it was the sewage in ’23 that did it, mark my words')] }],
+          ...made('2026-03-05T14:40', 1) },
+        { id: 'INF-1', kind: 'inference', status: 'sound', text: 'Fewer fish, less to guard: fewer spraints, not fewer otters',
+          byline: 'Reasoned by the agent',
+          strips: [{ tone: 'main', label: 'Inference', text: 'With half the fish, otters have less to guard, so they mark less: fewer spraints, not fewer otters.' },
+            { tone: 'expect', label: 'Would be borne out by', text: 'Camera traps showing otters at sites with no spraint (NEXT-2).' }],
+          folds: [{ label: 'Premises', items: [card('OBS-1'), card('DEF-1'), 'Fish at the upper weirs fell by half after 2023 (CLM-2).'] }],
+          ...made('2026-05-14T17:20', 2) },
+        { id: 'ASM-1', kind: 'assumption', status: 'refuted', marks: ['assumed'], text: 'Fewer spraints means fewer otters.',
+          byline: 'Taken by the river trust',
+          strips: [{ tone: 'main', label: 'Assumption', text: 'Fewer spraints means fewer otters.' },
+            { tone: 'warn', label: 'Refuted by OBS-1', text: 'Otters are at 9 of 12 sites; they leave fewer signs.' }],
+          folds: [{ label: 'Rests on it', items: [card('CLM-1')] }],
+          ...made('2026-03-05T14:31', 1) },
+        { id: 'QST-1', kind: 'question', status: 'answered', text: 'Are the otters gone, or leaving fewer signs?',
+          byline: 'Raised in a trust meeting, SRC-6',
+          strips: [{ tone: 'main', label: 'Question', text: 'Are the otters gone, or leaving fewer signs?' },
+            { tone: 'answer', label: 'Answer', text: 'Still there, at 9 of 12 sites. They leave fewer signs.' }],
+          folds: [{ label: 'Sources', items: [passage('SRC-6', '?', 'are we sure they’ve gone, or just not leaving calling cards?'), passage('SRC-4', null, 'otter DNA detected at 9 of 12 sampling points')] }],
+          ...made('2026-03-06T10:00', 1) },
+        { id: 'NEXT-2', kind: 'awaited', marks: ['awaited'], text: 'Camera trap footage from the two weirs, due in July',
+          byline: 'Asked for by INF-1',
+          strips: [{ tone: 'main', label: 'Awaited', text: 'Camera trap footage from the two weirs, due in July.' },
+            { tone: 'note', label: 'For', text: 'Seeing otters at sites with no spraint would bear out INF-1.' }],
+          ...made('2026-05-15T09:00', 2) },
+        { id: 'GOL-1', kind: 'goal', status: 'on track', text: 'Signs of otters at 10 of 12 upper sites by 2028', byline: 'Set by the trust’s plan, SRC-7',
+          strips: [{ tone: 'main', label: 'Goal', text: 'Signs of otters at 10 of 12 upper sites by 2028.' },
+            { tone: 'note', label: 'Target on MET-1', text: '10 of 12, counted each spring.' },
+            { tone: 'answer', label: 'Where we are', text: '9 of 12 this spring (OBS-1).' }],
+          folds: [{ label: 'Sources', items: [passage('SRC-7', null, 'restore otters to at least ten of the twelve upper monitoring sites')] }],
+          ...made('2026-03-05T15:05', 1) },
+        { id: 'PRD-1', kind: 'prediction', status: 'borne out', text: 'The eDNA samples will settle QST-1 by May', byline: 'Made by DEC-1',
+          strips: [{ tone: 'main', label: 'Prediction', text: 'The eDNA samples will settle QST-1 by May.' },
+            { tone: 'answer', label: 'Borne out', text: 'The results arrived on 14 May and answered it.' }],
+          folds: [{ label: 'Measured by', items: [card('OBS-1')] }],
+          ...made('2026-03-12T10:06', 1) },
+        { id: 'DEC-1', kind: 'decision', status: 'accepted', text: 'Survey by eDNA water samples this spring',
+          byline: 'Decided by Amara Osei and Tom Reyes, 12 Mar 2026',
+          strips: [{ tone: 'main', label: 'Question', text: 'How should the spring survey look for otters?' }, { tone: 'answer', label: 'Decision', text: 'Take eDNA water samples at 12 upper sites.' },
+            { tone: 'note', label: 'Reason', text: 'Counting spraint rests on ASM-1, which nobody had tested. DNA in the water doesn’t depend on how often otters mark.' },
+            { tone: 'expect', label: 'Predicts · PRD-1 · borne out', text: 'The samples will settle QST-1 by May.' }],
+          folds: [{ label: 'Options', items: [
+            { option: { title: 'Repeat the spraint survey', pros: ['Comparable with 2019'], cons: ['Rests on ASM-1'] } },
+            { option: { title: 'eDNA water samples', pros: ['Doesn’t depend on marking'], cons: ['£1,800 in lab fees'], chosen: true } },
+            { option: { title: 'Camera traps', pros: ['Counts individuals'], cons: ['Twelve cameras', 'Months to run'] } },
+          ] }, { label: 'Rests on', items: [card('ASM-1'), card('QST-1')] }],
+          ...made('2026-03-12T10:05', 1) },
+      ],
+      // Cards and sources mentioned in folds that this example doesn't show on their own.
+      others: {
+        'SRC-4': { id: 'SRC-4', kind: 'source', format: 'data', text: 'eDNA water samples, spring 2026', file: 'sources/edna-results.csv' },
+      },
+    };
+
+    const FEEDER = {
+      cards: [
+        { id: 'SRC-11.1', kind: 'excerpt', format: 'image', text: 'The surge on restoring Northfield, 07:12',
+          excerpt: { source: 'SRC-11', image: LOAD_TREND, region: [0.25, 0.3, 0.35, 0.65] }, ...made('2026-11-03T15:20', 3) },
+        { id: 'FB-1', kind: 'feedback', status: 'answered', text: 'Northfield shouldn’t trip the moment it’s over the limit: the breaker waits 10 seconds.',
+          byline: 'From Dev Patel, control room engineer, on the prototype', badges: [{ text: 'wrong', tone: 'bad', title: 'What they said of it' }],
+          strips: [{ tone: 'main', label: 'Feedback', text: 'Northfield shouldn’t trip the moment it’s over the limit: the breaker waits 10 seconds.' },
+            { tone: 'note', label: 'About', text: 'ENT-1 Feeder, trips(), shown in the prototype at 06:42 on the morning of 14 Jan.' },
+            { tone: 'answer', label: 'Answered by', text: 'RUL-1, written from it; met by the model of iteration 3.' }],
+          folds: [{ label: 'Sources', items: [passage('SRC-8', '−', 'it’s tripping the instant it goes over, the real one gives it ten seconds')] }, { label: 'Led to', items: [card('RUL-1')] }],
+          ...made('2026-10-02T13:30', 2), meta: [{ label: 'Made on', text: 'the model of iteration 2' }] },
+        { id: 'ENT-1', kind: 'entity', status: 'integrated', text: 'Feeder', byline: 'Proposed by the agent · defined by DEF-2 · class Feeder',
+          strips: [{ tone: 'main', label: 'Entity', text: 'Feeder' }, { tone: 'note', label: 'Purpose', text: 'A line from the substation that carries load to a district.' },
+            { tone: 'note', label: 'Properties', text: 'name: text · current: Current (PRM-1) · limit: Current (PRM-1) · breakerOpen: yes or no' },
+            { tone: 'answer', label: 'Behaviour', text: 'overloaded(): current above its limit · trips(): overloaded for more than 10 seconds' },
+            { tone: 'expect', label: 'Changed in iteration 2', text: 'By FB-1: trips() waits 10 seconds.' }],
+          folds: [{ label: 'Founded on', items: [card('DEF-2'), card('CLM-4')] }],
+          ...made('2026-09-08T10:12', 1) },
+        { id: 'PRM-1', kind: 'primitive', status: 'integrated', text: 'Current', byline: 'Proposed by the agent · class Current',
+          strips: [{ tone: 'main', label: 'Domain primitive', text: 'Current' }, { tone: 'answer', label: 'Constraints', text: 'Whole amps from 0 up.' },
+            { tone: 'note', label: 'Part of', text: 'ENT-1: Feeder' }],
+          folds: [{ label: 'Founded on', items: [card('DEF-4')] }],
+          ...made('2026-09-08T10:15', 1) },
+        { id: 'SCN-2', kind: 'scenario', status: 'not met', text: 'The feeder trips on coming back after a long cold outage', byline: 'Written by the agent',
+          strips: [{ tone: 'main', label: 'Scenario', text: 'The feeder trips on coming back after a long cold outage' },
+            { tone: 'warn', label: 'Against the model of iteration 3', text: 'Not met: the current never passes the limit, because the model has no surge.' },
+            { tone: 'answer', label: 'In the trial, RUN-2', text: 'Met.' }],
+          folds: [{ label: 'Steps', items: [{ slot: 'steps' }] }, { label: 'Founded on', items: [card('OBS-2'), card('CLM-4')] }],
+          ...made('2026-10-27T15:10', 3) },
+        { id: 'RUL-1', kind: 'rule', status: 'met', text: 'Current must not pass the limit for more than 10 seconds', byline: 'Written by the agent',
+          strips: [{ tone: 'main', label: 'Mandate', text: 'A feeder’s current must not pass its limit for more than 10 seconds.' }, { tone: 'answer', label: 'Met', text: 'By the model of iteration 3, across the winter’s 40 restorations.' }],
+          folds: [{ label: 'Founded on', items: [card('FB-1'), card('CON-1')] }],
+          ...made('2026-10-02T13:45', 2) },
+        { id: 'RUN-2', kind: 'run', status: 'earns its place', text: 'Iteration 3’s model with ENT-2', byline: 'Iteration 3’s model with ENT-2',
+          strips: [{ tone: 'main', label: 'Run', text: 'Every scenario and rule written by iteration 3, run against the model with Cold load pickup.' },
+            { tone: 'note', label: 'The model', text: '4 parts, 7 decisions · 3 of 3 met, 0.43 per decision · busiest: Feeder.trips, 3 decisions' },
+            { tone: 'answer', label: 'Met', text: 'SCN-1, SCN-2, RUL-1' },
+            { tone: 'expect', label: 'Against the model of iteration 3', text: 'Newly met: SCN-2. Broken: none. 1 part and 2 decisions more: new capability.' },
+            { tone: 'answer', label: 'Recommendation', text: 'ENT-2 earns its place. Integrating it is a decision for people.' }],
+          folds: [{ label: 'Tests', items: [card('SCN-1'), { card: { id: 'SCN-2', kind: 'scenario', status: 'met', text: 'The feeder trips on coming back after a long cold outage' } }, card('RUL-1')] }],
+          ...made('2026-10-27T15:41', 3), meta: [{ label: 'Took', text: '38 ms' }, { label: 'Tests run', text: '3' }] },
+        { id: 'DEC-4', kind: 'decision', status: 'accepted', text: 'Integrate cold load pickup', byline: 'Decided by the network planning team, 3 Nov 2026',
+          strips: [{ tone: 'main', label: 'Question', text: 'Should cold load pickup join the model?' }, { tone: 'answer', label: 'Decision', text: 'Integrate ENT-2.' },
+            { tone: 'note', label: 'Reason', text: 'RUN-2 meets the cold-morning trip and breaks nothing, and the control room log shows the surge.' },
+            { tone: 'expect', label: 'Predicts · PRD-3 · borne out', text: 'Switching Northfield back on in two stages keeps it from tripping this winter.' }],
+          folds: [{ label: 'Options', items: [
+            { option: { title: 'Integrate', pros: ['Meets SCN-2'], chosen: true } },
+            { option: { title: 'Reject', pros: ['Simpler model'], cons: ['Cold trips unexplained'] } },
+            { option: { title: 'Modify and retry', pros: ['Could add outage length'], cons: ['Another trial'] } },
+          ] }, { label: 'Rests on', items: [card('RUN-2'), card('OBS-2')] },
+          { label: 'Sources', items: [passage('SRC-7', '+', 'load on Northfield reached 2.6 times normal for 20 seconds after restoration')] }],
+          ...made('2026-11-03T16:05', 3) },
+        { id: 'AGR-1', kind: 'agreement', status: 'in force', text: 'The grid code: no more than twice a feeder’s rating for 10 seconds on restoring',
+          byline: 'Between Midshire Networks and the national system operator',
+          strips: [{ tone: 'main', label: 'Agreement', text: 'A feeder being restored must not draw more than twice its rating for more than 10 seconds.' },
+            { tone: 'note', label: 'Parties', text: 'Midshire Networks, the national system operator.' },
+            { tone: 'note', label: 'Changed only', text: 'By the grid code review panel, with both parties.' }],
+          folds: [{ label: 'Sources', items: [passage('SRC-9', null, 'shall not exceed 200% of rated current for a period exceeding ten seconds')] }],
+          ...made('2026-09-08T10:40', 1), meta: [{ label: 'Clause', text: 'GC 7.4.2' }] },
+        { id: 'CON-1', kind: 'constraint', status: 'holds', text: 'Breakers trip after 10 seconds over the limit', byline: 'Set by AGR-1',
+          strips: [{ tone: 'main', label: 'Constraint', text: 'Northfield’s breaker trips after 10 seconds over the limit.' },
+            { tone: 'note', label: 'Firmness', text: 'Hard.' }, { tone: 'warn', label: 'Rules out', text: 'Riding through the surge.' },
+            { tone: 'note', label: 'Protects', text: 'The transformer, and the customers on it.' }],
+          folds: [{ label: 'Comes from', items: [card('AGR-1')] }],
+          ...made('2026-09-08T10:42', 1) },
+        { id: 'EXP-1', kind: 'experiment', status: 'done', text: 'Simulate switching Northfield on in two stages', byline: 'On the model · run by the agent',
+          strips: [{ tone: 'main', label: 'Experiment', text: 'Simulate switching Northfield back on in two stages, 15 minutes apart, after a 4-hour outage at −3 °C.' },
+            { tone: 'expect', label: 'Bears it out if', text: 'The current stays under the limit, or passes it for under 10 seconds.' },
+            { tone: 'answer', label: 'Result', text: 'Peak 1.7 times the rating for 8 seconds: no trip.' }],
+          folds: [{ label: 'Tests', items: [card('PRD-3')] }],
+          ...made('2026-11-01T11:20', 3), meta: [{ label: 'Model', text: 'iteration 3 with ENT-2' }] },
+        { id: 'ACT-1', kind: 'action', status: 'done', text: 'Restore Northfield in two stages after outages over two hours',
+          byline: 'Brought about by DEC-4 · for the control room',
+          strips: [{ tone: 'main', label: 'Action', text: 'Restore Northfield in two stages, 15 minutes apart, after any outage over two hours.' },
+            { tone: 'answer', label: 'Done', text: 'In the control room’s switching plan from 10 Nov.' }],
+          ...made('2026-11-03T16:10', 3) },
+        { id: 'RSK-1', kind: 'risk', status: 'open', text: 'Customers on the second stage wait 15 minutes longer', byline: 'Brought about by DEC-4',
+          strips: [{ tone: 'main', label: 'Risk', text: 'Customers on the second stage wait 15 minutes longer for power, in the cold.' },
+            { tone: 'note', label: 'Watch', text: 'Complaints from the north of the district after a restoration.' }],
+          ...made('2026-11-03T16:12', 3) },
+        { id: 'OUT-1', kind: 'outcome', status: 'worked', text: 'No trips in December’s two cold restorations', byline: 'Measured against PRD-3',
+          strips: [{ tone: 'main', label: 'Outcome', text: 'Northfield came back without tripping after both December outages, at −2 °C and −5 °C.' },
+            { tone: 'answer', label: 'Against PRD-3', text: 'Borne out so far; March is the deadline.' }],
+          folds: [{ label: 'Sources', items: [passage('SRC-10', '+', 'restored in two stages, no protection operation')] }],
+          ...made('2026-12-19T09:30', 4) },
+      ],
+      others: {
+        'DEF-2': { id: 'DEF-2', kind: 'definition', text: 'Feeder: a line carrying power from a substation to a district' },
+        'DEF-4': { id: 'DEF-4', kind: 'definition', text: 'Current: the flow of power on a line, in amps' },
+        'CLM-4': { id: 'CLM-4', kind: 'claim', status: 'corroborated', text: 'Northfield trips only after long outages in cold weather' },
+        'OBS-2': { id: 'OBS-2', kind: 'observation', text: 'Northfield tripped 25 s after re-energising, 14 Jan, −3 °C' },
+        'SCN-1': { id: 'SCN-1', kind: 'scenario', status: 'met', text: 'The feeder trips when current passes its limit' },
+        'PRD-3': { id: 'PRD-3', kind: 'prediction', status: 'borne out', text: 'Two-stage restoration keeps Northfield from tripping this winter' },
+      },
+      // What the sandbox puts in a card's slots: here, a scenario's steps.
+      slots: {
+        'SCN-2': () => Object.assign(document.createElement('ol'), { className: 'steps', slot: 'steps', innerHTML:
+          '<li><b>Given</b> Northfield has been off for 4 hours at −3 °C</li><li><b>When</b> the feeder is switched back on</li>' +
+          '<li><b>Then</b> the current passes its limit for 25 seconds</li><li><b>And</b> the breaker trips</li>' }),
+      },
+    };
+
+    // A card named by its code in a fold becomes that card, drawn compact.
+    for (const story of [OTTERS, FEEDER]) {
+      story.byId = Object.fromEntries(story.cards.map((c) => [c.id, c]));
+      for (const c of story.cards) {
+        for (const fold of c.folds ?? []) {
+          fold.items = fold.items.map((entry) => typeof entry.card === 'string'
+            ? { card: story.byId[entry.card] ?? story.others[entry.card] } : entry);
+        }
+      }
+    }
+
+    // ---- Picking a card and seeing it three ways ----
+
+    const VARIANTS = [
+      ['compact', 'Compact', 'on a board'],
+      ['normal', 'Normal', 'its folds closed'],
+      ['expanded', 'Expanded', 'in a modal, near full screen'],
+    ];
+
+    function show(section, story, id) {
+      const picked = story.byId[id];
+      for (const pick of section.querySelectorAll('.pick')) pick.classList.toggle('is-picked', pick.dataset.id === id);
+      // Source material is only ever compact; in full, the sandbox shows the material itself.
+      const material = ['source', 'excerpt'].includes(picked.kind);
+      const variants = material ? VARIANTS.slice(0, 1) : VARIANTS;
+      const note = material ? [Object.assign(document.createElement('p'), { className: 'label', innerHTML:
+        `Normal and expanded <span>· none: in full, ${picked.kind === 'source' ? 'a source' : 'an excerpt'} opens in the sandbox’s own view of its material, as the domain discovery practice describes</span>` })] : [];
+      section.querySelector('.stage').replaceChildren(...variants.map(([variant, name, where]) => {
+        const holder = document.createElement('div');
+        if (variant === 'expanded') holder.className = 'is-wide';
+        const label = document.createElement('p');
+        label.className = 'label';
+        label.append(`${name} `, Object.assign(document.createElement('span'), { textContent: `· ${where}` }));
+        const element = cardElement(picked, variant);
+        if (story.slots?.[id] && variant !== 'compact') element.append(story.slots[id]());
+        holder.append(label, element);
+        return holder;
+      }), ...note);
+    }
+
+    for (const [section, story] of [[document.getElementById('otters'), OTTERS], [document.getElementById('feeder'), FEEDER]]) {
+      section.querySelector('.picker').append(...story.cards.map((c) => {
+        const pick = document.createElement('div');
+        pick.className = 'pick';
+        pick.dataset.id = c.id;
+        pick.append(cardElement(c, 'compact', { openable: '' }));
+        return pick;
+      }));
+      // The sandbox decides what opening means: here, a card in this example is shown; anything else is said.
+      section.addEventListener('sb-open', (e) => {
+        const { ref, quote } = e.detail;
+        if (!quote && story.byId[ref]) show(section, story, ref);
+        section.querySelector('.said').textContent = quote
+          ? `sb-open: the sandbox would open ${ref} at the passage “${quote}”.`
+          : `sb-open: ${story.byId[ref] ? 'showing' : 'the sandbox would open'} ${ref}.`;
+      });
+      show(section, story, story.cards[0].id);
+    }
+
+    // ---- Pointing, page-wide ----
+
+    // Cards announce what's pointed at; the sandbox lights it in every card.
+    document.addEventListener('sb-highlight', (e) => {
+      const refs = e.detail?.ref ? [e.detail.ref] : [];
+      for (const c of document.querySelectorAll('sb-discovery-card')) c.highlight = refs;
+    });
+  </script>
+</body>
+</html>

@@ -50,13 +50,6 @@ Theme tokens: `--sb-text`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--s
 
 Classes: `sb-controls__button`, `sb-controls__play`, `sb-controls__speed`, `sb-controls__label`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-log`](../sb-log/manifest.md),** to record what happened on each step.
-- **[`sb-parameters`](../sb-parameters/manifest.md),** so people can change the model while it runs.
-
 ## Notes
 
 - **The clock pauses when the controls leave the page,** and resumes if they return while running.

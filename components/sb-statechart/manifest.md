@@ -106,15 +106,6 @@ Classes:
 - **The last step:** `sb-statechart__badge` (`--exit`, `--transition`, `--enter`; carries `data-badge-for`) and `sb-statechart__step`.
 - **Events:** `sb-statechart__events` and `sb-statechart__event`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-log`](../sb-log/manifest.md),** to keep every step: on each `next()`, add an entry with the event and `last.actions`.
-- **[`sb-parameters`](../sb-parameters/manifest.md),** for the figures guards depend on: on each change, set `guards`, and watch transitions open and close.
-- **[`sb-sequence`](../sb-sequence/manifest.md),** when several machines talk to each other: one statechart each, and the messages between them as a sequence.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce a state's ref from `sb-point`, so a state and its mentions in the prose light up together.
-
 ## Notes
 
 - **Layout:** automatic. Inside each compound state, its states sit in columns from left to right, each a step further from the initial state, with loops set aside. Parallel regions are stacked and divided by dashed lines. Transitions curve around states they have nothing to do with, and their labels keep clear of states and of each other.

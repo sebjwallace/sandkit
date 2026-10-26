@@ -1,4 +1,4 @@
-// Sandkit sb-scrubber 0.2.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-scrubber 0.2.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A bounded stretch of progress people can scrub back and forth, or play: a transformation from
 // start to finish, a year of seasons, the stages of a process. Marks name the moments that matter.
 //

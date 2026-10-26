@@ -1,5 +1,8 @@
 # sb-statechart changelog
 
+## 0.1.2 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.1.1 · 2026-10-18
 - States carry `data-ref` with their id, beside `data-state-id`, so a sandbox can find them on the page.
 

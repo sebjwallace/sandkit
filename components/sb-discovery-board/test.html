@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-discovery-board tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-discovery-board.js"></script>
+  <script src="sb-discovery-board.js"></script>
+  <style>#test-fixture { width: 1000px; }</style>
+</head>
+<body>
+  <script>
+    // A chain with a side branch: A and C both lead to B, B leads to D. Pointing at A lights A, B
+    // and D, never C.
+    const ITEMS = ['A', 'B', 'C', 'D', 'E'];
+    const COLUMNS = [
+      { title: 'First', refs: ['A', 'C'] },
+      { title: 'Second', refs: ['B'] },
+      { title: 'Third', refs: ['D', 'E'] },
+      { title: 'Empty', refs: ['Z'] },
+    ];
+    const LINKS = [
+      { from: 'A', to: 'B', label: 'supports' },
+      { from: 'C', to: 'B', label: 'disputes' },
+      { from: 'B', to: 'D', label: 'grounds' },
+    ];
+
+    const board = (attributes = '', columns = COLUMNS) => {
+      const element = mount(`<sb-discovery-board ${attributes}>${ITEMS.map((ref) => `<div data-ref="${ref}">Item ${ref}</div>`).join('')}</sb-discovery-board>`);
+      element.columns = columns;
+      element.links = LINKS;
+      return element;
+    };
+    const columns = (element) => [...element.querySelectorAll('.sb-discovery-board__column')];
+    const placed = (element) => columns(element).map((c) => [...c.querySelectorAll('[data-ref]')].map((item) => item.dataset.ref));
+    const placeOf = (element, ref) => element.querySelector(`[data-ref="${ref}"]`).parentElement;
+    const lit = (element) => ITEMS.filter((ref) => placeOf(element, ref)?.classList.contains('sb-discovery-board__item--lit'));
+    const point = (element, ref) => element.querySelector(`[data-ref="${ref}"]`).dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+    const labels = (element) => [...element.querySelectorAll('.sb-discovery-board__lines text')].map((t) => t.textContent).sort();
+    const paths = (element) => [...element.querySelectorAll('.sb-discovery-board__lines > path')].map((p) => `${p.dataset.from}>${p.dataset.to}`).sort();
+
+    // ---- Placing ----
+
+    test('says so when nothing is on it yet', () => {
+      assertEqual(mount('<sb-discovery-board></sb-discovery-board>').textContent.trim(), 'Nothing on the board yet.');
+    });
+
+    test('places each child in the column listing it, in the column’s order, leaving out empty columns', () => {
+      const element = board('', [{ title: 'First', refs: ['C', 'A'] }, ...COLUMNS.slice(1)]);
+      assertEqual(columns(element).map((c) => c.querySelector('.sb-discovery-board__toggle').textContent), ['First', 'Second', 'Third']);
+      assertEqual(placed(element), [['C', 'A'], ['B'], ['D', 'E']]);
+    });
+
+    test('leaves its children as they were: no classes, no attributes added', () => {
+      const element = board();
+      point(element, 'A');
+      element.highlight = ['B'];
+      assertEqual([...element.querySelectorAll('[data-ref]')].map((item) => item.getAttributeNames().join(' ') + '|' + item.className), ITEMS.map(() => 'data-ref|'));
+    });
+
+    test('children given later are placed when the columns are set again', () => {
+      const element = board();
+      element.innerHTML = '<div data-ref="A">A again</div><div data-ref="F">F</div>';
+      element.columns = [{ title: 'Only', refs: ['A', 'F'] }];
+      assertEqual(placed(element), [['A', 'F']]);
+    });
+
+    test('runs across by default, and down when asked', () => {
+      const element = board();
+      assertEqual([element.direction, element.classList.contains('sb-discovery-board--across')], ['across', true]);
+      element.direction = 'down';
+      assertEqual([element.getAttribute('direction'), element.classList.contains('sb-discovery-board--across')], ['down', false]);
+      assertEqual(placed(element), [['A', 'C'], ['B'], ['D', 'E']]);
+    });
+
+    test('spacing sets the room between columns going across, and between bands going down', () => {
+      const element = board('spacing="120"');
+      const gap = () => getComputedStyle(element.querySelector('.sb-discovery-board__flow')).columnGap;
+      assertEqual([element.spacing, gap()], [120, '120px']);
+      element.direction = 'down';
+      assertEqual(getComputedStyle(element.querySelector('.sb-discovery-board__flow')).rowGap, '120px');
+      element.spacing = null;
+      assertEqual([element.hasAttribute('spacing'), getComputedStyle(element.querySelector('.sb-discovery-board__flow')).rowGap], [false, '30px']);
+    });
+
+    test('changing the spacing while a chain is lit redraws its links where the items now are', () => {
+      const element = board();
+      point(element, 'A');
+      const before = element.querySelector('.sb-discovery-board__lines > path').getAttribute('d');
+      element.spacing = 200;
+      const after = element.querySelector('.sb-discovery-board__lines > path').getAttribute('d');
+      assertEqual(lit(element), ['A', 'B', 'D']);
+      assert(before !== after, 'the route moved with the items');
+    });
+
+    // ---- Folding ----
+
+    test('a column can start folded, and its title folds and unfolds it', () => {
+      const element = board('', [{ ...COLUMNS[0], folded: true }, ...COLUMNS.slice(1)]);
+      const [first] = columns(element);
+      const toggle = first.querySelector('.sb-discovery-board__toggle');
+      assertEqual([first.classList.contains('sb-discovery-board__column--folded'), toggle.getAttribute('aria-expanded')], [true, 'false']);
+      toggle.click();
+      assertEqual([first.classList.contains('sb-discovery-board__column--folded'), toggle.getAttribute('aria-expanded')], [false, 'true']);
+    });
+
+    test('the viewer’s folding is kept when the columns are set again', () => {
+      const element = board();
+      columns(element)[1].querySelector('.sb-discovery-board__toggle').click();
+      element.columns = COLUMNS.map((c) => ({ ...c }));
+      assertEqual(columns(element).map((c) => c.classList.contains('sb-discovery-board__column--folded')), [false, true, false]);
+    });
+
+    test('reveal unfolds the column holding a ref, and says whether it holds it', () => {
+      const element = board('', [{ ...COLUMNS[0], folded: true }, ...COLUMNS.slice(1)]);
+      assertEqual([element.reveal('C'), element.reveal('Z'), element.reveal('nowhere')], [true, false, false]);
+      assert(!columns(element)[0].classList.contains('sb-discovery-board__column--folded'), 'unfolded');
+    });
+
+    // ---- Chains ----
+
+    test('quiet at rest: nothing lit, no links drawn', () => {
+      const element = board();
+      assertEqual([lit(element), paths(element), element.classList.contains('sb-discovery-board--tracing')], [[], [], false]);
+    });
+
+    test('pointing at an item lights what leads to it and what it leads to, never a side branch', () => {
+      const element = board();
+      point(element, 'A');
+      assert(element.classList.contains('sb-discovery-board--tracing'), 'tracing');
+      assertEqual(lit(element), ['A', 'B', 'D']);
+      assert(placeOf(element, 'A').classList.contains('sb-discovery-board__item--focus'), 'the item pointed at is marked');
+      assertEqual(paths(element), ['A>B', 'B>D']);
+      assertEqual(labels(element), ['grounds', 'supports']);
+    });
+
+    test('pointing at the middle of a chain lights both ways', () => {
+      const element = board();
+      point(element, 'B');
+      assertEqual(lit(element), ['A', 'B', 'C', 'D']);
+      assertEqual(paths(element), ['A>B', 'B>D', 'C>B']);
+      assertEqual(labels(element), ['disputes', 'grounds', 'supports']);
+    });
+
+    test('links to items not on the board are left out', () => {
+      const element = board();
+      element.links = [...LINKS, { from: 'D', to: 'Z', label: 'leads nowhere' }];
+      point(element, 'B');
+      assertEqual(paths(element), ['A>B', 'B>D', 'C>B']);
+    });
+
+    test('links are drawn in both directions, leaving from a dot and ending in an arrow', () => {
+      for (const direction of ['across', 'down']) {
+        const element = board(`direction="${direction}"`);
+        point(element, 'A');
+        const path = element.querySelector('.sb-discovery-board__lines > path');
+        assert(/^M[\d.-]+,[\d.-]+( (L[\d.-]+,[\d.-]+|Q[\d.-]+,[\d.-]+ [\d.-]+,[\d.-]+))+$/.test(path.getAttribute('d')), `${direction}: a route`);
+        assert(element.querySelector(path.getAttribute('marker-end').slice(4, -1)), `${direction}: its arrow`);
+        assert(element.querySelector(path.getAttribute('marker-start').slice(4, -1)), `${direction}: its dot`);
+      }
+    });
+
+    test('every link leaves and arrives at its own point, and no two runs overlap', () => {
+      for (const direction of ['across', 'down']) {
+        const element = mount(`<sb-discovery-board direction="${direction}">${['H', 'P', 'Q', 'R', 'S'].map((ref) => `<div data-ref="${ref}">Item ${ref}</div>`).join('')}</sb-discovery-board>`);
+        element.columns = [{ title: 'From', refs: ['H', 'S'] }, { title: 'To', refs: ['P', 'Q', 'R'] }];
+        element.links = [{ from: 'H', to: 'P', label: 'one' }, { from: 'H', to: 'Q', label: 'two' }, { from: 'H', to: 'R', label: 'three' }, { from: 'S', to: 'Q', label: 'two' }];
+        point(element, 'Q');
+        point(element, 'H');
+        const ends = [...element.querySelectorAll('.sb-discovery-board__lines > path')].map((p) => {
+          const numbers = p.getAttribute('d').match(/-?[\d.]+/g).map(Number);
+          return { start: numbers.slice(0, 2).join(','), end: numbers.slice(-2).join(',') };
+        });
+        assertEqual(new Set(ends.map((e) => e.start)).size, ends.length, `${direction}: own departure points`);
+        assertEqual(new Set(ends.map((e) => e.end)).size, ends.length, `${direction}: own arrival points`);
+      }
+    });
+
+    test('a link past a column runs clear of the items in it, never behind them', () => {
+      const element = board();
+      element.links = [{ from: 'A', to: 'D', label: 'skips' }];
+      point(element, 'A');
+      const lines = element.querySelector('.sb-discovery-board__lines').getBoundingClientRect();
+      const b = placeOf(element, 'B').getBoundingClientRect();
+      const path = element.querySelector('.sb-discovery-board__lines > path');
+      const inside = [];
+      for (let at = 0; at <= path.getTotalLength(); at += 2) {
+        const { x, y } = path.getPointAtLength(at);
+        if (x + lines.left > b.left && x + lines.left < b.right && y + lines.top > b.top && y + lines.top < b.bottom) inside.push(Math.round(at));
+      }
+      assertEqual(inside, [], 'points along the link inside B');
+    });
+
+    test('labels never crowd each other', () => {
+      const element = board('direction="down"');
+      element.links = [{ from: 'A', to: 'B', label: 'supports strongly' }, { from: 'C', to: 'B', label: 'disputes entirely' }, { from: 'E', to: 'B', label: 'informs' }];
+      point(element, 'B');
+      const boxes = [...element.querySelectorAll('.sb-discovery-board__lines text')].map((t) => t.getBBox());
+      const apart = (p, q) => p.x + p.width <= q.x || q.x + q.width <= p.x || p.y + p.height <= q.y || q.y + q.height <= p.y;
+      assert(boxes.length === 3 && boxes.every((p, i) => boxes.every((q, j) => i === j || apart(p, q))), 'no two labels overlap');
+    });
+
+    test('a link takes its tone: line, arrowhead, dot and label alike; any other tone is the accent', () => {
+      const element = board();
+      element.links = [{ from: 'A', to: 'B', label: 'supports', tone: 'good' }, { from: 'B', to: 'D', label: 'grounds', tone: 'sparkly' }];
+      point(element, 'A');
+      const [first, second] = [...element.querySelectorAll('.sb-discovery-board__lines > path')];
+      const marker = (path, end) => element.querySelector(path.getAttribute(end).slice(4, -1));
+      assertEqual([first.dataset.tone, marker(first, 'marker-end').dataset.tone, marker(first, 'marker-start').dataset.tone], ['good', 'good', 'good']);
+      assertEqual(second.dataset.tone, 'accent');
+      const labelOf = (text) => [...element.querySelectorAll('.sb-discovery-board__lines text')].find((t) => t.textContent === text);
+      assertEqual([labelOf('supports').dataset.tone, labelOf('grounds').dataset.tone], ['good', 'accent']);
+      assert(getComputedStyle(first).stroke !== getComputedStyle(second).stroke, 'the tones look different');
+    });
+
+    test('leaving the board clears the chain', () => {
+      const element = board();
+      point(element, 'A');
+      element.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual([lit(element), paths(element), element.classList.contains('sb-discovery-board--tracing')], [[], [], false]);
+    });
+
+    test('focus lights the chain too', () => {
+      const element = board();
+      element.querySelector('[data-ref="D"]').tabIndex = 0;
+      element.querySelector('[data-ref="D"]').focus();
+      assertEqual(lit(element), ['A', 'B', 'C', 'D']);
+    });
+
+    // ---- Lighting from outside ----
+
+    test('highlight lights items without fading the rest or drawing links', () => {
+      const element = board();
+      element.highlight = ['C', 'E'];
+      assertEqual([lit(element), paths(element), element.classList.contains('sb-discovery-board--tracing')], [['C', 'E'], [], false]);
+      element.highlight = [];
+      assertEqual(lit(element), []);
+    });
+
+    test('after a chain clears, what was highlighted stays lit', () => {
+      const element = board();
+      element.highlight = ['E'];
+      point(element, 'A');
+      element.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(lit(element), ['E']);
+    });
+
+    // ---- Safety and instances ----
+
+    test('displays titles and labels as text, never as markup', () => {
+      const x = '<b>x</b>';
+      const element = board('', [{ title: x, refs: ['A'] }, { title: 'Second', refs: ['B'] }]);
+      element.links = [{ from: 'A', to: 'B', label: x }];
+      point(element, 'A');
+      assertEqual(element.querySelectorAll('b').length, 0);
+      assertEqual([columns(element)[0].querySelector('.sb-discovery-board__toggle').textContent, labels(element)[0]], [x, x]);
+    });
+
+    test('two boards on one page keep their own items, chains, folds and arrowheads', () => {
+      mount(`<div>${['one', 'two'].map(() => `<sb-discovery-board>${ITEMS.map((ref) => `<div data-ref="${ref}">${ref}</div>`).join('')}</sb-discovery-board>`).join('')}</div>`);
+      const [a, b] = document.querySelectorAll('#test-fixture sb-discovery-board');
+      for (const element of [a, b]) Object.assign(element, { columns: COLUMNS, links: LINKS });
+      point(a, 'A');
+      point(b, 'C');
+      columns(b)[0].querySelector('.sb-discovery-board__toggle').click();
+      assertEqual([lit(a), lit(b)], [['A', 'B', 'D'], ['B', 'C', 'D']]);
+      assertEqual(columns(a).map((c) => c.classList.contains('sb-discovery-board__column--folded'))[0], false);
+      const arrow = (element) => element.querySelector('marker').id;
+      assert(arrow(a) !== arrow(b), 'each board has its own arrowhead');
+    });
+
+    test('loading the same script twice is harmless and quiet', () => {
+      assertEqual(consoleErrors, []);
+    });
+  </script>
+</body>
+</html>

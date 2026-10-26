@@ -1,4 +1,4 @@
-// Sandkit sb-person 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-person 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A person as a badge: an icon in a circle, their name and their role, so whoever took part is
 // recognisable wherever they appear. An agent's circle is dashed. Given a ref, pointing at a
 // badge announces it page-wide, and every badge with that ref lights up together.

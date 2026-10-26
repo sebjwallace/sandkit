@@ -1,4 +1,4 @@
-// Sandkit sb-accordion 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-accordion 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Sections that open and close: one on its own, or a group. Each section is a <details> child,
 // headed by its <summary>. A closed section still tells you something: a short note beside its
 // heading, a mark when what's inside has changed, and a mark when something highlighted is inside.

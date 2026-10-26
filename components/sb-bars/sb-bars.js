@@ -1,4 +1,4 @@
-// Sandkit sb-bars 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-bars 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Bars comparing a set of things on one measure: stock per store, spending per category. Each
 // update shows how every bar moved, with a mark where it was, and reference lines give the
 // values meaning. Bars run across, or up as columns.

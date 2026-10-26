@@ -1,4 +1,4 @@
-// Sandkit sb-stamp 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-stamp 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A status pressed onto the page like a rubber stamp: approved, received, verified, superseded.
 // Ink, not a button, so it reads as an act by someone at a time, apart from what it's pressed on.
 // The sandbox decides the status; a stamp the model has moved past is marked stale.

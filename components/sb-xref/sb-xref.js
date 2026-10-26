@@ -1,4 +1,4 @@
-// Sandkit sb-xref 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-xref 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Where a thing appears, and what it's linked to. The sandbox finds the places a ref appears and
 // what the model links it to; the cross-reference lists them, grouped, and says which a viewer
 // chose to go to or follow. A trail of the things looked at, with Back, means wandering never

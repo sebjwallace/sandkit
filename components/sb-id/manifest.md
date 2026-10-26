@@ -56,13 +56,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 
 Classes: `sb-id__pill`, `sb-id__card`, `sb-id__kind`, `sb-id__title`, `sb-id__description`. The element carries `sb-id--unresolved` and `sb-id--highlighted` when they apply. The element carries `data-ref` with its code, so a sandbox can find every mention: see the [locating practice](../../practices/locating.md).
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-parameters`](../sb-parameters/manifest.md), to cite where a parameter's default comes from.** Give the pill a `slot` matching the parameter's key, inside the panel: `<sb-parameters><sb-id slot="gravity" code="PAR-001"></sb-id></sb-parameters>`.
-- **Prose and panels anywhere in the sandbox,** such as chapter text and detail panels, wherever a rule, entity, claim or source is mentioned.
-
 ## Notes
 
 - **Highlighting is page-wide.** Clicking a pill highlights every `sb-id` with the same code, including ones added later. Clicking any of them again clears it.

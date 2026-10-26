@@ -1,4 +1,4 @@
-// Sandkit sb-venn 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-venn 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Two or three sets as overlapping circles, and every region they make: what's in each, how many,
 // and which are empty. Pointing at a region reads it out ("In Mammals and Swimmers, not Egg-layers"),
 // and things that changed region since the last update are marked.

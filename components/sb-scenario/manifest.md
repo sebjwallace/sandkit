@@ -76,16 +76,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 
 Classes: `sb-scenario` (`--highlighted`), `sb-scenario__head`, `sb-scenario__code`, `sb-scenario__title`, `sb-scenario__outcome`, `sb-scenario__steps`, `sb-scenario__step` (`--opens` for Given, When and Then, `--continues` for And and But, `--highlighted`, `--current`, `--upcoming`, `--expected`, `--unexpected`), `sb-scenario__keyword`, `sb-scenario__text`, `sb-scenario__value`, `sb-scenario__result`, `sb-scenario__actual`, `sb-scenario__empty`. The card and its outcome label carry `data-outcome` (`expected` or `unexpected`). The card carries `data-ref` with its code, and each step with a `ref` carries `data-ref` with it, so a sandbox can find them (see the [locating practice](../../practices/locating.md)). The current step is marked `aria-current="step"`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so prose can point at a scenario or one of its steps. A phrase that means several steps, such as "the same starting point" across two scenarios, can map to all their refs at once.
-- **Controls for the model's state,** such as [`sb-parameters`](../sb-parameters/manifest.md). On every change, have the model play each scenario and set `results`, so viewers can push the model until an outcome stops coming true.
-- **[`sb-controls`](../sb-controls/manifest.md) or [`sb-scrubber`](../sb-scrubber/manifest.md),** to play a scenario through the model: on each step, run it and set `current` to it.
-- **A view of the model's state,** such as [`sb-stat`](../sb-stat/manifest.md) or [`sb-graph`](../sb-graph/manifest.md). On `sb-select`, move the model to that step and let the view show what the step means.
-- **[`sb-id`](../sb-id/manifest.md)** pills in the prose citing a scenario's code.
-
 ## Notes
 
 - **The card never runs a scenario.** The model plays it and says which steps came out as expected and what actually happened; the card shows it.

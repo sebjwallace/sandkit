@@ -52,13 +52,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-ra
 
 Classes: `sb-callout__title`, `sb-callout__body`, `sb-callout__details` (collapsible ones). The tone is a class, such as `sb-callout--warn`, and sets `--sb-callout-tone` for the stripe and title.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-id`](../sb-id/manifest.md) pills inside a definition,** so the term it defines can be pointed at from elsewhere.
-- **[`sb-math`](../sb-math/manifest.md) or [`sb-matrix`](../sb-matrix/manifest.md)** inside a definition, for the notation that goes with it.
-
 ## Notes
 
 - **Use them sparingly.** A page of callouts has no stand-out left; keep them for what readers must not miss.

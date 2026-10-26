@@ -71,14 +71,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 
 Classes: `sb-handoff__head`, `sb-handoff__who`, `sb-handoff__heading`, `sb-handoff__status` (carries `data-status`), `sb-handoff__actions`, `sb-handoff__button` (`--quiet`), `sb-handoff__copied`, `sb-handoff__prompt`, `sb-handoff__reply`. Buttons carry `data-action`: `copy` or `show`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-poll`](../sb-poll/manifest.md):** build the prompt from `poll.describe()`, enable the hand-off on `sb-reveal`, and put the agent's reply to each answer in the poll's `notes`.
-- **[`sb-person`](../sb-person/manifest.md)** with `agent`, in the `agent` slot.
-- **[`sb-choice`](../sb-choice/manifest.md),** for a reply that drafts a decision: show the draft on an editable card, and let the group decide.
-
 ## Notes
 
 - **Write prompts that say where the reply goes,** and what shape it takes, so the agent's answer lands as data the page can load.

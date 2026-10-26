@@ -1,5 +1,8 @@
 # sb-tabs changelog
 
+## 0.1.4 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.1.3 · 2026-10-18
 - Added `reveal(ref, place)`: shows the panel holding a given place, or else the first holding a part marked `data-ref`, quietly, and says whether one does.
 

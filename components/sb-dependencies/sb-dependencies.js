@@ -1,4 +1,4 @@
-// Sandkit sb-dependencies 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-dependencies 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // What goes with what in a set of same-shaped records: fields that determine others, fields that
 // change together, optional fields present together, and near-misses with the samples that break them.
 //

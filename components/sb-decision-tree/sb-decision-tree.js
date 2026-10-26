@@ -1,4 +1,4 @@
-// Sandkit sb-decision-tree 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-decision-tree 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A decision tree: questions that branch on their answers down to outcomes. Shows the way one case
 // went, with its value at each question, and which other answers would have changed the outcome.
 //

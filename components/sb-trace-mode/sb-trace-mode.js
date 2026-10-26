@@ -1,4 +1,4 @@
-// Sandkit sb-trace-mode 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-trace-mode 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Trace mode: a click on a part of the page asks why it's there, instead of acting. Pointing
 // outlines the innermost part whose ref the sandbox says is traceable; a click on it fires
 // sb-pick with that ref, and the sandbox shows the trace. A mode, chosen in the shell's picker.

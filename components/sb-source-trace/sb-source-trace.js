@@ -1,4 +1,4 @@
-// Sandkit sb-source-trace 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-source-trace 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Why something in the model is there, as one graph flowing left to right: the sources and items
 // it rests on to its left, what rests on it to its right. Sources are sheets of paper to open;
 // items are boxes to trace from. Unknown ids, loops and items resting on nothing cited are drawn.
@@ -244,7 +244,8 @@
     return;
   }
 
-  // Every node is the same size, so the layout is exact without measuring the page.
+  // Every node is the same size, so the layout is exact without measuring the page. A sandbox that
+  // draws its own nodes can give another size.
   const NODE = { width: 152, height: 70 };
   const GAP = { across: 44, down: 14 };
   const PAD = 18;
@@ -298,7 +299,14 @@
         linear-gradient(135deg, color-mix(in srgb, var(--sb-source-trace-sheet) 97%, #fff), var(--sb-source-trace-sheet) 45%, color-mix(in srgb, var(--sb-source-trace-sheet) 93%, #000)); }
     .sb-source-trace__node--source .sb-source-trace__name { font: 600 13px/1.3 var(--sb-source-trace-font, Georgia, 'Iowan Old Style', 'Times New Roman', serif); }
     .sb-source-trace__node--source:hover, .sb-source-trace__node--source.sb-source-trace__node--lit,
-    .sb-source-trace__node--source.sb-source-trace__node--subject { border-color: var(--sb-accent, #2563eb); box-shadow: inset 0 0 0 1px var(--sb-accent, #2563eb); }`;
+    .sb-source-trace__node--source.sb-source-trace__node--subject { border-color: var(--sb-accent, #2563eb); box-shadow: inset 0 0 0 1px var(--sb-accent, #2563eb); }
+
+    /* A node the sandbox draws: the frame only places it and shows its state, the sandbox's look inside. */
+    .sb-source-trace__node--own { display: block; padding: 0; border: 0; border-radius: var(--sb-radius, 8px); background: none; clip-path: none; overflow: visible; }
+    .sb-source-trace__node--own > * { box-sizing: border-box; width: 100%; height: 100%; }
+    .sb-source-trace__node--own:hover, .sb-source-trace__node--own.sb-source-trace__node--lit { box-shadow: 0 0 0 2px var(--sb-accent, #2563eb); }
+    .sb-source-trace__node--own.sb-source-trace__node--subject { box-shadow: 0 0 0 3px var(--sb-accent, #2563eb); }
+    .sb-source-trace__node--own.sb-source-trace__node--unsupported { border: 0; box-shadow: -4px 0 0 var(--sb-warn, #d69e2e); }`;
 
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
@@ -314,7 +322,7 @@
   // the nodes and passes between them, never behind one. Then each column is ordered so lines cross
   // as little as they can: each place goes to the average of what flows into it, then of what it
   // flows into, and once more forward. Every place is the same size, each column centred on the tallest.
-  function layOut(nodes, edges) {
+  function layOut(nodes, edges, size = NODE) {
     const columns = [];
     const columnOf = new Map(nodes.map((n) => [n.id, n.column]));
     for (const n of nodes) (columns[n.column] ??= []).push(n.id);
@@ -351,16 +359,16 @@
     }
 
     const tallest = Math.max(...columns.map((ids) => ids.length));
-    const step = NODE.height + GAP.down;
+    const step = size.height + GAP.down;
     const place = new Map();
     columns.forEach((ids, column) => {
       const offset = ((tallest - ids.length) * step) / 2;
-      ids.forEach((id, i) => place.set(id, { x: PAD + column * (NODE.width + GAP.across), y: PAD + offset + i * step }));
+      ids.forEach((id, i) => place.set(id, { x: PAD + column * (size.width + GAP.across), y: PAD + offset + i * step }));
     });
     return {
       place,
       routes,
-      width: PAD * 2 + columns.length * NODE.width + (columns.length - 1) * GAP.across,
+      width: PAD * 2 + columns.length * size.width + (columns.length - 1) * GAP.across,
       height: PAD * 2 + tallest * step - GAP.down
     };
   }
@@ -368,20 +376,20 @@
   // A line from the right of one node to the left of the next, with an arrowhead: curving between
   // columns, straight through the empty places it holds. A line closing a loop runs backwards, so it
   // swings below both nodes instead.
-  function flowPath(from, passing, to) {
-    const middle = (p) => p.y + NODE.height / 2;
+  function flowPath(from, passing, to, size = NODE) {
+    const middle = (p) => p.y + size.height / 2;
     const curve = (x1, y1, x2, y2, dip = 0) => {
       const bend = x2 > x1 ? (x2 - x1) / 2 : 70;
       return ` C${x1 + bend} ${y1 + dip}, ${x2 - bend} ${y2 + dip}, ${x2} ${y2}`;
     };
-    let [x, y] = [from.x + NODE.width, middle(from)];
+    let [x, y] = [from.x + size.width, middle(from)];
     let line = `M${x} ${y}`;
     for (const p of passing) {
-      line += curve(x, y, p.x, middle(p)) + ` L${p.x + NODE.width} ${middle(p)}`;
-      [x, y] = [p.x + NODE.width, middle(p)];
+      line += curve(x, y, p.x, middle(p)) + ` L${p.x + size.width} ${middle(p)}`;
+      [x, y] = [p.x + size.width, middle(p)];
     }
     const [x2, y2] = [to.x - 2, middle(to)];
-    line += curve(x, y, x2, y2, x2 > x ? 0 : NODE.height);
+    line += curve(x, y, x2, y2, x2 > x ? 0 : size.height);
     return { line, arrow: `M${x2} ${y2} l-8 -4.5 v9 z` };
   }
 
@@ -405,6 +413,8 @@
       this._highlight = [];
       this._pointed = null;
       this._result = null;
+      this._drawNode = null;
+      this._nodeSize = NODE;
 
       this.addEventListener('click', (e) => this._click(e.target));
       this.addEventListener('pointerover', (e) => this._pointAt(this._nodeAt(e.target)));
@@ -461,6 +471,23 @@
     // The latest trace, as traceSources returns it.
     get result() { return this._result; }
 
+    // (node) => element or null: the sandbox's own look for a source or an item, so a trace looks
+    // like the rest of the sandbox. The node is { id, type, title, kind, derived } as traceSources
+    // gives it. The trace places what comes back and shows its state; clicks still go to the trace,
+    // so draw nothing to interact with inside. Null keeps the trace's own look; unknown ids always do.
+    get drawNode() { return this._drawNode; }
+    set drawNode(draw) {
+      this._drawNode = typeof draw === 'function' ? draw : null;
+      this._render();
+    }
+
+    // { width, height } of every node, in pixels: the size the sandbox's own nodes are drawn at.
+    get nodeSize() { return { ...this._nodeSize }; }
+    set nodeSize(size) {
+      this._nodeSize = { width: Number(size?.width) || NODE.width, height: Number(size?.height) || NODE.height };
+      this._render();
+    }
+
     // ---- Rendering ----
 
     _render() {
@@ -472,6 +499,7 @@
       }
       const result = this._result = traceSources({ items: this._items, catalogue: this._catalogue }, this._subject);
       this.innerHTML = this._trailHtml() + this._headHtml(result) + this._graphHtml(result);
+      this._placeOwnNodes(result);
       this._showMarks();
       this._showSubject();
     }
@@ -482,8 +510,8 @@
       const graph = this.querySelector('.sb-source-trace__graph');
       const subject = this.querySelector('.sb-source-trace__node--subject');
       if (!graph || !subject) return;
-      graph.scrollLeft = Math.max(0, subject.offsetLeft + NODE.width + PAD - graph.clientWidth);
-      graph.scrollTop = Math.max(0, subject.offsetTop + NODE.height + PAD - graph.clientHeight);
+      graph.scrollLeft = Math.max(0, subject.offsetLeft + this._nodeSize.width + PAD - graph.clientWidth);
+      graph.scrollTop = Math.max(0, subject.offsetTop + this._nodeSize.height + PAD - graph.clientHeight);
     }
 
     _trailHtml() {
@@ -514,9 +542,10 @@
     }
 
     _graphHtml(result) {
-      const { place, routes, width, height } = layOut(result.nodes, result.edges);
+      const size = this._nodeSize;
+      const { place, routes, width, height } = layOut(result.nodes, result.edges, size);
       const flows = result.edges.map((e, i) => {
-        const { line, arrow } = flowPath(place.get(e.from), routes[i].map((id) => place.get(id)), place.get(e.to));
+        const { line, arrow } = flowPath(place.get(e.from), routes[i].map((id) => place.get(id)), place.get(e.to), size);
         const missing = result.nodes.find((n) => n.id === e.from).type === 'missing';
         const kind = e.cycle ? ' sb-source-trace__flow--cycle' : missing ? ' sb-source-trace__flow--missing' : '';
         return `<g class="sb-source-trace__flow${kind}" data-from="${esc(e.from)}" data-to="${esc(e.to)}"><path class="sb-source-trace__line" d="${line}"/><path class="sb-source-trace__arrow" d="${arrow}"/></g>`;
@@ -543,13 +572,27 @@
       const action = n.type === 'source' ? `Open ${n.id}` : n.type === 'item' && !subject ? `Trace from ${n.id}` : '';
       const classes = ['sb-source-trace__node', `sb-source-trace__node--${n.type}`, subject && 'sb-source-trace__node--subject', unsupported && 'sb-source-trace__node--unsupported']
         .filter(Boolean).join(' ');
-      const style = `left: ${x}px; top: ${y}px; width: ${NODE.width}px; height: ${NODE.height}px`;
+      const style = `left: ${x}px; top: ${y}px; width: ${this._nodeSize.width}px; height: ${this._nodeSize.height}px`;
       const inner = `
         <span class="sb-source-trace__top"><span class="sb-source-trace__id">${esc(n.id)}</span><span class="sb-source-trace__tag">${esc(tag)}</span></span>
         <span class="sb-source-trace__name">${esc(name)}</span>`;
       return action
         ? `<button class="${classes}" type="button" data-ref="${esc(n.id)}" data-node="${esc(n.id)}" style="${style}" title="${esc(action)}">${inner}</button>`
         : `<div class="${classes}" data-ref="${esc(n.id)}" data-node="${esc(n.id)}" style="${style}">${inner}</div>`;
+    }
+
+    // Puts the sandbox's own node inside each frame it draws for, emptying the trace's look there.
+    _placeOwnNodes(result) {
+      if (!this._drawNode) return;
+      const nodeOf = new Map(result.nodes.map((n) => [n.id, n]));
+      for (const frame of this.querySelectorAll('.sb-source-trace__node')) {
+        const n = nodeOf.get(frame.dataset.node);
+        if (n.type === 'missing') continue;
+        const own = this._drawNode({ ...n });
+        if (!(own instanceof Element)) continue;
+        frame.classList.add('sb-source-trace__node--own');
+        frame.replaceChildren(own);
+      }
     }
 
     // Lights the pointed and highlighted nodes, and the lines touching them or the subject.

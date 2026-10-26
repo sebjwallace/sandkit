@@ -29,6 +29,16 @@
     .pick code { font: 600 11px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); }
     .opened { margin: 8px 0 0; font-size: 12px; color: var(--sb-muted); }
     .opened code { font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-text); }
+
+    /* The catchment sandbox's own cards: a bar in each kind's colour, its code and kind, then its title. */
+    .own-node { display: flex; flex-direction: column; gap: 2px; padding: 6px 9px; border: 1px solid var(--sb-border); border-left: 4px solid var(--kind); border-radius: var(--sb-radius); background: var(--sb-surface); font-size: 12px; line-height: 1.3; overflow: hidden; }
+    .own-node[data-kind="Observation"] { --kind: var(--sb-accent); }
+    .own-node[data-kind="Parameter"] { --kind: var(--sb-good); }
+    .own-node[data-kind="Assumption"] { --kind: var(--sb-warn); }
+    .own-node[data-kind="Rule"] { --kind: var(--sb-text); }
+    .own-node__top { display: flex; gap: 6px; color: var(--sb-muted); font-size: 11px; }
+    .own-node__top b { color: var(--kind); font: 600 11px ui-monospace, Menlo, Consolas, monospace; }
+    .own-node__title { font-weight: 600; }
   </style>
 </head>
 <body>
@@ -47,7 +57,7 @@
         <li><strong>"Why is that there?"</strong> Trace a button, a rule or a number and see the reasoning behind it, all the way to the interview or the standard.</li>
         <li><strong>"What would this change?"</strong> Trace a source and see everything it shaped: if it turns out wrong, this is what needs another look.</li>
         <li><strong>Finding weak spots.</strong> An item resting on nothing cited, an id the model doesn't have, a loop in the reasoning: each is drawn where it is, so gaps in the evidence show up rather than hide.</li>
-        <li><strong>Separating evidence from interpretation.</strong> An analysis derived from two sources sits between them and what cites it, so people see what was said and what was made of it.</li>
+        <li><strong>Separating evidence from interpretation.</strong> What was said sits on the left, on paper; what was made of it, an assumption or an inference, sits among the items resting on it. A readable copy, such as a recording's transcript, sits beside its original, so a quote can be checked against both.</li>
       </ul>
 
       <h3>Where something else fits better</h3>
@@ -68,7 +78,7 @@
   trace.subject = 'SCR-3';
   trace.addEventListener('sb-open', (e) =&gt; openSource(e.detail.id));
 &lt;/script&gt;</pre>
-      <p>Items cite passages and rest on other items, as the <a href="../../practices/sources.md">sources practice</a> describes. The page loads the catalogue, which needs the sandbox served. The <a href="manifest.md">manifest</a> has the full contract.</p>
+      <p>Items cite passages and rest on other items, as the <a href="../../practices/sources.md">sources practice</a> describes. The page loads the catalogue, which needs the sandbox served. To draw the nodes the way the rest of the sandbox draws its things, give <code>drawNode</code> an element for each; the trace still does the tracing. The <a href="manifest.md">manifest</a> has the full contract.</p>
 
       <h3>Making it reveal</h3>
       <ul>
@@ -90,9 +100,15 @@
 
     <section class="example">
       <h2>A river catchment: what a source shaped</h2>
-      <p>Traced from the residents' accounts: the analysis derived from them, the items citing either, and everything resting on those.</p>
+      <p>Traced from the recording of the residents' meeting: the transcript made from it, the items citing either, and everything resting on those.</p>
       <sb-source-trace id="river"></sb-source-trace>
       <p class="opened" id="river-opened">Click a source to open it.</p>
+    </section>
+
+    <section class="example">
+      <h2>The catchment again, in the sandbox's own look</h2>
+      <p>The same trace, its items drawn by the sandbox as it draws them everywhere else: a bar in each kind's colour. The sources stay as the trace draws them. The trace still lays them out, joins them, lights them and follows them.</p>
+      <sb-source-trace id="river-own"></sb-source-trace>
     </section>
   </main>
 
@@ -104,11 +120,11 @@
         author: 'Dana Okafor', authored: '2026-09-14', stance: 'assertive', role: 'answer' },
       { id: 'SRC-5', title: 'Interview with a planning engineer', path: 'sources/interviews/planning.txt', format: 'transcript',
         author: 'Tom Reyes', authored: '2026-09-18', stance: 'assertive', role: 'answer' },
-      { id: 'SRC-6', title: 'Fault log, August', path: 'sources/data/faults-2026-08.csv', format: 'data', author: 'Control room', authored: '2026-09-01', stance: 'assertive' },
+      { id: 'SRC-6', title: 'Fault log, August', path: 'sources/data/faults-2026-08.xlsx', format: 'data', author: 'Control room', authored: '2026-09-01', stance: 'assertive' },
       { id: 'SRC-7', title: 'Frequency planning standard, 2025 edition', path: 'sources/standards/frequency-2025.pdf', format: 'document',
         author: 'System operator', authored: '2025-04-01', stance: 'assertive' },
-      { id: 'SRC-8', title: 'How low inertia changes the first seconds', path: 'sources/analyses/low-inertia.md', format: 'notes',
-        author: 'Agent', authored: '2026-09-24', stance: 'speculative', derivedFrom: ['SRC-4', 'SRC-6'] }
+      { id: 'SRC-8', title: 'Fault log, August (table)', path: 'sources/data/faults-2026-08.csv', format: 'data',
+        author: 'Control room', authored: '2026-09-01', stance: 'assertive', derivedFrom: ['SRC-6'] }
     ];
 
     const GRID_ITEMS = [
@@ -118,7 +134,10 @@
       { id: 'PAR-2', title: 'Frequency floor: 48.8 Hz', kind: 'Parameter',
         sources: [{ source: 'SRC-7', page: 12, quote: 'demand disconnection begins at 48.8 Hz' }, { source: 'SRC-4', quote: 'falls below 48.8 Hz' }] },
       { id: 'ASM-1', title: 'Falls are faster on windy nights', kind: 'Assumption',
-        sources: [{ source: 'SRC-8', quote: 'falls are faster on windy nights', note: 'Taken as the worst case for the scenarios.' }],
+        sources: [
+          { source: 'SRC-8', quote: '2026-08-16,Unit 2 Valley,820,strong,49.58,3.5', note: 'One of three trips in strong wind, all reaching their lowest in 3 to 4 seconds, against 6.5 to 8 in light wind. Taken as the worst case for the scenarios.' },
+          { source: 'SRC-4', quote: 'there\'s less inertia, so the drop is faster' },
+        ],
         restsOn: ['QST-1', 'PAR-9'] },
       { id: 'QST-1', title: 'How much inertia do batteries add?', kind: 'Question' },
       { id: 'RUL-5', title: 'Hold response for the largest loss', kind: 'Rule',
@@ -145,16 +164,17 @@
 
     const RIVER_SOURCES = [
       { id: 'SRC-21', title: 'Readings from the Millbrook gauge', path: 'sources/gauges/millbrook.json', format: 'data', author: 'River monitoring network', authored: '2026-10-14' },
-      { id: 'SRC-23', title: 'Residents\' accounts of the 2024 flood', path: 'sources/interviews/residents-2024.txt', format: 'transcript',
+      { id: 'SRC-23', title: 'Recording of the residents\' meeting on the 2024 flood', path: 'sources/interviews/residents-2024.m4a', format: 'recording',
         author: 'Mill Lane residents\' group', authored: '2026-10-05', stance: 'assertive' },
-      { id: 'SRC-26', title: 'What the accounts say about the culvert', path: 'sources/analyses/culvert.md', format: 'notes',
-        author: 'Agent', authored: '2026-10-09', stance: 'speculative', derivedFrom: ['SRC-23'] }
+      { id: 'SRC-26', title: 'Residents\' meeting on the 2024 flood (transcript)', path: 'sources/interviews/residents-2024.txt', format: 'transcript',
+        author: 'Mill Lane residents\' group', authored: '2026-10-05', stance: 'assertive', derivedFrom: ['SRC-23'] }
     ];
 
     const RIVER_ITEMS = [
-      { id: 'OBS-2', title: 'Water reached Mill Lane first', kind: 'Observation', sources: [{ source: 'SRC-23', quote: 'it came up the lane before the bridge' }] },
-      { id: 'PAR-7', title: 'Warning lead time: 40 minutes', kind: 'Parameter', sources: [{ source: 'SRC-23', quote: 'we had about forty minutes' }] },
-      { id: 'ASM-4', title: 'The culvert blocks with debris', kind: 'Assumption', sources: [{ source: 'SRC-26', quote: 'debris at the culvert' }], restsOn: ['OBS-2'] },
+      { id: 'OBS-2', title: 'Water reached Mill Lane first', kind: 'Observation', sources: [{ source: 'SRC-26', quote: 'it came up the lane before the bridge' }] },
+      { id: 'PAR-7', title: 'Warning lead time: 40 minutes', kind: 'Parameter', sources: [{ source: 'SRC-26', quote: 'we had about forty minutes' }] },
+      { id: 'ASM-4', title: 'The culvert blocks with debris', kind: 'Assumption',
+        sources: [{ source: 'SRC-26', quote: 'the culvert was full of branches', note: 'Two residents said so; taken as how it usually floods.' }], restsOn: ['OBS-2'] },
       { id: 'RUL-12', title: 'Warn Mill Lane first', kind: 'Rule', sources: [{ source: 'SRC-21', quote: '"warningLevel": 3.2' }], restsOn: ['ASM-4', 'PAR-7'] }
     ];
 
@@ -163,10 +183,28 @@
     river.catalogue = RIVER_SOURCES;
     showOpened('river', RIVER_SOURCES);
 
+    // ---- The catchment, in the sandbox's own look ----
+
+    function ownNode(node) {
+      if (node.type !== 'item') return null; // sources keep the trace's paper
+      const card = document.createElement('span');
+      card.className = 'own-node';
+      card.dataset.kind = node.kind;
+      const top = document.createElement('span');
+      top.className = 'own-node__top';
+      top.append(Object.assign(document.createElement('b'), { textContent: node.id }), node.kind);
+      card.append(top, Object.assign(document.createElement('span'), { className: 'own-node__title', textContent: node.title }));
+      return card;
+    }
+
+    const riverOwn = document.getElementById('river-own');
+    Object.assign(riverOwn, { items: RIVER_ITEMS, catalogue: RIVER_SOURCES, drawNode: ownNode, nodeSize: { width: 180, height: 70 } });
+
     // ---- Start ----
 
     grid.subject = 'ASM-1';
     river.subject = 'SRC-23';
+    riverOwn.subject = 'RUL-12';
   </script>
 </body>
 </html>

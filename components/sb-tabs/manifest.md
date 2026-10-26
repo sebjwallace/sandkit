@@ -52,15 +52,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-accent`.
 
 Classes: `sb-tabs__list`, `sb-tabs__tab`. The selected tab has `aria-selected="true"`. Panels have `role="tabpanel"`, and the `hidden` attribute while not shown.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[The locating practice](../../practices/locating.md).** A sandbox's `goTo` calls `reveal` on every tab set around the place it's going to, so a ref in a hidden chapter opens it.
-- **Chapters of a sandbox,** one panel each, with a "Next chapter" button at the end of each calling `next()`.
-- **[`sb-panel`](../sb-panel/manifest.md),** around a tab set that viewers may want to float beside the rest of the sandbox.
-- **[`sb-chart`](../sb-chart/manifest.md) and [`sb-plane`](../sb-plane/manifest.md)** in hidden panels redraw at their real width when their panel is shown.
-
 ## Notes
 
 - **Keyboard:** arrow keys move between tabs (wrapping round), Home and End jump to the ends, and only the selected tab is reached with the Tab key.

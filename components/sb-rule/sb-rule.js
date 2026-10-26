@@ -1,4 +1,4 @@
-// Sandkit sb-rule 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-rule 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // One rule as a card: a mandate, a conditional, or any shape the sandbox writes as keyword lines.
 // The model says which lines apply now and whether the rule holds; the card shows it.
 //

@@ -13,7 +13,7 @@ Use this component through the interface below. You don't need to read its sourc
 
 <sb-stamp label="Signed off" tone="good" shape="seal" when="18 Sep 2026">
   <span slot="detail">against model 0.3</span>
-  <sb-person slot="who" ref="ana" name="Ana Ruiz" role="Control room lead"></sb-person>
+  <span slot="who">Ana Ruiz, control room lead</span>
 </sb-stamp>
 ```
 
@@ -65,15 +65,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-good`, `--sb-warn`, `--sb-bad`, `
 The ink colour is `--sb-stamp-ink`, set by tone; a sandbox can set it on a stamp for an ink of its own.
 
 Classes: `sb-stamp__ink` (the stamp itself, with its rules), `sb-stamp__label`, `sb-stamp__icon`, `sb-stamp__when`, `sb-stamp__detail`, `sb-stamp__who`, `sb-stamp__stale` (the reason below). The element carries `sb-stamp--stale` when stale.
-
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-person`](../sb-person/manifest.md)** in the `who` slot, so a person looks the same on a stamp as everywhere else.
-- **[`sb-id`](../sb-id/manifest.md)** in the `detail` slot, for the source, decision or record the stamp points to.
-- **[`sb-choice`](../sb-choice/manifest.md)** and **[`sb-source`](../sb-source/manifest.md)** cards, with a stamp placed on them by the sandbox: Agreed on a decision, Received or Superseded on a source.
-- **The model's tests,** run on load and after every change, setting each claim's stamp to Verified or Failing, so verification can never go stale unnoticed.
 
 ## Notes
 

@@ -1,5 +1,8 @@
 # sb-scrubber changelog
 
+## 0.2.1 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.2.0 · 2026-10-17
 - **Breaking:** renamed from `sb-timeline`, which now names a timeline of events. Copy `components/sb-scrubber/sb-scrubber.js` in place of `sb-timeline.js`, and replace every `sb-timeline` with `sb-scrubber` (tags, selectors and `sb-timeline__` classes). Nothing else changed.
 

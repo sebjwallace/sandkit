@@ -51,13 +51,6 @@ Classes: `sb-matrix__name`, `sb-matrix__grid` (its brackets are drawn with `::be
 
 The matrix is `inline-flex` by default, so it sits in a line of text; give it `display: flex` to place it on its own.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-plane`](../sb-plane/manifest.md),** to show a transformation's matrix beside it. Colour the columns `good` and `bad` to match the plane's î and ĵ, and set the plane's `matrix` from `sb-change`.
-- **Prose,** wherever a vector or matrix is mentioned, inline in the sentence.
-
 ## Notes
 
 - **Numbers are shown as people write them:** with a true minus sign, to at most two decimal places. Editable fields show the plain number.

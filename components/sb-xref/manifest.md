@@ -86,14 +86,6 @@ Classes: `sb-xref__trail`, `sb-xref__back`, `sb-xref__crumb`, `sb-xref__here`, `
 
 Its rows never carry `data-ref`: they are ways to places, not places, or the cross-reference would list itself.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-panel`](../sb-panel/manifest.md),** around it, so it floats beside the model while viewers jump about. A modal would hide the very places being gone to.
-- **[`sb-id`](../sb-id/manifest.md) pills:** on a pill's `sb-select`, show its `code` in the cross-reference, so any code on the page opens where else it appears.
-- **[The locating practice](../../practices/locating.md),** for `placesOf` and `goTo`, and **[the identifiers practice](../../practices/identifiers.md),** for the codes it follows.
-
 ## Notes
 
 - **Retired refs:** say so in the subject's `title`, and give what replaced it as links with `relation: 'replaced by'`.

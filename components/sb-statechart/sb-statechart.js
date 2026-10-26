@@ -1,4 +1,4 @@
-// Sandkit sb-statechart 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-statechart 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A statechart: states inside states, parallel regions, history, guards and actions. Shows every
 // state that's active, what can happen now, and what the last step exited and entered, in order.
 //

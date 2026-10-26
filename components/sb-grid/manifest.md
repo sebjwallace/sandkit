@@ -71,15 +71,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 
 Classes: `sb-grid__canvas`, `sb-grid__under`, `sb-grid__legend`, `sb-grid__key` (`--highlighted`; carries `data-state`), `sb-grid__swatch`, `sb-grid__count`, `sb-grid__readout`, `sb-grid__empty`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-controls`](../sb-controls/manifest.md),** to run the model: on each tick, step it and set `cells`.
-- **[`sb-chart`](../sb-chart/manifest.md),** for the counts over time: the grid shows where, the chart how many and how it's going.
-- **[`sb-parameters`](../sb-parameters/manifest.md),** for the rules' knobs, such as how dry the forest is.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so the prose can point at a state, a row or a cell.
-
 ## Notes
 
 - **Size:** cells are as large as fit the element's width, up to 24 pixels, and the grid redraws when its width changes. Hundreds of rows and columns are fine.

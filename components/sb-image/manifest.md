@@ -84,14 +84,6 @@ Its own custom properties, to set on the element: `--sb-image-height` (a fixed h
 
 Classes: `sb-image__frame` (`--dragging`), `sb-image__stage` (`--glide`), `sb-image__img`, `sb-image__marks`, `sb-image__mark` (`--box`, `--pin`, `--highlighted`, and the tone), `sb-image__label`, `sb-image__tools`, `sb-image__tool`, `sb-image__message`, `sb-image__caption`. Marks carry `data-id`, and `data-ref` with the same id so a sandbox can find them (see the [locating practice](../../practices/locating.md)).
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[The highlighting practice](../../practices/highlighting.md).** Use mark ids as refs and route `sb-highlight` to `highlight`, so pointing at a word glides to what it names.
-- **[`sb-walkthrough`](../sb-walkthrough/manifest.md),** to tour a picture: on `sb-step`, set `highlight` to the step's ref.
-- **[`sb-modal`](../sb-modal/manifest.md),** to open a large image over the page, or **[`sb-panel`](../sb-panel/manifest.md),** to let viewers pop it out.
-
 ## Notes
 
 - **Dependencies:** none.

@@ -2,7 +2,7 @@
 
 Trace mode: click any part of a sandbox to see why it's there. While it's on, pointing outlines the parts that can be traced, and a click on one asks the sandbox to show its trace, instead of doing what the click normally does. Use it in any sandbox whose model cites its sources, so people can ask of any button, figure or rule: where did this come from?
 
-It's a mode, part of the environment around a sandbox rather than a view of its subject: it lives in the shell's `modes` slot and follows the [modes practice](../../practices/modes.md). It doesn't draw the trace. The sandbox shows it however it likes, usually [`sb-source-trace`](../sb-source-trace/manifest.md) in an [`sb-modal`](../sb-modal/manifest.md), as the [sources practice](../../practices/sources.md) describes.
+It's a mode, part of the environment around a sandbox rather than a view of its subject: it lives in the shell's `modes` slot and follows the [modes practice](../../practices/modes.md). It doesn't draw the trace. The sandbox shows it however it likes, usually as a trace in a modal, as the [sources practice](../../practices/sources.md) describes.
 
 Use this component through the interface below. You don't need to read its source.
 
@@ -57,14 +57,6 @@ Use this component through the interface below. You don't need to read its sourc
 Theme tokens: `--sb-text`, `--sb-surface`, `--sb-font`, `--sb-radius`, and `--sb-warn`, the amber every mode wears so it never blends with the sandbox. Its own custom properties, to set on the element: `--sb-trace-mode-tone` (that colour) and `--sb-trace-mode-dim` (the dimming; default a faint translucent black).
 
 Classes: `sb-trace-mode__dim`, `sb-trace-mode__banner`, `sb-trace-mode__button`, `sb-trace-mode__outline`.
-
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **The shell's mode picker,** in `slot="modes"`, beside [`sb-comments`](../sb-comments/manifest.md): one mode at a time.
-- **[`sb-source-trace`](../sb-source-trace/manifest.md) in an [`sb-modal`](../sb-modal/manifest.md):** on `sb-pick`, show the modal, then set the trace's `subject` to the ref, so it has its room when it lays out.
-- **[The sources practice](../../practices/sources.md)** for the model's `ITEMS`, whose ids are what `traceable` checks.
 
 ## Notes
 

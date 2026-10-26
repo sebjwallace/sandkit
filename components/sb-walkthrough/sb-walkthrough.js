@@ -1,4 +1,4 @@
-// Sandkit sb-walkthrough 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-walkthrough 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A story told across several views, one step at a time. Children marked data-step are the
 // narration, shown one at a time with Back and Next; children with a slot are the views, laid out
 // beside it. Each step names the views to look at (data-focus), which are outlined, and the refs to

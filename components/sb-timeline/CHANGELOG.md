@@ -1,5 +1,8 @@
 # sb-timeline changelog
 
+## 0.1.2 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.1.1 · 2026-10-18
 - Events carry `data-ref` beside `data-id`, and lane labels carry it with the lane's id, so a sandbox can find them on the page.
 

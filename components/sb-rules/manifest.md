@@ -65,14 +65,6 @@ Classes: `sb-rules__table`, `sb-rules__group`, `sb-rules__rule` (with `--active`
 
 Give the element a height (for example `max-height: 320px`) so a long table scrolls.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-id`](../sb-id/manifest.md), so each code explains itself.** Put a pill in each rule's slot: `<sb-rules><sb-id slot="INC-1" code="INC-1"></sb-id>…</sb-rules>`.
-- **[`sb-graph`](../sb-graph/manifest.md),** for state machines: highlight the same rule as a label line on the graph, so the table and the diagram point at the same thing.
-- **[`sb-controls`](../sb-controls/manifest.md),** to step the model and watch the highlight move.
-
 ## Notes
 
 - **Status is shown in words as well as colour** ("next", "just applied"), and the rule about to apply is marked `aria-current`.

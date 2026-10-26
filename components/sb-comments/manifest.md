@@ -103,14 +103,6 @@ Everything about commenting wears the theme's warning amber (`--sb-warn`), like 
 
 Classes: `sb-comments__button` (`--primary`), `sb-comments__count` (in the banner), `sb-comments__dim`, `sb-comments__banner`, `sb-comments__outlines`, `sb-comments__outline`, `sb-comments__box`, `sb-comments__tray`, `sb-comments__head`, `sb-comments__title`, `sb-comments__about`, `sb-comments__kinds`, `sb-comments__text`, `sb-comments__author`, `sb-comments__actions` (`--end`), `sb-comments__list`, `sb-comments__item`, `sb-comments__item-head`, `sb-comments__item-text`, `sb-comments__link`, `sb-comments__note`, `sb-comments__copy-text`, `sb-comments__empty`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **The shell's mode picker,** in `slot="modes"`, so commenting is always a choice away, and never on at once with another mode such as [`sb-trace-mode`](../sb-trace-mode/manifest.md).
-- **[The locating practice](../../practices/locating.md)** for `refsAt`, and **[the feedback practice](../../practices/feedback.md)** for what the agent does with what's sent.
-- **[`sb-xref`](../sb-xref/manifest.md) and [`sb-tour`](../sb-tour/manifest.md):** close a tour when any mode starts (`sb-mode` on `document` with `active: true`), so clicks act as people expect.
-
 ## Notes
 
 - **Picking:** in comment mode the component stops the page's clicks and presses before the page hears them (except on its own parts and `data-modes`), so nothing acts by accident. The dimming lets the pointer through, so what's under it can still be found.

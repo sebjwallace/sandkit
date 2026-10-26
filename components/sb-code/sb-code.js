@@ -1,4 +1,4 @@
-// Sandkit sb-code 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-code 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Code, or pseudocode, walked through a step at a time: the line running now is marked, and the
 // variables beside it show what changed. The steps are a trace that the sandbox's model records
 // as it runs, so the model stays the source of truth.

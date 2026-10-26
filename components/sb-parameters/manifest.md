@@ -55,18 +55,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 
 Classes: `sb-parameters__parameter` (carries `data-key`, and `data-changed` when it differs from its default), `sb-parameters__label`, `sb-parameters__value`, `sb-parameters__input`, `sb-parameters__default`, `sb-parameters__reset`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-id`](../sb-id/manifest.md), to cite where a default comes from.** Put a pill in the parameter's slot, and it sits beside the parameter's name:
-  ```html
-  <sb-parameters>
-    <sb-id slot="gravity" code="PAR-001"></sb-id>
-  </sb-parameters>
-  ```
-- **A live view of the model,** such as a chart, a simulation or a count, so people see the effect as they slide.
-
 ## Notes
 
 - **Dependencies:** none.

@@ -1,4 +1,4 @@
-// Sandkit sb-board 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-board 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A board to pan and zoom, holding the sandbox's own content where the agent placed it: notes,
 // sources, images and diagrams, gathered so that what sits together says something.
 //

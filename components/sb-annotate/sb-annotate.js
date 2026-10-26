@@ -1,4 +1,4 @@
-// Sandkit sb-annotate 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-annotate 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Text with the parts that matter marked, each carrying a note. Pointing at a mark shows its note
 // in a card just above it, and clicking pins the card open. Kinds colour the marks, with a legend
 // counting each; pointing at a kind in the legend fades the rest.

@@ -93,14 +93,6 @@ The root carries `data-ref` with the source's id, and each mark and box carries 
 
 Give the element a height (for example `height: 600px`) so the paper scrolls within it, or leave it to grow with its content.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce `sb-point` ids, so pointing at a rule anywhere lights the words it rests on, and pointing at the words lights the rule.
-- **A list of what cites the source.** Beside the source, list the model's items that cite it; pointing sets `highlight`, clicking sets `current`.
-- **[`sb-modal`](../sb-modal/manifest.md)** to open a source over the page when someone asks where something comes from.
-
 ## Notes
 
 - **Dependencies:** none.

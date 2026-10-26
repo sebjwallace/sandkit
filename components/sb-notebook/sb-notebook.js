@@ -1,4 +1,4 @@
-// Sandkit sb-notebook 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-notebook 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A workshop's sections in one page, in order. Each direct child is a section, given a header bar
 // with its kind, who and when, and the codes inside it counted from data-ref. Sections open and
 // collapse; key ones are marked, asides start collapsed. An outline and up and down controls move

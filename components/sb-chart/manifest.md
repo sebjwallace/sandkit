@@ -61,16 +61,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-accent`, `--sb-goo
 
 Classes: `sb-chart__heading`, `sb-chart__svg`, `sb-chart__axis`, `sb-chart__tick`, `sb-chart__x-label`, `sb-chart__series` (`--highlighted`, `--faded`), `sb-chart__point` (`--faded`), `sb-chart__line`, `sb-chart__line-label`, `sb-chart__mark`, `sb-chart__mark-label` (each `--highlighted`), `sb-chart__cursor`, `sb-chart__guide`, `sb-chart__readout-box`, `sb-chart__readout`, `sb-chart__legend`, `sb-chart__key` (`--faded`), `sb-chart__latest`, `sb-chart__empty`. Tones are classes too, such as `sb-chart--warn`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-controls`](../sb-controls/manifest.md),** to watch the lines grow as the model runs. Keep a history array in the model and redraw on each tick.
-- **[`sb-parameters`](../sb-parameters/manifest.md),** so people see the effect of a change in the shape of the line.
-- **[`sb-scrubber`](../sb-scrubber/manifest.md),** to scrub through history: set `current` on its `sb-change`, and move the scrubber on the chart's `sb-select`, so both point at the same moment.
-- **[`sb-stat`](../sb-stat/manifest.md),** for where things stand now. On a figure's `sb-select`, `highlight` its line.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so the prose can point at a line, a threshold or an event; set `current` for a moment.
-
 ## Notes
 
 - **The chart draws at its real width,** and redraws when that changes, so text stays the same size in any layout.

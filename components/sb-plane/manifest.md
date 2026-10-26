@@ -67,14 +67,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-ac
 
 Classes: `sb-plane__grid`, `sb-plane__axis`, `sb-plane__tick`, `sb-plane__moved-grid`, `sb-plane__moved-axis`, `sb-plane__shaft`, `sb-plane__head`, `sb-plane__dot`, `sb-plane__polygon`, `sb-plane__label`, `sb-plane__handle`. Tones are classes too, such as `sb-plane--good`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-parameters`](../sb-parameters/manifest.md),** to set a matrix's entries with sliders, or the transformation's progress.
-- **[`sb-controls`](../sb-controls/manifest.md),** to play a transformation: step `progress` towards 1 on each tick.
-- **[`sb-id`](../sb-id/manifest.md),** so prose can cite the vectors and transformations it discusses.
-
 ## Notes
 
 - **The plane draws at its real width,** so grid cells stay square and text keeps its size.

@@ -73,14 +73,6 @@ Its own custom property: `--sb-bars-height`, the height of the columns' drawing 
 
 Classes: `sb-bars__item` (everything standing for a bar: its row or column, its label or number, its legend entry; `--highlighted`; carries `data-tone` and `data-name`), `sb-bars__fill`, `sb-bars__zero`, `sb-bars__was`, `sb-bars__line` (`--highlighted`), `sb-bars__line-label` (`--highlighted`), `sb-bars__value`, `sb-bars__change` (carries `data-verdict`), `sb-bars__empty`. Across: `sb-bars__list`, `sb-bars__head`, `sb-bars__row`, `sb-bars__label`, `sb-bars__track`. Up: `sb-bars__plot`, `sb-bars__area`, `sb-bars__column`, `sb-bars__reading`, `sb-bars__labels`, `sb-bars__key`, `sb-bars__legend`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-chart`](../sb-chart/manifest.md),** for one bar's history: on `sb-select`, show the chosen thing's values over time.
-- **[`sb-controls`](../sb-controls/manifest.md) or [`sb-parameters`](../sb-parameters/manifest.md):** set the bars on every step or change, and each bar shows what that did.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so the prose can point at a bar or a line.
-
 ## Notes
 
 - **Columns check their labels fit** each time they're drawn and when their width changes, switching between labels and a legend as needed.

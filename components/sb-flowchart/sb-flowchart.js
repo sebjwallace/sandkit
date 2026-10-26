@@ -1,4 +1,4 @@
-// Sandkit sb-flowchart 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-flowchart 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A flowchart, optionally in swim lanes, laid out from its structure: steps follow each other in
 // the order their arrows give, and each sits in its lane. Marks where a process is and how it got there.
 //

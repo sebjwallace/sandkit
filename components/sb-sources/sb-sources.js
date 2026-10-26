@@ -1,4 +1,4 @@
-// Sandkit sb-sources 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-sources 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A sandbox's source material as cards of paper to search, filter and sort: each source with its
 // labelled details, what it supersedes and what supersedes it, and files not yet catalogued, so
 // nothing waits unseen. Each filter value says how many sources it would show.

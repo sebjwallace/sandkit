@@ -43,13 +43,6 @@ Theme tokens: `--sb-accent`, `--sb-accent-soft`.
 
 Classes: lit parts carry `sb-math--lit`. Marked parts show a help cursor and a focus outline.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-id`](../sb-id/manifest.md) pills in the prose,** with codes matching the equation's refs: hovering either lights the other.
-- **[`sb-matrix`](../sb-matrix/manifest.md) and [`sb-plane`](../sb-plane/manifest.md),** lit through the sandbox as the highlighting practice shows, so a term, a column and an arrow light up together.
-
 ## Notes
 
 - **MathML is native to every modern browser,** so nothing needs loading, and the expression survives single-file export.

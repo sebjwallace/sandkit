@@ -1,5 +1,8 @@
 # sb-wireframe changelog
 
+## 0.1.2 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.1.1 · 2026-10-18
 - `reveal` takes an optional place, the part to go to when several share a ref, and returns `true`, or `false` if there's no such part (see the locating practice).
 

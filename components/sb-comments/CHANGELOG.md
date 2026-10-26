@@ -1,5 +1,8 @@
 # sb-comments changelog
 
+## 0.2.1 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.2.0 · 2026-10-19
 - **Breaking:** a mode, chosen in the shell's mode picker, with no Comment button of its own. Move it from `slot="actions"` to `slot="modes"` (shell 0.1.4 or later); its name in the picker is `heading`, default `Comment`. Outside a shell, start a session by setting `active`.
 - **Breaking:** `sb-mode` is no longer fired when a session starts from the picker (the shell fires it), and now carries `mode`, the heading: `{ mode, active }`. To act on any mode starting, listen on `document` for `sb-mode` with `active: true`.

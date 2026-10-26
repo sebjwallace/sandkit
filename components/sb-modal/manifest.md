@@ -70,14 +70,6 @@ Its own tokens: `--sb-modal-width` (default `560px`) and `--sb-modal-height` (de
 
 Classes: `sb-modal__dialog` (a native `<dialog>`; its `::backdrop` dims the page; `--full` at full size), `sb-modal__header`, `sb-modal__title`, `sb-modal__size` (the expandable button, `aria-pressed="true"` at full size), `sb-modal__close`, `sb-modal__body`, `sb-modal__actions`.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-log`](../sb-log/manifest.md) or [`sb-table`](../sb-table/manifest.md) selections.** Open a modal on `sb-select` to look closely at one entry or row, without crowding the page.
-- **[`sb-controls`](../sb-controls/manifest.md) or [`sb-scrubber`](../sb-scrubber/manifest.md).** Pause when the model reaches a moment worth explaining (set `running = false`, or call the scrubber's `pause()`), show the modal, and carry on in answer to `sb-close`.
-- **Any component inside it,** such as an [`sb-chart`](../sb-chart/manifest.md) of the moment being explained. A component that measures its size gets it when the modal opens, so set its data after `show()` if it draws only once.
-
 ## Notes
 
 - **Use them sparingly.** A modal interrupts. Keep it for what should stop the viewer; anything they might want beside the model belongs in the page, or in a panel.

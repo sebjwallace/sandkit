@@ -1,4 +1,4 @@
-// Sandkit sb-poll 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-poll 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A question put to a group: each person answers, every answer hidden until everyone has, then
 // all are revealed at once, grouped by option, so nobody's answer steers anyone else's. With an
 // outcome, it's a prediction: the option that held is marked, and so is who expected it.

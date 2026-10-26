@@ -1,4 +1,4 @@
-// Sandkit sb-parameters 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-parameters 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The knobs of a sandbox: the values people change to see what happens. Shows each parameter
 // with its live value, marks any that differ from their defaults, and resets them.
 //

@@ -122,15 +122,6 @@ Classes: `sb-profile__summary`, `sb-profile__tally`, `sb-profile__kind` (a count
 
 Give the element a `max-height` with `overflow: auto` on `.sb-profile__table` for long schemas.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-table`](../sb-table/manifest.md),** for the samples themselves: on `sb-select`, filter the table's rows to the samples holding the value, and set the profile's `samples` to the same ones.
-- **[`sb-dependencies`](../sb-dependencies/manifest.md),** for which fields go together: the rules the data carries, and the samples that break them. Give both the same samples, and narrow both together.
-- **[`sb-json`](../sb-json/manifest.md),** for one sample in full: spotlight the path a viewer points at, so a field's place in a real record shows beside its profile.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce refs from `sb-point`, so "the gaps" or "the misspelt status" in the prose and the profile light each other up.
-
 ## Notes
 
 - **Dependencies:** none.

@@ -1,4 +1,4 @@
-// Sandkit sb-c4 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-c4 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A C4 architecture diagram you can walk into. The sandbox describes the whole architecture once,
 // as nested elements and the relationships between them; each view shows one level, with a path
 // back up. Relationships deep inside roll up to the boxes you can see, so every view stays true.

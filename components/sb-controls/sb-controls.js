@@ -1,4 +1,4 @@
-// Sandkit sb-controls 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-controls 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Play, pause, step, reset and speed for anything that runs over time. The controls keep the
 // clock: while playing they fire sb-tick with how many steps to take, so the sandbox only steps
 // its model.

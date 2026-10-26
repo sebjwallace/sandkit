@@ -2,7 +2,7 @@
 
 One rule as a card: a mandate that always applies, a conditional whose demand depends on the situation, or any other shape the sandbox writes. The model says which lines apply now and whether the rule holds; the card shows it, so turning a knob shows a rule switch branch or break. Use it wherever a sandbox has rules worth reading one at a time: flight rules for a rover, limits for a mountain party, the regulations a process must follow.
 
-For a table of many rules with the one about to apply marked, use [`sb-rules`](../sb-rules/manifest.md) instead.
+For a table of many rules, with the one about to apply marked, use a rules table instead.
 
 The card knows nothing about the domain, and almost nothing about rule syntax: lines are keywords and text, and the only words it looks for are the modal ones (MUST NOT, MUST, MAY), which a sandbox can replace.
 
@@ -104,15 +104,6 @@ Each line:
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-good`, `--sb-bad`, `--sb-radius`.
 
 Classes: `sb-rule` (`--highlighted`), `sb-rule__head`, `sb-rule__kind`, `sb-rule__code`, `sb-rule__title`, `sb-rule__status`, `sb-rule__lines`, `sb-rule__line` (`--highlighted`, `--on-path`, `--off-path`), `sb-rule__keyword`, `sb-rule__text`, `sb-rule__modal`, `sb-rule__value`, `sb-rule__empty`. The card and its status label carry `data-status`. The card carries `data-ref` with its code, and each line with a `ref` carries `data-ref` with it, so a sandbox can find them (see the [locating practice](../../practices/locating.md)).
-
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **Controls for the model's state,** such as [`sb-parameters`](../sb-parameters/manifest.md). On every change, have the model work out each rule's `path` and `status` and set them, so viewers can push the situation until a rule changes branch or breaks.
-- **[`sb-rules`](../sb-rules/manifest.md),** listing every rule in a table, with the one that just fired shown as a card beside it.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, so prose can point at a rule or one of its lines. A phrase that means several lines, such as "the limits", can map to all their refs.
-- **[`sb-id`](../sb-id/manifest.md)** pills in the prose citing a rule's code.
 
 ## Notes
 

@@ -1,4 +1,4 @@
-// Sandkit sb-profile 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-profile 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The shape and value domain of a set of same-shaped records: every field across all samples,
 // its types, how often it's there and the values it takes, with what's surprising found first.
 //

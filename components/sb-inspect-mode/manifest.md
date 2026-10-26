@@ -64,7 +64,7 @@ The component knows nothing about any subject; what makes each thing unmistakabl
 - **Lead with what it means,** in plain words, before any detail.
 - **Say how it stands now,** from the model: the value, the reading, what a moving part is doing at this moment, whether a rule is in force and why. The same part reads differently as the model changes, which is the point.
 - **Say what it touches:** what it feeds, what decides it, how many cases take it, which rules test it.
-- **Choose per kind.** A definition suits a term, the data with the right lines picked out suits a field ([`sb-json`](../sb-json/manifest.md) with a `spotlight`), a rule suits an outcome, an example suits a value. Sources only when they really are the clearest answer; tracing is trace mode's job.
+- **Choose per kind.** A definition suits a term, the data with the right lines picked out suits a field, a rule suits an outcome, an example suits a value. Sources only when they really are the clearest answer; tracing is trace mode's job.
 - **Keep it short:** a few lines, readable without scrolling. Put the kind in `kind` ("Question · an input", "Part · fixed") so people learn the kinds of thing there are.
 
 ## Styling
@@ -72,15 +72,6 @@ The component knows nothing about any subject; what makes each thing unmistakabl
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-font`, `--sb-radius`, and `--sb-warn`, the amber every mode wears so it never blends with the sandbox. Its own custom properties, to set on the element: `--sb-inspect-mode-tone` (that colour) and `--sb-inspect-mode-dim` (the dimming; default a faint translucent black).
 
 Classes: `sb-inspect-mode__dim`, `sb-inspect-mode__banner`, `sb-inspect-mode__words`, `sb-inspect-mode__button`, `sb-inspect-mode__outline`, `sb-inspect-mode__card`, `sb-inspect-mode__bar`, `sb-inspect-mode__grip`, `sb-inspect-mode__kind`, `sb-inspect-mode__body`, `sb-inspect-mode__title`, `sb-inspect-mode__content`. The element carries `sb-inspect-mode--held` while a part is held. Style what bodies hold under `.sb-inspect-mode__content`.
-
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **The shell's mode picker,** in `slot="modes"`, beside [`sb-comments`](../sb-comments/manifest.md) and [`sb-trace-mode`](../sb-trace-mode/manifest.md): one mode at a time.
-- **[`sb-json`](../sb-json/manifest.md)** as a body, with `spotlight` on the fields a thing is read from.
-- **[`sb-scenario`](../sb-scenario/manifest.md) or [`sb-rule`](../sb-rule/manifest.md)** as a body, for an outcome and the rule or example behind it.
-- **Any component whose parts carry `data-ref`,** such as [`sb-decision-tree`](../sb-decision-tree/manifest.md), [`sb-graph`](../sb-graph/manifest.md) or [`sb-c4`](../sb-c4/manifest.md): its parts can be inspected with no wiring beyond `explain`.
 
 ## Notes
 

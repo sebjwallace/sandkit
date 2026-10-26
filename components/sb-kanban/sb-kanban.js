@@ -1,4 +1,4 @@
-// Sandkit sb-kanban 0.2.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-kanban 0.2.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Things moving through stages, as cards in columns: orders through a warehouse, bills through
 // parliament, patients through a ward. Each column counts its cards against its limit, so a
 // bottleneck shows, and cards that just moved say where they came from. Dragging a card asks the

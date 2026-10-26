@@ -1,4 +1,4 @@
-// Sandkit sb-grid 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-grid 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A grid of cells coloured by their state or value: a forest burning, cells living and dying,
 // heat spreading, seats filling. A legend counts each state, and pointing at one shows where it
 // is. Painting reports cells to the sandbox, whose model decides what changes.

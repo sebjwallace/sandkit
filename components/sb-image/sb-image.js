@@ -1,4 +1,4 @@
-// Sandkit sb-image 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-image 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // An image to zoom and pan, starting on just the part that matters, with boxes and pins marking
 // what the prose is about. Highlighting a mark glides to it and dims the rest, so words can steer
 // the eye around a large picture.

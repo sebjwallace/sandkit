@@ -64,13 +64,6 @@ Classes: `sb-log__list`, `sb-log__head`, `sb-log__entry` (`--selected`), `sb-log
 
 Give the element a height (for example `max-height: 240px`) so it scrolls.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **A view of the model's current state.** A log says what happened; a state view shows how things stand now. Listen for `sb-select` and point the state view at what the entry concerns, for example `network.selected = e.detail.entry.fields.location`.
-- **[`sb-id`](../sb-id/manifest.md) codes in entries.** Write codes into `text` or `fields` (as plain text) so people can search for them, and give entries an `id` to answer `sb-select` with.
-
 ## Notes
 
 - **Dependencies:** none.

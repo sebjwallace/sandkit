@@ -1,4 +1,4 @@
-// Sandkit sb-source 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-source 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // One source, with the passages the model cites marked where they are. Quotes it can't find are
 // listed as not found, never hidden. A source's text is never rendered as markup.
 //

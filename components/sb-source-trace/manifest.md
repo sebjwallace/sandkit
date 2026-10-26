@@ -46,6 +46,8 @@ Lines run the way material flows: from a source to what cites it or was derived 
 | `clearTrail()` | Forget the trail, for example when the trace is opened afresh. |
 | `highlight` | Ids to light up, with the lines touching them: `['SRC-2']`. Until something is lit or pointed at, the subject's lines are. |
 | `result` | Read only. The latest trace, as `traceSources` returns it. |
+| `drawNode` | `(node) => element or null`: the sandbox's own look for a source or an item, so a trace looks like the rest of the sandbox. `node` is `{ id, type, title, kind, derived }`, as `traceSources` gives it. The trace places what comes back, joins and lights it, and follows clicks on it, so put nothing to interact with inside. `null` keeps the trace's look for that node; unknown ids always keep it. |
+| `nodeSize` | `{ width, height }` in pixels for every node, the size the sandbox's own nodes are drawn at. Default `{ width: 152, height: 70 }`. |
 
 **Static:** `customElements.get('sb-source-trace').traceSources({ items, catalogue }, ref)` returns the graph as plain JSON, with no element on the page: `{ subject, nodes, edges, missing, cycles, unsupported }`. Nodes are `{ id, type, title, kind, derived, column }` with `type` `source`, `item` or `missing`; edges are `{ from, to, kind, citations, cycle }` with `kind` `cites`, `derived` or `rests`. It also runs from Node: `node tools/analyse.mjs trace items.json sources/catalogue.json --ref SCR-3 --md`, taking files holding `items` and the catalogue's `sources`.
 
@@ -55,7 +57,7 @@ Setting properties never fires the events below; they are for what viewers do.
 
 | Event | Detail | When |
 |---|---|---|
-| `sb-open` | `{ id }` | A viewer clicks a source. Open it, for example in [`sb-source`](../sb-source/manifest.md) in a modal. The trace stays as it is. Bubbles. |
+| `sb-open` | `{ id }` | A viewer clicks a source. Open it, for example on its own sheet in a modal. The trace stays as it is. Bubbles. |
 | `sb-follow` | `{ id }` | A viewer clicks an item, and the trace has moved to it. Bubbles. |
 | `sb-back` | `{ id }` | A viewer clicks Back or a crumb, and the trace has gone back to that subject. Bubbles. |
 | `sb-point` | `{ id }`, `id` `null` when pointing stops | A viewer points at a node (hover or focus). Bubbles. |
@@ -66,26 +68,18 @@ Setting properties never fires the events below; they are for what viewers do.
 - **Unknown ids** (named by `restsOn` or a citation, but in neither the model nor the catalogue) are dashed red boxes saying what named them, with a dashed red line.
 - **Loops** in `restsOn` are drawn as dashed red lines swinging below, and the rest is laid out as if they weren't there.
 - **Items behind the subject resting on nothing cited** are marked "Nothing cited". An item that cites nothing is a finding, as the sources practice says.
+- **The sandbox's own nodes,** through `drawNode`, sit in the trace's frame, which shows their state as a ring: pointed at or lit, a thicker one for the subject, and an amber bar for nothing cited.
 - **Big graphs scroll** in both directions rather than shrink; the trace opens scrolled just far enough to show the subject. The full screen button in the title row gives it the whole screen, and retracing keeps it there.
 
 ## Styling
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-bg`, `--sb-accent`, `--sb-accent-soft`, `--sb-warn`, `--sb-bad`, `--sb-radius`, `--sb-font`. Its own: `--sb-source-trace-paper` (the sources' paper, warm by default), `--sb-source-trace-font` (the typeface for their titles, a serif by default) and `--sb-source-trace-fold` (the folded corner's size, `12px`).
 
-Classes: `sb-source-trace__trail`, `sb-source-trace__back`, `sb-source-trace__crumb`, `sb-source-trace__head`, `sb-source-trace__title`, `sb-source-trace__kind`, `sb-source-trace__full`, `sb-source-trace__summary`, `sb-source-trace__problems`, `sb-source-trace__graph` (the scrolling area), `sb-source-trace__canvas`, `sb-source-trace__flow` (`--lit`, `--cycle`, `--missing`; carries `data-from` and `data-to`), `sb-source-trace__line`, `sb-source-trace__arrow`, `sb-source-trace__node` (`--source`, `--item`, `--missing`, `--subject`, `--unsupported`, `--lit`), `sb-source-trace__id`, `sb-source-trace__tag`, `sb-source-trace__name`, `sb-source-trace__empty`.
+Classes: `sb-source-trace__trail`, `sb-source-trace__back`, `sb-source-trace__crumb`, `sb-source-trace__head`, `sb-source-trace__title`, `sb-source-trace__kind`, `sb-source-trace__full`, `sb-source-trace__summary`, `sb-source-trace__problems`, `sb-source-trace__graph` (the scrolling area), `sb-source-trace__canvas`, `sb-source-trace__flow` (`--lit`, `--cycle`, `--missing`; carries `data-from` and `data-to`), `sb-source-trace__line`, `sb-source-trace__arrow`, `sb-source-trace__node` (`--source`, `--item`, `--missing`, `--subject`, `--unsupported`, `--lit`, `--own` when the sandbox drew it), `sb-source-trace__id`, `sb-source-trace__tag`, `sb-source-trace__name`, `sb-source-trace__empty`.
 
 Each node carries `data-ref` with its id, so a sandbox can find it (see the [locating practice](../../practices/locating.md)).
 
 Give the element a height (for example `height: 70vh`) so a big graph scrolls inside it, or leave it to grow with its content.
-
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-modal`](../sb-modal/manifest.md)** to open the trace over the page when someone asks why a thing is there, and a second modal over it for the source.
-- **[`sb-source`](../sb-source/manifest.md)** to open a source on `sb-open`: set its `source`, the file's `content` or `url`, and as `passages` every citation of that source in `model.items`, so all the words the model rests on are marked.
-- **[`sb-trace-mode`](../sb-trace-mode/manifest.md),** Trace in the shell's mode picker: while it's on, pointing outlines anything whose `data-ref` is in `model.items`, and a click asks for the trace instead of acting. Open this in an `sb-modal` on its `sb-pick`. `examples/control-room/` shows it.
-- **[The highlighting practice](../../practices/highlighting.md).** Route `sb-highlight` refs to `highlight`, and announce `sb-point` ids, so pointing at a node lights the same thing elsewhere on the page.
 
 ## Notes
 

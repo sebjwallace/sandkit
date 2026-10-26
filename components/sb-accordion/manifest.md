@@ -105,15 +105,6 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 
 Classes: `sb-accordion__controls`, `sb-accordion__control`, `sb-accordion__note`, `sb-accordion__changed`. Each section carries `sb-accordion__section`, and `sb-accordion__section--changed`, `--highlighted` and `--lit-inside` when they apply.
 
-## Works well with
-
-Suggestions only: nothing here is wired in. The sandbox composes these itself.
-
-- **[`sb-tabs`](../sb-tabs/manifest.md),** instead, for chapters or views where only one part is ever wanted at a time.
-- **[`sb-callout`](../sb-callout/manifest.md),** instead, for one stand-out note that can fold away.
-- **[`sb-table`](../sb-table/manifest.md) and [`sb-stat`](../sb-stat/manifest.md)** inside sections, with each section's headline figure in its note.
-- **[`sb-tour`](../sb-tour/manifest.md),** whose steps go through the sandbox's `goTo`, which calls `reveal` to open the section hiding each part.
-
 ## Notes
 
 - **Keyboard:** each heading is reached with Tab and toggled with Enter or Space, as a `<details>` always is.

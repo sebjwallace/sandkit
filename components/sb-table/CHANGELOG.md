@@ -1,5 +1,8 @@
 # sb-table changelog
 
+## 0.1.4 · 2026-10-25
+- Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
+
 ## 0.1.3 · 2026-10-18
 - The heading row is shaded with `--sb-surface-2`, as the title of an `sb-erd` table is, so it stands apart from the rows.
 
