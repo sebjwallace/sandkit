@@ -8,8 +8,9 @@ This folder is a domain sandbox: a small, self-contained application that houses
 2. **Where it stands,** below.
 3. **`JOURNAL.md`,** what changed and why, newest first. Read only as far back as you need.
 4. **`lib/sandkit/practices/building-a-sandbox.md`,** the method this sandbox follows.
-5. **`lib/sandkit/practices/workshops.md`,** when asked to workshop the sandbox: to review, correct or hand over its model with the people who know the subject.
-6. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
+5. **Any other practice the sandbox follows,** such as `lib/sandkit/practices/domain-discovery.md` when it discovers a domain, on a page of its own (`discovery.html` by default) linked from the header.
+6. **`lib/sandkit/practices/workshops.md`,** when asked to workshop the sandbox: to review, correct or hand over its model with the people who know the subject.
+7. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
 
 ## Where it stands
 
@@ -18,8 +19,15 @@ Where this sandbox is now, and how it is meant to grow. Rewrite it at the end of
 - **Version:** {{the latest entry in JOURNAL.md}}
 - **Chapters built:** {{one line each}}
 - **Chapters planned:** {{one line each, in order}}
+- **Practices followed:** {{beyond building a sandbox, each with where it lives, such as domain discovery on `discovery.html`; none yet}}
 - **Chosen direction:** {{what the person asked for next, and why}}
 - **Open questions:** {{codes, one line each}}
+
+## Sensitive material
+
+What the people behind this sandbox treat as confidential, personal or otherwise sensitive, so every session screens sources the same way. Ask before the first source arrives, and keep only the rules here, never the material. See "Screening" in `lib/sandkit/practices/sources.md`.
+
+{{the person's rules, one line each; not asked yet}}
 
 ## Files
 
@@ -29,6 +37,7 @@ Where this sandbox is now, and how it is meant to grow. Rewrite it at the end of
 | `sandbox.js` | The sandbox's name, goal and pages, set on the shell. Every page includes it. |
 | `model.js` | The domain model. Code that runs, with no UI. Shared by every page. |
 | `sources/` | The material this sandbox was built from, described in `catalogue.json`, with new arrivals in `inbox/`. See `lib/sandkit/practices/sources.md`. |
+| `records/` | In a discovery sandbox, what was written from the sources: claims, questions, decisions and the rest, one script per kind. See `lib/sandkit/practices/domain-discovery.md`. |
 | `data/` | Data the pages use, as scripts that set it on the model (never fetched), if any. |
 | `JOURNAL.md` | What changed and why, one entry per version, newest first. |
 | `style.css` | The sandbox's own styles, using the theme tokens (`--sb-*`) as `lib/sandkit/STYLE.md` describes. |
@@ -38,10 +47,10 @@ Where this sandbox is now, and how it is meant to grow. Rewrite it at the end of
 
 ## Sandkit components
 
-- **Use them through their manifests** (`lib/sandkit/components/<name>/manifest.md`, `lib/sandkit/shell/manifest.md`). Don't read their source: it costs about three times as much as the manifest, which says all you need to use them.
+- **Use them through their manifests** (`lib/sandkit/components/<name>/manifest.md`, `lib/sandkit/shell/manifest.md`, and for any engine `lib/sandkit/engines/<name>/manifest.md`). Don't read their source: it costs about three times as much as the manifest, which says all you need to use them.
 - **Don't edit anything in `lib/`.** It is a copy, and may be replaced when Sandkit is updated.
 - **To change a component, eject it:** copy its folder into `components/`, rename it (replace every occurrence of its tag name, e.g. `sb-log`, with a new one), note where it came from at the top of the file, and point the pages that use it at the new copy. From then on it belongs to this sandbox.
-- **Combine components in the page,** never inside each other. Each manifest's "Works well with" section suggests pairings and how to wire them.
+- **Combine components in the page,** never inside each other. The practices say which components go together and how to wire them.
 
 ## This sandbox's components
 
@@ -55,7 +64,7 @@ Parts of the surface this sandbox made its own, once they were needed in more th
 - **Journal every change.** After any meaningful change, add an entry to `JOURNAL.md`, update Where it stands, and commit if the folder uses Git (tagging a breaking version). See `lib/sandkit/practices/journal.md`.
 - **A page per part worth sharing on its own,** once the sandbox grows: each listed in `sandbox.js`, sharing `model.js`, and including only what it uses, so it can be exported alone. See `lib/sandkit/practices/pages.md`.
 - **Exporting a page:** when asked, run `node lib/sandkit/tools/export.mjs <page>.html` from this folder (the page's Export button gives people the prompt), then report where it saved, every file that went in with its size, and any warnings.
-- **Sources are catalogued and cited.** Process `sources/inbox/` when it isn't empty, cite passages from the model's `ITEMS`, and run `node lib/sandkit/tools/sources.mjs check .` after. See `lib/sandkit/practices/sources.md`.
+- **Sources are screened, catalogued and cited.** Screen every source before using it, wherever it came from, and raise anything sensitive with the person. Process `sources/inbox/` when it isn't empty, cite passages from the model's `ITEMS` (or, in a discovery sandbox, from its records), and run `node lib/sandkit/tools/sources.mjs check .` after. See `lib/sandkit/practices/sources.md`.
 - **Serving:** features that read or write the sandbox's files need `node lib/sandkit/tools/serve.mjs .` (then open the address it prints). Everything else works by double-clicking.
 - **Declare everything, then start.** Page scripts declare their state and functions first, and start the sandbox in one marked section at the end.
 - **Codes for what people discuss.** Rules, entities, claims and sources get stable codes (see `lib/sandkit/practices/identifiers.md`), issued in the model and cited everywhere.

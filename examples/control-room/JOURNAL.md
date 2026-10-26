@@ -2,6 +2,12 @@
 
 What changed in this sandbox, and why: one entry per change, newest first, only ever added to. Each entry is a version. See the [journal practice](../../practices/journal.md).
 
+## 0.2.0 · 2026-10-25 · Breaking
+
+**Changed:** The agent's analysis of the interview and the fault log is no longer a source. ASM-1, falls twice as fast on windy nights, now cites the fault log (SRC-3) and the interview (SRC-1) directly, with the reading in its note.
+**Why:** Source material comes from outside the sandbox; what the agent writes inside it cites sources rather than being one (Sandkit's sources practice).
+**Retired:** SRC-5 → removed.
+
 ## 0.1.1 · 2026-10-19 · Changed
 
 **Changed:** Comment and Trace are modes in the header's mode picker, one at a time, trace mode now `sb-trace-mode` in place of the page's own wiring. Picking Trace works unserved; tracing a part says it needs serving.

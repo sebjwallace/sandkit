@@ -4,6 +4,55 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.68 · 2026-10-26
+- The domain discovery practice puts discovery on a page of its own by default, `discovery.html` (or another name the person prefers), linked from the header, and says how to add it. The sandbox template's AGENTS.md says so too, and records the practices a sandbox follows under Where it stands; the building guide says when to follow domain discovery.
+
+## 0.2.67 · 2026-10-26
+- Excerpts: the pieces of sources that records cite, each picked out once as a record of its own with a code (`SRC-2.3`), whatever the format. **Breaking** for discovery sandboxes: `engines/discovery` 0.3.0 takes records citing excerpts by code, and gives every excerpt a record rests on (`excerptsOf`); see its changelog to migrate. `sb-discovery-card` 0.1.3 draws an excerpt on its source's paper, with its words, a region of an image or rows of data. The domain discovery and sources practices describe them.
+
+## 0.2.66 · 2026-10-26
+- `engines/discovery` 0.2.4 follows what replaces what, scenarios and rules without code, and everything standing by an iteration. The domain discovery practice says how a record supersedes another, and that a sandbox can lay out boards of its own, such as one following scenarios.
+- The domain discovery practice says the boards are a recommended layout: the kinds, the records and the engine are the method, and a sandbox lays out its own. Recorded in DECISIONS.md. The catalogue's line for the engine says all it now does.
+
+## 0.2.65 · 2026-10-25
+- `engines/discovery` 0.2.3 takes feedback and works out its status, and words a plan's link to a claim as what it says should be. The domain discovery practice says how feedback is recorded, and tones those links muted.
+
+## 0.2.64 · 2026-10-25
+- From a trial discovery sandbox: the sandbox template's AGENTS.md points to any other practice followed and lists `records/`; the domain discovery practice sets up `sb-modal` and `sb-source` too, says where the model lives and that a discovery page must be served; the sources practice lists the catalogue's `iteration` and `gatheredBy`.
+
+## 0.2.63 · 2026-10-25
+- `engines/discovery` 0.2.2: every link says what it means. The domain discovery practice labels board links with it.
+
+## 0.2.62 · 2026-10-25
+- `engines/discovery` 0.2.1 no longer runs a class's getters when counting its decisions.
+
+## 0.2.61 · 2026-10-25
+- `engines/discovery` 0.2.0 runs the model being built: every version and candidate against every scenario and rule, what each run found, whether a trial earns its place, and the compression signal. It's handed the model's versions and candidates in place of `also`, and the domain discovery practice points to it for building the model.
+
+## 0.2.60 · 2026-10-25
+- `engines/discovery` 0.1.2 knows what rests on what: the links between records, the iterations each appears in, and what an iteration shows, raised, updated or carried. The domain discovery practice's iterations point to it.
+
+## 0.2.59 · 2026-10-25
+- `engines/discovery` 0.1.1 works out every status that follows from the records, as of any iteration, and why a decision needs another look. The domain discovery practice points to it, and reserves `created`, `by` and `iteration` in records for their making.
+
+## 0.2.58 · 2026-10-25
+- `tools/setup.mjs` sets up engines as it does components, named by their folder (`node tools/setup.mjs <sandbox> discovery`): copied into `lib/sandkit/engines/` with their manifests and changelogs, given a script tag, recorded in `SOURCE.md` and kept on update. The building guide and the template's `AGENTS.md` say so, and the domain discovery practice gives the command for a discovery sandbox.
+
+## 0.2.57 · 2026-10-25
+- Engines and records, decided: an engine is a method's rules written once, in `engines/` beside `components/`, one classic script with no DOM, knowing no component; what a sandbox writes is kept in `records/` beside `sources/`, never edited, each record carrying when, by whom and in which iteration it was made. The domain discovery practice gains a Records section.
+- The first engine, `engines/discovery` 0.1.0: weighing claims, from the records and each source's authored grade.
+- The sources practice: the catalogue gains `grade` (a value from 1 to 5 with the reason for it, and any aspects that matter), `speaksTo` (how things are, or what should be) and `copies`. Listed in the catalog's Discovery section; `test/versions` checks engines too.
+
+## 0.2.56 · 2026-10-25
+- **Manifests name no other component.** Every component's "Works well with" section is gone, and the few manifests naming another in passing say it in plain words, so components stay agnostic of each other even in suggestions (a patch version for each). The practices say which components go together; `test/isolation` now checks manifests too. The decision, the contributing guide, `AGENTS.md`, the readme, the building guide and the template's `AGENTS.md` say so.
+- Fifty-nine components: added `sb-discovery-board`, the sandbox's own items in columns by the part they play, with an item's chain lit and its links drawn when pointed at. The domain discovery practice gains a Boards section: the three boards and their columns, links as signal, and composing the board with the cards.
+
+## 0.2.55 · 2026-10-25
+- Fifty-eight components: added `sb-discovery-card`, one card of domain discovery in 26 kinds, compact, normal or expanded, in a new Discovery section of the catalog.
+- A new practice, `practices/domain-discovery.md`: discovering a domain on purpose, an iteration at a time, with a record of cards that are never edited, the kinds and what each is for, weighing claims, growing and trying the model, feedback, and showing the cards.
+- `STYLE.md`: `sb-discovery-card` wears paper for sources and passages, and the record card for the rest.
+- The sources practice: source material comes from outside the sandbox, chats included, and what the agent writes inside it cites sources rather than being one. A new section, Screening: ask what counts as sensitive, screen every source wherever it came from, raise what's found rather than fixing it silently, and replace the original with the redacted copy the person agrees to. The inbox steps screen before cataloguing; the feedback and domain discovery practices point to it, and the template's `AGENTS.md` has a Sensitive material section for each sandbox's rules. The control room example follows suit: its analysis is no longer a source, and ASM-1 cites the fault log and the interview directly.
+
 ## 0.2.54 · 2026-10-24
 - Fifty-seven components: added `sb-board`, a board to pan and zoom holding the sandbox's own content where the agent placed it, with labelled frames, pen marks anchored to refs, and viewers' moves kept apart from the layout and described in words for the agent. The locating practice lists it.
 

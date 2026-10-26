@@ -22,14 +22,14 @@ Most interfaces are flat: everything is a rounded box, so nothing says what it i
 
 | Material | Means | Cues | Worn by |
 |---|---|---|---|
-| Paper | Source material: what everything rests on | A sheet of `--sb-surface` mixed 6% with `#f3e2b8`, an edge of `--sb-text` at 24%, a folded corner, a soft drop shadow | `sb-source`, `sb-sources`, `sb-source-trace` |
-| Card with a header band | A record: a decision | A `--sb-surface-2` band with a border below it, above a `--sb-surface` body | `sb-choice` |
+| Paper | Source material: what everything rests on | A sheet of `--sb-surface` mixed 6% with `#f3e2b8`, an edge of `--sb-text` at 24%, a folded corner, a soft drop shadow | `sb-source`, `sb-sources`, `sb-source-trace`, `sb-discovery-card` |
+| Card with a header band | A record: a decision, a card of discovery | A `--sb-surface-2` band with a border below it, above a `--sb-surface` body | `sb-choice`, `sb-discovery-card` |
 | Amber frame | Not exploring: a mode is on | A 2px outline and a banner in `--sb-warn` | `sb-comments`, `sb-trace-mode`, `sb-inspect-mode` |
 | Dashed circle | An agent rather than a person | The person's circle drawn dashed | `sb-person` |
 | Ink | A status pressed on at one moment | A bordered stamp in one ink colour, letter-spaced capitals | `sb-stamp` |
 
-- **Paper changes only in size.** The fold is 20px on a full source, 16px on a catalogue card and 12px in a trace, and the shadow shrinks with it. The tint and edge stay the same.
-- **Each component names its own copy of a material's tokens** (`--sb-source-paper`, `--sb-sources-paper`, `--sb-source-trace-paper`), with the same default. Changing one means asking about the others (see above).
+- **Paper changes only in size.** The fold is 20px on a full source, 16px on a catalogue card, and 12px in a trace or on a discovery card's source or passage, and the shadow shrinks with it. The tint and edge stay the same.
+- **Each component names its own copy of a material's tokens** (`--sb-source-paper`, `--sb-sources-paper`, `--sb-source-trace-paper`, `--sb-discovery-card-paper`), with the same default. Changing one means asking about the others (see above).
 
 ## Tokens
 

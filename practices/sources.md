@@ -6,7 +6,22 @@ How a sandbox keeps the material it was built from, and how everything in it tra
 
 A sandbox is only as good as what's behind it, and people can only trust what they can check. When every rule and figure in the model cites the passages it rests on, anyone can follow it back and judge for themselves: this rule comes from what the warehouse manager said on 2 October, that figure from page 3 of the policy. When a source turns out to be wrong, everything it shaped can be found.
 
-This holds for the sandbox's own findings too. Your analyses, digests and summaries are sources like any other, authored by you, citing what they came from.
+## What counts as source material
+
+Source material comes from outside the sandbox: whatever people, organisations or agents elsewhere wrote, said or made. Documents, white papers, articles, web pages, PDFs, data, images and recordings, brought in by a person or by you. A conversation counts too: when someone tells you in a chat how things work, what they think of the model or what they've decided, save the part that matters as a source (`format: "transcript"`, the person as its author), so it can be quoted like anything else.
+
+What you write inside the sandbox isn't source material. Your analyses, summaries and findings cite sources; they aren't sources themselves. In a discovery sandbox they're cards (see [domain discovery](domain-discovery.md)); otherwise they live in the model's items and the journal. A readable copy of a file (below) is the same words in another form, not your writing.
+
+## Screening
+
+Nothing is kept in a sandbox, or used from it, until it has been screened. A sandbox is read by other people, shared and exported, so material that could harm someone goes wherever the sandbox goes.
+
+- **Ask first what counts as sensitive here.** Before the first source, ask the person what they treat as confidential or classified in this subject: names, customers, figures, sites, anything else. Record their rules, never the material itself, in the sandbox's `AGENTS.md` under **Sensitive material**, so every later session screens the same way.
+- **Screen everything, wherever it came from:** what arrives in the inbox, what a person copied straight into `sources/`, what's already catalogued when you first read it, and chat excerpts before you save them.
+- **Look for** personal data about people who could be identified (as data protection law such as the GDPR defines it); anything confidential to an organisation, or covered by the person's rules; anything dangerous to keep, such as credentials, security details or instructions for harm; and anything offensive or hurtful to the people who will read the sandbox, stakeholders included.
+- **Raise it, never fix it silently.** Tell the person what you found, where, and what you propose: redact, paraphrase, cut, or leave it as it is. Something can look sensitive and not be, or be sensitive in ways you can't know, so they decide. Don't use the source until they have.
+- **Act on what they decide.** A redacted or paraphrased copy replaces the original, which is removed from the sandbox once they agree: keeping it would keep the problem. Mark each change in the text, such as `[name removed]`, say in the catalogue's `summary` that the source was redacted, record it in the journal, and never write what was removed anywhere.
+- **What you derive is screened too.** A quote carries its words into the model, cards and pages, so never quote what was cleared out, and hold what you write to the same standard as what you read.
 
 ## The folder
 
@@ -17,7 +32,7 @@ sources/
   …                  folders arranged however suits the sandbox
 ```
 
-- **Sources are never edited.** A correction or a newer version comes in as a new source that supersedes the old one, so whatever cited the old one can still be checked against what it said.
+- **Sources are never edited,** except to clear sensitive material when screening. A correction or a newer version comes in as a new source that supersedes the old one, so whatever cited the old one can still be checked against what it said.
 - **Anything can be dropped into the inbox:** by a person, by you, or by the sandbox itself when it saves comments. Nothing waits there for long; see "Processing the inbox".
 
 ## The catalogue
@@ -57,15 +72,20 @@ sources/
 | `id` | A code with the prefix `SRC`, never reused (see [identifiers](identifiers.md)). |
 | `title`, `path`, `summary`, `tags` | What it is and where it lives. `path` is from the sandbox's folder. |
 | `format` | What kind of material, which says how to read it: `document`, `transcript`, `notes`, `data`, `image`, `pdf`, `code`, `web`, `annotations` and so on. |
-| `author` | Who wrote or said it: a person, an organisation, or `Agent` for your own analyses, whichever agent you are. |
+| `author` | Who wrote or said it: a person, an organisation, or an agent outside the sandbox. |
 | `authored`, `captured` | When it was written, and when it was added. They often differ. |
 | `origin` | Where it came from, such as a web address, when there is one. |
 | `status` | `inbox`, `catalogued` (you've processed it), `reviewed` (a person has checked its details) or `superseded`. |
 | `stance` | How certain it is: `assertive`, `speculative`, `assumption` or `idea`. Optional. |
 | `role` | What it does: `question`, `answer`, `confirmation`, `correction`, `contradiction` or `decision`. Optional. With `respondsTo`, the source it answers or corrects. |
 | `sensitivity` | `public`, `internal` or `confidential`. `internal` when not given. |
-| `derivedFrom` | For your own analyses and digests: the sources they came from. Empty for first-hand material. |
+| `derivedFrom` | For a readable copy: the source it was made from. Empty otherwise. |
 | `supersedes` | The source this one replaces. Set the old one's `status` to `superseded`. |
+| `copies` | The source this one repeats, such as a newsletter passing on a forum post. It adds nothing of its own, so it's counted as that one. |
+| `grade` | How far this source can be trusted, as whoever catalogued it judges: `{ "value": 4, "why": "First-hand, from the dispatcher on shift, though recalled a week later.", "aspects": { "distance": "first-hand" } }`. `value` from 1 (weak) to 5 (strong), 3 ordinary; `why` is required, since a grade without a reason is a conclusion nobody can check; `aspects`, optional, any dimensions that matter in this subject. Leave it out until it's been judged. |
+| `speaksTo` | `how things are` (the default) or `what should be`, for a plan, manual or policy: what should happen isn't evidence of what does. |
+| `iteration` | In a discovery sandbox, the iteration it arrived in (see [domain discovery](domain-discovery.md)). |
+| `gatheredBy` | In a discovery sandbox, the investigation that gathered it. |
 
 Keep to these fields. Write dates as `yyyy-mm-dd`.
 
@@ -74,19 +94,20 @@ Keep to these fields. Write dates as `yyyy-mm-dd`.
 When asked to process the inbox, or at the start of a session when `sources/inbox/` isn't empty:
 
 1. **Read each file.** For a large one, map its structure and read what matters, rather than all of it.
-2. **Catalogue it:** give it the next `SRC-` code and write its entry, with `status: "catalogued"`. Fill in only what you know; leave the rest out rather than guess.
-3. **Move it** into the folder that suits it, and set `path`.
-4. **Record the batch** in a journal entry: "Catalogued SRC-14 to SRC-17" (see the [journal practice](journal.md)).
+2. **Screen it** (see "Screening"): raise anything sensitive with the person, and go on with that file only once they've decided.
+3. **Catalogue it:** give it the next `SRC-` code and write its entry, with `status: "catalogued"`. Fill in only what you know; leave the rest out rather than guess.
+4. **Move it** into the folder that suits it, and set `path`.
+5. **Record the batch** in a journal entry: "Catalogued SRC-14 to SRC-17" (see the [journal practice](journal.md)).
 
 A file of comments saved from the sandbox (`format: "sandkit-annotations"`) is catalogued the same way, with `format: "annotations"` and the session's participants as its authors.
 
 ### Files that can't be read as they are
 
-Plain text, Markdown, data, code, PDFs and images can be shown and quoted as they are. For anything else, such as a Word document, a spreadsheet, a slide deck, a saved web page or a recording, keep the original and add a readable copy beside it: the text, in Markdown where it has structure, or a transcript of a recording. Catalogue the copy as a source of its own, authored by you, with `derivedFrom` naming the original, and cite the copy. Quotes are then checked against words anyone can read, and the original is a click away.
+Plain text, Markdown, data, code, PDFs and images can be shown and quoted as they are. For anything else, such as a Word document, a spreadsheet, a slide deck, a saved web page or a recording, keep the original and add a readable copy beside it: the text, in Markdown where it has structure, or a transcript of a recording. Catalogue the copy as a source of its own, with the original's author and `derivedFrom` naming the original, and cite the copy. Quotes are then checked against words anyone can read, and the original is a click away.
 
 ```json
 { "id": "SRC-9", "title": "Depot handbook (text)", "path": "sources/handbook/depot-handbook.md",
-  "format": "document", "author": "Agent", "derivedFrom": ["SRC-8"], "summary": "The text of SRC-8, converted from Word." }
+  "format": "document", "author": "Depot operations team", "derivedFrom": ["SRC-8"], "summary": "The text of SRC-8, converted from Word." }
 ```
 
 ## Citing sources from the model
@@ -120,6 +141,8 @@ A citation points at a passage, never a line number, since line numbers break wh
 Add a `note` to say how a passage was used, when it isn't obvious: `note: 'Taken as the usual case; she mentioned exceptions.'`
 
 Quote enough to be found and no more: a phrase or a sentence. If something rests on nothing yet, leave its `sources` empty rather than cite loosely; an item that cites nothing is a finding, not a gap to paper over.
+
+In a discovery sandbox, each cited piece of a source is picked out once as an **excerpt**, a record of its own with a code (`SRC-2.3`) and these same anchors, and records cite excerpts by code (see [domain discovery](domain-discovery.md)).
 
 ## Checking
 

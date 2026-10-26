@@ -46,4 +46,4 @@ A feedback file, or a pasted prompt, is a source like any other.
 
 ## Confidentiality
 
-Feedback may say things people wouldn't want shared further. Keep it with the sandbox's other sources, and share it as those are shared.
+Feedback may say things people wouldn't want shared further. Screen a feedback file as you would any source (see [screening](sources.md#screening)) before acting on it, keep it with the sandbox's other sources, and share it as those are shared.

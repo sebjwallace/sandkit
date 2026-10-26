@@ -27,6 +27,7 @@ Before building anything, be clear on:
 - **The subject.** What domain is being explored?
 - **The goal.** What should someone understand, decide or discover by the end? If the request doesn't say, ask. The goal shapes everything else.
 - **The kind of sandbox.** For intuition (a believable feel for how something works), for decisions (grounded in sources people can check), or for exploring possibilities (pushing beyond what is known, clearly marked as such).
+- **Whether it discovers.** When the sandbox is for finding out how something works, rather than showing what's already known, follow the [domain discovery practice](domain-discovery.md) too: its record of what was learnt and the model built from it go on a page of their own, `discovery.html` by default, linked from the header.
 - **The sources.** What material is the model to be built from? Documents, data, articles, or the person's own knowledge. A sandbox is only as good as what is behind it. Keep the material in `sources/`, catalogued, and cite it from the model, following the [sources practice](sources.md). A sandbox that shows its sources must be served to read them (`node lib/sandkit/tools/serve.mjs .`), so say so whenever you tell the person how to open it.
 
   When the sources include data (JSON or JSON Lines), profile it first, where Node is available: `node <sandkit>/tools/analyse.mjs profile <files or folder> --md`. Read the findings (fields that never change, keys, gaps, mixed types, rare values) before designing the model, rather than reading the samples themselves. Then find what goes with what: `node <sandkit>/tools/analyse.mjs dependencies <files or folder> --md`. Treat its rules as candidate rules for the model, inferences until the person confirms them, and its exceptions as questions to ask. The same analyses can go in the sandbox as [`sb-profile`](../components/sb-profile/manifest.md) and [`sb-dependencies`](../components/sb-dependencies/manifest.md), so the person sees what you saw.
@@ -37,10 +38,11 @@ Then sketch the chapters: one line each, starting with the most fundamental idea
 
 The sandbox lives in its own folder. Fetch Sandkit (for example `git clone --depth 1 https://github.com/sebjwallace/sandkit` into a temporary location).
 
-**If Node is available,** one command does all of the setup below, and running it again adds components or updates the copies:
+**If Node is available,** one command does all of the setup below, and running it again adds components or engines, or updates the copies. Name components by their tag and engines by their folder:
 
 ```sh
 node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
+node <sandkit>/tools/setup.mjs <sandbox-folder> discovery
 ```
 
 **Otherwise, copy by hand,** with a copy command (`cp`) or the file manager. Never copy by reading each file and writing it out: that puts every script's source into your context, which is the reading Sandkit exists to save.
@@ -49,6 +51,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 2. **Copy what the sandbox uses into `lib/sandkit/`, keeping Sandkit's own paths.** Links between manifests and practices then still work.
    - Always: `CATALOG.md`, `CHANGELOG.md`, `STYLE.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`, and `sb-comments` (below), which the template uses.
    - For each component used: `components/<name>/<name>.js`, `components/<name>/manifest.md` and `components/<name>/CHANGELOG.md`.
+   - For each engine used, when the sandbox follows a method that has one, such as domain discovery: `engines/<name>/<name>.js`, `engines/<name>/manifest.md` and `engines/<name>/CHANGELOG.md`, with a script tag for it like a component's.
    - Every practice the sandbox follows, from `practices/`.
    - Not tests or demos. They stay in Sandkit.
 3. **Record the source and versions** in `lib/sandkit/SOURCE.md`. Each version is the top entry of its changelog, and also appears in its script's first line.
@@ -132,7 +135,7 @@ Each chapter introduces one idea, much as a well-designed game introduces one me
 - **Reveal, don't merely display.** Show why things happen: highlight the rule that fired, the stock that ran out, the cause behind the effect.
 - **Modes come with the shell.** Every sandbox has comment mode from the template, wired once in `sandbox.js`. Once the model cites its sources, add trace mode, so people can ask why anything is there; once it has labels people could misread, inspect mode. See the [modes practice](modes.md).
 - **Add an outliner once the model has traces.** When things on the page connect, such as inputs to the rules they feed and what those rules show, give the shell an [`sb-outliner`](../components/sb-outliner/manifest.md) in its `panels` slot, with the model's `traceOf`: people point to see a whole path light up, and pin it to keep it lit while they change things. See "Keeping things lit" in the [highlighting practice](highlighting.md).
-- **Choose components from the catalog,** and combine them in the page. Each manifest's "Works well with" section suggests pairings and how to wire them. Components never go inside one another unless a component offers a slot for exactly that.
+- **Choose components from the catalog,** and combine them in the page. The practices say which components go together and how to wire them. Components never go inside one another unless a component offers a slot for exactly that.
 - **Write what the sandbox needs itself** in the page or in `model.js`. Not everything needs a component. Make hand-built parts point, light up and be found like components: see "Your own parts" in the [highlighting practice](highlighting.md#your-own-parts).
 - **Move reused parts out of the page.** When a piece of the surface is used by more than one chapter or page, make it one of the sandbox's own components: a function in `parts.js` or, once it has state of its own, a custom element in `components/`. See the [domain components practice](domain-components.md).
 - **Make it two-way.** Let people change things (parameters, scenarios, controls) and see the model respond.
