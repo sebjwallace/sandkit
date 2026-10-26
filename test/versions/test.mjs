@@ -40,6 +40,13 @@ for (const name of readdirSync(join(ROOT, 'components')).filter((name) => !name.
   });
 }
 
+for (const name of readdirSync(join(ROOT, 'engines')).filter((name) => !name.startsWith('.'))) {
+  test(`engines/${name}: its script states its changelog's latest version`, () => {
+    const version = checkChangelog(`engines/${name}/CHANGELOG.md`);
+    assert(headerVersion(`engines/${name}/${name}.js`) === version, `header says ${headerVersion(`engines/${name}/${name}.js`)}, changelog says ${version}`);
+  });
+}
+
 test('shell: every script states its changelog\'s latest version', () => {
   const version = checkChangelog('shell/CHANGELOG.md');
   for (const script of ['shell/sb-shell.js', 'shell/sb-theme-settings.js', 'shell/sb-export.js']) {
