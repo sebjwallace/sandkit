@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.69 · 2026-10-27
+- Sixty components: added `sb-search`, a collection to search, filter, range, sort and group, as a list, grid or table, in the page or full screen, with presets and a slot for the chosen item's detail. It works from a bare array, and takes functions of the sandbox's own where it knows better.
+
 ## 0.2.68 · 2026-10-26
 - The domain discovery practice puts discovery on a page of its own by default, `discovery.html` (or another name the person prefers), linked from the header, and says how to add it. The sandbox template's AGENTS.md says so too, and records the practices a sandbox follows under Where it stands; the building guide says when to follow domain discovery.
 

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-search demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-search.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .example code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    #trains { max-height: 560px; }
+    #assets { max-height: 620px; }
+    .service h3 { margin: 0 0 2px; font-size: 14px; }
+    .service p { margin: 0 0 10px; color: var(--sb-muted); font-size: 12px; }
+    .service ol { margin: 0 0 10px; padding-left: 18px; font-size: 13px; }
+    .service dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 0; font-size: 13px; }
+    .service dt { color: var(--sb-muted); }
+    .service dd { margin: 0; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-search">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A collection to search, filter, sort and group, as a list, a grid or a table.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>Many models hold a collection: services on a network, assets on a grid, species in a survey, cases on a ward. Shown all at once, a collection is a wall. Searched, filtered, sorted and grouped, it answers questions: which services are late, and are they all one operator's? Which assets are old, and where are they?</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Seeing the shape of a collection.</strong> Every filter value says how many items it would show, so the spread is visible before anything is chosen.</li>
+        <li><strong>Asking a question of it.</strong> Search for words, or a regular expression with <code>.*</code>, and see what matched marked in place.</li>
+        <li><strong>Comparing in groups.</strong> Group by any field with a few values, each group counted.</li>
+        <li><strong>Working at length.</strong> Full screen keeps the search and filters pinned while the results scroll beneath them.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>A handful of things.</strong> Five items need no search. Show them directly.</li>
+        <li><strong>Watching values change step by step.</strong> A table that marks what changed shows a model running; this shows a collection to explore.</li>
+        <li><strong>Things over time, or connected things.</strong> A timeline or a graph shows when and how; this shows which.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-search/sb-search.js"&gt;&lt;/script&gt;
+&lt;sb-search&gt;&lt;/sb-search&gt;
+
+&lt;script&gt;
+  const search = document.querySelector('sb-search');
+  search.items = model.services;   // [{ id: '1A10', from: 'Leeds', operator: 'Northern', delay: 0 }, …]
+&lt;/script&gt;</pre>
+      <p>That's enough: every field is searched and sortable, and fields with a few repeated values become filters and groups. Say more through <code>fields</code> (labels, formats, which to filter and group by) and <code>card</code> (what the list and grid show). Where the sandbox knows better, hand it functions: a field's <code>value</code> and <code>compare</code>, or a <code>match</code> and <code>filter</code> of its own.</p>
+      <p>Write <code>presets</code> for the questions people will ask most, and set <code>preset</code> to start on one. Put the sandbox's own content about the chosen item in a child with <code>slot="detail"</code>, and fill it on <code>sb-select</code>: it shows in a pane beside the results, or is left free for content that shows itself, such as a dialog.</p>
+
+      <h3>Making it reveal, not just list</h3>
+      <ul>
+        <li><strong>Filter and group by what matters.</strong> Status, kind, region: fields with a few values the reader cares about. Derive one with <code>value</code> where the model has numbers, such as a capacity band.</li>
+        <li><strong>Tone the exceptions.</strong> Give the late, the failing and the worn a <code>tone</code>, and say why in a field too.</li>
+        <li><strong>Keep the card short.</strong> A title, a line, and two or three details. The table view has the rest.</li>
+        <li><strong>Connect it.</strong> Listen for <code>sb-select</code> and show the item in the rest of the sandbox; set <code>highlight</code> when something else points at it.</li>
+      </ul>
+
+      <p>The full contract, including every field option, property and event, is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>Train services today</h2>
+      <p>The services as the model holds them, with labels and formats. Choose a service to see it in the pane beside the results. Try the presets, a stop the cards don't show (Doncaster), drag the departure times, or open it full screen.</p>
+      <sb-search id="trains" placeholder="Search services and stations…">
+        <div slot="detail" class="service" id="train-detail"></div>
+      </sb-search>
+    </section>
+
+    <section class="example">
+      <h2>Assets on a power grid</h2>
+      <p>A grid of cards grouped by region, with functions of the sandbox's own: capacity grouped into bands, condition sorted from good to poor, a range over age, and a search that also finds an asset by its id.</p>
+      <sb-search id="assets" view="grid" placeholder="Search assets, or an id like GA-104…"></sb-search>
+    </section>
+  </main>
+
+  <script>
+    // ---- Train services: mostly as the model holds them ----
+
+    const STATIONS = ['Leeds', 'York', 'Manchester Piccadilly', 'Liverpool Lime Street', 'Newcastle', 'Sheffield', 'Hull', 'Edinburgh', 'London Kings Cross', 'Preston'];
+    const OPERATORS = ['Northern', 'TransPennine', 'LNER', 'CrossCountry'];
+    const DELAYS = [0, 0, 0, 2, 0, 7, 0, 18, 0, 4, 0, 0, 33];
+    const STOPS = ['Wakefield', 'Doncaster', 'Huddersfield', 'Darlington', 'Durham', 'Selby', 'Stockport', 'Warrington', 'Retford', 'Berwick'];
+
+    function service(i) {
+      const from = STATIONS[i % STATIONS.length];
+      const to = STATIONS[(i * 3 + 5) % STATIONS.length];
+      const delay = DELAYS[i % DELAYS.length];
+      const status = i % 17 === 5 ? 'Cancelled' : delay > 10 ? 'Delayed' : delay ? 'Late' : 'On time';
+      return {
+        id: `${1 + (i % 2)}${'ABEFLMNPS'[i % 9]}${String(10 + i * 7).slice(-2)}`,
+        route: `${from} → ${to}`,
+        calls: [STOPS[i % STOPS.length], STOPS[(i * 7 + 3) % STOPS.length]],
+        departs: `${String(6 + Math.floor(i / 3)).padStart(2, '0')}:${String((i * 17) % 60).padStart(2, '0')}`,
+        operator: OPERATORS[(i * 5) % OPERATORS.length],
+        status,
+        delay: status === 'Cancelled' ? null : delay,
+        carriages: [2, 3, 4, 5, 9][i % 5],
+        tone: status === 'Cancelled' ? 'bad' : delay > 10 ? 'warn' : undefined
+      };
+    }
+
+    // Departures are written "07:25"; as minutes past midnight they can be ranged over and sorted.
+    const minutesOf = (time) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
+    const clock = (minutes) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+
+    const trains = document.getElementById('trains');
+    trains.fields = [
+      { key: 'id', label: 'Service' },
+      { key: 'route', label: 'Route' },
+      { key: 'calls', label: 'Calls at', format: (stops) => stops.join(', ') },
+      { key: 'departs', label: 'Departs', value: (train) => minutesOf(train.departs), format: clock, range: true },
+      { key: 'operator', label: 'Operator' },
+      { key: 'status', label: 'Status' },
+      { key: 'delay', label: 'Delay', format: (minutes) => (minutes == null ? '' : minutes ? `${minutes} min late` : 'on time') },
+      { key: 'carriages', label: 'Carriages', search: false }
+    ];
+    trains.card = { title: 'id', subtitle: 'route', details: ['departs', 'operator', 'status', 'delay'] };
+    trains.items = Array.from({ length: 36 }, (_, i) => service(i));
+
+    trains.presets = [
+      { label: 'Everything today', sort: { key: 'departs' } },
+      { label: 'Trouble first', filters: { status: ['Delayed', 'Cancelled'] }, sort: { key: 'delay', direction: 'descending' } },
+      { label: 'Morning peak', ranges: { departs: [7 * 60, 9 * 60 + 30] }, group: 'operator', sort: { key: 'departs' } },
+      { label: 'Long trains', filters: { status: ['On time', 'Late'] }, sort: { key: 'carriages', direction: 'descending' }, view: 'table' }
+    ];
+    trains.preset = 'Everything today';
+    // The detail is the sandbox's own: built from the chosen service, as text, never markup.
+    const detail = document.getElementById('train-detail');
+    const el = (tag, text) => Object.assign(document.createElement(tag), text == null ? {} : { textContent: text });
+    function showService(train) {
+      const [from, to] = train.route.split(' → ');
+      const running = train.status === 'Cancelled' ? 'Cancelled today' : train.delay ? `Running ${train.delay} minutes late` : 'Running to time';
+      const stops = el('ol');
+      stops.append(...[from, ...train.calls, to].map((stop) => el('li', stop)));
+      const facts = el('dl');
+      for (const [term, value] of [['Departs', train.departs], ['Operator', train.operator], ['Status', train.status], ['Carriages', train.carriages]]) {
+        facts.append(el('dt', term), el('dd', value));
+      }
+      detail.replaceChildren(el('h3', train.route), el('p', running), stops, facts);
+    }
+    trains.addEventListener('sb-select', (e) => e.detail.item && showService(e.detail.item));
+
+    // ---- Power grid assets: functions of the sandbox's own ----
+
+    const KINDS = ['Substation', 'Transformer', 'Wind farm', 'Solar farm', 'Gas plant', 'Battery'];
+    const REGIONS = ['North', 'Midlands', 'South West', 'East'];
+    const PLACES = ['Ashford', 'Brindle', 'Carrow', 'Denby', 'Elmore', 'Fenwick', 'Garth', 'Hollin', 'Ingle', 'Jarrow', 'Kelda', 'Lowther', 'Marsh', 'Netley', 'Orrin', 'Penhale', 'Quarley', 'Redmire', 'Saltash', 'Thorne', 'Ulley', 'Varley', 'Wendle', 'Yarrow'];
+    const CONDITIONS = ['Good', 'Fair', 'Poor'];
+    const band = (mw) => (mw < 100 ? 'Under 100 MW' : mw < 500 ? '100–500 MW' : 'Over 500 MW');
+
+    const assets = document.getElementById('assets');
+    assets.fields = [
+      { key: 'name', label: 'Name' },
+      { key: 'kind', label: 'Kind' },
+      { key: 'region', label: 'Region' },
+      { key: 'capacity', label: 'Capacity', format: (mw) => `${mw} MW` },
+      { key: 'band', label: 'Size', value: (asset) => band(asset.capacity), compare: (a, b) => parseInt(a.replace(/\D+/, '')) - parseInt(b.replace(/\D+/, '')) || a.localeCompare(b), filter: false },
+      { key: 'age', label: 'Age', format: (years) => `${years} years`, range: true },
+      { key: 'condition', label: 'Condition', compare: (a, b) => CONDITIONS.indexOf(a) - CONDITIONS.indexOf(b) }
+    ];
+    assets.card = { title: 'name', subtitle: 'kind', details: ['region', 'capacity', 'age', 'condition'] };
+    assets.items = PLACES.map((place, i) => {
+      const kind = KINDS[(i * 7) % KINDS.length];
+      const age = (i * 11) % 47 + 2;
+      const condition = age > 40 ? 'Poor' : age > 25 ? 'Fair' : 'Good';
+      return {
+        id: `GA-${100 + i}`, name: `${place} ${kind.toLowerCase()}`, kind,
+        region: REGIONS[(i * 3) % REGIONS.length],
+        capacity: [40, 120, 320, 650, 1200, 18, 75][i % 7],
+        age, condition,
+        tone: { Poor: 'bad', Fair: 'warn' }[condition]
+      };
+    });
+
+    // The built-in search, plus an exact id, which the cards don't show.
+    assets.match = (asset, { text }) => asset.id.toLowerCase() === text.toLowerCase()
+      || [asset.name, asset.kind, asset.region, asset.condition].some((words) => words.toLowerCase().includes(text.toLowerCase()));
+    assets.presets = [
+      { id: 'by-region', label: 'By region', group: 'region' },
+      { id: 'worn', label: 'Worn and old', filters: { condition: ['Poor'] }, ranges: { age: [30, 48] }, sort: { key: 'age', direction: 'descending' } },
+      { id: 'big', label: 'Biggest first', group: 'band', sort: { key: 'capacity', direction: 'descending' } }
+    ];
+    assets.preset = 'by-region';
+  </script>
+</body>
+</html>

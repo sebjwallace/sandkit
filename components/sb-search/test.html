@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-search tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-search.js"></script>
+  <script src="sb-search.js"></script>
+</head>
+<body>
+  <script>
+    const TRAINS = [
+      { id: 'T1', name: 'Leeds Express', operator: 'Northern', status: 'On time', delay: 0, calls: 'Wakefield' },
+      { id: 'T2', name: 'York Stopper', operator: 'LNER', status: 'Late', delay: 7, calls: 'Doncaster' },
+      { id: 'T3', name: 'Hull Flyer', operator: 'Northern', status: 'Late', delay: 3, calls: 'Selby' },
+      { id: 'T4', name: 'Item 10', operator: 'LNER', status: 'On time', delay: 0, calls: 'Retford' },
+      { id: 'T5', name: 'Item 2', operator: 'Northern', status: 'Cancelled', delay: null, calls: 'Durham' }
+    ];
+
+    // Status has too few repeats among five items to be a filter by default, so the tests ask for it.
+    const FIELDS = [{ key: 'name' }, { key: 'operator' }, { key: 'status', filter: true, group: true }, { key: 'delay' }, { key: 'calls' }];
+
+    function search(attributes = '', items = TRAINS, fields = items === TRAINS ? FIELDS : null) {
+      const element = mount(`<sb-search ${attributes}></sb-search>`);
+      element.items = items;
+      if (fields) element.fields = fields;
+      return element;
+    }
+    const titles = (s) => [...s.querySelectorAll('.sb-search__title')].map((el) => el.textContent);
+    const ids = (s) => s.results.map((item) => item.id);
+    const count = (s) => s.querySelector('.sb-search__count').textContent;
+    const filterButton = (s, key, value) => [...s.querySelectorAll('.sb-search__value')].find((b) => b.dataset.key === key && b.dataset.value === value);
+    const select = (s, name, value) => {
+      const menu = s.querySelector(`.sb-search__${name}`);
+      menu.value = value;
+      menu.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const type = (s, text) => {
+      const input = s.querySelector('.sb-search__input');
+      input.value = text;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+
+    // ---- Showing items ----
+
+    test('shows every item, in its own order, with a count', () => {
+      const s = search();
+      assertEqual(titles(s), ['Leeds Express', 'York Stopper', 'Hull Flyer', 'Item 10', 'Item 2']);
+      assertEqual(count(s), '5 of 5 shown');
+    });
+
+    test('says when there are no items, and when nothing matches', () => {
+      const empty = search('empty-text="No services yet."', []);
+      assertEqual(empty.querySelector('.sb-search__empty').textContent, 'No services yet.');
+      const s = search();
+      s.query = 'nowhere';
+      assert(s.querySelector('.sb-search__empty').textContent.startsWith('Nothing matches'));
+    });
+
+    test('without fields, uses every field of the first item but id and tone', () => {
+      const s = search('', TRAINS, null);
+      assertEqual(s.fields.map((f) => f.key), ['name', 'operator', 'status', 'delay', 'calls']);
+    });
+
+    test('offers text with a few repeated values as filters and groups, never names, numbers or near-unique text', () => {
+      const s = search('', TRAINS, null);
+      const offered = (option) => s.fields.filter((f) => f[option]).map((f) => f.key);
+      assertEqual(offered('filter'), ['operator']);
+      assertEqual(offered('group'), ['operator']);
+      assertEqual(offered('sort'), ['name', 'operator', 'status', 'delay', 'calls']);
+    });
+
+    test('shows the card the sandbox describes', () => {
+      const s = search();
+      s.card = { title: 'id', subtitle: 'name', details: ['operator'] };
+      const first = s.querySelector('.sb-search__item');
+      assertEqual(first.querySelector('.sb-search__title').textContent, 'T1');
+      assertEqual(first.querySelector('.sb-search__subtitle').textContent, 'Leeds Express');
+      assertEqual([...first.querySelectorAll('.sb-search__details dt, .sb-search__details dd')].map((el) => el.textContent), ['operator', 'Northern']);
+    });
+
+    test('never renders text as markup', () => {
+      const s = search('', [{ id: 'X', name: '<b>bold</b>', kind: '<i>a</i>' }]);
+      assertEqual(s.querySelector('b'), null);
+      assertEqual(titles(s), ['<b>bold</b>']);
+      s.view = 'table';
+      assertEqual(s.querySelector('td b, td i'), null);
+    });
+
+    // ---- Search ----
+
+    test('searches every field as shown, ignoring case, and marks what matched', () => {
+      const s = search();
+      s.query = 'LEEDS';
+      assertEqual(ids(s), ['T1']);
+      assertEqual(s.querySelector('.sb-search__match').textContent, 'Leeds');
+    });
+
+    test('searches a field as its format shows it', () => {
+      const s = search();
+      s.fields = [{ key: 'name' }, { key: 'delay', format: (m) => (m ? `${m} min late` : 'on time') }];
+      s.query = 'min late';
+      assertEqual(ids(s), ['T2', 'T3']);
+    });
+
+    test('leaves out fields marked search: false', () => {
+      const s = search();
+      s.fields = [{ key: 'name' }, { key: 'calls', search: false }];
+      s.query = 'Doncaster';
+      assertEqual(ids(s), []);
+    });
+
+    test('searches with a regular expression when asked', () => {
+      const s = search();
+      s.query = '^item \\d+$';
+      assertEqual(ids(s), [], 'plain text first');
+      s.regex = true;
+      assertEqual(ids(s), ['T4', 'T5']);
+    });
+
+    test('says when a regular expression can\'t be read, and searches nothing out', () => {
+      const s = search();
+      s.regex = true;
+      s.query = 'Leeds(';
+      assertEqual(ids(s).length, 5);
+      assert(s.querySelector('.sb-search__problem').textContent.length > 0, 'a problem is shown');
+      assertEqual(s.querySelector('.sb-search__input').getAttribute('aria-invalid'), 'true');
+    });
+
+    test('says where a match was found when the card doesn\'t show that field', () => {
+      const s = search();
+      s.card = { title: 'name' };
+      s.query = 'donc';
+      const found = s.querySelector('.sb-search__found');
+      assert(found, 'a found line');
+      assert(found.textContent.includes('calls'), 'names the field');
+      assertEqual(found.querySelector('.sb-search__match').textContent, 'Donc');
+      s.query = 'leeds';
+      assertEqual(s.querySelector('.sb-search__found'), null, 'nothing when the match shows');
+    });
+
+    test('a match of the sandbox\'s own replaces the search', () => {
+      const s = search();
+      s.match = (item, { text }) => item.id === text;
+      s.query = 'T3';
+      assertEqual(ids(s), ['T3']);
+      assertEqual(s.querySelector('.sb-search__match'), null, 'nothing marked');
+    });
+
+    test('typing in the box searches and tells the sandbox', () => {
+      const s = search();
+      const changes = recordEvents(s, 'sb-change');
+      type(s, 'hull');
+      assertEqual(ids(s), ['T3']);
+      assertEqual(changes.at(-1).detail.query, 'hull');
+      assertEqual(changes.at(-1).detail.results.map((item) => item.id), ['T3']);
+    });
+
+    // ---- Filters and ranges ----
+
+    test('a filter value narrows the items, any value within a field, every field across', () => {
+      const s = search();
+      s.filters = { operator: ['LNER'] };
+      assertEqual(ids(s), ['T2', 'T4']);
+      s.filters = { operator: ['LNER', 'Northern'], status: ['Late'] };
+      assertEqual(ids(s), ['T2', 'T3']);
+    });
+
+    test('each filter value counts the items it would show alongside the others', () => {
+      const s = search();
+      s.filters = { status: ['Late'] };
+      const tally = (key, value) => filterButton(s, key, value).querySelector('.sb-search__tally').textContent;
+      assertEqual([tally('operator', 'LNER'), tally('operator', 'Northern')], ['1', '1']);
+      assertEqual([tally('status', 'Late'), tally('status', 'On time')], ['2', '2']);
+    });
+
+    test('pressing a filter value chooses it and tells the sandbox', () => {
+      const s = search();
+      const changes = recordEvents(s, 'sb-change');
+      filterButton(s, 'status', 'Cancelled').click();
+      assertEqual(ids(s), ['T5']);
+      assertEqual(filterButton(s, 'status', 'Cancelled').getAttribute('aria-pressed'), 'true');
+      assertEqual(changes.at(-1).detail.filters, { status: ['Cancelled'] });
+    });
+
+    test('an item with several values counts under each', () => {
+      const s = search('', [{ id: 'A', tags: ['red', 'blue'] }, { id: 'B', tags: ['blue'] }, { id: 'C', tags: ['red'] }, { id: 'D', tags: ['green'] }, { id: 'E', tags: ['green'] }]);
+      s.fields = [{ key: 'id' }, { key: 'tags', filter: true, group: true }];
+      s.filters = { tags: ['red'] };
+      assertEqual(ids(s), ['A', 'C']);
+      s.filters = {};
+      s.group = 'tags';
+      assertEqual([...s.querySelectorAll('.sb-search__heading')].map((h) => h.textContent), ['blue2', 'green2', 'red2']);
+    });
+
+    test('tags: each counted once, searched, and an item without any grouped and sorted as Not set', () => {
+      const s = search('', [{ id: 'A', tags: ['red', 'blue'] }, { id: 'B', tags: ['red', 'red'] }, { id: 'C', tags: [] }, { id: 'D', tags: ['blue'] }]);
+      s.fields = [{ key: 'id' }, { key: 'tags', filter: true, group: true }];
+      assertEqual(filterButton(s, 'tags', 'red').querySelector('.sb-search__tally').textContent, '2');
+      s.group = 'tags';
+      assertEqual([...s.querySelectorAll('.sb-search__heading')].map((h) => h.textContent), ['blue2', 'red2', 'Not set1']);
+      s.group = null;
+      s.sort = { key: 'tags', direction: 'descending' };
+      assertEqual(ids(s).at(-1), 'C');
+      s.query = 'blue';
+      assertEqual(ids(s), ['A', 'D']);
+    });
+
+    test('a range narrows a number field, and a full range filters nothing out', () => {
+      const s = search();
+      s.fields = [{ key: 'name' }, { key: 'delay', range: true }];
+      assert(s.querySelector('.sb-search__ranged'), 'a slider');
+      s.ranges = { delay: [1, 10] };
+      assertEqual(ids(s), ['T2', 'T3']);
+      s.ranges = { delay: [0, 7] };
+      assertEqual(s.ranges, {});
+      assertEqual(ids(s).length, 5, 'items without a value stay');
+    });
+
+    test('moving a handle narrows, and never passes the other handle', () => {
+      const s = search();
+      s.fields = [{ key: 'name' }, { key: 'delay', range: true }];
+      const [from, to] = s.querySelectorAll('.sb-search__handle');
+      to.value = 3;
+      to.dispatchEvent(new Event('input', { bubbles: true }));
+      assertEqual(s.ranges, { delay: [0, 3] });
+      from.value = 5;
+      from.dispatchEvent(new Event('input', { bubbles: true }));
+      assertEqual(s.ranges, { delay: [3, 3] });
+      assertEqual(ids(s), ['T3']);
+    });
+
+    test('ranges over dates as timestamps', () => {
+      const day = (d) => new Date(2026, 0, d);
+      const s = search('', [{ id: 'A', when: day(1) }, { id: 'B', when: day(5) }, { id: 'C', when: day(9) }]);
+      s.fields = [{ key: 'id' }, { key: 'when', range: true, format: (t) => new Date(t).getDate() }];
+      s.ranges = { when: [day(2), day(9)] };
+      assertEqual(ids(s), ['B', 'C']);
+    });
+
+    test('a value function derives what is filtered, sorted and grouped', () => {
+      const s = search();
+      s.fields = [{ key: 'name' }, { key: 'late', value: (t) => (t.delay > 0 ? 'Late' : 'Not late'), filter: true }];
+      s.filters = { late: ['Late'] };
+      assertEqual(ids(s), ['T2', 'T3']);
+    });
+
+    test('a filter of the sandbox\'s own applies with the viewer\'s', () => {
+      const s = search();
+      s.filter = (item) => item.operator === 'Northern';
+      s.query = 'item';
+      assertEqual(ids(s), ['T5']);
+    });
+
+    test('closed filters list what is chosen beside the toggle', () => {
+      const s = search();
+      s.fields = [{ key: 'name' }, { key: 'status', label: 'Status', filter: true }, { key: 'delay', label: 'Delay', range: true }];
+      s.filters = { status: ['Late'] };
+      s.ranges = { delay: [1, 5] };
+      s.filtersOpen = false;
+      assert(s.querySelector('.sb-search__filters').hidden, 'hidden');
+      assertEqual(s.querySelector('.sb-search__chosen').textContent, 'Status: Late · Delay: 1 – 5');
+    });
+
+    test('clear lets everything through again', () => {
+      const s = search();
+      s.query = 'item';
+      s.filters = { status: ['Cancelled'] };
+      s.clear();
+      assertEqual(ids(s).length, 5);
+      assertEqual(count(s), '5 of 5 shown');
+    });
+
+    // ---- Sort and group ----
+
+    test('sorts numbers by size and text naturally, empty values last', () => {
+      const s = search();
+      s.sort = { key: 'delay', direction: 'descending' };
+      assertEqual(ids(s), ['T2', 'T3', 'T1', 'T4', 'T5']);
+      s.sort = { key: 'name' };
+      assertEqual(titles(s), ['Hull Flyer', 'Item 2', 'Item 10', 'Leeds Express', 'York Stopper']);
+    });
+
+    test('sorts by a field\'s own order', () => {
+      const ORDER = ['On time', 'Late', 'Cancelled'];
+      const s = search();
+      s.fields = [{ key: 'name' }, { key: 'status', compare: (a, b) => ORDER.indexOf(a) - ORDER.indexOf(b) }];
+      s.sort = { key: 'status' };
+      assertEqual(ids(s), ['T1', 'T4', 'T2', 'T3', 'T5']);
+    });
+
+    test('choosing a sort from the menu, then flipping its direction', () => {
+      const s = search();
+      select(s, 'sort', 'delay');
+      assertEqual(s.sort, { key: 'delay', direction: 'ascending' });
+      s.querySelector('.sb-search__direction').click();
+      assertEqual(s.sort.direction, 'descending');
+    });
+
+    test('groups under headings with counts, in the field\'s order', () => {
+      const s = search();
+      select(s, 'group', 'operator');
+      const headings = [...s.querySelectorAll('.sb-search__heading')].map((h) => h.textContent);
+      assertEqual(headings, ['LNER2', 'Northern3']);
+      select(s, 'group', 'status');
+      assertEqual(s.querySelectorAll('.sb-search__heading').length, 3);
+    });
+
+    // ---- Views ----
+
+    test('shows a grid or a table', () => {
+      const s = search();
+      s.querySelector('[data-view="grid"]').click();
+      assert(s.querySelector('.sb-search__items--grid'), 'a grid');
+      s.view = 'table';
+      const table = s.querySelector('.sb-search__table');
+      assertEqual([...table.querySelectorAll('thead th')].map((th) => th.textContent), ['name', 'operator', 'status', 'delay', 'calls']);
+      assertEqual(table.querySelectorAll('tbody tr').length, 5);
+    });
+
+    test('one table for all groups, so the columns line up', () => {
+      const s = search('view="table"');
+      s.group = 'status';
+      assertEqual(s.querySelectorAll('table').length, 1);
+      assertEqual(s.querySelectorAll('tbody').length, 3);
+    });
+
+    test('draws at most limit results, with a button for the rest', () => {
+      const s = search('limit="2"');
+      assertEqual(s.querySelectorAll('.sb-search__item').length, 2);
+      s.querySelector('.sb-search__more').click();
+      assertEqual(s.querySelectorAll('.sb-search__item').length, 5);
+    });
+
+    test('full screen lays the frame over the page, and Escape leaves it', () => {
+      const s = search();
+      const changes = recordEvents(s, 'sb-change');
+      s.querySelector('.sb-search__full').click();
+      assert(s.fullscreen && s.querySelector('.sb-search__frame--full'), 'full screen');
+      assertEqual(changes.at(-1).detail.fullscreen, true);
+      s.querySelector('.sb-search__full').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      assert(!s.fullscreen, 'left');
+    });
+
+    // ---- Presets ----
+
+    test('a preset sets what it names and resets the rest', () => {
+      const s = search();
+      s.presets = [{ id: 'late', label: 'Late', filters: { status: ['Late'] }, sort: { key: 'delay' }, view: 'table' }];
+      s.query = 'york';
+      s.group = 'operator';
+      s.preset = 'late';
+      assertEqual(s.preset, 'late');
+      assertEqual([s.query, s.group, s.view], ['', null, 'table']);
+      assertEqual(ids(s), ['T3', 'T2']);
+    });
+
+    test('choosing a preset from the menu, then changing anything, leaves it', () => {
+      const s = search();
+      s.presets = [{ label: 'Cancelled', filters: { status: ['Cancelled'] } }];
+      select(s, 'preset', '0');
+      assertEqual(s.preset, 'Cancelled');
+      assertEqual(ids(s), ['T5']);
+      type(s, 'x');
+      assertEqual(s.preset, null);
+      assertEqual(s.querySelector('.sb-search__preset').value, '');
+    });
+
+    // ---- Choosing and the detail ----
+
+    test('clicking an item chooses it and tells the sandbox', () => {
+      const s = search();
+      const selections = recordEvents(s, 'sb-select');
+      s.querySelectorAll('.sb-search__item')[1].click();
+      assertEqual(selections[0].detail.item, TRAINS[1]);
+      assertEqual(s.selected, TRAINS[1]);
+      assert(s.querySelectorAll('.sb-search__item')[1].classList.contains('sb-search__item--selected'), 'marked');
+    });
+
+    test('Enter on an item chooses it', () => {
+      const s = search();
+      const selections = recordEvents(s, 'sb-select');
+      s.querySelector('.sb-search__item').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      assertEqual(selections[0].detail.item, TRAINS[0]);
+    });
+
+    test('the detail shows in a pane while an item is chosen, and survives redraws', () => {
+      const s = mount('<sb-search><p slot="detail" id="info">About the train</p></sb-search>');
+      s.items = TRAINS;
+      const pane = s.querySelector('.sb-search__pane');
+      assert(pane.hidden, 'hidden at first');
+      s.querySelector('.sb-search__item').click();
+      assert(!s.querySelector('.sb-search__pane').hidden, 'shown');
+      assertEqual(s.querySelector('.sb-search__pane-title').textContent, 'Leeds Express');
+      s.sort = { key: 'name' };
+      s.fullscreen = true;
+      assertEqual(s.querySelector('.sb-search__pane-body #info')?.textContent, 'About the train');
+      s.fullscreen = false;
+    });
+
+    test('closing the pane lets go of the item and tells the sandbox', () => {
+      const s = mount('<sb-search><p slot="detail">About</p></sb-search>');
+      s.items = TRAINS;
+      s.querySelector('.sb-search__item').click();
+      const selections = recordEvents(s, 'sb-select');
+      s.querySelector('.sb-search__close').click();
+      assertEqual(selections[0].detail.item, null);
+      assertEqual(s.selected, null);
+      assert(s.querySelector('.sb-search__pane').hidden, 'hidden');
+    });
+
+    test('free detail is held inside, but neither placed nor hidden', () => {
+      const s = mount('<sb-search detail="free"><div slot="detail" id="own">Mine</div></sb-search>');
+      s.items = TRAINS;
+      assertEqual(s.querySelector('.sb-search__pane'), null);
+      assert(s.querySelector('.sb-search__frame #own'), 'inside the frame');
+      s.querySelector('.sb-search__item').click();
+      assert(!s.querySelector('#own').hidden, 'left alone');
+    });
+
+    test('the chosen item stays chosen when the items are set again', () => {
+      const s = search();
+      s.selected = TRAINS[2];
+      const fresh = TRAINS.map((item) => ({ ...item }));
+      s.items = fresh;
+      assertEqual(s.selected, fresh[2]);
+    });
+
+    test('setting the items again keeps the criteria', () => {
+      const s = search();
+      s.filters = { operator: ['LNER'] };
+      s.items = TRAINS.slice(1);
+      assertEqual(ids(s), ['T2', 'T4']);
+    });
+
+    // ---- Pointing and locating ----
+
+    test('items carry data-ref and data-tone, and light up when highlighted', () => {
+      const s = search('', [{ id: 'A', name: 'a', tone: 'bad' }, { id: 'B', name: 'b' }]);
+      const [a, b] = s.querySelectorAll('.sb-search__item');
+      assertEqual([a.dataset.ref, a.dataset.tone, b.dataset.tone], ['A', 'bad', undefined]);
+      s.highlight = 'B';
+      assert(b.classList.contains('sb-search__item--highlighted') && !a.classList.contains('sb-search__item--highlighted'));
+    });
+
+    test('reveal finds an item the search lets through, and only those', () => {
+      const s = search('limit="1"');
+      assert(s.reveal('T4'), 'found');
+      assert(s.querySelector('[data-ref="T4"]'), 'drawn past the limit');
+      s.filters = { operator: ['Northern'] };
+      assertEqual(s.reveal('T4'), false);
+    });
+
+    // ---- Instances ----
+
+    test('two searches on one page keep their own criteria and controls', () => {
+      mount('<div><sb-search id="a"></sb-search><sb-search id="b"></sb-search></div>');
+      const [a, b] = document.querySelectorAll('#test-fixture sb-search');
+      a.items = TRAINS;
+      b.items = TRAINS;
+      a.query = 'hull';
+      assertEqual([ids(a).length, ids(b).length], [1, 5]);
+      const sortIds = [...document.querySelectorAll('#test-fixture .sb-search__sort')].map((el) => el.id);
+      assert(sortIds[0] !== sortIds[1], 'unique ids for labels');
+    });
+
+    test('loading the same script twice is harmless and quiet', () => {
+      assertEqual(consoleErrors, []);
+    });
+  </script>
+</body>
+</html>
