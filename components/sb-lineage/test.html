@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-lineage tests</title>
+  <script>
+    window.consoleErrors = [];
+    const logError = console.error;
+    console.error = (...args) => { consoleErrors.push(args.join(' ')); logError(...args); };
+  </script>
+  <script src="../../test/harness.js"></script>
+  <script src="sb-lineage.js"></script>
+  <script src="sb-lineage.js"></script>
+  <style>#test-fixture { width: 1000px; }</style>
+</head>
+<body>
+  <script>
+    // A chain with a side branch: A and C both lead to B, B leads to D. With every link drawn,
+    // pointing at A lights A and B; along a chain, A, B and D, never C.
+    const ITEMS = ['A', 'B', 'C', 'D', 'E'];
+    const COLUMNS = [
+      { title: 'First', refs: ['A', 'C'] },
+      { title: 'Second', refs: ['B'] },
+      { title: 'Third', refs: ['D', 'E'] },
+      { title: 'Empty', refs: ['Z'] },
+    ];
+    const LINKS = [
+      { from: 'A', to: 'B', label: 'supports' },
+      { from: 'C', to: 'B', label: 'disputes' },
+      { from: 'B', to: 'D', label: 'grounds' },
+    ];
+
+    const lineage = (attributes = '', columns = COLUMNS) => {
+      const element = mount(`<sb-lineage ${attributes}>${ITEMS.map((ref) => `<div data-ref="${ref}">Item ${ref}</div>`).join('')}</sb-lineage>`);
+      element.columns = columns;
+      element.links = LINKS;
+      return element;
+    };
+    const columns = (element) => [...element.querySelectorAll('.sb-lineage__column')];
+    const placed = (element) => columns(element).map((c) => [...c.querySelectorAll('[data-ref]')].map((item) => item.dataset.ref));
+    const placeOf = (element, ref) => element.querySelector(`[data-ref="${ref}"]`).parentElement;
+    const lit = (element) => ITEMS.filter((ref) => placeOf(element, ref)?.classList.contains('sb-lineage__item--lit'));
+    const point = (element, ref) => element.querySelector(`[data-ref="${ref}"]`).dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+    const labels = (element) => [...element.querySelectorAll('.sb-lineage__lines text')].map((t) => t.textContent).sort();
+    const paths = (element) => [...element.querySelectorAll('.sb-lineage__lines > path')].map((p) => `${p.dataset.from}>${p.dataset.to}`).sort();
+    const litPaths = (element) => [...element.querySelectorAll('.sb-lineage__link--lit')].map((p) => `${p.dataset.from}>${p.dataset.to}`).sort();
+    const litLabels = (element) => [...element.querySelectorAll('.sb-lineage__label--lit')].map((t) => t.textContent).sort();
+    const pointing = (element) => element.classList.contains('sb-lineage--pointing');
+
+    // ---- Placing ----
+
+    test('says so when there\'s nothing to show yet', () => {
+      assertEqual(mount('<sb-lineage></sb-lineage>').textContent.trim(), 'Nothing to show yet.');
+    });
+
+    test('places each child in the column listing it, in the column’s order, leaving out empty columns', () => {
+      const element = lineage('', [{ title: 'First', refs: ['C', 'A'] }, ...COLUMNS.slice(1)]);
+      assertEqual(columns(element).map((c) => c.querySelector('.sb-lineage__toggle').textContent), ['First', 'Second', 'Third']);
+      assertEqual(placed(element), [['C', 'A'], ['B'], ['D', 'E']]);
+    });
+
+    test('leaves its children as they were: no classes, no attributes added', () => {
+      const element = lineage();
+      point(element, 'A');
+      element.highlight = ['B'];
+      assertEqual([...element.querySelectorAll('[data-ref]')].map((item) => item.getAttributeNames().join(' ') + '|' + item.className), ITEMS.map(() => 'data-ref|'));
+    });
+
+    test('children given later are placed when the columns are set again', () => {
+      const element = lineage();
+      element.innerHTML = '<div data-ref="A">A again</div><div data-ref="F">F</div>';
+      element.columns = [{ title: 'Only', refs: ['A', 'F'] }];
+      assertEqual(placed(element), [['A', 'F']]);
+    });
+
+    test('runs across by default, and down when asked', () => {
+      const element = lineage();
+      assertEqual([element.direction, element.classList.contains('sb-lineage--across')], ['across', true]);
+      element.direction = 'down';
+      assertEqual([element.getAttribute('direction'), element.classList.contains('sb-lineage--across')], ['down', false]);
+      assertEqual(placed(element), [['A', 'C'], ['B'], ['D', 'E']]);
+    });
+
+    test('spacing sets the room between columns going across, and between bands going down', () => {
+      const element = lineage('spacing="120"');
+      const gap = () => getComputedStyle(element.querySelector('.sb-lineage__flow')).columnGap;
+      assertEqual([element.spacing, gap()], [120, '120px']);
+      element.direction = 'down';
+      assertEqual(getComputedStyle(element.querySelector('.sb-lineage__flow')).rowGap, '120px');
+      element.spacing = null;
+      assertEqual([element.hasAttribute('spacing'), getComputedStyle(element.querySelector('.sb-lineage__flow')).rowGap], [false, '30px']);
+    });
+
+    test('changing the spacing while a chain is lit redraws its links where the items now are', () => {
+      const element = lineage('links-shown="chain"');
+      point(element, 'A');
+      const before = element.querySelector('.sb-lineage__lines > path').getAttribute('d');
+      element.spacing = 200;
+      const after = element.querySelector('.sb-lineage__lines > path').getAttribute('d');
+      assertEqual(lit(element), ['A', 'B', 'D']);
+      assert(before !== after, 'the route moved with the items');
+    });
+
+    // ---- Folding ----
+
+    test('a column can start folded, and its title folds and unfolds it', () => {
+      const element = lineage('', [{ ...COLUMNS[0], folded: true }, ...COLUMNS.slice(1)]);
+      const [first] = columns(element);
+      const toggle = first.querySelector('.sb-lineage__toggle');
+      assertEqual([first.classList.contains('sb-lineage__column--folded'), toggle.getAttribute('aria-expanded')], [true, 'false']);
+      toggle.click();
+      assertEqual([first.classList.contains('sb-lineage__column--folded'), toggle.getAttribute('aria-expanded')], [false, 'true']);
+    });
+
+    test('the viewer’s folding is kept when the columns are set again', () => {
+      const element = lineage();
+      columns(element)[1].querySelector('.sb-lineage__toggle').click();
+      element.columns = COLUMNS.map((c) => ({ ...c }));
+      assertEqual(columns(element).map((c) => c.classList.contains('sb-lineage__column--folded')), [false, true, false]);
+    });
+
+    test('reveal unfolds the column holding a ref, and says whether it holds it', () => {
+      const element = lineage('', [{ ...COLUMNS[0], folded: true }, ...COLUMNS.slice(1)]);
+      assertEqual([element.reveal('C'), element.reveal('Z'), element.reveal('nowhere')], [true, false, false]);
+      assert(!columns(element)[0].classList.contains('sb-lineage__column--folded'), 'unfolded');
+    });
+
+    // ---- Every link drawn ----
+
+    test('draws every link at rest, with nothing lit or faded', () => {
+      const element = lineage();
+      assertEqual(element.linksShown, 'all');
+      assertEqual([lit(element), paths(element), labels(element), pointing(element)], [[], ['A>B', 'B>D', 'C>B'], ['disputes', 'grounds', 'supports'], false]);
+    });
+
+    test('pointing at an item lights it, its own links and the items at their other ends; the rest fades', () => {
+      const element = lineage();
+      point(element, 'A');
+      assert(pointing(element), 'pointing');
+      assertEqual(lit(element), ['A', 'B']);
+      assert(placeOf(element, 'A').classList.contains('sb-lineage__item--focus'), 'the item pointed at is marked');
+      assertEqual([litPaths(element), litLabels(element)], [['A>B'], ['supports']]);
+      assertEqual(paths(element), ['A>B', 'B>D', 'C>B'], 'every link still drawn');
+    });
+
+    test('pointing at an item in the middle lights every link it has', () => {
+      const element = lineage();
+      point(element, 'B');
+      assertEqual([lit(element), litPaths(element), litLabels(element)], [['A', 'B', 'C', 'D'], ['A>B', 'B>D', 'C>B'], ['disputes', 'grounds', 'supports']]);
+    });
+
+    test('pointing away shows everything again, every link still drawn', () => {
+      const element = lineage();
+      point(element, 'A');
+      element.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual([lit(element), paths(element), pointing(element)], [[], ['A>B', 'B>D', 'C>B'], false]);
+      point(element, 'A');
+      element.querySelector('.sb-lineage__flow').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      assertEqual(pointing(element), false, 'pointing at the background');
+    });
+
+    test('each label names the links it labels', () => {
+      const element = lineage();
+      element.links = [{ from: 'A', to: 'B', label: 'supports' }, { from: 'C', to: 'B', label: 'supports' }, { from: 'B', to: 'D', label: 'grounds' }];
+      const named = Object.fromEntries([...element.querySelectorAll('.sb-lineage__label')].map((t) => [t.textContent, t.dataset.links.split(' ').sort()]));
+      assertEqual(named, { supports: ['A>B', 'C>B'], grounds: ['B>D'] });
+    });
+
+    test('folding a column redraws the links where the items now are', () => {
+      const element = lineage();
+      const before = element.querySelector('.sb-lineage__link[data-from="A"]').getAttribute('d');
+      columns(element)[0].querySelector('.sb-lineage__toggle').click();
+      assert(element.querySelector('.sb-lineage__link[data-from="A"]').getAttribute('d') !== before, 'the route moved with the items');
+    });
+
+    test('setting the links while pointing keeps the pointing', () => {
+      const element = lineage();
+      point(element, 'B');
+      element.links = LINKS.slice(1);
+      assertEqual([lit(element), litPaths(element)], [['B', 'C', 'D'], ['B>D', 'C>B']]);
+    });
+
+    test('links-shown switches between every link and the chain', () => {
+      const element = lineage();
+      element.linksShown = 'chain';
+      assertEqual([element.getAttribute('links-shown'), paths(element)], ['chain', []]);
+      element.linksShown = 'all';
+      assertEqual(paths(element), ['A>B', 'B>D', 'C>B']);
+    });
+
+    // ---- Links along a chain ----
+
+    test('with links shown along a chain, quiet at rest: nothing lit, no links drawn', () => {
+      const element = lineage('links-shown="chain"');
+      assertEqual([lit(element), paths(element), pointing(element)], [[], [], false]);
+    });
+
+    test('pointing at an item lights what leads to it and what it leads to, never a side branch', () => {
+      const element = lineage('links-shown="chain"');
+      point(element, 'A');
+      assert(pointing(element), 'pointing');
+      assertEqual(lit(element), ['A', 'B', 'D']);
+      assert(placeOf(element, 'A').classList.contains('sb-lineage__item--focus'), 'the item pointed at is marked');
+      assertEqual(paths(element), ['A>B', 'B>D']);
+      assertEqual(labels(element), ['grounds', 'supports']);
+      assertEqual(litPaths(element), ['A>B', 'B>D'], 'nothing drawn fades');
+    });
+
+    test('pointing at the middle of a chain lights both ways', () => {
+      const element = lineage('links-shown="chain"');
+      point(element, 'B');
+      assertEqual(lit(element), ['A', 'B', 'C', 'D']);
+      assertEqual(paths(element), ['A>B', 'B>D', 'C>B']);
+      assertEqual(labels(element), ['disputes', 'grounds', 'supports']);
+    });
+
+    test('leaving clears the chain', () => {
+      const element = lineage('links-shown="chain"');
+      point(element, 'A');
+      element.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual([lit(element), paths(element), pointing(element)], [[], [], false]);
+    });
+
+    test('focus lights the chain too', () => {
+      const element = lineage('links-shown="chain"');
+      element.querySelector('[data-ref="D"]').tabIndex = 0;
+      element.querySelector('[data-ref="D"]').focus();
+      assertEqual(lit(element), ['A', 'B', 'C', 'D']);
+    });
+
+    // ---- Routing ----
+
+    test('links to items not shown are left out', () => {
+      const element = lineage();
+      element.links = [...LINKS, { from: 'D', to: 'Z', label: 'leads nowhere' }];
+      point(element, 'B');
+      assertEqual(paths(element), ['A>B', 'B>D', 'C>B']);
+    });
+
+    test('links are drawn in both directions, leaving from a dot and ending in an arrow', () => {
+      for (const direction of ['across', 'down']) {
+        const element = lineage(`direction="${direction}"`);
+        point(element, 'A');
+        const path = element.querySelector('.sb-lineage__lines > path');
+        assert(/^M[\d.-]+,[\d.-]+( (L[\d.-]+,[\d.-]+|Q[\d.-]+,[\d.-]+ [\d.-]+,[\d.-]+))+$/.test(path.getAttribute('d')), `${direction}: a route`);
+        assert(element.querySelector(path.getAttribute('marker-end').slice(4, -1)), `${direction}: its arrow`);
+        assert(element.querySelector(path.getAttribute('marker-start').slice(4, -1)), `${direction}: its dot`);
+      }
+    });
+
+    test('every link leaves and arrives at its own point, and no two runs overlap', () => {
+      for (const direction of ['across', 'down']) {
+        const element = mount(`<sb-lineage direction="${direction}">${['H', 'P', 'Q', 'R', 'S'].map((ref) => `<div data-ref="${ref}">Item ${ref}</div>`).join('')}</sb-lineage>`);
+        element.columns = [{ title: 'From', refs: ['H', 'S'] }, { title: 'To', refs: ['P', 'Q', 'R'] }];
+        element.links = [{ from: 'H', to: 'P', label: 'one' }, { from: 'H', to: 'Q', label: 'two' }, { from: 'H', to: 'R', label: 'three' }, { from: 'S', to: 'Q', label: 'two' }];
+        point(element, 'Q');
+        point(element, 'H');
+        const ends = [...element.querySelectorAll('.sb-lineage__lines > path')].map((p) => {
+          const numbers = p.getAttribute('d').match(/-?[\d.]+/g).map(Number);
+          return { start: numbers.slice(0, 2).join(','), end: numbers.slice(-2).join(',') };
+        });
+        assertEqual(new Set(ends.map((e) => e.start)).size, ends.length, `${direction}: own departure points`);
+        assertEqual(new Set(ends.map((e) => e.end)).size, ends.length, `${direction}: own arrival points`);
+      }
+    });
+
+    test('a link past a column runs clear of the items in it, never behind them', () => {
+      const element = lineage();
+      element.links = [{ from: 'A', to: 'D', label: 'skips' }];
+      point(element, 'A');
+      const lines = element.querySelector('.sb-lineage__lines').getBoundingClientRect();
+      const b = placeOf(element, 'B').getBoundingClientRect();
+      const path = element.querySelector('.sb-lineage__lines > path');
+      const inside = [];
+      for (let at = 0; at <= path.getTotalLength(); at += 2) {
+        const { x, y } = path.getPointAtLength(at);
+        if (x + lines.left > b.left && x + lines.left < b.right && y + lines.top > b.top && y + lines.top < b.bottom) inside.push(Math.round(at));
+      }
+      assertEqual(inside, [], 'points along the link inside B');
+    });
+
+    test('labels never crowd each other', () => {
+      const element = lineage('direction="down"');
+      element.links = [{ from: 'A', to: 'B', label: 'supports strongly' }, { from: 'C', to: 'B', label: 'disputes entirely' }, { from: 'E', to: 'B', label: 'informs' }];
+      point(element, 'B');
+      const boxes = [...element.querySelectorAll('.sb-lineage__lines text')].map((t) => t.getBBox());
+      const apart = (p, q) => p.x + p.width <= q.x || q.x + q.width <= p.x || p.y + p.height <= q.y || q.y + q.height <= p.y;
+      assert(boxes.length === 3 && boxes.every((p, i) => boxes.every((q, j) => i === j || apart(p, q))), 'no two labels overlap');
+    });
+
+    test('a link takes its tone: line, arrowhead, dot and label alike; any other tone is the accent', () => {
+      const element = lineage();
+      element.links = [{ from: 'A', to: 'B', label: 'supports', tone: 'good' }, { from: 'B', to: 'D', label: 'grounds', tone: 'sparkly' }];
+      point(element, 'A');
+      const [first, second] = [...element.querySelectorAll('.sb-lineage__lines > path')];
+      const marker = (path, end) => element.querySelector(path.getAttribute(end).slice(4, -1));
+      assertEqual([first.dataset.tone, marker(first, 'marker-end').dataset.tone, marker(first, 'marker-start').dataset.tone], ['good', 'good', 'good']);
+      assertEqual(second.dataset.tone, 'accent');
+      const labelOf = (text) => [...element.querySelectorAll('.sb-lineage__lines text')].find((t) => t.textContent === text);
+      assertEqual([labelOf('supports').dataset.tone, labelOf('grounds').dataset.tone], ['good', 'accent']);
+      assert(getComputedStyle(first).stroke !== getComputedStyle(second).stroke, 'the tones look different');
+    });
+
+    // ---- A subject and its lineage ----
+
+    const shown = (element) => placed(element).flat().sort();
+    const trailText = (element) => [...element.querySelectorAll('.sb-lineage__trail > *')].map((part) => part.textContent);
+    const dblclick = (element, ref) => element.querySelector(`[data-ref="${ref}"]`).dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    const press = (element, ref, shiftKey = false) => element.querySelector(`[data-ref="${ref}"]`).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey, bubbles: true }));
+
+    test('without a subject, shows everything, with no trail', () => {
+      const element = lineage();
+      assertEqual([element.subject, shown(element), element.querySelector('.sb-lineage__trail')], [null, ['A', 'B', 'C', 'D', 'E'], null]);
+    });
+
+    test('a subject shows only what leads to it and what it leads to, outlined', () => {
+      const element = lineage();
+      element.subject = 'B';
+      assertEqual(shown(element), ['A', 'B', 'C', 'D']);
+      assert(placeOf(element, 'B').classList.contains('sb-lineage__item--subject'), 'the subject is outlined');
+      element.subject = 'A';
+      assertEqual(shown(element), ['A', 'B', 'D'], 'never a side branch into what it leads to');
+      assertEqual(paths(element), ['A>B', 'B>D']);
+    });
+
+    test('back and on limit the steps each way', () => {
+      const element = lineage('back="1"');
+      element.subject = 'D';
+      assertEqual(shown(element), ['B', 'D']);
+      element.back = null;
+      assertEqual([element.back, shown(element)], [Infinity, ['A', 'B', 'C', 'D']]);
+      element.on = 1;
+      element.subject = 'A';
+      assertEqual([element.getAttribute('on'), shown(element)], ['1', ['A', 'B']]);
+    });
+
+    test('setting the links walks the lineage again', () => {
+      const element = lineage();
+      element.subject = 'A';
+      element.links = [...LINKS, { from: 'D', to: 'E', label: 'leads on' }];
+      assertEqual(shown(element), ['A', 'B', 'D', 'E']);
+    });
+
+    test('reveal finds only what the lineage shows', () => {
+      const element = lineage();
+      element.subject = 'A';
+      assertEqual([element.reveal('B'), element.reveal('C')], [true, false]);
+    });
+
+    test('a different subject puts the one before on the trail, shown with Back', () => {
+      const element = lineage();
+      element.subject = 'A';
+      assertEqual([element.trail, trailText(element), element.querySelector('.sb-lineage__back').disabled], [[], ['‹ Back', 'A'], true]);
+      element.subject = 'B';
+      element.subject = 'D';
+      assertEqual([element.trail, trailText(element)], [['A', 'B'], ['‹ Back', 'A', '›', 'B', '›', 'D']]);
+      element.clearTrail();
+      assertEqual([element.trail, trailText(element)], [[], ['‹ Back', 'D']]);
+    });
+
+    test('the trail shows only the latest few crumbs', () => {
+      const element = lineage();
+      for (const ref of ['A', 'B', 'C', 'D', 'E', 'A']) element.subject = ref;
+      assertEqual(element.trail, ['A', 'B', 'C', 'D', 'E']);
+      assertEqual([...element.querySelectorAll('.sb-lineage__crumb')].map((c) => c.textContent), ['B', 'C', 'D', 'E']);
+    });
+
+    test('clicking an item, or Enter, selects it; the item’s own controls are its own', () => {
+      const element = lineage();
+      element.querySelector('[data-ref="A"]').append(Object.assign(document.createElement('button'), { textContent: 'Open' }));
+      const selected = recordEvents(element, 'sb-select');
+      element.querySelector('[data-ref="A"]').click();
+      press(element, 'B');
+      element.querySelector('[data-ref="A"] button').click();
+      element.querySelector('.sb-lineage__toggle').click();
+      assertEqual(selected.map((e) => e.detail.ref), ['A', 'B']);
+      assertEqual(element.subject, null, 'selecting never follows');
+    });
+
+    test('double-clicking an item, or Shift+Enter, follows it: it becomes the subject', () => {
+      const element = lineage();
+      element.subject = 'A';
+      const followed = recordEvents(element, 'sb-follow');
+      dblclick(element, 'B');
+      assertEqual([element.subject, element.trail, followed.map((e) => e.detail.ref)], ['B', ['A'], ['B']]);
+      press(element, 'C', true);
+      assertEqual([element.subject, element.trail], ['C', ['A', 'B']]);
+      dblclick(element, 'C');
+      assertEqual([followed.length, element.trail], [2, ['A', 'B']], 'following the subject does nothing');
+    });
+
+    test('a sandbox can prevent following, to show the item its own way', () => {
+      const element = lineage();
+      element.subject = 'A';
+      element.addEventListener('sb-follow', (e) => e.preventDefault());
+      dblclick(element, 'B');
+      assertEqual([element.subject, element.trail], ['A', []]);
+    });
+
+    test('Back and the crumbs go back, forgetting what came after', () => {
+      const element = lineage();
+      element.subject = 'A';
+      for (const ref of ['B', 'C', 'D']) dblclick(element, ref);
+      const backs = recordEvents(element, 'sb-back');
+      element.querySelector('.sb-lineage__back').click();
+      assertEqual([element.subject, element.trail], ['C', ['A', 'B']]);
+      element.querySelector('.sb-lineage__crumb').click();
+      assertEqual([element.subject, element.trail, backs.map((e) => e.detail.ref)], ['A', [], ['C', 'A']]);
+    });
+
+    test('setting properties fires no events', () => {
+      const element = lineage();
+      const recorded = ['sb-select', 'sb-follow', 'sb-back'].map((type) => recordEvents(element, type));
+      element.subject = 'A';
+      element.subject = 'B';
+      element.clearTrail();
+      element.subject = null;
+      assertEqual(recorded.map((events) => events.length), [0, 0, 0]);
+    });
+
+    // ---- Panning and zooming ----
+
+    const view = (element) => {
+      const match = element.querySelector('.sb-lineage__flow').style.transform.match(/translate\(([-\d.e]+)px, ([-\d.e]+)px\) scale\(([-\d.e]+)\)/);
+      return match ? { x: Number(match[1]), y: Number(match[2]), k: Number(match[3]) } : null;
+    };
+    const tool = (element, label) => element.querySelector(`.sb-lineage__tool[aria-label="${label}"]`);
+    const viewportOf = (element) => element.querySelector('.sb-lineage__viewport');
+    const pointer = (target, type, x, y, extra = {}) => target.dispatchEvent(new PointerEvent(type, { bubbles: true, button: 0, pointerId: 1, clientX: x, clientY: y, ...extra }));
+    const drag = (element, target, [x0, y0], [x1, y1]) => {
+      pointer(target, 'pointerdown', x0, y0);
+      pointer(viewportOf(element), 'pointermove', x1, y1);
+      pointer(viewportOf(element), 'pointerup', x1, y1);
+      target.click();
+    };
+
+    test('pans and zooms by default, starting on the picture as it is, at full size', () => {
+      const element = lineage();
+      assertEqual([element.zoom, element.classList.contains('sb-lineage--zoom'), view(element)], [true, true, { x: 0, y: 0, k: 1 }]);
+      assertEqual(tool(element, 'Pan and zoom').getAttribute('aria-pressed'), 'true');
+    });
+
+    test('switching it off scrolls sideways at full size, and on again', () => {
+      const element = lineage('zoom="off"');
+      assertEqual([element.zoom, element.classList.contains('sb-lineage--zoom'), view(element)], [false, false, null]);
+      tool(element, 'Pan and zoom').click();
+      assertEqual([element.getAttribute('zoom'), view(element)], ['on', { x: 0, y: 0, k: 1 }]);
+      tool(element, 'Pan and zoom').click();
+      assertEqual([element.zoom, tool(element, 'Pan and zoom').getAttribute('aria-pressed')], [false, 'false']);
+    });
+
+    test('the buttons zoom in, up to twice full size, and out, down to the whole lineage', () => {
+      const element = lineage('style="height: 60px"');
+      for (let i = 0; i < 10; i++) tool(element, 'Zoom in').click();
+      assertEqual(view(element).k, 2);
+      for (let i = 0; i < 20; i++) tool(element, 'Zoom out').click();
+      const flow = element.querySelector('.sb-lineage__flow'), viewport = viewportOf(element);
+      const k = view(element).k;
+      assert(k < 1 && Math.abs(Math.min(viewport.clientWidth / flow.offsetWidth, viewport.clientHeight / flow.offsetHeight) - k) < 0.001, `stops when it all fits, at ${k}`);
+    });
+
+    test('Fit shows the whole lineage, never larger than full size', () => {
+      const small = lineage();
+      small.fit();
+      assertEqual(view(small).k, 1, 'a lineage that fits stays full size');
+      const big = lineage('style="height: 100px"');
+      big.fit();
+      const { k, x, y } = view(big), flow = big.querySelector('.sb-lineage__flow'), viewport = viewportOf(big);
+      assert(k < 1 && x >= -0.5 && y >= -0.5 && x + flow.offsetWidth * k <= viewport.clientWidth + 0.5 && y + flow.offsetHeight * k <= viewport.clientHeight + 0.5, 'all of it inside');
+    });
+
+    test('Ctrl or ⌘ and the wheel zoom at the pointer; plain scrolling is left to the page', () => {
+      const element = lineage();
+      const viewport = viewportOf(element), box = viewport.getBoundingClientRect();
+      const plain = new WheelEvent('wheel', { deltaY: -100, clientX: box.left + 100, clientY: box.top + 50, bubbles: true, cancelable: true });
+      viewport.dispatchEvent(plain);
+      assertEqual([plain.defaultPrevented, view(element).k], [false, 1]);
+      viewport.dispatchEvent(new WheelEvent('wheel', { deltaY: -50, ctrlKey: true, clientX: box.left + 100, clientY: box.top + 50, bubbles: true, cancelable: true }));
+      const { x, y, k } = view(element);
+      assert(k > 1, 'zoomed in');
+      assert(Math.abs((100 - x) / k - 100) < 0.01 && Math.abs((50 - y) / k - 50) < 0.01, 'the point under the pointer stays put');
+    });
+
+    test('dragging anywhere pans and chooses nothing; a click without moving still chooses', () => {
+      const element = lineage();
+      const selected = recordEvents(element, 'sb-select');
+      const item = element.querySelector('[data-ref="A"]');
+      drag(element, item, [10, 10], [40, 30]);
+      assertEqual([view(element), selected.length], [{ x: 30, y: 20, k: 1 }, 0]);
+      drag(element, viewportOf(element), [10, 10], [5, 0]);
+      assertEqual(view(element), { x: 25, y: 10, k: 1 });
+      pointer(item, 'pointerdown', 10, 10);
+      pointer(viewportOf(element), 'pointerup', 11, 11);
+      item.click();
+      assertEqual(selected.map((e) => e.detail.ref), ['A']);
+    });
+
+    test('dragging never selects text while panning, and text selects as usual with it off', () => {
+      const element = lineage();
+      const flow = () => getComputedStyle(element.querySelector('.sb-lineage__flow')).userSelect;
+      assertEqual(flow(), 'none');
+      element.zoom = false;
+      assertEqual(flow(), 'auto');
+    });
+
+    test('pressing an item’s own controls never pans', () => {
+      const element = lineage();
+      element.querySelector('[data-ref="A"]').append(Object.assign(document.createElement('button'), { textContent: 'Open' }));
+      drag(element, element.querySelector('[data-ref="A"] button'), [10, 10], [60, 60]);
+      assertEqual(view(element), { x: 0, y: 0, k: 1 });
+    });
+
+    test('with it off, nothing pans or zooms', () => {
+      const element = lineage('zoom="off"');
+      drag(element, viewportOf(element), [10, 10], [60, 60]);
+      element.fit();
+      assertEqual(view(element), null);
+    });
+
+    test('the keys pan and zoom, and 0 fits', () => {
+      const element = lineage('style="height: 100px"');
+      const key = (key) => viewportOf(element).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      assertEqual(viewportOf(element).tabIndex, 0);
+      key('ArrowLeft');
+      key('ArrowUp');
+      assertEqual(view(element), { x: 40, y: 40, k: 1 });
+      key('+');
+      assertEqual(view(element).k, 1.25);
+      key('0');
+      assert(view(element).k < 1, 'fitted');
+    });
+
+    test('links are drawn alike at any zoom', () => {
+      const element = lineage();
+      const routes = () => [...element.querySelectorAll('.sb-lineage__link')].map((p) => p.getAttribute('d'));
+      const before = routes();
+      tool(element, 'Zoom in').click();
+      tool(element, 'Zoom in').click();
+      element.links = [...LINKS];
+      assertEqual(routes(), before);
+    });
+
+    test('following brings the new subject into view', () => {
+      const element = lineage('style="width: 300px"');
+      element.subject = 'D';
+      const place = placeOf(element, 'D'), { x, k } = view(element), width = viewportOf(element).clientWidth;
+      assert(x + place.offsetLeft * k >= 0 && x + (place.offsetLeft + place.offsetWidth) * k <= width, 'D is in view');
+    });
+
+    // ---- Full screen ----
+
+    test('the full screen button lays the lineage over the page, keeping its place, and back', () => {
+      const element = lineage();
+      const height = element.offsetHeight;
+      tool(element, 'Full screen').click();
+      const box = element.querySelector('.sb-lineage__box');
+      assertEqual([element.fullscreen, box.classList.contains('sb-lineage__box--full'), getComputedStyle(box).position, box.getAttribute('role')], [true, true, 'fixed', 'dialog']);
+      assertEqual([box.offsetWidth, box.offsetHeight], [innerWidth, innerHeight]);
+      assertEqual(element.offsetHeight, height, 'its place is held');
+      assertEqual(document.activeElement, tool(element, 'Leave full screen'));
+      tool(element, 'Leave full screen').click();
+      assertEqual([element.hasAttribute('fullscreen'), getComputedStyle(element.querySelector('.sb-lineage__box')).position, element.style.minHeight], [false, 'static', '']);
+    });
+
+    test('Escape leaves full screen, and only then is kept from the page', () => {
+      const element = lineage('fullscreen');
+      const escape = () => {
+        const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+        tool(element, 'Pan and zoom').dispatchEvent(event);
+        return event.defaultPrevented;
+      };
+      assertEqual([escape(), element.fullscreen], [true, false]);
+      assertEqual(escape(), false);
+    });
+
+    test('in full screen, the subject and the view carry on as they were', () => {
+      const element = lineage();
+      element.subject = 'B';
+      tool(element, 'Zoom in').click();
+      const before = view(element);
+      element.fullscreen = true;
+      assertEqual([element.subject, shown(element), view(element)], ['B', ['A', 'B', 'C', 'D'], before]);
+    });
+
+    // ---- Lighting from outside ----
+
+    test('highlight lights items without fading the rest or changing the links', () => {
+      const element = lineage();
+      element.highlight = ['C', 'E'];
+      assertEqual([lit(element), paths(element), pointing(element)], [['C', 'E'], ['A>B', 'B>D', 'C>B'], false]);
+      element.highlight = [];
+      assertEqual(lit(element), []);
+    });
+
+    test('after pointing stops, what was highlighted stays lit', () => {
+      const element = lineage();
+      element.highlight = ['E'];
+      point(element, 'A');
+      element.dispatchEvent(new PointerEvent('pointerleave'));
+      assertEqual(lit(element), ['E']);
+    });
+
+    // ---- Safety and instances ----
+
+    test('displays titles and labels as text, never as markup', () => {
+      const x = '<b>x</b>';
+      const element = lineage('', [{ title: x, refs: ['A'] }, { title: 'Second', refs: ['B'] }]);
+      element.links = [{ from: 'A', to: 'B', label: x }];
+      point(element, 'A');
+      assertEqual(element.querySelectorAll('b').length, 0);
+      assertEqual([columns(element)[0].querySelector('.sb-lineage__toggle').textContent, labels(element)[0]], [x, x]);
+    });
+
+    test('two lineages on one page keep their own items, subjects, pointing, folds and arrowheads', () => {
+      mount(`<div>${['one', 'two'].map(() => `<sb-lineage>${ITEMS.map((ref) => `<div data-ref="${ref}">${ref}</div>`).join('')}</sb-lineage>`).join('')}</div>`);
+      const [a, b] = document.querySelectorAll('#test-fixture sb-lineage');
+      for (const element of [a, b]) Object.assign(element, { columns: COLUMNS, links: LINKS });
+      a.subject = 'D';
+      assertEqual([b.subject, b.trail, shown(b)], [null, [], ['A', 'B', 'C', 'D', 'E']]);
+      a.subject = null;
+      point(a, 'A');
+      point(b, 'C');
+      columns(b)[0].querySelector('.sb-lineage__toggle').click();
+      assertEqual([lit(a), lit(b)], [['A', 'B'], ['B', 'C']]);
+      assertEqual(columns(a).map((c) => c.classList.contains('sb-lineage__column--folded'))[0], false);
+      const arrow = (element) => element.querySelector('marker').id;
+      assert(arrow(a) !== arrow(b), 'each lineage has its own arrowhead');
+    });
+
+    test('loading the same script twice is harmless and quiet', () => {
+      assertEqual(consoleErrors, []);
+    });
+  </script>
+</body>
+</html>

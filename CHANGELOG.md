@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.72 · 2026-10-27
+- Sixty-one components: added `sb-lineage`, where things come from and what they lead to, grown from `sb-discovery-board` and made generic: items in columns with every link drawn and labelled, pointing fading everything not linked to an item, or links only along the chain pointed at, a subject showing only its lineage, followed by viewers with a trail back, pan and zoom, and full screen. It's to replace `sb-discovery-board` and `sb-source-trace` in later steps. Recorded in DECISIONS.md.
+
 ## 0.2.71 · 2026-10-27
 - `sb-search` 0.2.0: controls inside items the sandbox draws are their own, and the search updates in place, so choosing a preset, sort or grouping never moves the page. Presets can say what they show (`about`), filters fall under categories, fields can be searched without being shown (`show: false`), items can be left unchosen (`choose="none"`), groups can sit within groups, group headings can be the sandbox's own (`heading`), what's applied shows as chips to take away, criteria brought round to a preset show as it, when nothing matches the search offers ways back, and it looks calmer: one container, sentence-case labels, icons, and chosen filter values filled. **Breaking** only for a sandbox that styled `sb-search__chosen`, now gone; see the component's changelog.
 

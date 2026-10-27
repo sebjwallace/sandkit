@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-lineage demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-lineage.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 1100px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; min-width: 0; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 10px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+
+    /* The sandbox's own items: plain placeholders here, standing in for whatever a sandbox shows. */
+    .placeholder { display: grid; gap: 2px; padding: 6px 8px; border: 1px dashed var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); font-size: 12px; line-height: 1.35; }
+    .placeholder b { font: 600 11px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); }
+    /* A folded column: the sandbox shrinks its own items to their code. */
+    .sb-lineage__column--folded .placeholder span { display: none; }
+
+    .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 10px; font-size: 13px; }
+    .bar button { padding: 3px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); color: var(--sb-text); font: inherit; cursor: pointer; }
+    .bar button[aria-pressed="true"] { border-color: var(--sb-accent); color: var(--sb-accent); }
+    .bar button:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 2px; }
+    .group { display: flex; align-items: center; gap: 6px; color: var(--sb-muted); }
+    .group input[type="range"] { width: 110px; accent-color: var(--sb-accent); }
+    .prose { margin: 12px 0 0; font-size: 14px; }
+    .chosen { margin: 8px 0 0; font-size: 13px; color: var(--sb-muted); }
+    .point { border-bottom: 1px dashed var(--sb-accent); cursor: default; }
+    .go { border-bottom: 1px solid var(--sb-accent); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-lineage">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>Where things come from and what they lead to: columns of things, with every link between them drawn and labelled.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <section class="guide">
+      <p>Plenty of things rest on other things. A figure on a report comes from a calculation, which comes from readings, which come from a meter. A test checks a design, which answers a requirement. When something looks wrong, or is about to change, the first question is usually "where did this come from, and what else does it reach?" This component lays the things out in columns, in the order things flow, and draws every link between them, labelled with what it means. Point at anything and everything not linked to it fades, so its neighbours stand out without the rest disappearing.</p>
+      <p>It knows nothing about what it holds. It places each child by its <code>data-ref</code>, in the column that lists it, and draws the links the sandbox gives it. Here the items are plain placeholders; in a sandbox they're its own cards, rows or badges.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>"Where did this number come from?"</strong> Follow a figure back through what calculated it to the readings and the meter behind it.</li>
+        <li><strong>"What would this change reach?"</strong> Point at a requirement, a source or a component, and see what rests on it.</li>
+        <li><strong>Spotting gaps.</strong> A requirement no test checks, or a figure resting on an estimate, shows in the shape of the links.</li>
+        <li><strong>Making room.</strong> Fold the columns you've read down to their codes; the links still reach them. Zoom out to see the whole shape, and in to read.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>A process, with steps in order and a way through it.</strong> A flowchart shows where a case is and the way it came.</li>
+        <li><strong>A free-form network or state machine,</strong> where nothing flows one way. A graph suits it better than columns.</li>
+        <li><strong>Hundreds of things.</strong> Show a few dozen at most, chosen around what's being asked about; a crowded lineage reads like a tangle.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <pre>&lt;script src="components/sb-lineage/sb-lineage.js"&gt;&lt;/script&gt;
+&lt;sb-lineage&gt;
+  &lt;div data-ref="M-1"&gt;Meter at Hollin substation&lt;/div&gt;
+  &lt;div data-ref="R-1"&gt;Half-hourly readings&lt;/div&gt;
+&lt;/sb-lineage&gt;
+
+&lt;script&gt;
+  const lineage = document.querySelector('sb-lineage');
+  lineage.columns = [{ title: 'Meters', refs: ['M-1'] }, { title: 'Readings', refs: ['R-1'] }];
+  lineage.links = [{ from: 'M-1', to: 'R-1', label: 'records', tone: 'muted' }];
+&lt;/script&gt;</pre>
+      <p>Every link is drawn by default. With <code>links-shown="chain"</code>, links show only along the chain pointed at, everything leading to it and everything it leads to, which keeps a busy lineage quiet at rest.</p>
+      <p>Give it a <code>subject</code> and it shows only that thing's lineage: everything leading to it and everything it leads to, as far as <code>back</code> and <code>on</code> allow. Viewers double-click an item to follow it, with a trail back. Viewers pan by dragging and zoom with the buttons at the bottom right, or Ctrl-scroll (⌘ on a Mac); the next button switches that off, to scroll sideways instead, and the last goes full screen. Listen for <code>sb-select</code> to show a chosen item in full, and for <code>sb-follow</code> if you'd rather open its lineage somewhere else, such as a window of its own. The <a href="manifest.md">manifest</a> has the full contract.</p>
+
+      <h3>Making it reveal</h3>
+      <ul>
+        <li><strong>Order the columns the way things flow,</strong> from what everything rests on to what's built on it, so a link going back stands out.</li>
+        <li><strong>Label links with what they mean,</strong> and give them tones: what supports in good, what contradicts or fails in bad, bookkeeping muted. A lineage then reads before its labels do.</li>
+        <li><strong>Choose around a question.</strong> Make the figure or decision being asked about the subject, so the lineage shows what it rests on and what rests on it, not everything the model knows.</li>
+        <li><strong>Point from the prose.</strong> Set <code>highlight</code> from words in the text, so a sentence can show what it's talking about.</li>
+      </ul>
+    </section>
+
+    <h2 class="part">Examples</h2>
+    <section class="example" id="grid">
+      <h2>Where the evening peak figure comes from</h2>
+      <p>Data lineage in a regional power grid: meters, the readings they record, the checks they pass through, and the figures and reports made from them. It opens on the winter outlook, showing only what it rests on. Point at anything to see what it's linked to, click it to choose it, and double-click it to see its own lineage; Back returns.</p>
+      <div class="bar">
+        <span class="group">Links <button type="button" data-shown="all" aria-pressed="true">Every link</button><button type="button" data-shown="chain" aria-pressed="false">Along a chain</button></span>
+        <span class="group">Direction <button type="button" data-direction="across" aria-pressed="true">Across</button><button type="button" data-direction="down" aria-pressed="false">Down</button></span>
+        <label class="group">Spacing <input type="range" min="48" max="160" value="96" data-spacing></label>
+        <button type="button" data-everything>Show everything</button>
+      </div>
+      <sb-lineage id="grid-lineage"></sb-lineage>
+      <p class="chosen" aria-live="polite">Nothing chosen yet.</p>
+      <p class="prose">
+        The evening peak in <span class="point" data-point="RPT-1">the winter outlook</span> rests on
+        <span class="point" data-point="EST-1">an estimate</span> for the Fellside meter, which
+        <span class="go" data-go="M-3">failed in November</span>.
+      </p>
+    </section>
+
+    <section class="example" id="rail">
+      <h2>A signalling change at Carr Junction</h2>
+      <p>Requirements traced through hazards and design to the tests that check them. One test fails, and one requirement has no test at all. Double-click anything to see only its lineage.</p>
+      <div class="bar">
+        <span class="group">Links <button type="button" data-shown="all" aria-pressed="true">Every link</button><button type="button" data-shown="chain" aria-pressed="false">Along a chain</button></span>
+        <span class="group">Direction <button type="button" data-direction="across" aria-pressed="true">Across</button><button type="button" data-direction="down" aria-pressed="false">Down</button></span>
+        <label class="group">Spacing <input type="range" min="48" max="160" value="96" data-spacing></label>
+        <button type="button" data-everything>Show everything</button>
+      </div>
+      <sb-lineage id="rail-lineage"></sb-lineage>
+      <p class="chosen" aria-live="polite">Nothing chosen yet.</p>
+      <p class="prose">
+        <span class="point" data-point="TST-3">The overlap test</span> fails, which leaves
+        <span class="point" data-point="HAZ-2">running past a red signal</span> not yet shown to be guarded against, and
+        <span class="point" data-point="REQ-4">the level crossing requirement</span> has nothing checking it.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // A placeholder for one of the sandbox's own items: its code and a few words.
+    function placeholder([ref, words]) {
+      const item = document.createElement('div');
+      item.className = 'placeholder';
+      item.dataset.ref = ref;
+      item.append(Object.assign(document.createElement('b'), { textContent: ref }), Object.assign(document.createElement('span'), { textContent: words }));
+      return item;
+    }
+
+    // Buttons for which links show and the direction, a spacing slider and Show everything, for one
+    // example, and a line saying what's chosen: the sandbox's part, where a real one might open a panel.
+    function wireBar(section, lineage) {
+      section.querySelector('[data-everything]').addEventListener('click', () => { lineage.subject = null; });
+      lineage.addEventListener('sb-select', (e) => {
+        const item = lineage.querySelector(`[data-ref="${e.detail.ref}"]`);
+        section.querySelector('.chosen').textContent = `Chosen: ${e.detail.ref}, ${item.querySelector('span').textContent}.`;
+      });
+      section.querySelector('[data-spacing]').addEventListener('input', (e) => { lineage.spacing = Number(e.target.value); });
+      for (const name of ['shown', 'direction']) {
+        const buttons = section.querySelectorAll(`[data-${name}]`);
+        for (const button of buttons) {
+          button.addEventListener('click', () => {
+            lineage[name === 'shown' ? 'linksShown' : 'direction'] = button.dataset[name];
+            for (const other of buttons) other.setAttribute('aria-pressed', String(other === button));
+          });
+        }
+      }
+    }
+
+    function show(lineage, { items, columns, links }) {
+      lineage.replaceChildren(...items.map(placeholder));
+      lineage.columns = columns;
+      lineage.links = links;
+    }
+
+    // ---- The grid: where a figure comes from ----
+
+    const grid = document.getElementById('grid-lineage');
+    show(grid, {
+      items: [
+        ['M-1', 'Meter at Hollin substation'], ['M-2', 'Meter at Brackley substation'], ['M-3', 'Meter at Fellside, failed 14 Nov'],
+        ['R-1', 'Hollin half-hourly readings'], ['R-2', 'Brackley half-hourly readings'], ['R-3', 'Fellside readings, gap from 14 Nov'],
+        ['CHK-1', 'Range and gap check'], ['EST-1', 'Fellside estimated from last winter'],
+        ['FIG-1', 'Evening peak demand, 4.2 GW'], ['FIG-2', 'Losses on the 132 kV ring'],
+        ['RPT-1', 'Winter outlook'], ['RPT-2', 'Control room dashboard'],
+      ],
+      columns: [
+        { title: 'Meters', refs: ['M-1', 'M-2', 'M-3'], folded: true },
+        { title: 'Readings', refs: ['R-1', 'R-2', 'R-3'] },
+        { title: 'Checked', refs: ['CHK-1', 'EST-1'] },
+        { title: 'Figures', refs: ['FIG-1', 'FIG-2'] },
+        { title: 'Reports', refs: ['RPT-1', 'RPT-2'] },
+      ],
+      links: [
+        { from: 'M-1', to: 'R-1', label: 'records', tone: 'muted' }, { from: 'M-2', to: 'R-2', label: 'records', tone: 'muted' }, { from: 'M-3', to: 'R-3', label: 'records', tone: 'muted' },
+        { from: 'R-1', to: 'CHK-1', label: 'passes', tone: 'good' }, { from: 'R-2', to: 'CHK-1', label: 'passes', tone: 'good' }, { from: 'R-3', to: 'CHK-1', label: 'fails', tone: 'bad' },
+        { from: 'R-3', to: 'EST-1', label: 'replaced by', tone: 'warn' },
+        { from: 'CHK-1', to: 'FIG-1', label: 'feeds', tone: 'accent' }, { from: 'EST-1', to: 'FIG-1', label: 'estimates', tone: 'warn' }, { from: 'CHK-1', to: 'FIG-2', label: 'feeds', tone: 'accent' },
+        { from: 'FIG-1', to: 'RPT-1', label: 'reported in', tone: 'muted' }, { from: 'FIG-1', to: 'RPT-2', label: 'reported in', tone: 'muted' }, { from: 'FIG-2', to: 'RPT-2', label: 'reported in', tone: 'muted' },
+      ],
+    });
+    grid.subject = 'RPT-1';
+    wireBar(document.getElementById('grid'), grid);
+
+    // ---- The railway: requirements to tests ----
+
+    const rail = document.getElementById('rail-lineage');
+    show(rail, {
+      items: [
+        ['REQ-1', 'Trains are held clear of the junction'], ['REQ-2', 'A route sets only when the overlap is clear'], ['REQ-4', 'The level crossing closes before a route sets'],
+        ['HAZ-1', 'Two trains routed into one section'], ['HAZ-2', 'A train runs past a red signal'],
+        ['DES-1', 'Interlocking table, route 4A'], ['DES-2', '180 m overlap beyond signal CJ12'], ['DES-3', 'Train protection at CJ12'],
+        ['TST-1', 'Conflicting routes refused'], ['TST-3', 'Overlap held while a train approaches'], ['TST-4', 'Protection brakes a train at CJ12'],
+      ],
+      columns: [
+        { title: 'Requirements', refs: ['REQ-1', 'REQ-2', 'REQ-4'] },
+        { title: 'Hazards', refs: ['HAZ-1', 'HAZ-2'] },
+        { title: 'Design', refs: ['DES-1', 'DES-2', 'DES-3'] },
+        { title: 'Tests', refs: ['TST-1', 'TST-3', 'TST-4'] },
+      ],
+      links: [
+        { from: 'REQ-1', to: 'HAZ-1', label: 'guards against', tone: 'accent' }, { from: 'REQ-2', to: 'HAZ-2', label: 'guards against', tone: 'accent' },
+        { from: 'HAZ-1', to: 'DES-1', label: 'mitigated by', tone: 'muted' }, { from: 'HAZ-2', to: 'DES-2', label: 'mitigated by', tone: 'muted' }, { from: 'HAZ-2', to: 'DES-3', label: 'mitigated by', tone: 'muted' },
+        { from: 'DES-1', to: 'TST-1', label: 'passes', tone: 'good' }, { from: 'DES-2', to: 'TST-3', label: 'fails', tone: 'bad' }, { from: 'DES-3', to: 'TST-4', label: 'passes', tone: 'good' },
+      ],
+    });
+    wireBar(document.getElementById('rail'), rail);
+
+    // ---- Pointing and going, from the prose ----
+
+    const lineages = [grid, rail];
+    for (const word of document.querySelectorAll('.point, .go')) {
+      const ref = word.dataset.point ?? word.dataset.go;
+      word.addEventListener('pointerenter', () => lineages.forEach((lineage) => { lineage.highlight = [ref]; }));
+      word.addEventListener('pointerleave', () => lineages.forEach((lineage) => { lineage.highlight = []; }));
+    }
+    for (const word of document.querySelectorAll('.go')) word.addEventListener('click', () => lineages.forEach((lineage) => lineage.reveal(word.dataset.go)));
+  </script>
+</body>
+</html>

@@ -9,7 +9,7 @@
     const logError = console.error;
     console.error = (...args) => { reportedErrors.push(args.join(' ')); logError(...args); };
 
-    window.TAGS = ['sb-accordion', 'sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-kanban', 'sb-c4', 'sb-callout', 'sb-choice', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-discovery-board', 'sb-discovery-card', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-handoff', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-search', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-inspect-mode', 'sb-outliner', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-notebook', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stamp', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-person', 'sb-poll', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
+    window.TAGS = ['sb-accordion', 'sb-annotate', 'sb-id', 'sb-image', 'sb-json', 'sb-bars', 'sb-board', 'sb-kanban', 'sb-c4', 'sb-callout', 'sb-choice', 'sb-code', 'sb-decision-tree', 'sb-dependencies', 'sb-discovery-board', 'sb-discovery-card', 'sb-ontology', 'sb-erd', 'sb-flowchart', 'sb-grid', 'sb-handoff', 'sb-scrubber', 'sb-scenario', 'sb-source', 'sb-search', 'sb-sources', 'sb-source-trace', 'sb-timeline', 'sb-tree', 'sb-venn', 'sb-walkthrough', 'sb-wireframe', 'sb-xref', 'sb-profile', 'sb-tour', 'sb-comments', 'sb-trace-mode', 'sb-inspect-mode', 'sb-outliner', 'sb-math', 'sb-matrix', 'sb-modal', 'sb-notebook', 'sb-tabs', 'sb-plane', 'sb-panel', 'sb-rule', 'sb-rules', 'sb-sequence', 'sb-stamp', 'sb-stat', 'sb-statechart', 'sb-table', 'sb-parameters', 'sb-person', 'sb-poll', 'sb-lineage', 'sb-log', 'sb-chart', 'sb-controls', 'sb-graph', 'sb-shell', 'sb-theme-settings', 'sb-export'];
     for (const tag of TAGS) customElements.define(tag, class extends HTMLElement {});
   </script>
   <script src="../harness.js"></script>
@@ -68,6 +68,7 @@
   <script src="../../components/sb-search/sb-search.js"></script>
   <script src="../../components/sb-table/sb-table.js"></script>
   <script src="../../components/sb-parameters/sb-parameters.js"></script>
+  <script src="../../components/sb-lineage/sb-lineage.js"></script>
   <script src="../../components/sb-log/sb-log.js"></script>
   <script src="../../components/sb-chart/sb-chart.js"></script>
   <script src="../../components/sb-choice/sb-choice.js"></script>
