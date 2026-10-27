@@ -12,7 +12,7 @@ Run from a Sandkit clone with Node. Not copied into sandboxes.
 | `tools/export.mjs` | Exports one page of a sandbox as a single HTML file that still runs, listing every file that went in. Copied into sandboxes, for the agent to run when someone presses Export. |
 | `tools/serve.mjs` | Serves a sandbox on this computer, so the features that read and write its files work: lists a folder's files and saves into `sources/inbox/`. Copied into sandboxes; opening pages by double-clicking still works for everything else. |
 | `tools/sources.mjs` | Checks a sandbox's sources against its catalogue and its model: missing and uncatalogued files, unknown sources, quotes that aren't there. Copied into sandboxes. |
-| `tools/analyse.mjs` | Runs a component's analysis on data files, without a page: `profile`, `dependencies` and `trace`. `list` shows them all. |
+| `tools/analyse.mjs` | Runs a component's analysis on data files, without a page: `profile` and `dependencies`. `list` shows them all. |
 
 ## Practices
 
@@ -30,7 +30,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [Sources](practices/sources.md) | The material a sandbox was built from: `sources/` with one catalogue, an inbox to process, citations of passages from the model's `ITEMS`, and checking them. Supported by `tools/sources.mjs` and `tools/serve.mjs`. |
 | [Modes](practices/modes.md) | Other ways of using a sandbox for a while, such as commenting or tracing: one shape for every mode, and one at a time through the page-wide `sb-mode` event. Supported by the modes below. |
 | [Workshops](practices/workshops.md) | Working through a sandbox's model with the people who know the subject, until they understand it, have corrected it and own it: principles, roles, preparing, the workshop page, activities (predict and reveal, confidence checks, forks, checking sources, questions, decisions), the round trip with the agent, and closing. Supported by `sb-notebook`, `sb-person`, `sb-poll`, `sb-handoff` and `sb-choice`. |
-| [Domain discovery](practices/domain-discovery.md) | Discovering a domain on purpose, an iteration at a time: a record of cards that are never edited, each kind and what it's for, tags declared with what they mean, weighing claims, growing and trying the model, feedback from people who know the domain, and showing the cards on three boards per iteration. Supported by `sb-discovery-card` and `sb-discovery-board`. |
+| [Domain discovery](practices/domain-discovery.md) | Discovering a domain on purpose, an iteration at a time: a record of cards that are never edited, each kind and what it's for, tags declared with what they mean, weighing claims, growing and trying the model, feedback from people who know the domain, and showing the cards on three boards per iteration. Supported by `sb-discovery-card` and `sb-lineage`. |
 | [Feedback](practices/feedback.md) | Collecting comments with `sb-comments`, and what the agent does on receiving them: saved as sources, `FB-` codes, answered in the journal. Supported by `sb-comments`. |
 
 ## Shell
@@ -56,7 +56,6 @@ Components and the engine for domain discovery, which never know each other: the
 | Component | What it does |
 |---|---|
 | [`sb-discovery-card`](components/sb-discovery-card/manifest.md) | One card of discovery, in 27 kinds each with its icon and tone: compact on a board, normal, or expanded in a modal; what it means in strips, what it rests on in folds of passages, cards, options and slots; sources and excerpts always compact, on paper, an excerpt showing its words, a region of an image or rows of data; when, by whom and in which iteration it was made. |
-| [`sb-discovery-board`](components/sb-discovery-board/manifest.md) | The sandbox's own items in columns by the part they play, across or down: pointing at one lights its chain back and forward and draws only those links, labelled; columns fold to make room. |
 
 | Engine | What it works out |
 |---|---|
@@ -108,7 +107,6 @@ Components and the engine for domain discovery, which never know each other: the
 | [`sb-search`](components/sb-search/manifest.md) | A collection to explore: search by words or a regular expression, filters with counts, ranges over numbers and dates, sort and group (groups within groups), what's applied as chips to take away, ways back when nothing matches, as a list, grid or table, in the page or full screen, with presets and a slot for the chosen item's detail. Works from a bare array. |
 | [`sb-sequence`](components/sb-sequence/manifest.md) | Who says what to whom, in order: lifelines, calls, replies and notes, played a message at a time. |
 | [`sb-source`](components/sb-source/manifest.md) | One source as a sheet of paper beside a card of what's known about it, with the passages the model cites marked where they are, quotes it can't find listed, and the rest of the text folded away: text, Markdown, data, images and PDFs. |
-| [`sb-source-trace`](components/sb-source-trace/manifest.md) | Why something in the model is there, as one graph flowing left to right: the sources, what was derived from them and the items resting on them, up to the thing traced, and what rests on it; sources open, items retrace, and unknown ids, loops and items resting on nothing cited are drawn. Also runs from Node: `tools/analyse.mjs trace`. |
 | [`sb-sources`](components/sb-sources/manifest.md) | A sandbox's source material as cards of paper: search, filters with how many sources each value would show, a slider for the dates written, primary only and sorting; replaced sources marked with what replaced them, and files not yet catalogued listed apart. |
 | [`sb-stamp`](components/sb-stamp/manifest.md) | A status pressed onto the page like a rubber stamp: verified, approved, received, superseded, with an icon, when, a detail and who; set from the model and marked stale, with the reason, when the model has moved past it. |
 | [`sb-stat`](components/sb-stat/manifest.md) | Headline figures: each change since the last update, coloured as good or bad news, with targets and bars. |

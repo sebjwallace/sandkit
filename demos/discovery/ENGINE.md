@@ -35,7 +35,7 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
     - links: the engine's (`links()` asks it), the model's included;
     - iterations: `ITERATIONS` (their titles), `iterationOf` (read from the record), `itemOf`;
     - everything standing: a board marked `whole` (Scenarios) asks the engine's `standing(k)` instead of `iteration(k)`;
-    - drawing them: `asOf(id, k)` (a card's face as of an iteration), `faceOf` (its compact data), `drawCard` (any card, in a variant, with its slots), `nodeCard`, `ORDER` (the order cards stand in their columns) and `drawFlow`, which asks the engine what the iteration shows and gives the page's one `sb-discovery-board` its cards, columns and links.
+    - drawing them: `asOf(id, k)` (a card's face as of an iteration), `faceOf` (its compact data), `drawCard` (any card, in a variant, with its slots), `nodeCard`, `ORDER` (the order cards stand in their columns) and `drawFlow`, which asks the engine what the iteration shows and gives the page's one `sb-lineage` its cards, columns and links.
 11. **Finding a card:** `drawFinder` hands `sb-search` everything raised by the iteration shown, as it stood, with its tags, drawn in the grid as compact cards (`drawItem`); `showFound` shows the chosen card with what its tags mean; `drawTagKey` lists every tag from the engine's `tags()`.
 12. **The prototype and object view:** `drawPrototype`, `showObject`, and one function per tab (`nowView`, `codeView`, `relationsView`, `overTimeView`, `constraintsView`, `valuesSeenView`, `testedByView`, `definitionView`, `provenanceView`/`provenanceItems`), plus `wirePrototype`.
 13. **Links on the board:** labelled with what the engine says each means, and toned by `toneOfLink` (its tone, as the domain discovery practice gives it). Routing, lighting chains and folding are the board's.
@@ -53,7 +53,7 @@ sources + records + model classes
         └─ iteration(k)     the cards it shows (raised, updated or carried) and the links among them
              │
              └─ drawFlow()  orders the cards, sorts them into columns by BOARDS[…].holds(id, k), gives each
-                            its face as of the iteration it stands in (asOf), and hands sb-discovery-board
+                            its face as of the iteration it stands in (asOf), and hands sb-lineage
                             compact cards (nodeCard), columns and labelled links
 ```
 

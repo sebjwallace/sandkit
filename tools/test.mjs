@@ -137,6 +137,24 @@ test('an unknown component is refused before anything is copied', (sandbox) => {
   assert(!existsSync(join(sandbox, 'index.html')), 'nothing copied');
 });
 
+test('a retired component is refused, naming what replaces it', (sandbox) => {
+  const result = setup(sandbox, 'sb-source-trace');
+  assert(!result.ok && result.output.includes('sb-source-trace is retired') && result.output.includes('sb-lineage'), 'explains');
+  assert(!existsSync(join(sandbox, 'index.html')), 'nothing copied');
+});
+
+test('updating a sandbox that has a retired component leaves its copy as it is, and says what replaces it', (sandbox) => {
+  setup(sandbox, 'sb-log');
+  const retired = join(sandbox, 'lib/sandkit/components/sb-discovery-board');
+  mkdirSync(retired);
+  writeFileSync(join(retired, 'sb-discovery-board.js'), '// Sandkit sb-discovery-board 0.1.0 · MIT Licence\n// my copy\n');
+  const { ok, output } = setup(sandbox);
+  assert(ok, `setup succeeded: ${output}`);
+  assert(read(sandbox, 'lib/sandkit/components/sb-discovery-board/sb-discovery-board.js').includes('// my copy'), 'its copy kept');
+  assert(output.includes('sb-discovery-board is retired') && output.includes('sb-lineage'), 'says what replaces it');
+  assert(existsSync(join(sandbox, 'lib/sandkit/components/sb-log/sb-log.js')), 'the rest still updated');
+});
+
 test('an in-progress component (one without a manifest yet) is refused, saying why', (sandbox) => {
   const inProgress = join(COMPONENTS, 'sb-test-in-progress');
   mkdirSync(inProgress);
@@ -270,19 +288,6 @@ test('analyse list names each analysis and its component', () => {
 
 test('analyse list names sb-dependencies\' analysis too', () => {
   assert(/^dependencies +sb-dependencies +What goes with what/m.test(analyse('list').output), 'listed');
-});
-
-test('analyse traces an item through files holding the model\'s items and the catalogue', (folder) => {
-  write(folder, 'items.json', JSON.stringify({ items: [
-    { id: 'PAR-1', sources: [{ source: 'SRC-1', quote: 'forty' }] },
-    { id: 'RUL-1', restsOn: ['PAR-1', 'PAR-9'] }
-  ] }));
-  write(folder, 'catalogue.json', JSON.stringify({ format: 'sandkit-sources', version: 1, sources: [{ id: 'SRC-1', title: 'Interview' }] }));
-  const result = JSON.parse(analyse('trace', join(folder, 'items.json'), join(folder, 'catalogue.json'), '--ref', 'RUL-1').output);
-  assert(JSON.stringify(result.edges.map((e) => `${e.from}>${e.to}`)) === '["PAR-1>RUL-1","SRC-1>PAR-1","PAR-9>RUL-1"]', `flows: ${JSON.stringify(result.edges)}`);
-  assert(result.missing[0].id === 'PAR-9', 'the unknown id');
-  assert(analyse('trace', join(folder, 'items.json'), '--ref', 'RUL-1', '--md').output.includes('## Unknown'), 'a summary');
-  assert(!analyse('trace', join(folder, 'items.json')).ok, 'needs --ref');
 });
 
 // Forty samples where kind decides half, and group but for one.

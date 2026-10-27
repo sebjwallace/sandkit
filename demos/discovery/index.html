@@ -19,12 +19,11 @@
   <script src="../../components/sb-timeline/sb-timeline.js"></script>
   <script src="../../components/sb-bars/sb-bars.js"></script>
   <script src="../../components/sb-callout/sb-callout.js"></script>
-  <script src="../../components/sb-source-trace/sb-source-trace.js"></script>
   <script src="../../components/sb-chart/sb-chart.js"></script>
   <script src="../../components/sb-table/sb-table.js"></script>
   <script src="../../components/sb-search/sb-search.js"></script>
   <script src="../../components/sb-discovery-card/sb-discovery-card.js"></script>
-  <script src="../../components/sb-discovery-board/sb-discovery-board.js"></script>
+  <script src="../../components/sb-lineage/sb-lineage.js"></script>
   <script src="../../engines/discovery/discovery.js"></script>
   <script src="records/tags.js"></script>
   <script src="records/excerpts.js"></script>
@@ -122,9 +121,8 @@
     .step:disabled { opacity: 0.4; cursor: default; }
     .step:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
     /* The board: cards fold with their column, as the domain discovery practice gives it. */
-    .sb-discovery-board__column--folded .sb-discovery-card__compact > :not(.sb-discovery-card__compact-head),
-    .sb-discovery-board__column--folded .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }
-    sb-source-trace sb-discovery-card, sb-source-trace .sb-discovery-card__paper, sb-source-trace .sb-discovery-card__compact { height: 100%; }
+    .sb-lineage__column--folded .sb-discovery-card__compact > :not(.sb-discovery-card__compact-head),
+    .sb-lineage__column--folded .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }
     /* Finding a card: the key of tags, and the search. */
     .tag-key { margin: 0 0 12px; font-size: 13px; }
     .tag-key summary { cursor: pointer; color: var(--sb-muted); }
@@ -1382,11 +1380,11 @@ Not announced,0
     // What the flow shows: one iteration, one of its boards, running across or down.
     const shown = { iteration: ITERATIONS.length, board: 0, across: true };
 
-    // The shown board of the shown iteration, in sb-discovery-board: its cards, compact and as they
+    // The shown board of the shown iteration, in sb-lineage: its cards, compact and as they
     // stood, in the columns that hold them, and the links between them, labelled and toned by what
     // they mean. Cards from earlier iterations that this one's cards rest on, such as a constraint
     // still in force, are carried in as they last stood. One board, kept, so folding stays put.
-    const board = document.createElement('sb-discovery-board');
+    const board = document.createElement('sb-lineage');
 
     // The order cards stand in their columns: investigations before the sources they gathered, then
     // the rest kind by kind.
@@ -1699,37 +1697,32 @@ Not announced,0
       return callout;
     }
 
-    // Provenance: the part traced back through the cards it's founded on to their sources, in
-    // sb-source-trace, built from the cards' own links and citations. Opening a source shows it.
+    // Provenance: the part traced back through the cards it's founded on to their sources, and on to
+    // what it brought about, in sb-lineage. Every card is drawn as the boards draw it, as it stood in
+    // the iteration shown, in columns in the order knowledge flows, linked as the engine links them;
+    // the lineage shows only the part's own. Opening a card or a source is the cards', as everywhere.
+    const PROVENANCE_COLUMNS = [
+      ['Gathered', ['source', 'investigation', 'awaited']], ['Excerpted', ['excerpt']], ['Captured', ['observation', 'metric', 'feedback']],
+      ['Interpreted', ['claim', 'definition', 'opinion']], ['Reasoned', ['assumption', 'inference', 'question']],
+      ['In force', ['goal', 'outcome', 'agreement', 'constraint']], ['Decided', ['decision', 'prediction', 'experiment', 'action', 'risk']],
+      ['Modelled', ['primitive', 'entity']], ['Tested', ['rule', 'scenario', 'run']],
+    ];
     function provenanceView(part) {
-      const trace = document.createElement('sb-source-trace');
-      trace.items = provenanceItems();
-      trace.catalogue = SOURCES.map(s => ({ id: s.id, title: s.title, path: s.path, format: s.format, derivedFrom: s.derivedFrom ? [s.derivedFrom] : undefined }));
-      // Every card in the trace drawn as the boards draw it, as it stood in the iteration shown.
-      trace.drawNode = node => nodeCard({ id: node.id, ...asOf(node.id, shown.iteration) });
-      trace.nodeSize = { width: 190, height: 106 };
+      const found = discovery().links();
+      const ids = [...new Set([part, ...found.flatMap(({ from, to }) => [from, to])])];
+      const kindOfCard = id => asOf(id, shown.iteration)?.kind;
+      const listed = PROVENANCE_COLUMNS.flatMap(([, kinds]) => kinds);
+      const byCode = (a, b) => a.localeCompare(b, 'en', { numeric: true });
+      const trace = document.createElement('sb-lineage');
+      trace.append(...ids.map(id => nodeCard({ id, ...asOf(id, shown.iteration) }, true)));
+      trace.columns = [...PROVENANCE_COLUMNS, ['Everything else', null]].map(([title, kinds]) => ({
+        title, refs: ids.filter(id => (kinds ? kinds.includes(kindOfCard(id)) : !listed.includes(kindOfCard(id)))).sort(byCode),
+      }));
+      trace.links = found.map(({ from, to, means }) => ({ from, to, label: means, tone: toneOfLink(means) }));
       trace.subject = part;
-      trace.addEventListener('sb-open', e => openSource(e.detail.id));
       const box = el('div', 'object-wide');
       box.append(trace);
       return box;
-    }
-
-    // Every card as an item for sb-source-trace: what it rests on, and the passages it cites.
-    let tracedItems = null;
-    function provenanceItems() {
-      if (tracedItems) return tracedItems;
-      const found = links(), notSource = id => !id.startsWith('SRC') && !id.startsWith('NEXT');
-      const cites = new Map();
-      for (const { id: excerpt, source, quote } of EXCERPTS) {
-        for (const id of citersOf(excerpt)) cites.set(id, [...(cites.get(id) ?? []), { source, quote }]);
-      }
-      const ids = [...new Set(found.flat())].filter(notSource);
-      tracedItems = ids.map(id => ({
-        id, title: asOf(id, ITERATIONS.length).text, kind: asOf(id, ITERATIONS.length).kind,
-        sources: cites.get(id) ?? [], restsOn: [...new Set(found.filter(([from, to]) => to === id && notSource(from)).map(([from]) => from))],
-      }));
-      return tracedItems;
     }
 
 

@@ -13,7 +13,7 @@
   <script src="../../components/sb-modal/sb-modal.js"></script>
   <script src="../../components/sb-sources/sb-sources.js"></script>
   <script src="../../components/sb-source/sb-source.js"></script>
-  <script src="../../components/sb-source-trace/sb-source-trace.js"></script>
+  <script src="../../components/sb-lineage/sb-lineage.js"></script>
   <script src="../../components/sb-comments/sb-comments.js"></script>
   <script src="../../components/sb-trace-mode/sb-trace-mode.js"></script>
   <script src="model.js"></script>
@@ -71,7 +71,7 @@
   </sb-modal>
 
   <sb-modal id="trace-modal" heading="Why it's there">
-    <sb-source-trace id="trace"></sb-source-trace>
+    <sb-lineage id="trace"></sb-lineage>
   </sb-modal>
 
   <sb-modal id="source-modal" heading="Source">
@@ -139,8 +139,7 @@
       catalogue = (await (await fetch('sources/catalogue.json')).json()).sources;
       $('sources').catalogue = catalogue;
       $('sources').files = await listSources();
-      $('trace').items = model.items;
-      $('trace').catalogue = catalogue;
+      traceLineage($('trace'), model.items, catalogue, ['Parameter', 'Rule', 'Assumption', 'Requirement', 'Screen part', 'Question']);
     }
 
     // Opens a source on its own sheet, with every passage the model cites from it marked.
@@ -159,14 +158,49 @@
 
     // ---- Tracing ----
 
-    // Shown first, so the trace has its room when it lays out and can bring its subject into view.
-    // Its sources are read from the sandbox's files, so it needs serving.
+    // The model's items and the catalogue as a lineage: a card for each source, on paper, and each
+    // item, in columns of sources and then items by kind, in the order given; linked by what's derived
+    // from what, what cites what and what rests on what.
+    function traceLineage(lineage, items, catalogue, kinds) {
+      const card = (ref, className, code, title, detail) => {
+        const element = Object.assign(document.createElement('div'), { className, tabIndex: 0 });
+        element.dataset.ref = ref;
+        for (const [part, text] of [['code', code], ['title', title], ['detail', detail]]) {
+          element.append(Object.assign(document.createElement('span'), { className: `${className}__${part}`, textContent: text }));
+        }
+        return element;
+      };
+      const plural = (kind) => kind.endsWith('s') ? kind : `${kind}s`;
+      const cited = (item) => [...new Set((item.sources ?? []).map((citation) => citation.source))];
+      lineage.replaceChildren(
+        ...catalogue.map((s) => card(s.id, 'trace-source', s.id, s.title, s.format)),
+        ...items.map((item) => card(item.id, 'trace-item', item.id, item.title, item.kind)));
+      lineage.columns = [
+        { title: 'Sources', refs: catalogue.map((s) => s.id) },
+        ...kinds.map((kind) => ({ title: plural(kind), refs: items.filter((item) => item.kind === kind).map((item) => item.id) })),
+      ];
+      lineage.links = [
+        ...catalogue.flatMap((s) => (s.derivedFrom ?? []).map((from) => ({ from, to: s.id, label: 'derived from', tone: 'muted' }))),
+        ...items.flatMap((item) => cited(item).map((from) => ({ from, to: item.id, label: 'cites', tone: 'muted' }))),
+        ...items.flatMap((item) => (item.restsOn ?? []).map((from) => ({ from, to: item.id, label: 'rests on' }))),
+      ];
+    }
+
+    // Shown first, so the trace has its room when it lays out, and fitted, so the whole of it shows
+    // from the sources on. Its sources are read from the sandbox's files, so it needs serving.
     function openTrace(id) {
       if (!served) return $('serve-modal').show();
       const trace = $('trace');
       $('trace-modal').show();
       trace.subject = id;
       trace.clearTrail();
+      trace.fit();
+    }
+
+    // Choosing a source opens it; choosing an item traces it instead.
+    function chooseInTrace(ref) {
+      if (catalogue.some((s) => s.id === ref)) openSource(ref);
+      else $('trace').subject = ref;
     }
 
     // ---- Comments ----
@@ -202,7 +236,7 @@
     $('trace-mode').traceable = (ref) => traceable.has(ref);
     $('trace-mode').addEventListener('sb-pick', (e) => openTrace(e.detail.ref));
     $('sources').addEventListener('sb-open', (e) => openSource(e.detail.id));
-    $('trace').addEventListener('sb-open', (e) => openSource(e.detail.id));
+    $('trace').addEventListener('sb-select', (e) => chooseInTrace(e.detail.ref));
 
     $('comments').context = { title: 'Control Room Sandbox', version: '0.1.0', goal: 'See how the grid holds its frequency after its largest unit trips, and why the new screen is designed as it is.' };
     $('comments').snapshot = () => ({ wind: model.options.wind, extraBooked: model.options.extraBooked });

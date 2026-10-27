@@ -175,7 +175,48 @@ Show a source with [`sb-source`](../components/sb-source/manifest.md): the paper
 
 ## Tracing
 
-Anything in the model can be asked "why is that there?". [`sb-source-trace`](../components/sb-source-trace/manifest.md) answers with one graph flowing left to right: the sources and what was derived from them, the items resting on them, the thing asked about, and what rests on it. It reads `model.items` and the catalogue, so tracing needs nothing more than citing well.
+Anything in the model can be asked "why is that there?". Answer it with [`sb-lineage`](../components/sb-lineage/manifest.md): the sources on the left, on paper, the items resting on them in columns by kind, and the thing asked about as the subject, so only what it rests on and what rests on it shows. The lineage only draws; turn `model.items` and the catalogue into its cards, columns and links with a function in `parts.js`, giving the kinds in the order things rest on each other:
+
+```js
+// The model's items and the catalogue as a lineage: a card for each source, on paper, and each
+// item, in columns of sources and then items by kind, in the order given; linked by what's derived
+// from what, what cites what and what rests on what.
+function traceLineage(lineage, items, catalogue, kinds) {
+  const card = (ref, className, code, title, detail) => {
+    const element = Object.assign(document.createElement('div'), { className, tabIndex: 0 });
+    element.dataset.ref = ref;
+    for (const [part, text] of [['code', code], ['title', title], ['detail', detail]]) {
+      element.append(Object.assign(document.createElement('span'), { className: `${className}__${part}`, textContent: text }));
+    }
+    return element;
+  };
+  const plural = (kind) => kind.endsWith('s') ? kind : `${kind}s`;
+  const cited = (item) => [...new Set((item.sources ?? []).map((citation) => citation.source))];
+  lineage.replaceChildren(
+    ...catalogue.map((s) => card(s.id, 'trace-source', s.id, s.title, s.format)),
+    ...items.map((item) => card(item.id, 'trace-item', item.id, item.title, item.kind)));
+  lineage.columns = [
+    { title: 'Sources', refs: catalogue.map((s) => s.id) },
+    ...kinds.map((kind) => ({ title: plural(kind), refs: items.filter((item) => item.kind === kind).map((item) => item.id) })),
+  ];
+  lineage.links = [
+    ...catalogue.flatMap((s) => (s.derivedFrom ?? []).map((from) => ({ from, to: s.id, label: 'derived from', tone: 'muted' }))),
+    ...items.flatMap((item) => cited(item).map((from) => ({ from, to: item.id, label: 'cites', tone: 'muted' }))),
+    ...items.flatMap((item) => (item.restsOn ?? []).map((from) => ({ from, to: item.id, label: 'rests on' }))),
+  ];
+}
+```
+
+Draw sources as paper, the material Sandkit keeps for source material (see `STYLE.md`), so ground truth looks like ground truth, and items as plain cards:
+
+```css
+.trace-source, .trace-item { display: grid; gap: 2px; padding: 7px 9px; border-radius: var(--sb-radius); font-size: 12px; line-height: 1.35; cursor: pointer; }
+.trace-item { border: 1px solid var(--sb-border); background: var(--sb-surface); }
+.trace-source { position: relative; border: 1px solid color-mix(in srgb, var(--sb-text) 24%, transparent); background: color-mix(in srgb, var(--sb-surface) 94%, #f3e2b8); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+.trace-source::after { content: ''; position: absolute; top: -1px; right: -1px; width: 12px; height: 12px; background: linear-gradient(225deg, var(--sb-bg) 50%, color-mix(in srgb, var(--sb-text) 18%, var(--sb-surface)) 50%); }
+.trace-source__code, .trace-item__code { font: 600 11px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); }
+.trace-source__detail, .trace-item__detail { color: var(--sb-muted); font-size: 11px; }
+```
 
 Make it reachable from anywhere with [`sb-trace-mode`](../components/sb-trace-mode/manifest.md), Trace in the shell's mode picker (see the [modes practice](modes.md)). While it's on, pointing outlines any part whose `data-ref` is in `model.items`, and a click opens the trace instead of acting:
 
@@ -185,20 +226,24 @@ Make it reachable from anywhere with [`sb-trace-mode`](../components/sb-trace-mo
   <sb-trace-mode slot="modes"></sb-trace-mode>
 </sb-shell>
 
-<sb-modal id="trace-modal" heading="Why it's there"><sb-source-trace id="trace"></sb-source-trace></sb-modal>
+<sb-modal id="trace-modal" heading="Why it's there"><sb-lineage id="trace"></sb-lineage></sb-modal>
 ```
 
 ```js
+traceLineage(trace, model.items, catalogue, ['Parameter', 'Rule', 'Assumption', 'Requirement']);
 const items = new Set(model.items.map((item) => item.id));
 traceMode.traceable = (ref) => items.has(ref);
 traceMode.addEventListener('sb-pick', (e) => {
   traceModal.show();          // first, so the trace has its room when it lays out
   trace.subject = e.detail.ref;
   trace.clearTrail();
+  trace.fit();                // the whole of it, from the sources on
 });
-trace.addEventListener('sb-open', (e) => openSource(e.detail.id));   // in sb-source, in a second modal
+// Choosing a source opens it, in sb-source in a second modal; choosing an item traces it instead.
+trace.addEventListener('sb-select', (e) => {
+  if (catalogue.some((s) => s.id === e.detail.ref)) openSource(e.detail.ref);
+  else trace.subject = e.detail.ref;
+});
 ```
 
 Sandkit's `examples/control-room/` has the whole of this wiring.
-
-From Node, trace without a page: write the items to a file and run `node <sandkit>/tools/analyse.mjs trace items.json sources/catalogue.json --ref SCR-3 --md`.

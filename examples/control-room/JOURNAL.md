@@ -2,6 +2,11 @@
 
 What changed in this sandbox, and why: one entry per change, newest first, only ever added to. Each entry is a version. See the [journal practice](../../practices/journal.md).
 
+## 0.2.1 · 2026-10-27 · Changed
+
+**Changed:** Why it's there is drawn in `sb-lineage`, built by `traceLineage` in the page: sources on paper, then parameters, rules, assumptions, requirements and screen parts in columns, fitted when it opens. Choosing an item traces it; choosing a source opens it.
+**Why:** Sandkit retired `sb-source-trace` for `sb-lineage`.
+
 ## 0.2.0 · 2026-10-25 · Breaking
 
 **Changed:** The agent's analysis of the interview and the fault log is no longer a source. ASM-1, falls twice as fast on windy nights, now cites the fault log (SRC-3) and the interview (SRC-1) directly, with the reading in its note.

@@ -35,6 +35,15 @@ main { max-width: var(--sb-page-width, 1100px); margin: 0 auto; padding: 16px 16
 #trace-modal { --sb-modal-width: 1240px; }
 #source-modal { --sb-modal-width: 900px; }
 #sources { height: 70vh; }
-#trace { height: 72vh; }
+#trace { height: 72vh; --sb-lineage-max-height: none; }
+
+/* The trace's cards: sources on paper, as Sandkit's style guide gives it, and items as plain cards. */
+.trace-source, .trace-item { display: grid; gap: 2px; padding: 7px 9px; border-radius: var(--sb-radius); font-size: 12px; line-height: 1.35; cursor: pointer; }
+.trace-item { border: 1px solid var(--sb-border); background: var(--sb-surface); }
+.trace-source { position: relative; border: 1px solid color-mix(in srgb, var(--sb-text) 24%, transparent); background: color-mix(in srgb, var(--sb-surface) 94%, #f3e2b8); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+.trace-source::after { content: ''; position: absolute; top: -1px; right: -1px; width: 12px; height: 12px; background: linear-gradient(225deg, var(--sb-bg) 50%, color-mix(in srgb, var(--sb-text) 18%, var(--sb-surface)) 50%); }
+.trace-source__code, .trace-item__code { font: 600 11px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); }
+.trace-source__detail, .trace-item__detail { color: var(--sb-muted); font-size: 11px; }
+.trace-source:focus-visible, .trace-item:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 2px; }
 #source { height: 72vh; }
 #serve-modal pre { padding: 8px 12px; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 13px ui-monospace, Menlo, Consolas, monospace; }

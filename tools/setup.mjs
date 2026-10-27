@@ -12,6 +12,7 @@
 // - Adds a script tag to index.html, or the page named, for each component or engine named that doesn't have one yet.
 // - Writes lib/sandkit/SOURCE.md, recording every version.
 // - When updating, reports what changed since the installed versions, breaking changes first.
+// - A retired component a sandbox still has is left as it is, with a note of what replaces it.
 //
 // Running it again refreshes every copy, so setting up, adding and updating are the same command.
 
@@ -23,6 +24,8 @@ import { fileURLToPath } from 'node:url';
 const SANDKIT = resolve(fileURLToPath(import.meta.url), '../..');
 const REPOSITORY = 'https://github.com/sebjwallace/sandkit';
 const EVERY_SANDBOX = ['sb-comments']; // components the template uses
+// Components Sandkit no longer has, and what replaces each. See CHANGELOG.md for how to move.
+const RETIRED = { 'sb-discovery-board': 'sb-lineage', 'sb-source-trace': 'sb-lineage' };
 const ALWAYS_COPIED = ['CATALOG.md', 'CHANGELOG.md', 'STYLE.md', 'shell/sb-theme-settings.js', 'shell/sb-shell.js', 'shell/sb-export.js', 'shell/manifest.md', 'shell/CHANGELOG.md', 'templates/page.html', 'tools/export.mjs', 'tools/serve.mjs', 'tools/sources.mjs'];
 
 function setup(folder, requested, page = 'index.html') {
@@ -34,7 +37,9 @@ function setup(folder, requested, page = 'index.html') {
   if (isNew) cpSync(join(SANDKIT, 'templates', 'sandbox'), sandbox, { recursive: true, force: false });
   if (!existsSync(join(sandbox, page))) fail(`${folder} has no page called ${page}. Start one from lib/sandkit/templates/page.html.`);
 
-  const components = [...new Set([...EVERY_SANDBOX, ...installedIn(lib, 'components'), ...requested.filter((name) => !isEngine(name))])];
+  const kept = installedIn(lib, 'components').filter((name) => RETIRED[name]);
+  const components = [...new Set([...EVERY_SANDBOX, ...installedIn(lib, 'components'), ...requested.filter((name) => !isEngine(name))])]
+    .filter((name) => !RETIRED[name]);
   const engines = [...new Set([...installedIn(lib, 'engines'), ...requested.filter(isEngine)])];
   const packages = ['shell', ...components, ...engines].map(packageOf);
   const installed = Object.fromEntries(packages.map((p) => [p.name, versionIn(join(lib, p.script))]));
@@ -54,6 +59,7 @@ function setup(folder, requested, page = 'index.html') {
   if (tagged.added.length) console.log(`Added script tags for ${tagged.added.join(', ')} to ${page}.`);
   if (tagged.missing.length) console.log(`Add script tags for ${tagged.missing.join(', ')} to ${page} yourself: no Sandkit script tag was found to place them after.`);
   reportChanges(versions.filter((v) => v.from && v.from !== v.to));
+  for (const name of kept) console.log(`${name} is retired from Sandkit, so lib/sandkit/components/${name} is left as it is. Move to ${RETIRED[name]} when you're ready: Sandkit's CHANGELOG.md says how.`);
 }
 
 // ---- What to copy ----
@@ -63,6 +69,7 @@ const isEngine = (name) => existsSync(join(SANDKIT, 'engines', name));
 
 // Only components and engines with a manifest are ready for sandboxes; the rest are still in progress.
 function checkAvailable(name) {
+  if (RETIRED[name]) fail(`${name} is retired from Sandkit. Use ${RETIRED[name]} instead: see CATALOG.md.`);
   const folder = join(SANDKIT, isEngine(name) ? 'engines' : 'components', name);
   if (existsSync(join(folder, 'manifest.md'))) return;
   if (existsSync(folder)) fail(`${name} is still in progress (see CATALOG.md), so it can't be set up yet.`);

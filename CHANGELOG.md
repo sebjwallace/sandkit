@@ -4,6 +4,12 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.73 · 2026-10-27
+- Fifty-nine components: `sb-discovery-board` and `sb-source-trace` are retired for `sb-lineage`, which draws the same thing for any subject. **Breaking.** Sandboxes keep their copies, and `tools/setup.mjs` now leaves a retired component as it is, saying what replaces it. To move:
+  - **`sb-discovery-board`:** rename the tag, and `sb-discovery-board__` in your CSS, to `sb-lineage`. `columns`, `links`, `direction`, `spacing`, `highlight` and `reveal` work as before, items still placed by `data-ref`. Every link is now drawn, with pointing fading what isn't linked; add `links-shown="chain"` for links only along the chain pointed at, as before. Viewers can also pan and zoom.
+  - **`sb-source-trace`:** draw the trace in `sb-lineage` with the sources practice's `traceLineage`, which turns `model.items` and the catalogue into cards, columns and links; style the sources as paper as it shows. `subject`, `trail` and `clearTrail()` work as before. Listen for `sb-select` instead of `sb-open` and the trace's own following: open a source, or make an item the subject. `traceSources`, `drawNode`, `nodeSize`, `result` and `tools/analyse.mjs trace` are gone; call `fit()` to show the whole trace.
+- The domain discovery practice lays boards out in `sb-lineage`; the sources practice traces in it, with `traceLineage`; the locating and workshops practices name it. The control room example and the discovery demo use it.
+
 ## 0.2.72 · 2026-10-27
 - Sixty-one components: added `sb-lineage`, where things come from and what they lead to, grown from `sb-discovery-board` and made generic: items in columns with every link drawn and labelled, pointing fading everything not linked to an item, or links only along the chain pointed at, a subject showing only its lineage, followed by viewers with a trail back, pan and zoom, and full screen. It's to replace `sb-discovery-board` and `sb-source-trace` in later steps. Recorded in DECISIONS.md.
 

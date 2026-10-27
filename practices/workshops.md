@@ -74,7 +74,7 @@ Use them freely, in any order the conversation calls for. Each follows the same 
 | **Predict and reveal** | Do our pictures of the subject and the model's agree? | [`sb-poll`](../components/sb-poll/manifest.md) with `reasons` and an `outcome`, under a [`sb-scenario`](../components/sb-scenario/manifest.md) with its outcome left out; then the model's own view of why |
 | **Confidence check** | How sure is each of us that this part is right? | `sb-poll` with five options, `1 · Not at all` to `5 · Completely`; its person slots can hold a badge beside an [`sb-stat`](../components/sb-stat/manifest.md) |
 | **Fork** | The sources disagree: which reading should the model keep? | The model runs both readings; the page shows a switch between them and the same scenarios under each; `sb-poll` for leanings; [`sb-choice`](../components/sb-choice/manifest.md) for the decision |
-| **Checking sources** | Does each citation hold up? | [`sb-source-trace`](../components/sb-source-trace/manifest.md) and [`sb-source`](../components/sb-source/manifest.md); people's verdict on each citation (sound, out of date, misread, missing something), built in the page |
+| **Checking sources** | Does each citation hold up? A trace in [`sb-lineage`](../components/sb-lineage/manifest.md), as the [sources practice](sources.md) shows, and [`sb-source`](../components/sb-source/manifest.md); people's verdict on each citation (sound, out of date, misread, missing something), built in the page |
 | **Questions** | What can't we settle today, and who's chasing it? | A card per question with its code, who raised it, an owner and a status, built in the page; ask the agent about any one with [`sb-handoff`](../components/sb-handoff/manifest.md) |
 | **Decision** | What do we choose, and why? | `sb-choice`, `editable`, with the deciders ticked |
 | **Facilitator's suggestion** | Should we change course? | [`sb-callout`](../components/sb-callout/manifest.md) with a heading such as "The agent suggests", the suggestion, the reason, and Accept, Suggest something else or Keep going |
@@ -149,7 +149,7 @@ Then record it:
 | [`sb-handoff`](../components/sb-handoff/manifest.md) | Every round trip with the agent |
 | [`sb-choice`](../components/sb-choice/manifest.md) | Decisions, drafted by the agent and made by the room |
 | [`sb-scenario`](../components/sb-scenario/manifest.md) | The scenario a prediction is about |
-| [`sb-source-trace`](../components/sb-source-trace/manifest.md), [`sb-source`](../components/sb-source/manifest.md) | Checking what a part of the model rests on |
+| [`sb-lineage`](../components/sb-lineage/manifest.md), [`sb-source`](../components/sb-source/manifest.md) | Checking what a part of the model rests on |
 | [`sb-callout`](../components/sb-callout/manifest.md) | The agent's suggestions to change course |
 | [`sb-tour`](../components/sb-tour/manifest.md) | A walk through the page, or through one activity |
 | [`sb-comments`](../components/sb-comments/manifest.md) | Comments on anything, from anyone |

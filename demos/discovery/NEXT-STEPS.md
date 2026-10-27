@@ -41,9 +41,9 @@ A third kind of model part beside entities and domain primitives: **things that 
 
 ### 3. Trace
 
-Click any card, or any part of the prototype, to trace it back to its sources: `sb-trace-mode` with `sb-source-trace` in a modal.
+Click any card, or any part of the prototype, to trace it back to its sources: `sb-trace-mode` with an `sb-lineage` in a modal.
 
-- The object view's Provenance tab already builds the items from the cards' links and citations (`provenanceItems()`), and draws every node as the boards draw their cards (`sb-source-trace` 0.1.2's `drawNode`), so this is mostly wiring.
+- The object view's Provenance tab already lays every card the engine links out in `sb-lineage`, drawn as the boards draw them, with the part as its subject (`provenanceView()`), so this is mostly wiring.
 - It overlaps with the connections view (item 5): a trace is one direction of it.
 - **The trace flags a gap:** an investigation rests on nothing cited, since gathering a source isn't citing it. Decide whether "gathered" should count as a link in a trace or stay distinct.
 

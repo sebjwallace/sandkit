@@ -254,7 +254,7 @@ Every tab is derived.
   - **Over time:** `sb-timeline` from the feed.
   - **Tested by:** from watched runs.
   - **Definition:** `sb-callout`, the definition of its name, or a flag.
-  - **Provenance:** `sb-source-trace`, drawn with the boards' own cards.
+  - **Provenance:** `sb-lineage`, the part's own lineage among every card the engine links, drawn with the boards' own cards in columns in the order knowledge flows.
 - **Primitive:**
   - **Now**.
   - **Constraints:** `sb-rule`, from `static constraints`.
@@ -274,7 +274,7 @@ These are the first steps towards an `sb-entity` and an `sb-primitive` that take
 
 ## 12. Sandkit components this demo uses or changed
 
-It uses `sb-discovery-card` for every card, `sb-discovery-board` for the boards, `sb-modal`, `sb-source`, `sb-rule`, `sb-scenario`, `sb-outliner`, `sb-scrubber`, `sb-tabs`, `sb-json`, `sb-code`, `sb-erd`, `sb-timeline`, `sb-bars`, `sb-callout`, `sb-source-trace`, `sb-chart` and `sb-table`, and the shell.
+It uses `sb-discovery-card` for every card, `sb-lineage` for the boards, `sb-modal`, `sb-source`, `sb-rule`, `sb-scenario`, `sb-outliner`, `sb-scrubber`, `sb-tabs`, `sb-json`, `sb-code`, `sb-erd`, `sb-timeline`, `sb-bars`, `sb-callout`, `sb-chart` and `sb-table`, and the shell.
 
 Changed for it:
 

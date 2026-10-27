@@ -1,6 +1,6 @@
 # Domain discovery
 
-How a sandbox discovers a domain on purpose, one iteration at a time, keeping a record of what was learnt as cards and growing a working model alongside it. Read this when a sandbox is for finding out how something works, rather than showing what's already known, and before using [`sb-discovery-card`](../components/sb-discovery-card/manifest.md) or [`sb-discovery-board`](../components/sb-discovery-board/manifest.md).
+How a sandbox discovers a domain on purpose, one iteration at a time, keeping a record of what was learnt as cards and growing a working model alongside it. Read this when a sandbox is for finding out how something works, rather than showing what's already known, and before using [`sb-discovery-card`](../components/sb-discovery-card/manifest.md) or laying cards out in [`sb-lineage`](../components/sb-lineage/manifest.md).
 
 ## Why it matters
 
@@ -27,7 +27,7 @@ Everything discovery records is a card with a code, whose prefix names its kind 
 
 ## Setting up
 
-A discovery sandbox uses the card, the board and the engine, and opens cards in [`sb-modal`](../components/sb-modal/manifest.md) and sources in [`sb-source`](../components/sb-source/manifest.md), beside whatever else its subject needs.
+A discovery sandbox uses the card, a lineage for its boards and the engine, and opens cards in [`sb-modal`](../components/sb-modal/manifest.md) and sources in [`sb-source`](../components/sb-source/manifest.md), beside whatever else its subject needs.
 
 **Discovery has a page of its own, by default.** The sandbox's other pages stay as they are, and discovery sits beside them, linked from the header like any page (see the [pages practice](pages.md)). Call it `discovery.html` unless the person prefers another name, such as `workbench.html` or `foundry.html`, or wants it somewhere else entirely; it's theirs to choose. To add it:
 
@@ -36,7 +36,7 @@ A discovery sandbox uses the card, the board and the engine, and opens cards in 
 3. Add the components and the engine to that page. With Node:
 
    ```sh
-   node <sandkit>/tools/setup.mjs <sandbox-folder> sb-discovery-card sb-discovery-board sb-modal sb-source discovery --page discovery.html
+   node <sandkit>/tools/setup.mjs <sandbox-folder> sb-discovery-card sb-lineage sb-modal sb-source discovery --page discovery.html
    ```
 4. Add a script tag for each of `records/`'s files to the page, after `model.js`.
 5. Record it under **Practices followed** in the sandbox's `AGENTS.md`, with the page's name, so the next agent knows.
@@ -162,7 +162,7 @@ People who know the domain try the prototype or a run and say what they think. T
 
 ## Boards
 
-A recommended layout, not a required one (see "What's fixed and what's yours"). Each iteration is laid out on boards in [`sb-discovery-board`](../components/sb-discovery-board/manifest.md), with the cards on them drawn compact. People switch between the boards and step between iterations. The first three follow the whole loop; Scenarios follows each scenario and rule from what it's founded on to the feedback on it and what replaced it.
+A recommended layout, not a required one (see "What's fixed and what's yours"). Each iteration is laid out on boards, each an [`sb-lineage`](../components/sb-lineage/manifest.md) holding the cards drawn compact, in columns by the part they play, with every link between them drawn and labelled. People switch between the boards and step between iterations. The first three follow the whole loop; Scenarios follows each scenario and rule from what it's founded on to the feedback on it and what replaced it.
 
 | Board | Columns, in order |
 |---|---|
@@ -178,7 +178,7 @@ A recommended layout, not a required one (see "What's fixed and what's yours"). 
 - **Set the board again for each iteration:** its cards (compact, `openable`, as of that iteration), its columns and its links. Carried cards keep the `carried` mark.
 - **Fold cards with their column,** so a folded column shows each card's icon and code:
   ```css
-  .sb-discovery-board__column--folded .sb-discovery-card__compact > :not(.sb-discovery-card__compact-head),
-  .sb-discovery-board__column--folded .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }
+  .sb-lineage__column--folded .sb-discovery-card__compact > :not(.sb-discovery-card__compact-head),
+  .sb-lineage__column--folded .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }
   ```
-- **Opening and pointing are the cards'.** Answer their `sb-open` as above. Route `sb-highlight` to the board's `highlight` as well as every card's, and call the board's `reveal` from `goTo` (see [locating](locating.md)).
+- **Opening and pointing are the cards'.** Openable cards are buttons, so the lineage leaves clicking them to the cards, and viewers pan from between them. Answer their `sb-open` as above. Route `sb-highlight` to the board's `highlight` as well as every card's, and call the board's `reveal` from `goTo` (see [locating](locating.md)).
