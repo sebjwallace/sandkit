@@ -70,7 +70,7 @@ sources/
 | Field | Meaning |
 |---|---|
 | `id` | A code with the prefix `SRC`, never reused (see [identifiers](identifiers.md)). |
-| `title`, `path`, `summary`, `tags` | What it is and where it lives. `path` is from the sandbox's folder. |
+| `title`, `path`, `summary`, `tags` | What it is and where it lives. `path` is from the sandbox's folder. In a discovery sandbox, use the declared tags (see [domain discovery](domain-discovery.md)). |
 | `format` | What kind of material, which says how to read it: `document`, `transcript`, `notes`, `data`, `image`, `pdf`, `code`, `web`, `annotations` and so on. |
 | `author` | Who wrote or said it: a person, an organisation, or an agent outside the sandbox. |
 | `authored`, `captured` | When it was written, and when it was added. They often differ. |

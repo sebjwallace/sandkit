@@ -51,7 +51,7 @@ What the agent or a person writes is kept as records, in the sandbox's `records/
 ```
 sources/   what came in from outside: documents, data, chats; screened and catalogued
 records/   what was written inside, from it: one script per kind
-  excerpts.js, claims.js, questions.js, decisions.js, …
+  tags.js, excerpts.js, claims.js, questions.js, decisions.js, …
 ```
 
 - **Excerpts are the pieces of sources that records cite,** each picked out once as a record of its own, so a passage can be pointed at, traced and carried on its own, whatever its format. Its code is its source's and a number (`SRC-2.3`), and it says where it is in the source, as the [sources practice](sources.md) anchors a citation: the words (`quote`), a page (`page`), a region of an image (`region`) or rows of data (`rows`). Every citation names an excerpt: a claim's assertions are `{ 'SRC-2.3': '+' }`, and `raisedBy`, `answers`, `setIn`, `at`, `said` and `sources` hold excerpt codes. The [discovery engine](../engines/discovery/manifest.md) gives every excerpt a record rests on, all the way back (`discovery.excerptsOf`).
@@ -60,6 +60,17 @@ records/   what was written inside, from it: one script per kind
 - **Every record carries its making:** `created` (`yyyy-mm-ddThh:mm`), `by` (`Agent` or the person) and `iteration`, and anything else worth keeping in `meta`. These names are reserved: a kind's own fields use others (a prediction's deadline is `due`, an investigation's investigator `who`).
 - **One script per kind,** each setting its list, as the [pages practice](pages.md) keeps data, so a page opened from disk reads them; a page includes the kinds it shows.
 - **Records are never edited.** A record that's wrong or out of date is superseded by a new one, which names it (`supersedes: 'SCN-3'`). The engine marks the old one superseded from then on and links the two, so a scenario can be followed through every version of itself.
+
+## Tags
+
+Sources, excerpts and records carry tags, so people can find them: search, filter, sort and group the cards, such as in [`sb-search`](../components/sb-search/manifest.md). A tag can be about anything that cuts across the kinds: a feature, a topic, a place, a party.
+
+- **Declare every tag once, with what it means,** in `records/tags.js`: `const TAGS = [{ tag: 'platform-changes', means: 'How the board shows a train moved to another platform.' }]`. A tag without a meaning drifts, and two words end up meaning one thing.
+- **Reuse before you add.** Check `discovery.tags()` first: it lists every tag, what it means and what carries it, and names any in use but never declared. Declare a new tag before using it.
+- **Tag what the fields don't say.** Kind, iteration, status, author and what a record rests on are already there to filter on; a tag repeating them is noise.
+- **Lowercase words joined by hyphens,** plural for a thing (`platforms`), as it reads for a topic (`platform-changes`).
+- **A tag earns its place by grouping.** One on a single card finds nothing that card's code wouldn't; one on nearly every card separates nothing. Merge, split or drop it.
+- **Tags can be added to later,** unlike the rest of a record. They say how a record is found, not what it says, and nothing is worked out from them, so tagging earlier cards when a new tag arrives keeps the audit trail whole. Change a tag's meaning only by declaring a new tag.
 
 ## The kinds
 

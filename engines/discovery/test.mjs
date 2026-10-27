@@ -616,3 +616,18 @@ test('the model answers only to tests with code that haven’t been replaced', (
   });
   assertEqual([played.run('RUN-1').tests, played.run('RUN-2').tests], [['SCN-1'], ['SCN-2']]);
 });
+
+test('every tag, with what it means and what carries it; one in use but never declared says so', () => {
+  const tagged = createDiscovery({
+    tags: [{ tag: 'otters', means: 'Whether otters live on the river.' }, { tag: 'water-quality', means: 'What the water holds.' }],
+    sources: [{ id: 'SRC-1', tags: ['otters'] }],
+    excerpts: [{ id: 'SRC-1.1', source: 'SRC-1', quote: 'spraint at 4 of 18', tags: ['otters'] }],
+    claims: [{ id: 'CLM-1', assertions: { 'SRC-1.1': '+' }, tags: ['otters', 'mink'] }],
+  });
+  assertEqual(tagged.tags(), [
+    { tag: 'otters', means: 'Whether otters live on the river.', declared: true, on: ['SRC-1', 'SRC-1.1', 'CLM-1'] },
+    { tag: 'water-quality', means: 'What the water holds.', declared: true, on: [] },
+    { tag: 'mink', means: null, declared: false, on: ['CLM-1'] },
+  ]);
+  assertEqual(createDiscovery().tags(), [], 'none without tags');
+});

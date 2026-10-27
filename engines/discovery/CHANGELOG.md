@@ -1,5 +1,8 @@
 # discovery changelog
 
+## 0.3.1 · 2026-10-27
+- Takes tags, declared once with what each means (`tags: [{ tag, means }]`), carried by any source, excerpt or record (`tags: [...]`). `tags()` gives every tag with what it means and what carries it, and names those in use but never declared.
+
 ## 0.3.0 · 2026-10-26
 - **Breaking:** records cite excerpts, not sources and their words. An excerpt is a piece of one source picked out as a record of its own (`excerpts: [{ id: 'SRC-2.3', source: 'SRC-2', iteration, quote }]`, or `page`, `region`, `rows`), and links run source → excerpt → what cites it. To migrate, give each quoted piece of a source an excerpt, then cite its id: a claim's assertion `'SRC-2': ['+', 'the words']` becomes `'SRC-2.3': '+'`; `raisedBy`, `setIn`, `at` and `said` become an excerpt id; a question's `answers` and a record's `sources` become lists of excerpt ids. `inputsOf` returns `{ material, records }`, its material being sources and excerpts. Passages carry their `excerpt`.
 - `excerptsOf(id)` gives every excerpt a record rests on, all the way back.

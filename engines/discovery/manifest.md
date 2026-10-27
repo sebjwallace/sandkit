@@ -35,7 +35,7 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 
 ## What it takes
 
-`createDiscovery({ sources, claims, questions, assumptions, inferences, observations, predictions, outcomes, investigations, experiments, actions, decisions, goals, metrics, excerpts, definitions, opinions, feedback, agreements, constraints, risks, awaited, entities, primitives, scenarios, rules, model })`. Give it the kinds the sandbox has; any left out is empty. Each list is plain records, each saying the `iteration` it was raised in; the engine never changes them.
+`createDiscovery({ sources, claims, questions, assumptions, inferences, observations, predictions, outcomes, investigations, experiments, actions, decisions, goals, metrics, excerpts, tags, definitions, opinions, feedback, agreements, constraints, risks, awaited, entities, primitives, scenarios, rules, model })`. Give it the kinds the sandbox has; any left out is empty. Each list is plain records, each saying the `iteration` it was raised in; the engine never changes them.
 
 **A source**, as discovery weighs it, from its entry in the catalogue (see the [sources practice](../../practices/sources.md)):
 
@@ -50,6 +50,8 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 | `iteration` | The iteration it arrived in. Without one, it has always been there. |
 
 **An excerpt**: a piece of one source, picked out as a record of its own, so that what rests on it cites it by id rather than copying it. `{ id, source, iteration, … }`, with its id the source's code and a number (`SRC-2.3`), and where it is in the source, as the [sources practice](../../practices/sources.md) anchors a citation: `quote` (the words), `page` and `quote` (a PDF), `region` (an image), `rows` (data). Every citation in the records below names an excerpt.
+
+**Tags**: `[{ tag, means }]`, every tag the sandbox uses, declared once with what it means, such as `{ tag: 'platform-changes', means: 'How the board shows a train moved to another platform.' }`. Any source, excerpt or record can carry `tags: ['platform-changes', …]`, for finding it: searching, filtering, sorting and grouping. Tags work out nothing else.
 
 **A claim**: `{ id, assertions: { 'SRC-2.3': '+' or '−', … } }`, each excerpt it cites with its stance, plus whatever else its record holds. A no can be written `'−'` or `'-'`.
 
@@ -100,6 +102,7 @@ A scenario or rule needs no code until there's a model to run it on. Without `pl
 | `links()` | Every link, `{ from, to, means }`, from what something rests on to what rests on it, each once. `means` says what it means, in words (below). |
 | `inputsOf(id)` | What a record rests on: `{ material, records }`, its material being the sources and excerpts. |
 | `excerptsOf(id)` | Every excerpt a record rests on, all the way back through what it rests on: the passages behind a scenario, a rule or a decision. The walk stops at sources. |
+| `tags()` | Every tag, `[{ tag, means, declared, on }]`: those declared, in their order, then any in use but never declared (`declared: false`, `means: null`). `on` lists the ids carrying it, sources first; empty for a tag declared but unused. |
 | `appearances(id)` | The iterations it appears in: the one it was raised in, each later one bringing new material for it, the one where something replaced it, and, for decisions, goals, predictions, experiments, metrics, assumptions and inferences, each one bringing back what they rest on, so they can be judged again; an investigation also when what it gathered arrives. |
 | `iteration(k)` | What iteration `k` shows: `{ cards, links }`. Each card is `{ id, as }`, `as` being `raised`, `updated` (back with new material) or `carried` (an earlier one this iteration's cards rest on, as it last stood, with `from`, the iteration it stood in). Links, `{ from, to, means }`, are those among the cards shown, each to the version of what it rests on that stood by then; what brought a record about links to it only in the iteration where it did. Which order cards stand in is the sandbox's to choose. |
 | `standing(k)` | Everything standing by iteration `k`, for a sandbox following it all rather than what the iteration changed: `{ cards, links }`. Every source and record raised by then; those `iteration(k)` shows raised or updated are so, the rest `carried`, with `from`, the iteration where they last changed. Links, `{ from, to, means }`, are every one among them from `links()`. |
