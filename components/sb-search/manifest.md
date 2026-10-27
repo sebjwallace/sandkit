@@ -70,6 +70,17 @@ Name a filter or group only for fields with a few values a reader cares about, s
 
 Keep it short: a title, a line and two or three details. When the search matches a field the card doesn't show, the item says where it was found ("Found in Calls at Doncaster"), so no result appears without a reason.
 
+### The sandbox's own look
+
+Optionally, `drawItem` draws items the sandbox's own way in the list or grid, so results look like the rest of the sandbox:
+
+```js
+search.view = 'grid';
+search.drawItem = (item, view) => (view === 'grid' ? drawServiceCard(item) : null);
+```
+
+It's `(item, view) => element or null`, with `view` `list` or `grid`; the table always shows fields. `null` keeps the search's look for that item. The search places what comes back in the item, without a frame of its own, showing only a ring when the item is chosen or pointed at and its tone as a bar down the left edge, and keeps everything else: choosing, highlighting, tone, `data-ref`, grouping and the limit. It can't mark matches inside the sandbox's element, so the item says every field a search was found in. Put nothing to interact with inside: a click on it chooses the item. Setting it redraws the results.
+
 ## Presets
 
 `presets` lists named sets of criteria for viewers to choose from, in a Preset menu:
@@ -121,6 +132,7 @@ A child with `slot="detail"` is the sandbox's own content about the chosen item.
 | `view` | Reflects the attribute. |
 | `fullscreen` | Lays the search over the whole page, with the criteria pinned at the top while the results scroll. Escape leaves it. |
 | `filtersOpen` | Whether the filters are shown (default `true`). Closed, the values chosen are listed beside the Filters toggle. |
+| `drawItem` | `(item, view) => element or null`: the sandbox's own look for an item in the list or grid (see The sandbox's own look). |
 | `match` | `(item, { text, regex }) => boolean`, replacing the built-in search. Matches are then not marked, nor said where they were found. |
 | `filter` | `(item) => boolean`, a filter the model or the sandbox's own controls decide, applied with the viewer's. |
 | `highlight` | Ids of the items to point at: one, a list, or `null`. |
@@ -143,7 +155,7 @@ Theme tokens: `--sb-bg`, `--sb-surface`, `--sb-surface-2`, `--sb-text`, `--sb-mu
 
 The search sits in a border; inside, the criteria and the detail pane are lifted and the results dropped a step below them, so its parts stay apart from each other and from the page.
 
-Classes: `sb-search__frame` (`--full`), `sb-search__criteria`, `sb-search__bar`, `sb-search__input`, `sb-search__regex`, `sb-search__count`, `sb-search__problem`, `sb-search__select` (`sb-search__preset`, `sb-search__sort`, `sb-search__group`), `sb-search__views`, `sb-search__full`, `sb-search__toggle`, `sb-search__chosen`, `sb-search__filters`, `sb-search__value` (`--none`), `sb-search__ranged`, `sb-search__handle`, `sb-search__tick` (`--out`), `sb-search__results`, `sb-search__group`, `sb-search__heading`, `sb-search__items` (`--list`, `--grid`), `sb-search__item` (`--selected`, `--highlighted`), `sb-search__title`, `sb-search__subtitle`, `sb-search__details`, `sb-search__found`, `sb-search__table`, `sb-search__match`, `sb-search__more`, `sb-search__pane`, `sb-search__pane-body`, `sb-search__empty`. Items carry `data-tone`, and `data-ref` with their `id`, so a sandbox can find them and go to them (see the [locating practice](../../practices/locating.md)); items the search or filters hide aren't drawn, so aren't found.
+Classes: `sb-search__frame` (`--full`), `sb-search__criteria`, `sb-search__bar`, `sb-search__input`, `sb-search__regex`, `sb-search__count`, `sb-search__problem`, `sb-search__select` (`sb-search__preset`, `sb-search__sort`, `sb-search__group`), `sb-search__views`, `sb-search__full`, `sb-search__toggle`, `sb-search__chosen`, `sb-search__filters`, `sb-search__value` (`--none`), `sb-search__ranged`, `sb-search__handle`, `sb-search__tick` (`--out`), `sb-search__results`, `sb-search__group`, `sb-search__heading`, `sb-search__items` (`--list`, `--grid`), `sb-search__item` (`--selected`, `--highlighted`), `sb-search__item--own` (an item drawn by `drawItem`), `sb-search__title`, `sb-search__subtitle`, `sb-search__details`, `sb-search__found`, `sb-search__table`, `sb-search__match`, `sb-search__more`, `sb-search__pane`, `sb-search__pane-body`, `sb-search__empty`. Items carry `data-tone`, and `data-ref` with their `id`, so a sandbox can find them and go to them (see the [locating practice](../../practices/locating.md)); items the search or filters hide aren't drawn, so aren't found.
 
 The search draws `<p>`, `<ul>`, `<dl>` and `<table>` elements; keep the sandbox's rules for those scoped to its own content, or they reach inside.
 

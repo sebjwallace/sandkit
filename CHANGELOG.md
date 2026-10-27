@@ -6,6 +6,7 @@ Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking
 
 ## 0.2.70 · 2026-10-27
 - Tags in domain discovery: `engines/discovery` 0.3.1 takes tags declared with what they mean, carried by any source, excerpt or record, and lists them all, naming any never declared. The domain discovery practice says how to tag well, in `records/tags.js`; the sources practice points catalogue tags to it. Recorded in DECISIONS.md.
+- `sb-search` 0.1.1 optionally draws items the sandbox's own way in the list or grid (`drawItem`), keeping its frame, choosing and grouping around them. Recorded in DECISIONS.md.
 
 ## 0.2.69 · 2026-10-27
 - Sixty components: added `sb-search`, a collection to search, filter, range, sort and group, as a list, grid or table, in the page or full screen, with presets and a slot for the chosen item's detail. It works from a bare array, and takes functions of the sandbox's own where it knows better.

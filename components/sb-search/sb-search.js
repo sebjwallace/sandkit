@@ -1,4 +1,4 @@
-// Sandkit sb-search 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-search 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A collection to search, filter, sort and group, shown as a list, a grid or a table, in the page or
 // full screen. Domain-agnostic: give it an array of objects and it works out the rest; say more
 // through `fields`, or hand it functions of your own where the sandbox knows better.
@@ -122,6 +122,13 @@
     .sb-search__item:hover, .sb-search__item--highlighted { background: var(--sb-accent-soft, #eaf0ff); }
     .sb-search__item--highlighted { border-color: var(--sb-accent, #2563eb); }
     .sb-search__item--selected { border-color: var(--sb-accent, #2563eb); box-shadow: inset 3px 0 var(--sb-search-tone), 0 0 0 1px var(--sb-accent, #2563eb), var(--sb-search-shadow); }
+    /* The sandbox's own look for an item, drawn by drawItem: no frame of the search's, only a ring
+       when chosen or pointed at, and tone as a bar over its edge. */
+    .sb-search__item--own, .sb-search__item--own:hover { align-self: start; padding: 0; border: 0; background: none; box-shadow: none; }
+    .sb-search__item--own.sb-search__item--highlighted { box-shadow: 0 0 0 1px var(--sb-accent, #2563eb); }
+    .sb-search__item--own.sb-search__item--selected { box-shadow: 0 0 0 2px var(--sb-accent, #2563eb); }
+    .sb-search__item--own::before { content: ''; position: absolute; z-index: 1; inset: 0 auto 0 0; width: 3px; border-radius: var(--sb-radius, 8px) 0 0 var(--sb-radius, 8px); background: var(--sb-search-tone); pointer-events: none; }
+    .sb-search__item--own .sb-search__found { margin: 0; border-radius: 0 0 var(--sb-radius, 8px) var(--sb-radius, 8px); }
     .sb-search__item:focus-visible { outline: 2px solid var(--sb-accent, #2563eb); outline-offset: 1px; }
     .sb-search__title { font-weight: 600; overflow-wrap: anywhere; }
     .sb-search__subtitle { color: var(--sb-muted, #616e7c); overflow-wrap: anywhere; }
@@ -243,6 +250,8 @@
       this._built = false;
       this.match = null;
       this.filter = null;
+      this._drawItem = null;
+      this._own = [];          // the sandbox's own elements for the items drawn, placed once drawn
       this.addEventListener('click', (e) => this._onClick(e));
       this.addEventListener('input', (e) => this._onInput(e));
       this.addEventListener('change', (e) => this._onChange(e));
@@ -414,6 +423,13 @@
     }
 
     // Whether the filters are shown; closed, the values chosen are listed beside the toggle instead.
+    // The sandbox's own look for an item in the list or grid: (item, view) => element or null.
+    get drawItem() { return this._drawItem; }
+    set drawItem(draw) {
+      this._drawItem = typeof draw === 'function' ? draw : null;
+      this._renderResults();
+    }
+
     get filtersOpen() { return this._filtersOpen; }
     set filtersOpen(open) {
       this._filtersOpen = !!open;
@@ -938,8 +954,10 @@
       const budget = { left: this._showAll ? Infinity : this._limit };
       const pattern = this.match ? null : this._pattern();
       const groups = this._groups(results);
+      this._own = [];
       box.innerHTML = (this.view === 'table' ? this._tableHtml(groups, budget, pattern) : this._listHtml(groups, budget, pattern))
         + (budget.left < 0 ? `<button class="sb-search__more" type="button">Show all ${results.length}</button>` : '');
+      box.querySelectorAll('.sb-search__own').forEach((slot, i) => slot.replaceWith(this._own[i]));
     }
 
     // Takes rows from the budget shared by every group; overdrawing it marks that some weren't drawn.
@@ -965,6 +983,11 @@
     }
 
     _itemHtml(row, pattern) {
+      const own = this._drawItem?.(row.item, this.view);
+      if (own instanceof Element) {
+        this._own.push(own);
+        return `<li ${this._itemAttributes(row, 'sb-search__item--own')}><span class="sb-search__own"></span>${this._foundHtml(row, pattern, [])}</li>`;
+      }
       const { title, subtitle, details = [] } = this._card();
       const show = (key) => this._marked(row.texts[key] ?? keyOf(row.item[key]), pattern);
       const shown = details.filter((key) => !isEmpty(row.texts[key] ?? row.item[key]));
@@ -1014,10 +1037,10 @@
       </table>`;
     }
 
-    _itemAttributes(row) {
+    _itemAttributes(row, ...extra) {
       const { item } = row;
       const index = this._drawn.push(item) - 1;
-      const classes = ['sb-search__item'];
+      const classes = ['sb-search__item', ...extra];
       if (item === this._selected) classes.push('sb-search__item--selected');
       if (!isEmpty(item.id) && this._highlight.has(String(item.id))) classes.push('sb-search__item--highlighted');
       return `class="${classes.join(' ')}" tabindex="0" data-index="${index}"`

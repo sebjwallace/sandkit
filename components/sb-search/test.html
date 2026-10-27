@@ -323,6 +323,30 @@
       assertEqual(table.querySelectorAll('tbody tr').length, 5);
     });
 
+    test('the sandbox can draw items its own way, per view, inside the search\'s frame', () => {
+      const s = search('view="grid"');
+      const views = new Set();
+      s.drawItem = (item, view) => {
+        views.add(view);
+        if (item.id === 'T5') return null;
+        return Object.assign(document.createElement('b'), { className: 'own', textContent: `<i>${item.name}</i>` });
+      };
+      const own = [...s.querySelectorAll('.own')];
+      assertEqual(own.map((el) => el.textContent), ['<i>Leeds Express</i>', '<i>York Stopper</i>', '<i>Hull Flyer</i>', '<i>Item 10</i>'], 'set after the items, it redraws');
+      assertEqual(titles(s), ['Item 2'], 'null keeps the search\'s look');
+      assert(own[1].closest('.sb-search__item--own').dataset.ref === 'T2', 'in the item\'s frame');
+      own[1].click();
+      assertEqual(s.selected, TRAINS[1], 'clicking it chooses the item');
+      type(s, 'Selby');
+      assertEqual(s.querySelector('.sb-search__item--own .sb-search__found').textContent, 'Found incalls Selby', 'says where it was found');
+      s.view = 'table';
+      assertEqual([s.querySelectorAll('.own').length, s.querySelectorAll('tbody tr').length], [0, 1], 'the table is the search\'s own');
+      assertEqual([...views], ['grid'], 'asked only for the list and grid');
+      s.drawItem = null;
+      s.view = 'grid';
+      assertEqual(titles(s), ['Hull Flyer'], 'without it, the search\'s look again');
+    });
+
     test('one table for all groups, so the columns line up', () => {
       const s = search('view="table"');
       s.group = 'status';

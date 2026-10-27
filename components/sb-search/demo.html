@@ -32,6 +32,12 @@
     .service dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 0; font-size: 13px; }
     .service dt { color: var(--sb-muted); }
     .service dd { margin: 0; }
+    /* An asset in the grid, drawn the sandbox's own way: its capacity as a bar against the largest. */
+    .asset { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); }
+    .asset strong { font-size: 14px; }
+    .asset span { color: var(--sb-muted); font-size: 12px; }
+    .asset__track { height: 6px; border-radius: 3px; background: var(--sb-surface-2); }
+    .asset__bar { display: block; height: 100%; min-width: 3px; border-radius: 3px; background: var(--sb-accent); }
   </style>
 </head>
 <body>
@@ -68,7 +74,7 @@
   const search = document.querySelector('sb-search');
   search.items = model.services;   // [{ id: '1A10', from: 'Leeds', operator: 'Northern', delay: 0 }, …]
 &lt;/script&gt;</pre>
-      <p>That's enough: every field is searched and sortable, and fields with a few repeated values become filters and groups. Say more through <code>fields</code> (labels, formats, which to filter and group by) and <code>card</code> (what the list and grid show). Where the sandbox knows better, hand it functions: a field's <code>value</code> and <code>compare</code>, or a <code>match</code> and <code>filter</code> of its own.</p>
+      <p>That's enough: every field is searched and sortable, and fields with a few repeated values become filters and groups. Say more through <code>fields</code> (labels, formats, which to filter and group by) and <code>card</code> (what the list and grid show), or draw items your own way with <code>drawItem</code>. Where the sandbox knows better, hand it functions: a field's <code>value</code> and <code>compare</code>, or a <code>match</code> and <code>filter</code> of its own.</p>
       <p>Write <code>presets</code> for the questions people will ask most, and set <code>preset</code> to start on one. Put the sandbox's own content about the chosen item in a child with <code>slot="detail"</code>, and fill it on <code>sb-select</code>: it shows in a pane beside the results, or is left free for content that shows itself, such as a dialog.</p>
 
       <h3>Making it reveal, not just list</h3>
@@ -93,7 +99,7 @@
 
     <section class="example">
       <h2>Assets on a power grid</h2>
-      <p>A grid of cards grouped by region, with functions of the sandbox's own: capacity grouped into bands, condition sorted from good to poor, a range over age, and a search that also finds an asset by its id.</p>
+      <p>A grid of the sandbox's own cards, each showing its capacity as a bar against the largest, grouped by region, with functions of the sandbox's own: capacity grouped into bands, condition sorted from good to poor, a range over age, and a search that also finds an asset by its id.</p>
       <sb-search id="assets" view="grid" placeholder="Search assets, or an id like GA-104…"></sb-search>
     </section>
   </main>
@@ -206,6 +212,20 @@
       { id: 'big', label: 'Biggest first', group: 'band', sort: { key: 'capacity', direction: 'descending' } }
     ];
     assets.preset = 'by-region';
+
+    // In the grid, each asset drawn the sandbox's own way; the list keeps the search's look.
+    const largest = Math.max(...assets.items.map((asset) => asset.capacity));
+    assets.drawItem = (asset, view) => {
+      if (view !== 'grid') return null;
+      const tile = Object.assign(el('div'), { className: 'asset' });
+      const track = Object.assign(el('span'), { className: 'asset__track' });
+      const bar = Object.assign(el('span'), { className: 'asset__bar' });
+      bar.style.width = `${(asset.capacity / largest) * 100}%`;
+      track.append(bar);
+      tile.append(el('strong', asset.name), el('span', `${asset.kind} · ${asset.region}`), track,
+        el('span', `${asset.capacity} MW · ${asset.age} years · ${asset.condition}`));
+      return tile;
+    };
   </script>
 </body>
 </html>
