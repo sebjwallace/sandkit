@@ -22,9 +22,11 @@
   <script src="../../components/sb-source-trace/sb-source-trace.js"></script>
   <script src="../../components/sb-chart/sb-chart.js"></script>
   <script src="../../components/sb-table/sb-table.js"></script>
+  <script src="../../components/sb-search/sb-search.js"></script>
   <script src="../../components/sb-discovery-card/sb-discovery-card.js"></script>
   <script src="../../components/sb-discovery-board/sb-discovery-board.js"></script>
   <script src="../../engines/discovery/discovery.js"></script>
+  <script src="records/tags.js"></script>
   <script src="records/excerpts.js"></script>
   <script src="records/claims.js"></script>
   <script src="records/questions.js"></script>
@@ -123,6 +125,14 @@
     .sb-discovery-board__column--folded .sb-discovery-card__compact > :not(.sb-discovery-card__compact-head),
     .sb-discovery-board__column--folded .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }
     sb-source-trace sb-discovery-card, sb-source-trace .sb-discovery-card__paper, sb-source-trace .sb-discovery-card__compact { height: 100%; }
+    /* Finding a card: the key of tags, and the search. */
+    .tag-key { margin: 0 0 12px; font-size: 13px; }
+    .tag-key summary { cursor: pointer; color: var(--sb-muted); }
+    .tag-key .undeclared { color: var(--sb-bad); }
+    #finder { max-height: 640px; }
+    .tag-meanings { display: grid; grid-template-columns: max-content 1fr; gap: 4px 10px; margin: 12px 0 0; font-size: 12px; }
+    .tag-meanings dt { font-weight: 600; }
+    .tag-meanings dd { margin: 0; color: var(--sb-muted); }
     .flow-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
     .flow-head h3 { margin: 0; }
     .flip { display: flex; padding: 2px; border-radius: var(--sb-radius); background: var(--sb-surface-2); }
@@ -170,6 +180,18 @@
     </section>
 
     <section class="card">
+      <h3>Find a card</h3>
+      <p class="flow-hint">Every source, excerpt and card raised by the iteration shown above, as it stood then, drawn as on the boards in the grid. Search their words, or filter, sort and group them by kind, tag or iteration. Each tag is declared once with what it means.</p>
+      <details class="tag-key">
+        <summary>What the tags mean</summary>
+        <dl class="tag-meanings" id="tag-key"></dl>
+      </details>
+      <sb-search id="finder" view="grid" placeholder="Search cards…">
+        <div slot="detail" id="finder-detail"></div>
+      </sb-search>
+    </section>
+
+    <section class="card">
       <h3>The prototype</h3>
       <p class="flow-hint">The departure board, run by the model of the iteration shown above on the afternoon’s trains. Scrub through the afternoon as the feed’s updates arrive. Point at anything to light what it decides and what decided it; double-click a line, a cell or an outline entry to open the object behind it.</p>
       <sb-scrubber id="afternoon" min="0" max="40" step="1" duration="20" label="The afternoon"></sb-scrubber>
@@ -212,22 +234,22 @@
     // Ashford International's departure board, and how it decides what to show. Trains come in
     // from the data feed; the board's controller turns each one into a line on the board.
     const SOURCES = [
-      { id: 'SRC-1', iteration: 1, gatheredBy: 'INV-3', name: 'Display supplier', title: 'Board controller manual, v4.2', summary: 'How the supplier says the board decides what to show, and how its rules are set up.', path: 'sources/supplier/controller-manual-v4.2.pdf', format: 'document', role: 'plan', speaksTo: 'what should be', asOf: '2019', grade: { value: 4, why: 'First-hand, trusted and clean.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'clean' } } },
-      { id: 'SRC-2', iteration: 1, gatheredBy: 'INV-1', name: 'Station camera', title: 'Board stills, Tuesday afternoon', summary: 'A photo of the main board every minute, from 14:00 to 15:00.', path: 'sources/board/stills-2026-10-06.png', format: 'image', role: 'record', asOf: '6 Oct 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
-      { id: 'SRC-3', iteration: 1, gatheredBy: 'INV-2', name: 'Dispatcher', title: 'Talk with a platform dispatcher', summary: 'Notes from twenty minutes on platform 4 with the afternoon dispatcher.', path: 'sources/interviews/dispatcher.md', format: 'notes', role: 'record', asOf: '7 Oct 2026', grade: { value: 4, why: 'First-hand, trusted and partial.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'partial' } } },
-      { id: 'SRC-4', iteration: 1, gatheredBy: 'INV-4', name: 'Commuter newsletter', title: '“The board that cries On time”', summary: 'The commuter group’s newsletter, retelling a forum post.', path: 'sources/web/commuter-newsletter.html', format: 'web', role: 'record', asOf: '3 Oct 2026', copies: 'SRC-5', grade: { value: 3, why: 'Second-hand, unknown and clean.', aspects: { distance: 'second-hand', trust: 'unknown', clarity: 'clean' } } },
-      { id: 'SRC-5', iteration: 1, gatheredBy: 'INV-4', name: 'Passenger forum', title: '“Board said On time, train never came”', summary: 'A passenger says the board showed On time for a train with no estimate.', path: 'sources/web/forum-on-time.html', format: 'web', role: 'opinion', asOf: '1 Oct 2026', grade: { value: 2, why: 'Second-hand, doubtful and partial.', aspects: { distance: 'second-hand', trust: 'doubtful', clarity: 'partial' } } },
-      { id: 'SRC-6', iteration: 1, name: 'Agent', title: 'The board against the feed', summary: 'The agent’s reading of the stills against the train data feed for the same hour.', path: 'sources/analyses/board-against-feed.md', format: 'analysis', role: 'record', asOf: '7 Oct 2026', derivedFrom: 'SRC-2', grade: { value: 4, why: 'First-hand, unknown and clean.', aspects: { distance: 'first-hand', trust: 'unknown', clarity: 'clean' } } },
-      { id: 'SRC-7', iteration: 1, gatheredBy: 'INV-3', name: 'Customer services', title: 'Complaints log, September', summary: 'Every complaint made to the station in September, with its category.', path: 'sources/data/complaints-2026-09.csv', format: 'data', role: 'record', asOf: '30 Sep 2026', grade: { value: 4, why: 'Direct, trusted and partial.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'partial' } } },
-      { id: 'SRC-8', iteration: 1, gatheredBy: 'INV-3', name: 'Station team', title: 'Station team minute, 9 October', summary: 'The station team’s resolutions on the departure board.', path: 'sources/minutes/station-team-2026-10-09.pdf', format: 'document', role: 'decision', speaksTo: 'what should be', asOf: '9 Oct 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
-      { id: 'SRC-9', iteration: 2, name: 'Board controller', title: 'Message log, 19 to 25 October', summary: 'Every message the board showed in the week after the new rule, with the train it was for.', path: 'sources/board/message-log-2026-10-25.csv', format: 'data', role: 'record', asOf: '25 Oct 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
-      { id: 'SRC-10', iteration: 2, name: 'Customer services', title: 'Complaints log, October', summary: 'Every complaint made to the station in October, with its category.', path: 'sources/data/complaints-2026-10.csv', format: 'data', role: 'record', asOf: '31 Oct 2026', grade: { value: 4, why: 'Direct, trusted and partial.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'partial' } } },
-      { id: 'SRC-11', iteration: 2, name: 'Survey team', title: 'Passenger survey on the board', summary: 'Two hundred passengers asked which parts of the board they read before heading for a train.', path: 'sources/data/passenger-survey-2026-10.csv', format: 'data', role: 'record', asOf: '28 Oct 2026', grade: { value: 4, why: 'First-hand, trusted and partial.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'partial' } } },
-      { id: 'SRC-12', iteration: 2, gatheredBy: 'INV-5', name: 'Duty manager', title: 'Notes from a busy morning', summary: 'The duty manager watched the main board through the morning peak.', path: 'sources/interviews/morning-peak.md', format: 'notes', role: 'record', asOf: '29 Oct 2026', grade: { value: 4, why: 'First-hand, trusted and partial.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'partial' } } },
-      { id: 'SRC-13', iteration: 2, name: 'Station team', title: 'Station team minute, 6 November', summary: 'The station team’s resolutions after October’s results.', path: 'sources/minutes/station-team-2026-11-06.pdf', format: 'document', role: 'decision', speaksTo: 'what should be', asOf: '6 Nov 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
-      { id: 'SRC-14', iteration: 2, name: 'Signalling control', title: 'Letter of agreement, platform-change notice', summary: 'Signalling control and the station team agree how much notice of a platform change each gives.', path: 'sources/agreements/platform-change-notice.pdf', format: 'document', role: 'decision', speaksTo: 'what should be', asOf: '5 Nov 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
-      { id: 'SRC-15', iteration: 2, name: 'Sandbox model', title: 'Model run: October’s platform changes, replayed', summary: 'The board’s model replaying every platform change in October with PA announcements and seven minutes’ notice from signalling.', path: 'sources/runs/replay-2026-10.csv', format: 'data', role: 'record', asOf: '7 Nov 2026', grade: { value: 4, why: 'First-hand, unknown and clean.', aspects: { distance: 'first-hand', trust: 'unknown', clarity: 'clean' } } },
-      { id: 'SRC-16', iteration: 2, name: 'Platform dispatcher', title: 'Comments on the prototype, 3 November', summary: 'The afternoon dispatcher tried the prototype of iteration 1 in comment mode and said what she thought.', path: 'sources/feedback/prototype-comments-2026-11-03.md', format: 'annotations', role: 'record', asOf: '3 Nov 2026', grade: { value: 4, why: 'First-hand, from someone who runs the board every afternoon; on a prototype, not the real board.' } },
+      { id: 'SRC-1', iteration: 1, tags: ['board-setup', 'message-line'], gatheredBy: 'INV-3', name: 'Display supplier', title: 'Board controller manual, v4.2', summary: 'How the supplier says the board decides what to show, and how its rules are set up.', path: 'sources/supplier/controller-manual-v4.2.pdf', format: 'document', role: 'plan', speaksTo: 'what should be', asOf: '2019', grade: { value: 4, why: 'First-hand, trusted and clean.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-2', iteration: 1, tags: ['departed-trains', 'delays', 'platforms'], gatheredBy: 'INV-1', name: 'Station camera', title: 'Board stills, Tuesday afternoon', summary: 'A photo of the main board every minute, from 14:00 to 15:00.', path: 'sources/board/stills-2026-10-06.png', format: 'image', role: 'record', asOf: '6 Oct 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-3', iteration: 1, tags: ['platform-changes', 'no-estimate'], gatheredBy: 'INV-2', name: 'Dispatcher', title: 'Talk with a platform dispatcher', summary: 'Notes from twenty minutes on platform 4 with the afternoon dispatcher.', path: 'sources/interviews/dispatcher.md', format: 'notes', role: 'record', asOf: '7 Oct 2026', grade: { value: 4, why: 'First-hand, trusted and partial.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'partial' } } },
+      { id: 'SRC-4', iteration: 1, tags: ['no-estimate', 'passengers'], gatheredBy: 'INV-4', name: 'Commuter newsletter', title: '“The board that cries On time”', summary: 'The commuter group’s newsletter, retelling a forum post.', path: 'sources/web/commuter-newsletter.html', format: 'web', role: 'record', asOf: '3 Oct 2026', copies: 'SRC-5', grade: { value: 3, why: 'Second-hand, unknown and clean.', aspects: { distance: 'second-hand', trust: 'unknown', clarity: 'clean' } } },
+      { id: 'SRC-5', iteration: 1, tags: ['no-estimate', 'passengers'], gatheredBy: 'INV-4', name: 'Passenger forum', title: '“Board said On time, train never came”', summary: 'A passenger says the board showed On time for a train with no estimate.', path: 'sources/web/forum-on-time.html', format: 'web', role: 'opinion', asOf: '1 Oct 2026', grade: { value: 2, why: 'Second-hand, doubtful and partial.', aspects: { distance: 'second-hand', trust: 'doubtful', clarity: 'partial' } } },
+      { id: 'SRC-6', iteration: 1, tags: ['departed-trains', 'delays', 'platform-changes'], name: 'Agent', title: 'The board against the feed', summary: 'The agent’s reading of the stills against the train data feed for the same hour.', path: 'sources/analyses/board-against-feed.md', format: 'analysis', role: 'record', asOf: '7 Oct 2026', derivedFrom: 'SRC-2', grade: { value: 4, why: 'First-hand, unknown and clean.', aspects: { distance: 'first-hand', trust: 'unknown', clarity: 'clean' } } },
+      { id: 'SRC-7', iteration: 1, tags: ['passengers', 'platform-changes'], gatheredBy: 'INV-3', name: 'Customer services', title: 'Complaints log, September', summary: 'Every complaint made to the station in September, with its category.', path: 'sources/data/complaints-2026-09.csv', format: 'data', role: 'record', asOf: '30 Sep 2026', grade: { value: 4, why: 'Direct, trusted and partial.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'partial' } } },
+      { id: 'SRC-8', iteration: 1, tags: ['platform-changes', 'message-line'], gatheredBy: 'INV-3', name: 'Station team', title: 'Station team minute, 9 October', summary: 'The station team’s resolutions on the departure board.', path: 'sources/minutes/station-team-2026-10-09.pdf', format: 'document', role: 'decision', speaksTo: 'what should be', asOf: '9 Oct 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-9', iteration: 2, tags: ['message-line', 'platform-changes'], name: 'Board controller', title: 'Message log, 19 to 25 October', summary: 'Every message the board showed in the week after the new rule, with the train it was for.', path: 'sources/board/message-log-2026-10-25.csv', format: 'data', role: 'record', asOf: '25 Oct 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-10', iteration: 2, tags: ['passengers', 'platform-changes'], name: 'Customer services', title: 'Complaints log, October', summary: 'Every complaint made to the station in October, with its category.', path: 'sources/data/complaints-2026-10.csv', format: 'data', role: 'record', asOf: '31 Oct 2026', grade: { value: 4, why: 'Direct, trusted and partial.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'partial' } } },
+      { id: 'SRC-11', iteration: 2, tags: ['passengers', 'message-line'], name: 'Survey team', title: 'Passenger survey on the board', summary: 'Two hundred passengers asked which parts of the board they read before heading for a train.', path: 'sources/data/passenger-survey-2026-10.csv', format: 'data', role: 'record', asOf: '28 Oct 2026', grade: { value: 4, why: 'First-hand, trusted and partial.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'partial' } } },
+      { id: 'SRC-12', iteration: 2, tags: ['due-trains'], gatheredBy: 'INV-5', name: 'Duty manager', title: 'Notes from a busy morning', summary: 'The duty manager watched the main board through the morning peak.', path: 'sources/interviews/morning-peak.md', format: 'notes', role: 'record', asOf: '29 Oct 2026', grade: { value: 4, why: 'First-hand, trusted and partial.', aspects: { distance: 'first-hand', trust: 'trusted', clarity: 'partial' } } },
+      { id: 'SRC-13', iteration: 2, tags: ['announcements', 'platform-changes'], name: 'Station team', title: 'Station team minute, 6 November', summary: 'The station team’s resolutions after October’s results.', path: 'sources/minutes/station-team-2026-11-06.pdf', format: 'document', role: 'decision', speaksTo: 'what should be', asOf: '6 Nov 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-14', iteration: 2, tags: ['announcements', 'platform-changes'], name: 'Signalling control', title: 'Letter of agreement, platform-change notice', summary: 'Signalling control and the station team agree how much notice of a platform change each gives.', path: 'sources/agreements/platform-change-notice.pdf', format: 'document', role: 'decision', speaksTo: 'what should be', asOf: '5 Nov 2026', grade: { value: 5, why: 'Direct, trusted and clean.', aspects: { distance: 'direct', trust: 'trusted', clarity: 'clean' } } },
+      { id: 'SRC-15', iteration: 2, tags: ['announcements', 'platform-changes'], name: 'Sandbox model', title: 'Model run: October’s platform changes, replayed', summary: 'The board’s model replaying every platform change in October with PA announcements and seven minutes’ notice from signalling.', path: 'sources/runs/replay-2026-10.csv', format: 'data', role: 'record', asOf: '7 Nov 2026', grade: { value: 4, why: 'First-hand, unknown and clean.', aspects: { distance: 'first-hand', trust: 'unknown', clarity: 'clean' } } },
+      { id: 'SRC-16', iteration: 2, tags: ['message-line'], name: 'Platform dispatcher', title: 'Comments on the prototype, 3 November', summary: 'The afternoon dispatcher tried the prototype of iteration 1 in comment mode and said what she thought.', path: 'sources/feedback/prototype-comments-2026-11-03.md', format: 'annotations', role: 'record', asOf: '3 Nov 2026', grade: { value: 4, why: 'First-hand, from someone who runs the board every afternoon; on a prototype, not the real board.' } },
     ];
 
     // Each assertion: what the passage says to the claim, '+' (yes) or '−' (no), and its words.
@@ -719,7 +741,7 @@ Not announced,0
     const reliedOnBy = card => links().filter(([from, to]) => from === card.id && !to.startsWith('NEXT')).map(([, to]) => to);
 
     let engine = null;
-    const discovery = () => engine ??= createDiscovery({ sources: SOURCES, excerpts: EXCERPTS, claims: CLAIMS, questions: QUESTIONS, assumptions: ASSUMPTIONS,
+    const discovery = () => engine ??= createDiscovery({ sources: SOURCES, tags: TAGS, excerpts: EXCERPTS, claims: CLAIMS, questions: QUESTIONS, assumptions: ASSUMPTIONS,
       inferences: INFERENCES, observations: OBSERVATIONS, predictions: PREDICTIONS, outcomes: OUTCOMES, investigations: INVESTIGATIONS,
       experiments: EXPERIMENTS, actions: ACTIONS, decisions: DECISIONS, goals: GOALS, metrics: METRICS, definitions: DEFINITIONS,
       opinions: OPINIONS, feedback: FEEDBACK, agreements: AGREEMENTS, constraints: CONSTRAINTS, risks: RISKS, awaited: AWAITED, entities: ENTITIES,
@@ -1772,6 +1794,7 @@ Not announced,0
           shown.iteration += Number(button.dataset.step);
           drawFlow(root);
           drawPrototype();
+          drawFinder();
         });
       }
       for (const button of document.querySelectorAll('[data-board]')) {
@@ -1784,6 +1807,53 @@ Not announced,0
 
 
 
+
+    // Finding a card: every source, excerpt and record raised by the iteration shown, as it stood
+    // then, in sb-search, with its tags. Runs are worked out, not written, so they carry no tags and
+    // aren't listed. The key gives every tag with what it means, from the engine.
+    const finder = document.getElementById('finder');
+    const searchable = () => ORDER.filter(id => !id.startsWith('RUN') && iterationOf(id) <= shown.iteration);
+    const textOf = (id, node) => node.text ?? node.excerpt?.quote;
+
+    function drawFinder() {
+      finder.items = searchable().map(id => {
+        const node = asOf(id, shown.iteration);
+        return { id, text: textOf(id, node), kind: capitalised(node.kind), tags: itemOf(id).tags ?? [], iteration: iterationOf(id), status: node.status ?? null };
+      });
+    }
+
+    // Every tag with what it means, from the engine; one never declared says so.
+    function drawTagKey() {
+      document.getElementById('tag-key').replaceChildren(...discovery().tags().flatMap(({ tag, means, declared }) =>
+        [el('dt', declared ? '' : 'undeclared', tag), el('dd', '', means ?? 'Never declared: say what it means in records/tags.js.')]));
+    }
+
+    // The chosen card, compact and openable, with what each of its tags means.
+    function showFound(item) {
+      const detail = document.getElementById('finder-detail');
+      if (!item) return detail.replaceChildren();
+      const meanings = document.createElement('dl');
+      meanings.className = 'tag-meanings';
+      for (const tag of item.tags) meanings.append(el('dt', '', tag), el('dd', '', discovery().tags().find(t => t.tag === tag)?.means ?? 'never declared'));
+      detail.replaceChildren(nodeCard({ id: item.id, ...asOf(item.id, shown.iteration) }, true), meanings);
+    }
+
+    function wireFinder() {
+      finder.fields = [
+        { key: 'text', label: 'Says' },
+        { key: 'id', label: 'Code', filter: false, group: false },
+        { key: 'kind', label: 'Kind', filter: true },
+        { key: 'tags', label: 'Tags', filter: true },
+        { key: 'iteration', label: 'Iteration', format: k => `Iteration ${k}`, filter: true },
+        { key: 'status', label: 'Status' },
+      ];
+      finder.card = { title: 'text', subtitle: 'id', details: ['kind', 'tags', 'status'] };
+      // In the grid, each result is the card itself, compact as on the boards; choosing it opens it beside.
+      finder.drawItem = (item, view) => (view === 'grid' ? nodeCard({ id: item.id, ...asOf(item.id, shown.iteration) }) : null);
+      finder.addEventListener('sb-select', e => showFound(e.detail.item));
+      drawFinder();
+      drawTagKey();
+    }
 
     // The toggle flips the board between running down and running across.
     function wireDirection() {
@@ -1916,6 +1986,7 @@ Not announced,0
         const refs = e.detail.ref ? [e.detail.ref] : [];
         for (const card of document.querySelectorAll('sb-discovery-card')) card.highlight = refs;
         board.highlight = refs;
+        finder.highlight = refs;
       });
     }
 
@@ -1925,6 +1996,7 @@ Not announced,0
     wireSteps(document.getElementById('flow'));
     wirePrototype();
     drawPrototype();
+    wireFinder();
     drawVersionsMockup();
   </script>
 </body>

@@ -2,7 +2,7 @@
 // Records: written once, never edited, only superseded; each says when, by whom and in which
 // iteration it was made. Read by the page and the discovery engine. See the domain discovery practice.
 const DECISIONS = [{
-  id: 'DEC-1', created: '2026-10-05T11:48', by: 'Agent', iteration: 1,
+  id: 'DEC-1', created: '2026-10-05T11:48', by: 'Agent', iteration: 1, tags: ['platform-changes', 'message-line'],
   title: 'How should the board tell passengers about a platform change?',
   status: 'accepted',
   when: '2026-10-09',
@@ -22,7 +22,7 @@ const DECISIONS = [{
     'SRC-6.4',
   ],
 }, {
-  id: 'DEC-2', created: '2026-11-04T09:42', by: 'Agent', iteration: 2,
+  id: 'DEC-2', created: '2026-11-04T09:42', by: 'Agent', iteration: 2, tags: ['platform-changes', 'announcements', 'passengers'],
   title: 'How do platform changes reach the passengers who don’t read the message line?',
   status: 'accepted',
   when: '2026-11-06',

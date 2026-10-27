@@ -8,12 +8,13 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
 2. **Markup:**
    - the iteration stepper and the board toggles;
    - the flow;
+   - Find a card (`sb-search#finder`, with the tags' meanings in a fold);
    - the prototype section (`sb-scrubber#afternoon`, the board, `sb-outliner#objects`);
    - the versions mock-up (`sb-chart`s, `sb-table#versions-table`);
    - three modals: `#card-modal`, `#source-modal` (holding `sb-source#source-view`) and `#object-modal` (`size="full"`).
 3. **Sources and records,** the only things written by hand:
    - **the sources:** `SOURCES`, the catalogue, in the page, each with its authored `grade`, what it `speaksTo` and the `iteration` it arrived in;
-   - **the records,** in `records/`, one script per kind, loaded before the page's script: `excerpts.js` (the pieces of sources the others cite, by code), `claims.js`, `questions.js`, `decisions.js` and the rest, `awaited.js`, and for the model `entities.js`, `primitives.js`, `scenarios.js` and `rules.js`. Each record carries `created`, `by` and `iteration`.
+   - **the records,** in `records/`, one script per kind, loaded before the page's script: `tags.js` (every tag, declared with what it means), `excerpts.js` (the pieces of sources the others cite, by code), `claims.js`, `questions.js`, `decisions.js` and the rest, `awaited.js`, and for the model `entities.js`, `primitives.js`, `scenarios.js` and `rules.js`. Each record carries `created`, `by` and `iteration`.
 4. **The model:**
    - classes `Delay`, `Platform`, `ClockTime`, `Train`, `Board`, `BoardWithPlatformChanges` and `Announcement`;
    - versions: `MODEL` and `CANDIDATES`, handed to the engine, which works out the runs;
@@ -35,9 +36,10 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
     - iterations: `ITERATIONS` (their titles), `iterationOf` (read from the record), `itemOf`;
     - everything standing: a board marked `whole` (Scenarios) asks the engine's `standing(k)` instead of `iteration(k)`;
     - drawing them: `asOf(id, k)` (a card's face as of an iteration), `faceOf` (its compact data), `drawCard` (any card, in a variant, with its slots), `nodeCard`, `ORDER` (the order cards stand in their columns) and `drawFlow`, which asks the engine what the iteration shows and gives the page's one `sb-discovery-board` its cards, columns and links.
-11. **The prototype and object view:** `drawPrototype`, `showObject`, and one function per tab (`nowView`, `codeView`, `relationsView`, `overTimeView`, `constraintsView`, `valuesSeenView`, `testedByView`, `definitionView`, `provenanceView`/`provenanceItems`), plus `wirePrototype`.
-12. **Links on the board:** labelled with what the engine says each means, and toned by `toneOfLink` (its tone, as the domain discovery practice gives it). Routing, lighting chains and folding are the board's.
-13. **Opening and pointing:** `openCard` (expanded, in a modal) and `openSource` (with `citationsOf`); `wireCards` answers every card's `sb-open` and routes `sb-highlight` to every card.
+11. **Finding a card:** `drawFinder` hands `sb-search` everything raised by the iteration shown, as it stood, with its tags, drawn in the grid as compact cards (`drawItem`); `showFound` shows the chosen card with what its tags mean; `drawTagKey` lists every tag from the engine's `tags()`.
+12. **The prototype and object view:** `drawPrototype`, `showObject`, and one function per tab (`nowView`, `codeView`, `relationsView`, `overTimeView`, `constraintsView`, `valuesSeenView`, `testedByView`, `definitionView`, `provenanceView`/`provenanceItems`), plus `wirePrototype`.
+13. **Links on the board:** labelled with what the engine says each means, and toned by `toneOfLink` (its tone, as the domain discovery practice gives it). Routing, lighting chains and folding are the board's.
+14. **Opening and pointing:** `openCard` (expanded, in a modal) and `openSource` (with `citationsOf`); `wireCards` answers every card's `sb-open` and routes `sb-highlight` to every card.
 
 ## How data flows
 

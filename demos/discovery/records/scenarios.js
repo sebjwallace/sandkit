@@ -2,13 +2,13 @@
 // Records: written once, never edited, only superseded; each says when, by whom and in which
 // iteration it was made. Read by the page and the discovery engine. See the domain discovery practice.
 const SCENARIOS = [
-  { id: 'SCN-1', created: '2026-10-05T13:26', by: 'Agent', iteration: 1, title: 'A departed train leaves the board', foundedOn: ['CLM-1'],
+  { id: 'SCN-1', created: '2026-10-05T13:26', by: 'Agent', iteration: 1, tags: ['departed-trains'], title: 'A departed train leaves the board', foundedOn: ['CLM-1'],
     steps: [{ keyword: 'Given', text: 'the 13:58 to Hastings has departed' }, { keyword: 'Then', text: 'the board doesn’t show it' }],
     play: M => {
       const train = trainFor(M, { time: '13:58', destination: 'Hastings', platform: 1, departed: true });
       return [null, { ok: !new M.Board([train]).shows(train), actual: 'it is still shown' }];
     } },
-  { id: 'SCN-2', created: '2026-10-05T13:33', by: 'Agent', iteration: 1, title: 'A cancelled train shows why', foundedOn: ['QST-1'],
+  { id: 'SCN-2', created: '2026-10-05T13:33', by: 'Agent', iteration: 1, tags: ['cancellations', 'message-line'], title: 'A cancelled train shows why', foundedOn: ['QST-1'],
     steps: [{ keyword: 'Given', text: 'the 14:10 to Reading is cancelled due to a shortage of train crew' },
       { keyword: 'Then', text: 'its message line says "Cancelled due to a shortage of train crew"' }],
     play: M => {
@@ -16,7 +16,7 @@ const SCENARIOS = [
       const message = new M.Board([train]).messageFor(train);
       return [null, { ok: message === 'Cancelled due to a shortage of train crew', actual: message || 'an empty message line' }];
     } },
-  { id: 'SCN-3', created: '2026-10-05T13:40', by: 'Agent', iteration: 1, title: 'A major delay shows why', foundedOn: ['DEF-1', 'QST-1'],
+  { id: 'SCN-3', created: '2026-10-05T13:40', by: 'Agent', iteration: 1, tags: ['delays', 'message-line'], title: 'A major delay shows why', foundedOn: ['DEF-1', 'QST-1'],
     steps: [{ keyword: 'Given', text: 'the 14:08 to Oxford is 12 minutes late because of a signal fault' },
       { keyword: 'Then', text: 'its message line says "Delayed due to a signal fault"' }],
     play: M => {
@@ -24,7 +24,7 @@ const SCENARIOS = [
       const message = new M.Board([train]).messageFor(train);
       return [null, { ok: message === 'Delayed due to a signal fault', actual: message || 'an empty message line' }];
     } },
-  { id: 'SCN-4', created: '2026-10-05T13:47', by: 'Agent', iteration: 1, title: 'A minor delay shows its expected time', foundedOn: ['CLM-2', 'DEF-1'],
+  { id: 'SCN-4', created: '2026-10-05T13:47', by: 'Agent', iteration: 1, tags: ['delays'], title: 'A minor delay shows its expected time', foundedOn: ['CLM-2', 'DEF-1'],
     steps: [{ keyword: 'Given', text: 'the 14:05 to Cambridge is 3 minutes late' },
       { keyword: 'Then', text: 'its expected time is "14:08"' }, { keyword: 'And', text: 'its message line is empty' }],
     play: M => {
@@ -32,7 +32,7 @@ const SCENARIOS = [
       const expected = train.expected()?.text, message = new M.Board([train]).messageFor(train);
       return [null, { ok: expected === '14:08', actual: expected ?? 'no expected time' }, { ok: message === '', actual: message }];
     } },
-  { id: 'SCN-5', created: '2026-10-05T13:54', by: 'Agent', iteration: 1, title: 'A changed platform shows a message', foundedOn: ['CLM-5', 'DEC-1'],
+  { id: 'SCN-5', created: '2026-10-05T13:54', by: 'Agent', iteration: 1, tags: ['platform-changes', 'message-line'], title: 'A changed platform shows a message', foundedOn: ['CLM-5', 'DEC-1'],
     steps: [{ keyword: 'Given', text: 'the 14:15 to Gatwick Airport was planned for platform 3' },
       { keyword: 'And', text: 'it now leaves from platform 9' }, { keyword: 'Then', text: 'its message line says "Platform changed to 9"' }],
     play: M => {
@@ -40,7 +40,7 @@ const SCENARIOS = [
       const message = new M.Board([train]).messageFor(train);
       return [null, null, { ok: message === 'Platform changed to 9', actual: message || 'an empty message line' }];
     } },
-  { id: 'SCN-6', created: '2026-11-04T10:38', by: 'Agent', iteration: 2, title: 'A platform change is announced in time', foundedOn: ['DEC-2', 'CON-2', 'CON-3'],
+  { id: 'SCN-6', created: '2026-11-04T10:38', by: 'Agent', iteration: 2, tags: ['announcements', 'platform-changes'], title: 'A platform change is announced in time', foundedOn: ['DEC-2', 'CON-2', 'CON-3'],
     steps: [{ keyword: 'Given', text: 'the 14:15 to Gatwick Airport is moved from platform 3 to 9' },
       { keyword: 'When', text: 'signalling confirms the change at 14:07' },
       { keyword: 'Then', text: 'the PA announces it by 14:10, five minutes before departure' }],
@@ -51,7 +51,7 @@ const SCENARIOS = [
       const at = announcement.announcedAt().text;
       return [null, null, { ok: announcement.inTime() && at <= '14:10', actual: `announced at ${at}` }];
     } },
-  { id: 'SCN-7', created: '2026-11-04T10:50', by: 'Agent', iteration: 2, title: 'A changed platform shows a message, late or not', supersedes: 'SCN-5', foundedOn: ['CLM-5', 'DEC-1', 'FB-1'],
+  { id: 'SCN-7', created: '2026-11-04T10:50', by: 'Agent', iteration: 2, tags: ['platform-changes', 'delays', 'message-line'], title: 'A changed platform shows a message, late or not', supersedes: 'SCN-5', foundedOn: ['CLM-5', 'DEC-1', 'FB-1'],
     steps: [{ keyword: 'Given', text: 'the 14:15 to Gatwick Airport was planned for platform 3 and leaves from 9' },
       { keyword: 'And', text: 'the 14:25 to Ely is 6 minutes late and moved from platform 10 to 11' },
       { keyword: 'Then', text: 'the Gatwick train\'s message line says "Platform changed to 9"' },

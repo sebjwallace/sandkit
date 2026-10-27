@@ -2,12 +2,12 @@
 // Records: written once, never edited, only superseded; each says when, by whom and in which
 // iteration it was made. Read by the page and the discovery engine. See the domain discovery practice.
 const OBSERVATIONS = [
-  { id: 'OBS-1', created: '2026-10-05T10:45', by: 'Agent', iteration: 1, metric: 'MET-1', value: '12', of: 'Missed trains after a platform change', when: 'September 2026',
+  { id: 'OBS-1', created: '2026-10-05T10:45', by: 'Agent', iteration: 1, tags: ['platform-changes', 'passengers'], metric: 'MET-1', value: '12', of: 'Missed trains after a platform change', when: 'September 2026',
     at: 'SRC-7.1' },
-  { id: 'OBS-2', created: '2026-11-04T09:21', by: 'Agent', iteration: 2, metric: 'MET-1', value: '5', of: 'Missed trains after a platform change', when: 'October 2026',
+  { id: 'OBS-2', created: '2026-11-04T09:21', by: 'Agent', iteration: 2, tags: ['platform-changes', 'passengers'], metric: 'MET-1', value: '5', of: 'Missed trains after a platform change', when: 'October 2026',
     at: 'SRC-10.1' },
-  { id: 'OBS-3', created: '2026-11-04T09:28', by: 'Agent', iteration: 2, metric: 'MET-2', value: '38%', of: 'Passengers who read the message line under each train', when: 'October 2026',
+  { id: 'OBS-3', created: '2026-11-04T09:28', by: 'Agent', iteration: 2, tags: ['message-line', 'passengers'], metric: 'MET-2', value: '38%', of: 'Passengers who read the message line under each train', when: 'October 2026',
     at: 'SRC-11.1', tests: ['ASM-1', '−'], resultOf: 'EXP-1' },
-  { id: 'OBS-4', created: '2026-11-04T09:35', by: 'Agent', iteration: 2, value: '3 of 34', of: 'Platform changes that would still be announced under five minutes before departure', when: 'October 2026, replayed',
+  { id: 'OBS-4', created: '2026-11-04T09:35', by: 'Agent', iteration: 2, tags: ['announcements', 'platform-changes'], value: '3 of 34', of: 'Platform changes that would still be announced under five minutes before departure', when: 'October 2026, replayed',
     at: 'SRC-15.1', tests: ['PRD-2', '−'], resultOf: 'EXP-3' },
 ];
