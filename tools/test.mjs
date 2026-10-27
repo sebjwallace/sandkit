@@ -594,6 +594,43 @@ test('sources check fails citations of unknown sources, quotes not found, missin
   }
 });
 
+test('sources check checks a discovery sandbox\'s excerpts, noting those superseded', (folder) => {
+  sourcedSandbox(folder);
+  write(folder, 'model.js', 'const MODEL = { versions: [] };');
+  write(folder, 'sources/floor.png', '');
+  const catalogue = JSON.parse(read(folder, 'sources/catalogue.json'));
+  catalogue.sources.push({ id: 'SRC-4', title: 'Floor plan', path: 'sources/floor.png' });
+  write(folder, 'sources/catalogue.json', JSON.stringify(catalogue));
+  mkdirSync(join(folder, 'records'));
+  write(folder, 'records/excerpts.js', `const EXCERPTS = ${JSON.stringify([
+    { id: 'SRC-1.1', source: 'SRC-1', quote: 'We reorder as soon as we drop under forty' },
+    { id: 'SRC-1.2', source: 'SRC-1', quote: 'we reorder at thirty' },
+    { id: 'SRC-1.3', source: 'SRC-1', quote: 'we reorder at twenty', supersedes: 'SRC-1.2' },
+    { id: 'SRC-4.1', source: 'SRC-4', region: [0, 0, 0.5, 0.5] },
+    { id: 'SRC-4.2', source: 'SRC-4' },
+    { id: 'SRC-7.1', source: 'SRC-7', quote: 'x' }
+  ])};`);
+  const { ok, output } = checkSources(folder);
+  assert(!ok, 'fails');
+  for (const line of ['SRC-1.3 quotes SRC-1, but the quote isn\'t in it: "we reorder at twenty"', 'SRC-4.2 is in an image, SRC-4, but has no region.',
+    'SRC-7.1 is in SRC-7, which isn\'t in the catalogue.', 'SRC-1.2 is superseded, so not checked.']) {
+    assert(output.includes(line), `reports: ${line}\n${output}`);
+  }
+  assertEqual(output.match(/✗/g).length, 3, output);
+  assert(!output.includes('ITEMS'), 'needs no ITEMS');
+});
+
+test('sources check fails excerpts it can\'t read, rather than passing them unchecked', (folder) => {
+  sourcedSandbox(folder);
+  mkdirSync(join(folder, 'records'));
+  write(folder, 'records/excerpts.js', 'const RECORDS = { excerpts: [] };');
+  let { ok, output } = checkSources(folder);
+  assert(!ok && output.includes('records/excerpts.js declares no EXCERPTS list, so no excerpts were checked.'), output);
+  write(folder, 'records/excerpts.js', 'const EXCERPTS = [');
+  ({ ok, output } = checkSources(folder));
+  assert(!ok && output.includes('records/excerpts.js couldn\'t be loaded in Node'), output);
+});
+
 test('sources check explains a missing catalogue, and a model without items', (folder) => {
   write(folder, 'model.js', 'module.exports = {};');
   const { ok, output } = checkSources(folder);

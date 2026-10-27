@@ -7,6 +7,8 @@
 // - Every file in sources/, outside the inbox, is catalogued.
 // - Every citation in the model's ITEMS names a catalogued source, and its quote is in the file
 //   (whitespace and case aside). Quotes in PDFs and images can't be read, so they're noted as not checked.
+// - In a discovery sandbox, every excerpt in records/excerpts.js is in a catalogued source, its quote
+//   is in the file, and one in an image has a region. Superseded excerpts are noted, not checked.
 // - respondsTo, derivedFrom, supersedes and restsOn point at things that exist.
 // - Items citing nothing, and files waiting in the inbox, are noted rather than failed.
 //
@@ -18,7 +20,9 @@ import { extname, join, relative, resolve, sep } from 'node:path';
 
 const CATALOGUE = 'sources/catalogue.json';
 const INBOX = 'sources/inbox';
-const UNREADABLE = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
+const EXCERPTS = 'records/excerpts.js';
+const IMAGES = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
+const UNREADABLE = ['.pdf', ...IMAGES];
 
 function check(folder) {
   const sandbox = resolve(folder);
@@ -29,7 +33,10 @@ function check(folder) {
 
   checkSources(sandbox, sources, byId, errors);
   checkUncatalogued(sandbox, sources, errors, notes);
-  const items = readItems(sandbox, notes);
+  const excerpts = readExcerpts(sandbox, errors);
+  if (excerpts) checkExcerpts(sandbox, excerpts, byId, errors, notes);
+  // A discovery sandbox cites through its excerpts, so it needs no ITEMS.
+  const items = readItems(sandbox, excerpts ? [] : notes);
   if (items) checkItems(sandbox, items, byId, errors, notes);
   return { errors, notes };
 }
@@ -116,6 +123,41 @@ function checkItems(sandbox, items, byId, errors, notes) {
       else if (source.path && existsSync(join(sandbox, source.path))) checkCitation(sandbox, item, citation, source, errors, notes);
     }
   }
+}
+
+// The excerpts a discovery sandbox's records cite, as the page loads them. Null when there are none,
+// and an error when there's a file but it can't be read, since then nothing in it was checked.
+function readExcerpts(sandbox, errors) {
+  const file = join(sandbox, EXCERPTS);
+  if (!existsSync(file)) return null;
+  try {
+    const excerpts = new Function(`${readFileSync(file, 'utf8')}\nreturn typeof EXCERPTS === 'undefined' ? null : EXCERPTS;`)();
+    if (Array.isArray(excerpts)) return excerpts;
+    errors.push(`${EXCERPTS} declares no EXCERPTS list, so no excerpts were checked.`);
+  } catch (err) {
+    errors.push(`${EXCERPTS} couldn't be loaded in Node (${err.message}), so no excerpts were checked.`);
+  }
+  return null;
+}
+
+// Each excerpt is checked as a citation of its own source. One that's been superseded may be wrong;
+// that's why it was replaced.
+function checkExcerpts(sandbox, excerpts, byId, errors, notes) {
+  const superseded = new Set(excerpts.flatMap((excerpt) => [excerpt.supersedes ?? []].flat()));
+  const unchecked = [];
+  for (const excerpt of excerpts) {
+    const source = byId.get(excerpt.source);
+    if (!source) errors.push(`${excerpt.id} is in ${excerpt.source}, which isn't in the catalogue.`);
+    else if (superseded.has(excerpt.id)) unchecked.push(excerpt.id);
+    else if (source.path && existsSync(join(sandbox, source.path))) checkExcerpt(sandbox, excerpt, source, errors, notes);
+  }
+  if (unchecked.length) notes.push(`${unchecked.join(', ')} ${unchecked.length === 1 ? 'is' : 'are'} superseded, so not checked.`);
+}
+
+// An excerpt of an image is placed by its region; any other is checked as a citation.
+function checkExcerpt(sandbox, excerpt, source, errors, notes) {
+  if (!IMAGES.includes(extname(source.path).toLowerCase())) checkCitation(sandbox, excerpt, excerpt, source, errors, notes);
+  else if (!excerpt.region) errors.push(`${excerpt.id} is in an image, ${source.id}, but has no region.`);
 }
 
 function checkCitation(sandbox, item, citation, source, errors, notes) {

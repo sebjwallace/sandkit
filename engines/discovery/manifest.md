@@ -96,7 +96,7 @@ A scenario or rule needs no code until there's a model to run it on. Without `pl
 
 | Member | Gives |
 |---|---|
-| `weigh(claim, { asOf?, reliedOn? })` | A claim, by its id or as a record, weighed on the excerpts picked out by iteration `asOf` (every one by default), each by its source. `reliedOn`: whether anything rests on it, which tells an assumption from a conjecture when nothing backs it. Returns `{ standing, score, basis, passages }`. |
+| `weigh(claim, { asOf?, reliedOn? })` | A claim, by its id or as a record, weighed on the excerpts picked out by iteration `asOf` (every one by default), each by its source; an excerpt superseded by then counts as the one replacing it. `reliedOn`: whether anything rests on it, which tells an assumption from a conjecture when nothing backs it. Returns `{ standing, score, basis, passages }`. |
 | `strength(sourceId)` | A source's grade's value, 1 to 5; 3 when it isn't graded yet. |
 | `originOf(sourceId)` | The source it copies, all the way back, or itself. |
 | `links()` | Every link, `{ from, to, means }`, from what something rests on to what rests on it, each once. `means` says what it means, in words (below). |
@@ -150,7 +150,7 @@ Anything else `rests on`. Use the words as they are, or say them the sandbox's w
 
 **Basis**, from the yeses that speak to how things are: `observed` when data or an image backs it, `reported` when someone says so first-hand, `inferred` when only a derived source does; with nothing behind it, `conjecture`, or `assumption` once something rests on it.
 
-**Passages**, in order, each `{ excerpt, source, stance, quote?, strength, counted }`, with repeats placed after the source they repeat. One that isn't counted says why: `repeats` (the source it copies, saying the same) or `outOfScope` (what its source speaks to: `what should be`). One from a source not graded yet has `ungraded: true`. A card can show them as they are.
+**Passages**, in order, each `{ excerpt, source, stance, quote?, strength, counted }`, with repeats placed after the source they repeat. One standing for a superseded excerpt the claim cites says which (`replaces`); an excerpt reached twice that way appears once. One that isn't counted says why: `repeats` (the source it copies, saying the same) or `outOfScope` (what its source speaks to: `what should be`). One from a source not graded yet has `ungraded: true`. A card can show them as they are.
 
 **Statuses,** each worked out as of an iteration. Any record, of any kind, is `superseded` once a record naming it in `supersedes` (an id, or several) has been raised; until then:
 

@@ -11,7 +11,7 @@ Run from a Sandkit clone with Node. Not copied into sandboxes.
 | `tools/setup.mjs` | Sets up a sandbox with Sandkit's files, or updates them. |
 | `tools/export.mjs` | Exports one page of a sandbox as a single HTML file that still runs, listing every file that went in. Copied into sandboxes, for the agent to run when someone presses Export. |
 | `tools/serve.mjs` | Serves a sandbox on this computer, so the features that read and write its files work: lists a folder's files and saves into `sources/inbox/`. Copied into sandboxes; opening pages by double-clicking still works for everything else. |
-| `tools/sources.mjs` | Checks a sandbox's sources against its catalogue and its model: missing and uncatalogued files, unknown sources, quotes that aren't there. Copied into sandboxes. |
+| `tools/sources.mjs` | Checks a sandbox's sources against its catalogue, its model and its excerpts: missing and uncatalogued files, unknown sources, quotes that aren't there. Copied into sandboxes. |
 | `tools/analyse.mjs` | Runs a component's analysis on data files, without a page: `profile` and `dependencies`. `list` shows them all. |
 
 ## Practices

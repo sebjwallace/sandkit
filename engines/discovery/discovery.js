@@ -1,4 +1,4 @@
-// Sandkit discovery 0.3.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit discovery 0.3.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The engine of domain discovery: the method's rules, written once. Given the sandbox's records,
 // it works out what follows from them, the same way every time, so a record holds only what
 // someone wrote and never a conclusion. It draws nothing and knows no component.
@@ -107,12 +107,25 @@
       return recordOf.get(id).record;
     };
 
+    // The excerpt standing for one by an iteration: the latest excerpt to replace it, followed on, or itself.
+    function currentExcerpt(id, asOf) {
+      const replacement = supersedersOf(id, asOf).filter((by) => kindOf(by) === 'excerpt').pop();
+      return replacement ? currentExcerpt(replacement, asOf) : id;
+    }
+
     // A claim's passages: the excerpts it cites that had been picked out by an iteration, each with
-    // its stance and its source. One without an iteration has always been there.
+    // its stance and its source. One without an iteration has always been there. A superseded
+    // excerpt counts as the one replacing it, so a claim is never edited to correct a citation,
+    // and an excerpt reached twice counts once.
     function passagesOf(claim, asOf) {
-      return Object.entries(claim.assertions ?? {})
-        .filter(([id]) => (excerpt(id).iteration ?? 0) <= asOf)
-        .map(([id, mark]) => ({ excerpt: id, source: excerpt(id).source, stance: stanceOf(mark), ...(excerpt(id).quote && { quote: excerpt(id).quote }) }));
+      const passages = new Map();
+      for (const [id, mark] of Object.entries(claim.assertions ?? {})) {
+        if ((excerpt(id).iteration ?? 0) > asOf) continue;
+        const at = currentExcerpt(id, asOf);
+        const { source, quote } = excerpt(at);
+        passages.set(at, { excerpt: at, source, stance: stanceOf(mark), ...(quote && { quote }), ...(at !== id && { replaces: id }) });
+      }
+      return [...passages.values()];
     }
 
     // Weighs a claim, by its id or as a record, as of an iteration (by default, everything). Whether

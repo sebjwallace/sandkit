@@ -1,5 +1,8 @@
 # discovery changelog
 
+## 0.3.2 · 2026-10-27
+- Weighing follows superseded excerpts: a claim citing an excerpt that has been replaced by an iteration is weighed on the replacement instead, its passage saying which it `replaces`, and an excerpt reached twice counts once. Before, the wrong excerpt kept counting, and citing the correction beside it counted both.
+
 ## 0.3.1 · 2026-10-27
 - Takes tags, declared once with what each means (`tags: [{ tag, means }]`), carried by any source, excerpt or record (`tags: [...]`). `tags()` gives every tag with what it means and what carries it, and names those in use but never declared.
 

@@ -152,7 +152,7 @@ Where Node is available, check the sources after cataloguing or citing:
 node lib/sandkit/tools/sources.mjs check .
 ```
 
-It fails when the catalogue is broken, a file in `sources/` isn't catalogued, a citation names an unknown source or quotes words that aren't there, or a link (`respondsTo`, `derivedFrom`, `supersedes`, `restsOn`) points at nothing. It notes, without failing, quotes in PDFs and images it can't read, items citing nothing, and files waiting in the inbox. Fix the errors before handing over; mention the notes if they matter.
+It fails when the catalogue is broken, a file in `sources/` isn't catalogued, a citation names an unknown source or quotes words that aren't there, an excerpt in a discovery sandbox does the same or sits in an image without a region, `records/excerpts.js` has no `EXCERPTS` list it can read, or a link (`respondsTo`, `derivedFrom`, `supersedes`, `restsOn`) points at nothing. It notes, without failing, quotes in PDFs and images it can't read, superseded excerpts, which it leaves unchecked, items citing nothing, and files waiting in the inbox. Fix the errors before handing over; mention the notes if they matter.
 
 ## Showing sources in the sandbox
 

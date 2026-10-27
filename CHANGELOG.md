@@ -4,6 +4,10 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.74 · 2026-10-27
+- `engines/discovery` 0.3.2 weighs a claim citing a superseded excerpt on the excerpt replacing it, so a wrong excerpt stops counting once corrected, and a claim is never edited to fix a citation. The domain discovery practice says how to correct an excerpt, and to show a source with only its excerpts that aren't superseded.
+- `tools/sources.mjs check` checks a discovery sandbox's excerpts (`records/excerpts.js`): each is in a catalogued source, its quote is in the file, as `sb-source` finds it, and one in an image has a region. Superseded excerpts are noted, not checked; an excerpts file without an `EXCERPTS` list it can read fails, rather than passing unchecked. Before, it checked only the model's `ITEMS`, which a discovery sandbox doesn't have, so excerpts citing the wrong file went unnoticed. The domain discovery practice names the list `EXCERPTS`.
+
 ## 0.2.73 · 2026-10-27
 - Fifty-nine components: `sb-discovery-board` and `sb-source-trace` are retired for `sb-lineage`, which draws the same thing for any subject. **Breaking.** Sandboxes keep their copies, and `tools/setup.mjs` now leaves a retired component as it is, saying what replaces it. To move:
   - **`sb-discovery-board`:** rename the tag, and `sb-discovery-board__` in your CSS, to `sb-lineage`. `columns`, `links`, `direction`, `spacing`, `highlight` and `reveal` work as before, items still placed by `data-ref`. Every link is now drawn, with pointing fading what isn't linked; add `links-shown="chain"` for links only along the chain pointed at, as before. Viewers can also pan and zoom.

@@ -114,6 +114,23 @@ test('as of an iteration, only the sources that had arrived by then are weighed'
   assertEqual([then.standing, then.passages.length, now.standing, now.passages.length], ['corroborated', 2, 'contested', 3]);
 });
 
+// ---- Superseded excerpts ----
+
+// The warden's sighting, first quoted from the wrong source and corrected in iteration 2.
+const corrected = createDiscovery({ sources: SOURCES,
+  excerpts: [...EXCERPTS, { id: 'SRC-6.3', source: 'SRC-6', quote: 'saw one at dusk', iteration: 2, supersedes: 'SRC-2.1' }],
+  claims: [claim('CLM-7', { 'SRC-2.1': '+' }), claim('CLM-8', { 'SRC-2.1': '+', 'SRC-6.3': '+' })] });
+
+test('a superseded excerpt counts as the one replacing it, from the iteration it arrived', () => {
+  assertEqual(corrected.weigh('CLM-7', { asOf: 1 }).passages.map((p) => [p.excerpt, p.strength]), [['SRC-2.1', 2]]);
+  const { passages, score } = corrected.weigh('CLM-7');
+  assertEqual([passages.map((p) => [p.excerpt, p.source, p.replaces]), score], [[['SRC-6.3', 'SRC-6', 'SRC-2.1']], 4]);
+});
+
+test('a claim citing a correction beside the excerpt it replaces counts it once', () => {
+  assertEqual([corrected.weigh('CLM-8').passages.length, corrected.weigh('CLM-8').score], [1, 4]);
+});
+
 // ---- Records ----
 
 test('weighs a claim given as a record, as well as by its id', () => {
