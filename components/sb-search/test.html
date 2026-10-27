@@ -257,14 +257,89 @@
       assertEqual(ids(s), ['T5']);
     });
 
-    test('closed filters list what is chosen beside the toggle', () => {
+    test('filters fall under their fields\' categories, in the order the categories first appear', () => {
+      const s = search();
+      s.fields = [{ key: 'name' }, { key: 'status', filter: true, category: 'Running' }, { key: 'delay', range: true },
+        { key: 'operator', filter: true, category: 'Who' }, { key: 'calls', filter: true, category: 'Running' }];
+      const parts = [...s.querySelector('.sb-search__filters').children]
+        .filter((el) => el.matches('.sb-search__category, .sb-search__facet')).map((el) => el.textContent.trim());
+      assertEqual(parts, ['Running', 'status', 'calls', 'delay', 'Who', 'operator']);
+      s.fields = FIELDS;
+      assertEqual(s.querySelectorAll('.sb-search__category').length, 0, 'no headings when no field has a category');
+    });
+
+    test('the Filters toggle says how many filter values and ranges are chosen', () => {
       const s = search();
       s.fields = [{ key: 'name' }, { key: 'status', label: 'Status', filter: true }, { key: 'delay', label: 'Delay', range: true }];
       s.filters = { status: ['Late'] };
       s.ranges = { delay: [1, 5] };
       s.filtersOpen = false;
       assert(s.querySelector('.sb-search__filters').hidden, 'hidden');
-      assertEqual(s.querySelector('.sb-search__chosen').textContent, 'Status: Late · Delay: 1 – 5');
+      assertEqual(s.querySelector('.sb-search__toggle').textContent, 'Filters (2)');
+      s.clear();
+      assertEqual(s.querySelector('.sb-search__toggle').textContent, 'Filters');
+    });
+
+    test('the search box\'s clear button shows while there\'s text, and clears it', () => {
+      const s = search();
+      const erase = s.querySelector('.sb-search__erase');
+      assert(erase.hidden, 'hidden with no text');
+      type(s, 'york');
+      assert(!erase.hidden, 'shown with text');
+      const changes = recordEvents(s, 'sb-change');
+      erase.click();
+      assertEqual([s.query, erase.hidden, changes.length, document.activeElement === s.querySelector('.sb-search__input')], ['', true, 1, true]);
+    });
+
+    test('what\'s applied shows as chips, each taking its part away', () => {
+      const s = search();
+      s.fields = [...FIELDS.slice(0, 3), { key: 'delay', range: true }, FIELDS[4]];
+      s.presets = [{ label: 'Northern', filters: { operator: ['Northern'] } }];
+      s.preset = 'Northern';
+      s.query = 'l';
+      s.filters = { operator: ['Northern'], status: ['Late', 'On time'] };
+      s.ranges = { delay: [0, 3] };
+      s.group = ['operator', 'status'];
+      s.sort = { key: 'delay', direction: 'descending' };
+      const chips = () => [...s.querySelectorAll('.sb-search__chip')].map((chip) => chip.textContent.replace('×', ''));
+      assertEqual(chips(), ['Search: l', 'operator: Northern', 'status: Late', 'status: On time', 'delay: 0 – 3',
+        'Grouped by operator, then status', 'Sorted by delay, descending']);
+      const changes = recordEvents(s, 'sb-change');
+      const chip = (words) => [...s.querySelectorAll('.sb-search__chip')].find((el) => el.textContent.startsWith(words));
+      chip('status: Late').click();
+      assertEqual([s.filters.status, changes.length], [['On time'], 1], 'a value taken away, and the sandbox told');
+      chip('Search').click();
+      assertEqual([s.query, s.querySelector('.sb-search__input').value], ['', '']);
+      chip('delay').click();
+      chip('Grouped').click();
+      chip('Sorted').click();
+      assertEqual([s.ranges, s.group, s.sort], [{}, null, null]);
+      assert(s.querySelector('.sb-search__applied').textContent.includes('Clear all'), 'Clear all while anything narrows');
+      s.querySelector('.sb-search__clear').click();
+      assertEqual([s.querySelector('.sb-search__applied').textContent, count(s)], ['', '5 of 5 shown'], 'nothing applied, nothing shown');
+      s.preset = 'Northern';
+      assert(s.querySelector('.sb-search__applied').textContent.startsWith('Preset: Northern'), 'the preset named first');
+    });
+
+    test('when nothing matches, offers the parts whose removal would show something, most first', () => {
+      const s = search();
+      s.filters = { operator: ['LNER'], status: ['Cancelled'] };
+      const ways = () => [...s.querySelectorAll('.sb-search__way')].map((way) => way.textContent);
+      assertEqual(ways(), ['Remove status: Cancelled to see 2', 'Remove operator: LNER to see 1']);
+      s.querySelector('.sb-search__way').click();
+      assertEqual(ids(s), ['T2', 'T4']);
+      s.filters = { status: ['Cancelled'] };
+      s.query = 'zzz';
+      s.filters = { status: ['Cancelled'] };
+      assertEqual(ways(), ['Remove Search: zzz to see 1']);
+    });
+
+    test('the count is marked when how many are shown changes, not before', () => {
+      const s = search();
+      const count = s.querySelector('.sb-search__count');
+      assert(!count.classList.contains('sb-search__count--changed'), 'not when first shown');
+      s.query = 'york';
+      assert(count.classList.contains('sb-search__count--changed'));
     });
 
     test('clear lets everything through again', () => {
@@ -313,6 +388,66 @@
 
     // ---- Views ----
 
+    test('groups within groups: sections in sections, each heading counting its own', () => {
+      const s = search();
+      s.group = ['operator', 'status'];
+      assertEqual(s.group, ['operator', 'status'], 'several read back as a list');
+      const outer = [...s.querySelectorAll('section.sb-search__group--1')];
+      const words = (section) => [...section.querySelectorAll(':scope > .sb-search__heading, .sb-search__group--2 > .sb-search__heading')].map((h) => h.textContent);
+      assertEqual(outer.map(words), [['LNER2', 'Late1', 'On time1'], ['Northern3', 'Cancelled1', 'Late1', 'On time1']]);
+      s.group = 'operator';
+      assertEqual([s.group, s.querySelectorAll('.sb-search__group--2').length], ['operator', 0], 'one reads back as a key');
+    });
+
+    test('once grouped, the bar offers then by; choosing Group again keeps it unless it clashes', () => {
+      const s = search();
+      s.fields = [{ key: 'name' }, { key: 'operator', group: true }, { key: 'status', group: true }];
+      assertEqual(s.querySelector('.sb-search__then'), null, 'not until grouped');
+      const changes = recordEvents(s, 'sb-change');
+      select(s, 'group', 'operator');
+      assertEqual([...s.querySelector('.sb-search__then').options].map((o) => o.value), ['', 'status'], 'every other groupable field');
+      select(s, 'then', 'status');
+      assertEqual([s.group, changes.at(-1).detail.group], [['operator', 'status'], ['operator', 'status']]);
+      select(s, 'group', 'status');
+      assertEqual(s.group, 'status', 'the same key twice is dropped');
+      select(s, 'group', '');
+      assertEqual([s.group, s.querySelector('.sb-search__then')], [null, null]);
+    });
+
+    test('the limit is shared across groups within groups', () => {
+      const s = search('limit="3"');
+      s.group = ['operator', 'status'];
+      assertEqual(s.querySelectorAll('.sb-search__item').length, 3);
+      assert(s.querySelector('.sb-search__more'), 'with a button for the rest');
+    });
+
+    test('the sandbox\'s own headings: text keeps the count, an element replaces the heading', () => {
+      const s = search();
+      const asked = [];
+      s.group = ['operator', 'status'];
+      s.heading = (group) => {
+        asked.push([group.key, group.value, group.level, group.items.length]);
+        if (group.level === 2) return null;
+        return group.value === 'LNER' ? '<b>East Coast</b>' : Object.assign(document.createElement('strong'), { className: 'mine', textContent: 'North' });
+      };
+      const told = asked.map((group) => group.join());
+      assert(told.includes('operator,LNER,1,2') && told.includes('status,Late,2,1'), 'told the group');
+      const lner = s.querySelector('section.sb-search__group--1 > .sb-search__heading');
+      assertEqual(lner.textContent, '<b>East Coast</b>2', 'text, never markup, with the count');
+      assert(s.querySelector('.sb-search__heading--own > .mine'), 'an element in its place');
+      assertEqual(s.querySelector('.sb-search__group--2 > .sb-search__heading').textContent, 'Late1', 'null keeps the label');
+      s.view = 'table';
+      assertEqual([...s.querySelectorAll('th.sb-search__heading')].map((th) => th.textContent).slice(0, 3),
+        ['<b>East Coast</b> · Late1', '<b>East Coast</b> · On time1', 'Northern · Cancelled1'], 'the table: one run of groups, an element\'s place taken by the label');
+    });
+
+    test('a preset can group within groups', () => {
+      const s = search();
+      s.presets = [{ label: 'Nested', group: ['status', 'operator'] }];
+      s.preset = 'Nested';
+      assertEqual([s.group, s.querySelector('.sb-search__then').value], [['status', 'operator'], 'operator']);
+    });
+
     test('shows a grid or a table', () => {
       const s = search();
       s.querySelector('[data-view="grid"]').click();
@@ -347,6 +482,20 @@
       assertEqual(titles(s), ['Hull Flyer'], 'without it, the search\'s look again');
     });
 
+    test('a control inside the sandbox\'s own item is the item\'s, never the search\'s', () => {
+      const s = search('view="grid"');
+      s.drawItem = (item) => {
+        const card = Object.assign(document.createElement('div'), { className: 'own', textContent: item.name });
+        card.insertAdjacentHTML('beforeend', '<button class="expand" data-key="status" data-value="Late" data-view="table">Expand</button>');
+        return card;
+      };
+      const events = recordEvents(s, 'sb-select');
+      s.querySelector('.expand').click();
+      assertEqual([s.selected, s.filters, s.view, events.length], [null, {}, 'grid', 0], 'neither chosen nor taken for a filter or a view');
+      s.querySelector('.own').click();
+      assertEqual(s.selected, TRAINS[0], 'the rest of it still chooses the item');
+    });
+
     test('one table for all groups, so the columns line up', () => {
       const s = search('view="table"');
       s.group = 'status';
@@ -373,6 +522,17 @@
 
     // ---- Presets ----
 
+    test('a field shown nowhere is still searched, and says where it was found', () => {
+      const s = search();
+      s.fields = [{ key: 'name' }, { key: 'operator' }, { key: 'calls', show: false }];
+      assertEqual(s.card, { title: 'name', details: ['operator'] }, 'not on the default card');
+      type(s, 'selby');
+      assertEqual(ids(s), ['T3']);
+      assertEqual(s.querySelector('.sb-search__found').textContent, 'Found incalls Selby');
+      s.view = 'table';
+      assertEqual([...s.querySelectorAll('thead th')].map((th) => th.textContent), ['name', 'operator'], 'nor a column');
+    });
+
     test('a preset sets what it names and resets the rest', () => {
       const s = search();
       s.presets = [{ id: 'late', label: 'Late', filters: { status: ['Late'] }, sort: { key: 'delay' }, view: 'table' }];
@@ -395,6 +555,33 @@
       assertEqual(s.querySelector('.sb-search__preset').value, '');
     });
 
+    test('a preset\'s about says what it shows while it\'s chosen', () => {
+      const s = search();
+      const about = () => s.querySelector('.sb-search__about').textContent;
+      s.presets = [{ label: 'Late', about: 'Services running late, <b>worst</b> first.', filters: { status: ['Late'] } }, { label: 'All' }];
+      s.preset = 'Late';
+      assertEqual(about(), 'Services running late, <b>worst</b> first.', 'as text');
+      s.preset = 'All';
+      assertEqual(about(), '', 'nothing to say');
+      s.preset = 'Late';
+      type(s, 'x');
+      assertEqual(about(), '', 'gone once the criteria change');
+    });
+
+    test('criteria brought round to a preset show as that preset', () => {
+      const s = search();
+      s.presets = [{ label: 'Late', filters: { status: ['Late'] }, ranges: { delay: [-5, 100] } }, { label: 'Table', view: 'table' }];
+      const changes = recordEvents(s, 'sb-change');
+      filterButton(s, 'status', 'Late').click();
+      assertEqual([s.preset, changes.at(-1).detail.preset, s.querySelector('.sb-search__preset').value], ['Late', 'Late', '0'], 'a range as wide as the field is no range');
+      filterButton(s, 'status', 'Late').click();
+      assertEqual(s.preset, null);
+      s.querySelector('[data-view="table"]').click();
+      assertEqual(s.preset, 'Table', 'a preset naming a view is matched in it');
+      s.filters = { status: ['Late'] };
+      assertEqual(s.preset, null, 'not when the sandbox sets the criteria');
+    });
+
     // ---- Choosing and the detail ----
 
     test('clicking an item chooses it and tells the sandbox', () => {
@@ -411,6 +598,18 @@
       const selections = recordEvents(s, 'sb-select');
       s.querySelector('.sb-search__item').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       assertEqual(selections[0].detail.item, TRAINS[0]);
+    });
+
+    test('with choose="none", items are never chosen, by click or key, nor focus stops', () => {
+      const s = search('choose="none"');
+      const selections = recordEvents(s, 'sb-select');
+      const item = s.querySelector('.sb-search__item');
+      item.click();
+      item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      assertEqual([s.selected, selections.length, item.hasAttribute('tabindex'), s.choose], [null, 0, false, 'none']);
+      s.choose = 'item';
+      s.querySelector('.sb-search__item').click();
+      assertEqual(s.selected, TRAINS[0], 'chosen again once it\'s back to item');
     });
 
     test('the detail shows in a pane while an item is chosen, and survives redraws', () => {
@@ -460,6 +659,24 @@
       s.filters = { operator: ['LNER'] };
       s.items = TRAINS.slice(1);
       assertEqual(ids(s), ['T2', 'T4']);
+    });
+
+    test('changing the criteria, presets or items keeps the search box, its focus and the results\' scroll', () => {
+      const s = search('style="display: flex; height: 160px"');
+      s.presets = [{ label: 'Late', filters: { status: ['Late'] } }];
+      const input = s.querySelector('.sb-search__input');
+      const results = s.querySelector('.sb-search__results');
+      results.scrollTop = 40;
+      input.focus();
+      s.sort = { key: 'name' };
+      s.group = 'operator';
+      s.items = TRAINS.map((item) => ({ ...item }));
+      assert(s.querySelector('.sb-search__input') === input && document.activeElement === input, 'the box keeps its place and focus');
+      assertEqual(results.scrollTop, 40, 'the results keep their scroll');
+      select(s, 'sort', 'delay');
+      assert(document.activeElement === s.querySelector('.sb-search__sort'), 'the menu used keeps focus');
+      s.preset = 'Late';
+      assertEqual([s.querySelector('.sb-search__preset').value, ids(s)], ['0', ['T2', 'T3']], 'a preset still shows as chosen');
     });
 
     // ---- Pointing and locating ----

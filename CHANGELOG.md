@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.71 · 2026-10-27
+- `sb-search` 0.2.0: controls inside items the sandbox draws are their own, and the search updates in place, so choosing a preset, sort or grouping never moves the page. Presets can say what they show (`about`), filters fall under categories, fields can be searched without being shown (`show: false`), items can be left unchosen (`choose="none"`), groups can sit within groups, group headings can be the sandbox's own (`heading`), what's applied shows as chips to take away, criteria brought round to a preset show as it, when nothing matches the search offers ways back, and it looks calmer: one container, sentence-case labels, icons, and chosen filter values filled. **Breaking** only for a sandbox that styled `sb-search__chosen`, now gone; see the component's changelog.
+
 ## 0.2.70 · 2026-10-27
 - Tags in domain discovery: `engines/discovery` 0.3.1 takes tags declared with what they mean, carried by any source, excerpt or record, and lists them all, naming any never declared. The domain discovery practice says how to tag well, in `records/tags.js`; the sources practice points catalogue tags to it. Recorded in DECISIONS.md.
 - `sb-search` 0.1.1 optionally draws items the sandbox's own way in the list or grid (`drawItem`), keeping its frame, choosing and grouping around them. Recorded in DECISIONS.md.

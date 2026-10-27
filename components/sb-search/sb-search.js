@@ -1,4 +1,4 @@
-// Sandkit sb-search 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-search 0.2.0 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A collection to search, filter, sort and group, shown as a list, a grid or a table, in the page or
 // full screen. Domain-agnostic: give it an array of objects and it works out the rest; say more
 // through `fields`, or hand it functions of your own where the sandbox knows better.
@@ -23,33 +23,46 @@
 
   const STYLES = `
     .sb-search { display: flex; flex-direction: column; min-height: 0; color: var(--sb-text, #1f2933); font: 13px/1.45 var(--sb-font, system-ui, sans-serif); }
-    /* Parts set apart: the whole within a border, the criteria lifted, the results dropped a step below. */
-    .sb-search { --sb-search-lift: var(--sb-lift, rgba(255, 255, 255, 0.7)); --sb-search-shadow: var(--sb-lift-shadow, 0 1px 2px rgba(16, 24, 40, 0.07)); }
-    .sb-search__frame { container-type: inline-size; flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 0; padding: 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); }
-    .sb-search__criteria { flex: none; display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-search-lift); box-shadow: var(--sb-search-shadow); }
+    /* One container: the frame's border is the only one; the criteria are a band set off by their lift and a divider,
+       and the results dropped below it. Fields sit in the drop, things to press on the lift; both are see-through, so
+       a filter value's lift stacks on the band's, a step above it. */
+    .sb-search { --sb-search-lift: var(--sb-lift, rgba(255, 255, 255, 0.7)); --sb-search-drop: var(--sb-drop, rgba(16, 24, 40, 0.04)); --sb-search-shadow: var(--sb-lift-shadow, 0 1px 2px rgba(16, 24, 40, 0.07)); }
+    .sb-search__frame { container-type: inline-size; flex: 1; display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); }
+    .sb-search__criteria { flex: none; display: grid; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px) var(--sb-radius, 8px) 0 0; background: var(--sb-search-lift); }
 
     /* Full screen: the frame lies over the page, the criteria stay put and the results scroll under them. */
-    .sb-search__frame--full { position: fixed; inset: 0; z-index: 1000; padding: 16px; border: 0; border-radius: 0; background: var(--sb-bg, #f5f6f8); }
+    .sb-search__frame--full { position: fixed; inset: 0; z-index: 1000; border: 0; border-radius: 0; background: var(--sb-bg, #f5f6f8); }
+    .sb-search__frame--full > .sb-search__criteria { border-radius: 0; }
 
     /* The criteria: search, then how to order and show, then the filters. */
     .sb-search__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
-    .sb-search__query { flex: 1 1 260px; display: flex; min-width: 0; }
-    .sb-search__input { flex: 1; min-width: 0; padding: 5px 9px; border: 1px solid var(--sb-border, #d5d9e0); border-right: 0; border-radius: var(--sb-radius, 8px) 0 0 var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: inherit; font: inherit; }
+    .sb-search__query { position: relative; flex: 1 1 260px; display: flex; min-width: 0; }
+    /* A magnifier inside the box, and a clear button once there's text, in place of the browser's own. */
+    .sb-search__query::before { content: ''; position: absolute; top: 50%; left: 10px; width: 9px; height: 9px; margin-top: -6px; border: 1.5px solid var(--sb-muted, #616e7c); border-radius: 50%; pointer-events: none; }
+    .sb-search__query::after { content: ''; position: absolute; top: 50%; left: 19px; width: 5px; height: 1.5px; margin-top: 3px; background: var(--sb-muted, #616e7c); transform: rotate(45deg); pointer-events: none; }
+    .sb-search__input::-webkit-search-cancel-button { display: none; }
+    .sb-search__erase { position: absolute; top: 50%; right: 40px; width: 22px; height: 22px; margin-top: -11px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--sb-muted, #616e7c); font: 16px/1 var(--sb-font, system-ui, sans-serif); cursor: pointer; }
+    .sb-search__erase:hover { background: var(--sb-surface-2, #eef0f3); color: var(--sb-text, #1f2933); }
+    .sb-search__erase[hidden] { display: none; }
+    .sb-search__input { flex: 1; min-width: 0; padding: 5px 34px 5px 30px; border: 1px solid var(--sb-border, #d5d9e0); border-right: 0; border-radius: var(--sb-radius, 8px) 0 0 var(--sb-radius, 8px); background: linear-gradient(var(--sb-search-drop), var(--sb-search-drop)), var(--sb-surface, #fff); color: inherit; font: inherit; }
     .sb-search__input[aria-invalid="true"] { border-color: var(--sb-bad, #c53030); }
     .sb-search__input:focus-visible { outline: 2px solid var(--sb-accent, #2563eb); outline-offset: -1px; }
     .sb-search__regex { flex: none; min-width: 34px; padding: 0 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 0 var(--sb-radius, 8px) var(--sb-radius, 8px) 0; background: var(--sb-surface-2, #eef0f3); color: var(--sb-muted, #616e7c); font: 600 12px ui-monospace, Menlo, Consolas, monospace; cursor: pointer; }
     .sb-search__regex[aria-pressed="true"] { border-color: var(--sb-accent, #2563eb); background: var(--sb-accent, #2563eb); color: var(--sb-accent-text, #fff); }
-    .sb-search__count { flex: none; color: var(--sb-muted, #616e7c); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .sb-search__count { flex: none; padding: 1px 6px; color: var(--sb-muted, #616e7c); font-size: 12px; font-variant-numeric: tabular-nums; }
     .sb-search__problem { margin: -2px 0 0; color: var(--sb-bad, #c53030); font-size: 12px; }
     .sb-search__problem:empty { display: none; }
+    .sb-search__about { margin: -2px 0 0; color: var(--sb-muted, #616e7c); font-size: 12px; }
+    .sb-search__about:empty { display: none; }
     .sb-search__spacer { flex: 1; }
 
+    .sb-search__controls { display: contents; }
     .sb-search__choose { display: inline-flex; align-items: center; gap: 6px; }
-    .sb-search__facet { color: var(--sb-muted, #616e7c); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+    .sb-search__facet { color: var(--sb-muted, #616e7c); font-size: 12px; font-weight: 500; }
     /* The browser's own arrow drawn over with a plain chevron in the theme's colours. */
     .sb-search__picker { position: relative; display: inline-flex; }
     .sb-search__picker::after { content: ''; position: absolute; top: 50%; right: 10px; width: 5px; height: 5px; margin-top: -4px; border: solid var(--sb-muted, #616e7c); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); pointer-events: none; }
-    .sb-search__select { appearance: none; padding: 3px 26px 3px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: inherit; font: 12px/1.5 var(--sb-font, system-ui, sans-serif); cursor: pointer; }
+    .sb-search__select { appearance: none; padding: 3px 26px 3px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: linear-gradient(var(--sb-search-drop), var(--sb-search-drop)), var(--sb-surface, #fff); color: inherit; font: 12px/1.5 var(--sb-font, system-ui, sans-serif); cursor: pointer; }
     .sb-search__select:hover { border-color: var(--sb-muted, #616e7c); }
 
     .sb-search__button { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface-2, #eef0f3); color: inherit; font: 12px/1.5 var(--sb-font, system-ui, sans-serif); cursor: pointer; }
@@ -60,24 +73,31 @@
     .sb-search__views .sb-search__button:first-child { margin-left: 0; border-radius: var(--sb-radius, 8px) 0 0 var(--sb-radius, 8px); }
     .sb-search__views .sb-search__button:last-child { border-radius: 0 var(--sb-radius, 8px) var(--sb-radius, 8px) 0; }
     .sb-search__views .sb-search__button[aria-pressed="true"] { position: relative; border-color: var(--sb-accent, #2563eb); background: var(--sb-accent-soft, #eaf0ff); font-weight: 600; }
+    /* Icon buttons all one height, a text button's, whatever they hold. */
+    .sb-search__views .sb-search__button, .sb-search__full { box-sizing: border-box; height: 26px; min-width: 30px; justify-content: center; padding: 3px 7px; }
     .sb-search__icon { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.5; }
 
     /* Filters: each value with how many items it would show, so the collection's shape shows at a glance. */
     .sb-search__filters { display: grid; grid-template-columns: max-content 1fr; gap: 5px 10px; align-items: baseline; }
     .sb-search__filters > .sb-search__facet--ranged { align-self: center; }
     .sb-search__filters:empty, .sb-search__filters[hidden] { display: none; }
+    /* A category of filters: a quiet divider with its name, so it groups without shouting. */
+    .sb-search__category { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; font-weight: 600; }
+    .sb-search__category::after { content: ''; flex: 1; height: 1px; background: var(--sb-border, #d5d9e0); }
+    .sb-search__category:first-child { margin-top: 0; }
     .sb-search__filtering { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-    .sb-search__toggle { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--sb-muted, #616e7c); font: 600 11px/1.5 var(--sb-font, system-ui, sans-serif); letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+    .sb-search__filtering[hidden] { display: none; }
+    .sb-search__toggle { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--sb-muted, #616e7c); font: 600 12px/1.5 var(--sb-font, system-ui, sans-serif); cursor: pointer; }
     .sb-search__toggle::before { content: ''; width: 5px; height: 5px; margin: 0 1px 2px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); transition: transform 0.12s; }
     .sb-search__toggle[aria-expanded="true"]::before { transform: rotate(45deg); }
     .sb-search__toggle:hover { color: var(--sb-text, #1f2933); }
-    .sb-search__chosen { min-width: 0; overflow: hidden; color: var(--sb-muted, #616e7c); font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
-    .sb-search__chosen strong { color: var(--sb-text, #1f2933); font-weight: 600; }
     .sb-search__values { display: flex; flex-wrap: wrap; gap: 4px; }
-    .sb-search__value { display: inline-flex; align-items: baseline; gap: 5px; padding: 1px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 999px; background: var(--sb-surface, #fff); color: inherit; font: 12px/1.5 var(--sb-font, system-ui, sans-serif); cursor: pointer; }
+    .sb-search__value { display: inline-flex; align-items: baseline; gap: 5px; padding: 1px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 999px; background: var(--sb-search-lift); box-shadow: var(--sb-search-shadow); color: inherit; font: 12px/1.5 var(--sb-font, system-ui, sans-serif); cursor: pointer; }
     .sb-search__value:hover { border-color: var(--sb-muted, #616e7c); }
-    .sb-search__value[aria-pressed="true"] { border-color: var(--sb-accent, #2563eb); background: var(--sb-accent-soft, #eaf0ff); font-weight: 600; }
-    .sb-search__value--none { opacity: 0.45; }
+    /* Chosen values filled, so they're never taken for one pointed at; values that would leave nothing quiet. */
+    .sb-search__value[aria-pressed="true"] { border-color: var(--sb-accent, #2563eb); background: var(--sb-accent, #2563eb); color: var(--sb-accent-text, #fff); font-weight: 600; }
+    .sb-search__value[aria-pressed="true"] .sb-search__tally { color: inherit; opacity: 0.85; }
+    .sb-search__value--none { border-color: transparent; background: none; box-shadow: none; opacity: 0.4; }
     .sb-search__tally { color: var(--sb-muted, #616e7c); font-size: 11px; font-weight: 400; font-variant-numeric: tabular-nums; }
     /* A range: two handles choosing a stretch of a field's span, with a tick for each value, faded where the other
        criteria rule it out. Padded to breathe among the rows of values; the rail sits in from the ends by half a
@@ -98,17 +118,35 @@
     .sb-search__handle:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--sb-accent-soft, #eaf0ff); }
     .sb-search__handle:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--sb-accent-soft, #eaf0ff); }
     .sb-search__between { flex: none; font-size: 12px; font-variant-numeric: tabular-nums; }
+    /* What's applied, each part a chip that takes it away, so a narrowed search always says why. */
+    .sb-search__applied { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: -2px; color: var(--sb-muted, #616e7c); font-size: 12px; }
+    .sb-search__applied:empty { display: none; }
+    .sb-search__applied strong { color: var(--sb-text, #1f2933); font-weight: 600; }
+    .sb-search__chip { display: inline-flex; align-items: baseline; gap: 5px; padding: 1px 6px 1px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 999px; background: var(--sb-search-lift); box-shadow: var(--sb-search-shadow); color: var(--sb-text, #1f2933); font: 12px/1.5 var(--sb-font, system-ui, sans-serif); cursor: pointer; }
+    .sb-search__chip:hover { border-color: var(--sb-muted, #616e7c); }
+    .sb-search__chip-x { color: var(--sb-muted, #616e7c); }
+    /* Ways back from nothing: what to take away, and how many each would show. */
+    .sb-search__ways { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 2px 0; }
+    .sb-search__way { padding: 3px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: inherit; font: 12px/1.5 var(--sb-font, system-ui, sans-serif); cursor: pointer; }
+    .sb-search__way:hover { border-color: var(--sb-muted, #616e7c); }
+    /* The count lit for a moment when it changes, so a change out of sight is still seen. */
+    .sb-search__count--changed { border-radius: var(--sb-radius, 8px); animation: sb-search-changed 0.9s ease-out; }
+    @keyframes sb-search-changed { from { background: var(--sb-accent-soft, #eaf0ff); color: var(--sb-text, #1f2933); } }
+    @media (prefers-reduced-motion: reduce) { .sb-search__count--changed { animation: none; } }
     .sb-search__clear { padding: 0; border: 0; background: none; color: var(--sb-accent, #2563eb); font: 12px var(--sb-font, system-ui, sans-serif); cursor: pointer; }
     .sb-search__clear:hover { text-decoration: underline; }
 
     .sb-search__regex:focus-visible, .sb-search__button:focus-visible, .sb-search__select:focus-visible, .sb-search__value:focus-visible,
-    .sb-search__clear:focus-visible, .sb-search__more:focus-visible, .sb-search__toggle:focus-visible { outline: 2px solid var(--sb-accent, #2563eb); outline-offset: 1px; }
+    .sb-search__clear:focus-visible, .sb-search__more:focus-visible, .sb-search__chip:focus-visible, .sb-search__way:focus-visible, .sb-search__erase:focus-visible, .sb-search__toggle:focus-visible { outline: 2px solid var(--sb-accent, #2563eb); outline-offset: 1px; }
 
-    /* The results, dropped below the criteria so the items stand on them. */
-    .sb-search__results { --sb-search-inset: 12px; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: var(--sb-search-inset); border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-drop, rgba(16, 24, 40, 0.04)); }
+    .sb-search__results { --sb-search-inset: 14px; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: var(--sb-search-inset); border-radius: 0 0 var(--sb-radius, 8px) var(--sb-radius, 8px); background: var(--sb-search-drop); }
     .sb-search__group + .sb-search__group { margin-top: 16px; }
-    .sb-search__heading { margin: 0 2px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sb-muted, #616e7c); }
-    .sb-search__heading .sb-search__tally { margin-left: 6px; letter-spacing: 0; }
+    .sb-search__group--2 + .sb-search__group--2 { margin-top: 10px; }
+    .sb-search__heading { margin: 0 2px 6px; font-size: 13px; font-weight: 600; color: var(--sb-text, #1f2933); }
+    .sb-search__heading .sb-search__tally { margin-left: 6px; }
+    /* A group within a group: its heading quieter than the one above it. */
+    .sb-search__heading--2, .sb-search__heading--3 { font-size: 12px; color: var(--sb-muted, #616e7c); }
+    .sb-search__heading--own { margin: 0 0 6px; color: inherit; font-size: inherit; font-weight: inherit; }
     .sb-search__items { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
     .sb-search__items--grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
     .sb-search__empty { margin: 0; padding: 4px 2px; color: var(--sb-muted, #616e7c); }
@@ -120,6 +158,9 @@
     .sb-search__item[data-tone="warn"] { --sb-search-tone: var(--sb-warn, #d69e2e); }
     .sb-search__item[data-tone="bad"] { --sb-search-tone: var(--sb-bad, #c53030); }
     .sb-search__item:hover, .sb-search__item--highlighted { background: var(--sb-accent-soft, #eaf0ff); }
+    /* Items never chosen: nothing to press, so pointing at one doesn't light it. */
+    .sb-search[choose="none"] .sb-search__item { cursor: auto; }
+    .sb-search[choose="none"] .sb-search__item:not(.sb-search__item--highlighted):hover { background: var(--sb-surface, #fff); }
     .sb-search__item--highlighted { border-color: var(--sb-accent, #2563eb); }
     .sb-search__item--selected { border-color: var(--sb-accent, #2563eb); box-shadow: inset 3px 0 var(--sb-search-tone), 0 0 0 1px var(--sb-accent, #2563eb), var(--sb-search-shadow); }
     /* The sandbox's own look for an item, drawn by drawItem: no frame of the search's, only a ring
@@ -138,7 +179,7 @@
     .sb-search__detail dd { margin: 0; font-variant-numeric: tabular-nums; }
     /* Where the search found an item, as a note on a band of its own, apart from the item's own text. */
     .sb-search__found { flex-basis: 100%; margin: 6px 0 0; padding: 3px 8px; border-radius: var(--sb-radius, 8px); background: var(--sb-surface-2, #eef0f3); color: var(--sb-muted, #616e7c); font-size: 12px; overflow-wrap: anywhere; }
-    .sb-search__found-label { margin-right: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+    .sb-search__found-label { margin-right: 6px; font-weight: 600; }
     .sb-search__found-field { color: var(--sb-text, #1f2933); font-weight: 600; }
     .sb-search__items--list .sb-search__item { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; padding: 6px 12px; }
     .sb-search__items--list .sb-search__subtitle { flex: 1 1 160px; }
@@ -149,8 +190,9 @@
 
     /* The table: one for all groups, so the columns line up between them. */
     .sb-search__table { width: 100%; border-collapse: separate; border-spacing: 0; overflow: clip; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); }
+    /* The header on the lift, laid over the surface so it stays opaque as it pins. */
     .sb-search__table th, .sb-search__table td { padding: 5px 10px; text-align: left; vertical-align: baseline; border-bottom: 1px solid var(--sb-surface-2, #eef0f3); }
-    .sb-search__table thead th { position: sticky; top: calc(-1 * var(--sb-search-inset)); z-index: 1; background: var(--sb-surface, #fff); color: var(--sb-muted, #616e7c); font-size: 12px; font-weight: 600; border-bottom-color: var(--sb-border, #d5d9e0); }
+    .sb-search__table thead th { position: sticky; top: calc(-1 * var(--sb-search-inset)); z-index: 1; background: linear-gradient(var(--sb-search-lift), var(--sb-search-lift)), var(--sb-surface, #fff); color: var(--sb-muted, #616e7c); font-size: 12px; font-weight: 600; border-bottom-color: var(--sb-border, #d5d9e0); }
     .sb-search__table tbody:last-child tr:last-child td { border-bottom: 0; }
     .sb-search__table .sb-search__heading { margin: 0; padding: 12px 10px 4px; background: var(--sb-surface, #fff); }
     .sb-search__table .sb-search__item { display: table-row; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
@@ -161,7 +203,8 @@
     .sb-search__table .sb-search__cell--number { text-align: right; font-variant-numeric: tabular-nums; }
 
     /* The detail: the sandbox's own content, in a pane beside the results while an item is chosen. */
-    .sb-search__body { flex: 1; display: flex; align-items: flex-start; gap: 10px; min-height: 0; }
+    .sb-search__body { flex: 1; display: flex; align-items: flex-start; min-height: 0; }
+    .sb-search__body > .sb-search__pane { margin: var(--sb-search-inset, 14px) var(--sb-search-inset, 14px) var(--sb-search-inset, 14px) 0; }
     .sb-search__body > .sb-search__results { flex: 3 1 0; align-self: stretch; }
     .sb-search__pane { position: sticky; top: 0; flex: 2 1 0; display: flex; flex-direction: column; max-height: 100%; min-width: 0; overflow: hidden; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-search-lift); box-shadow: var(--sb-search-shadow); }
     .sb-search__pane[hidden] { display: none; }
@@ -169,7 +212,7 @@
     @container (max-width: 640px) {
       .sb-search__body { flex-direction: column; align-items: stretch; }
       .sb-search__body > .sb-search__results { flex: 1 1 auto; }
-      .sb-search__pane { position: static; flex: none; max-height: 50%; }
+      .sb-search__body > .sb-search__pane { position: static; flex: none; max-height: 50%; margin: 0 var(--sb-search-inset, 14px) var(--sb-search-inset, 14px); }
     }
     .sb-search__pane-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border-bottom: 1px solid var(--sb-border, #d5d9e0); }
     .sb-search__pane-title { flex: 1; min-width: 0; overflow: hidden; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
@@ -185,10 +228,14 @@
   const DEFAULT_LIMIT = 200;
   const MOST_FILTER_VALUES = 8; // more than this many values makes a filter too long to read
   const NOT_SET = 'Not set';
-  const MOST_FOUND_IN = 2;     // fields named in a "Found in" line before the rest are counted
+  const MOST_FOUND_IN = 2;
+  const MOST_WAYS_BACK = 3;     // fields named in a "Found in" line before the rest are counted
   const EXCERPT_LENGTH = 80;   // characters of a long field shown around a match
 
   const ICONS = {
+    list: '<svg class="sb-search__icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 2.5h10M1 6h10M1 9.5h10"/></svg>',
+    grid: '<svg class="sb-search__icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1h4v4H1zM7 1h4v4H7zM1 7h4v4H1zM7 7h4v4H7z"/></svg>',
+    table: '<svg class="sb-search__icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1.5h10v9H1zM1 4.5h10M1 7.5h10M4.5 1.5v9"/></svg>',
     enter: '<svg class="sb-search__icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 4.5V1h3.5M11 4.5V1H7.5M1 7.5V11h3.5M11 7.5V11H7.5"/></svg>',
     leave: '<svg class="sb-search__icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 1v3.5H1M7.5 1v3.5H11M4.5 11V7.5H1M7.5 11V7.5H11"/></svg>'
   };
@@ -205,6 +252,7 @@
   };
   const asNumber = (value) => (value instanceof Date ? value.getTime() : value); // timestamps range like numbers
 
+  const groupOf = (value) => (isEmpty(value) ? [] : asList(value).filter(Boolean)); // the keys to group by, outermost first
   const sortOf = (value) => (value?.key ? { key: value.key, direction: value.direction === 'descending' ? 'descending' : 'ascending' } : null);
   const chosenOf = (filters) => Object.fromEntries(Object.entries(filters || {}).map(([key, list]) => [key, new Set(asList(list).map(keyOf))]));
   const escapeForPattern = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -224,7 +272,7 @@
   class SbSearch extends HTMLElement {
     static origin = ORIGIN;
 
-    static observedAttributes = ['view', 'limit', 'empty-text', 'placeholder', 'detail'];
+    static observedAttributes = ['view', 'limit', 'empty-text', 'placeholder', 'detail', 'choose'];
 
     constructor() {
       super();
@@ -240,18 +288,20 @@
       this._presets = [];
       this._preset = null;     // the preset the criteria still match, until something changes them
       this._sort = null;
-      this._group = null;
+      this._group = [];        // the keys to group by, outermost first
+      this._heading = null;
       this._selected = null;
       this._highlight = new Set();
       this._showAll = false;
       this._filtersOpen = true;
+      this._lastShown = null;  // how many were shown last, so a change can be marked
       this._drawn = [];        // the items drawn, so a click finds its item by index
       this._detail = null;     // the sandbox's detail content, kept across rebuilds
       this._built = false;
       this.match = null;
       this.filter = null;
       this._drawItem = null;
-      this._own = [];          // the sandbox's own elements for the items drawn, placed once drawn
+      this._own = [];          // the sandbox's own elements for the items and headings drawn, placed once drawn
       this.addEventListener('click', (e) => this._onClick(e));
       this.addEventListener('input', (e) => this._onInput(e));
       this.addEventListener('change', (e) => this._onChange(e));
@@ -286,7 +336,7 @@
       this._prepare();
     }
 
-    get fields() { return this._columns.map(({ key, label, search, sort, filter, group, range }) => ({ key, label, search, sort, filter, group, range })); }
+    get fields() { return this._columns.map(({ key, label, category, show, search, sort, filter, group, range }) => ({ key, label, category, show, search, sort, filter, group, range })); }
     set fields(list) {
       this._givenFields = list?.length ? list : null;
       this._prepare();
@@ -339,7 +389,7 @@
     set presets(list) {
       this._presets = list || [];
       if (!this._presets.includes(this._preset)) this._preset = null;
-      this._build();
+      this._update();
     }
 
     // The preset the criteria match, by id (or label), or null once anything has changed them. Setting one applies it.
@@ -358,14 +408,15 @@
     set sort(value) {
       this._sort = sortOf(value);
       this._preset = null;
-      this._build();
+      this._update();
     }
 
-    get group() { return this._group; }
+    // A key, or a list of keys for groups within groups, outermost first; null for none.
+    get group() { return this._group.length > 1 ? [...this._group] : this._group[0] ?? null; }
     set group(key) {
-      this._group = key || null;
+      this._group = groupOf(key);
       this._preset = null;
-      this._build();
+      this._update();
     }
 
     get fullscreen() { return this.hasAttribute('fullscreen'); }
@@ -375,7 +426,7 @@
       this.style.minHeight = on ? `${this.offsetHeight}px` : '';
       this.toggleAttribute('fullscreen', !!on);
       this._build();
-      this.querySelector('.sb-search__full')?.focus();
+      this.querySelector('.sb-search__full')?.focus({ preventScroll: true });
     }
 
     // Ids of the items to point at: one id, a list, or null.
@@ -422,7 +473,6 @@
       this._narrowed();
     }
 
-    // Whether the filters are shown; closed, the values chosen are listed beside the toggle instead.
     // The sandbox's own look for an item in the list or grid: (item, view) => element or null.
     get drawItem() { return this._drawItem; }
     set drawItem(draw) {
@@ -430,6 +480,18 @@
       this._renderResults();
     }
 
+    // The sandbox's own heading for a group: ({ key, value, label, level, items }) => text, element or null.
+    get heading() { return this._heading; }
+    set heading(draw) {
+      this._heading = typeof draw === 'function' ? draw : null;
+      this._renderResults();
+    }
+
+    // Whether viewers choose items: 'item' (the default), or 'none' for items that carry their own controls.
+    get choose() { return this.getAttribute('choose') === 'none' ? 'none' : 'item'; }
+    set choose(value) { this.setAttribute('choose', value); }
+
+    // Whether the filters are shown; closed, the values chosen are listed beside the toggle instead.
     get filtersOpen() { return this._filtersOpen; }
     set filtersOpen(open) {
       this._filtersOpen = !!open;
@@ -443,11 +505,11 @@
       this._filters = chosenOf(preset.filters);
       this._takeRanges(preset.ranges);
       this._sort = sortOf(preset.sort);
-      this._group = preset.group || null;
+      this._group = groupOf(preset.group);
       if (preset.view) this.setAttribute('view', preset.view);
       this._preset = this._presets.includes(preset) ? preset : null;
       this._showAll = false;
-      this._build();
+      this._update();
     }
 
     get _limit() { return Number(this.getAttribute('limit')) || DEFAULT_LIMIT; }
@@ -470,8 +532,8 @@
       for (const key of Object.keys(this._filters)) if (!known.has(key)) delete this._filters[key];
       for (const key of Object.keys(this._ranges)) if (!this._columnFor(key)?.range) delete this._ranges[key];
       if (this._sort && !known.has(this._sort.key)) this._sort = null;
-      if (this._group && !known.has(this._group)) this._group = null;
-      this._build();
+      this._group = this._group.filter((key) => known.has(key));
+      this._update();
     }
 
     _column(field) {
@@ -493,6 +555,8 @@
         text: (value, item) => (format ? String(format(value, item) ?? '') : asList(value).filter((v) => !isEmpty(v)).join(', ')),
         labelOf: (value) => (isEmpty(value) ? NOT_SET : format ? String(format(value) ?? '') : String(value)),
         number: allNumbers,
+        category: field.category ?? null,
+        show: field.show ?? true,
         search: field.search ?? true,
         sort: field.sort ?? true,
         filter: field.filter ?? repeats,
@@ -503,11 +567,13 @@
       };
     }
 
+    get _shown() { return this._columns.filter((column) => column.show); }
+
     _columnFor(key) { return this._columns.find((column) => column.key === key); }
 
     _card() {
       if (this._givenCard) return { details: [], ...this._givenCard };
-      const [title, ...rest] = this._columns.map((column) => column.key);
+      const [title, ...rest] = this._shown.map((column) => column.key);
       return { title, details: rest.slice(0, 4) };
     }
 
@@ -573,20 +639,21 @@
       return passing.slice().sort((a, b) => by(a, b) || a.index - b.index);
     }
 
-    // Groups in the field's order; an item with several values sits in each of their groups.
-    _groups(rows) {
-      const column = this._group && this._columnFor(this._group);
-      if (!column) return [{ rows }];
+    // Groups in each field's order, each holding the groups of the next key; an item with several values sits in
+    // each of their groups. Null when nothing is grouped.
+    _groups(rows, [key, ...within] = this._group, level = 1) {
+      const column = key && this._columnFor(key);
+      if (!column) return null;
       const groups = new Map();
       for (const row of rows) {
-        for (const key of keysOf(row.values[column.key])) {
-          if (!groups.has(key)) groups.set(key, { value: this._valueFor(row, column, key), rows: [] });
-          groups.get(key).rows.push(row);
+        for (const value of keysOf(row.values[column.key])) {
+          if (!groups.has(value)) groups.set(value, { value: this._valueFor(row, column, value), rows: [] });
+          groups.get(value).rows.push(row);
         }
       }
       return [...groups.values()]
         .sort((a, b) => column.compare(a.value, b.value))
-        .map((group) => ({ label: column.labelOf(group.value), rows: group.rows }));
+        .map(({ value, rows }) => ({ key, value, label: column.labelOf(value), level, rows, groups: this._groups(rows, within, level + 1) }));
     }
 
     // Every value of a filter, with how many items it would show alongside the search and the other filters.
@@ -611,9 +678,20 @@
     // ---- What viewers do ----
 
     _onClick(e) {
+      // A control inside the sandbox's own item (a link, button or field) is the item's, never the search's.
+      const control = e.target.closest('a, button, input, select, textarea, label, summary, [contenteditable]');
+      if (control?.closest('.sb-search__item--own')) return;
       const button = e.target.closest('button');
+      if (button?.dataset.drop) {
+        this._viewerSets(() => this._drop(button.dataset));
+        return this.querySelector('.sb-search__input').focus({ preventScroll: true });
+      }
       if (button?.dataset.view) return this._viewerSets(() => { this.view = button.dataset.view; });
       if (button?.dataset.value !== undefined) return this._toggleFilter(button.dataset.key, button.dataset.value);
+      if (button?.matches('.sb-search__erase')) {
+        this._viewerSets(() => { this.query = ''; });
+        return this.querySelector('.sb-search__input').focus({ preventScroll: true });
+      }
       if (button?.matches('.sb-search__regex')) return this._viewerSets(() => { this.regex = !this._regex; });
       if (button?.matches('.sb-search__direction')) {
         const direction = this._sort.direction === 'ascending' ? 'descending' : 'ascending';
@@ -628,7 +706,7 @@
         return this._renderResults();
       }
       const item = e.target.closest('.sb-search__item');
-      if (item) this._choose(item);
+      if (item && this.choose === 'item') this._choose(item);
     }
 
     _onInput(e) {
@@ -643,15 +721,19 @@
       if (e.target.matches('.sb-search__preset')) {
         const preset = this._presets[Number(e.target.value)];
         this._viewerSets(() => this._apply(preset || {})); // None starts afresh
-        this.querySelector('.sb-search__preset')?.focus();
+        this.querySelector('.sb-search__preset')?.focus({ preventScroll: true });
       } else if (e.target.matches('.sb-search__sort')) {
         const key = e.target.value;
         this._viewerSets(() => { this.sort = key ? { key, direction: this._sort?.direction } : null; });
-        this.querySelector('.sb-search__sort')?.focus();
+        this.querySelector('.sb-search__sort')?.focus({ preventScroll: true });
       } else if (e.target.matches('.sb-search__group')) {
         const key = e.target.value;
-        this._viewerSets(() => { this.group = key; });
-        this.querySelector('.sb-search__group')?.focus();
+        this._viewerSets(() => { this.group = key && [key, ...this._group.slice(1).filter((within) => within !== key)]; });
+        this.querySelector('.sb-search__group')?.focus({ preventScroll: true });
+      } else if (e.target.matches('.sb-search__then')) {
+        const key = e.target.value;
+        this._viewerSets(() => { this.group = [this._group[0], key]; });
+        this.querySelector('.sb-search__then')?.focus({ preventScroll: true });
       }
     }
 
@@ -662,7 +744,7 @@
         this._letGo();
       } else if (e.key === 'Escape' && !clearing && this.fullscreen) {
         this._viewerSets(() => { this.fullscreen = false; });
-      } else if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.sb-search__item')) {
+      } else if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.sb-search__item') && this.choose === 'item') {
         e.preventDefault();
         this._choose(e.target);
       }
@@ -699,7 +781,7 @@
       el?.classList.remove('sb-search__item--selected');
       this._selected = null;
       this._renderDetail();
-      el?.focus();
+      el?.focus({ preventScroll: true });
       this.dispatchEvent(new CustomEvent('sb-select', { bubbles: true, detail: { item: null } }));
     }
 
@@ -710,9 +792,47 @@
       this._announce();
     }
 
-    // Tells the sandbox where the viewer has got to, so it can keep or act on it.
+    // Whether the criteria are exactly what the preset sets, in its view when it names one.
+    _isPreset(preset) {
+      return (!preset.view || preset.view === this.view)
+        && this._criteria(preset) === this._criteria({ query: this._query, regex: this._regex, filters: this.filters, ranges: this.ranges, sort: this._sort, group: this._group });
+    }
+
+    // Criteria as one comparable text: empty filters left out, ranges held within their fields' spans.
+    _criteria({ query = '', regex = false, filters = {}, ranges = {}, sort = null, group = null }) {
+      const chosen = Object.entries(chosenOf(filters)).filter(([, values]) => values.size).map(([key, values]) => [key, [...values].sort()]);
+      const narrowed = Object.entries(ranges).flatMap(([key, [from, to]]) => {
+        const column = this._columnFor(key);
+        [from, to] = [Math.max(asNumber(from), column?.min ?? -Infinity), Math.min(asNumber(to), column?.max ?? Infinity)];
+        return column && from <= column.min && to >= column.max ? [] : [[key, from, to]];
+      });
+      return JSON.stringify([String(query), !!regex, chosen.sort(), narrowed.sort(), sortOf(sort), groupOf(group)]);
+    }
+
+    // Takes one applied part away: { drop: 'query' | 'filter' | 'range' | 'group' | 'sort', key, value }.
+    _drop(part) {
+      if (part.drop === 'group') return void (this.group = null);
+      if (part.drop === 'sort') return void (this.sort = null);
+      this._without(part);
+      this.querySelector('.sb-search__input').value = this._query;
+      this._narrowed();
+    }
+
+    // The criteria with a narrowing part taken away, nothing redrawn.
+    _without({ drop, key, value }) {
+      if (drop === 'query') this._query = '';
+      if (drop === 'filter') this._filters[key]?.delete(value);
+      if (drop === 'range') delete this._ranges[key];
+    }
+
+    // Tells the sandbox where the viewer has got to, so it can keep or act on it. Criteria the viewer has brought
+    // round to a preset's show as that preset.
     _announce() {
-      const detail = { preset: this.preset, query: this._query, regex: this._regex, filters: this.filters, ranges: this.ranges, sort: this.sort, group: this._group, view: this.view, fullscreen: this.fullscreen, results: this.results };
+      if (!this._preset) {
+        this._preset = this._presets.find((preset) => this._isPreset(preset)) ?? null;
+        this._showPreset();
+      }
+      const detail = { preset: this.preset, query: this._query, regex: this._regex, filters: this.filters, ranges: this.ranges, sort: this.sort, group: this.group, view: this.view, fullscreen: this.fullscreen, results: this.results };
       this.dispatchEvent(new CustomEvent('sb-change', { bubbles: true, detail }));
     }
 
@@ -730,25 +850,25 @@
             <div class="sb-search__bar">
               <div class="sb-search__query">
                 <input class="sb-search__input" type="search" aria-label="Search" placeholder="${esc(this.getAttribute('placeholder') || 'Search…')}" value="${esc(this._query)}" autocomplete="off" spellcheck="false">
+                <button class="sb-search__erase" type="button" aria-label="Clear the search" title="Clear the search" hidden>×</button>
                 <button class="sb-search__regex" type="button" aria-pressed="${this._regex}" title="Search with a regular expression">.*</button>
               </div>
               <span class="sb-search__count" aria-live="polite"></span>
+              <button class="sb-search__button sb-search__full" type="button" aria-pressed="${full}" aria-label="${full ? 'Exit full screen' : 'Full screen'}" title="${full ? 'Exit full screen' : 'Full screen'}">${full ? ICONS.leave : ICONS.enter}</button>
             </div>
+            <div class="sb-search__applied" aria-label="Applied"></div>
             <p class="sb-search__problem" role="alert"></p>
             <div class="sb-search__bar">
-              ${this._presetHtml()}
-              ${this._sortHtml()}
-              ${this._groupHtml()}
+              <span class="sb-search__controls">${this._controlsHtml()}</span>
               <span class="sb-search__spacer"></span>
               <span class="sb-search__views" role="group" aria-label="View">
-                ${Object.entries(VIEWS).map(([view, label]) => `<button class="sb-search__button" type="button" data-view="${view}" aria-pressed="${this.view === view}">${label}</button>`).join('')}
+                ${Object.entries(VIEWS).map(([view, label]) => `<button class="sb-search__button" type="button" data-view="${view}" aria-pressed="${this.view === view}" aria-label="${label}" title="${label}">${ICONS[view]}</button>`).join('')}
               </span>
-              <button class="sb-search__button sb-search__full" type="button" aria-pressed="${full}">${full ? `${ICONS.leave} Exit full screen` : `${ICONS.enter} Full screen`}</button>
             </div>
-            ${this._columns.some((column) => column.filter || column.range) ? `<div class="sb-search__filtering">
+            <p class="sb-search__about" aria-live="polite"></p>
+            <div class="sb-search__filtering">
               <button class="sb-search__toggle" type="button" aria-controls="${this._id('filters')}">Filters</button>
-              <span class="sb-search__chosen"></span>
-            </div>` : ''}
+            </div>
             <div class="sb-search__filters" id="${this._id('filters')}"></div>
           </div>
           <div class="sb-search__body">
@@ -764,6 +884,20 @@
       this._refresh();
       this._renderDetail();
     }
+
+    // After the criteria, presets or items change: the bar's choices, the filters and the results, drawn afresh in
+    // place. The search box, the frame and the results' scroll stay as they are, so nothing the viewer does moves the page.
+    _update() {
+      // Before the first build, or with detail content given since, the whole element is built.
+      if (!this._built || this.querySelector(':scope > [slot="detail"]')) return this._build();
+      this.querySelector('.sb-search__controls').innerHTML = this._controlsHtml();
+      this.querySelector('.sb-search__filters').innerHTML = '';
+      const input = this.querySelector('.sb-search__input');
+      if (input.value !== this._query) input.value = this._query;
+      this._refresh();
+    }
+
+    _controlsHtml() { return this._presetHtml() + this._sortHtml() + this._groupHtml(); }
 
     // The pane shows while an item is chosen, headed by the item's title. Free content is the sandbox's to show.
     _renderDetail() {
@@ -804,16 +938,20 @@
       </span>`;
     }
 
+    // Group, and once grouped, what to group by within each group.
     _groupHtml() {
       const groupable = this._columns.filter((column) => column.group);
       if (!groupable.length) return '';
-      return `<span class="sb-search__choose">
-        <label class="sb-search__facet" for="${this._id('group')}">Group</label>
-        <span class="sb-search__picker"><select class="sb-search__select sb-search__group" id="${this._id('group')}">
+      const [outer, inner] = this._group;
+      const menu = (name, label, columns, chosen) => `<span class="sb-search__choose">
+        <label class="sb-search__facet" for="${this._id(name)}">${label}</label>
+        <span class="sb-search__picker"><select class="sb-search__select sb-search__${name}" id="${this._id(name)}">
           <option value="">None</option>
-          ${groupable.map((column) => `<option value="${esc(column.key)}"${this._group === column.key ? ' selected' : ''}>${esc(column.label)}</option>`).join('')}
+          ${columns.map((column) => `<option value="${esc(column.key)}"${chosen === column.key ? ' selected' : ''}>${esc(column.label)}</option>`).join('')}
         </select></span>
       </span>`;
+      const within = groupable.filter((column) => column.key !== outer);
+      return menu('group', 'Group', groupable, outer) + (outer && within.length ? menu('then', 'then by', within, inner) : '');
     }
 
     // The parts whose data attribute holds a value, compared as written rather than through a selector.
@@ -832,14 +970,68 @@
       if (!this._built) return;
       const pattern = this._pattern();
       this.querySelector('.sb-search__input').setAttribute('aria-invalid', pattern === undefined);
+      this.querySelector('.sb-search__erase').hidden = !this._query;
       this.querySelector('.sb-search__regex').setAttribute('aria-pressed', this._regex);
       this.querySelector('.sb-search__problem').textContent = pattern === undefined && !this.match
         ? 'That isn\'t a regular expression this browser can read, so nothing is searched out yet.' : '';
+      this._renderFilters();
+      this._renderResults();
+      this._showPreset();
+    }
+
+    // The preset chosen, in the menu, its about and the applied row.
+    _showPreset() {
       const presets = this.querySelector('.sb-search__preset');
       const at = this._presets.indexOf(this._preset);
       if (presets) presets.value = at < 0 ? '' : String(at);
-      this._renderFilters();
-      this._renderResults();
+      this.querySelector('.sb-search__about').textContent = this._preset?.about ?? '';
+      this.querySelector('.sb-search__applied').innerHTML = this._appliedHtml();
+    }
+
+    // Each part narrowing the results, in words: the search, each filter value and each range.
+    _narrowings() {
+      const parts = this._query ? [{ drop: 'query', words: `Search: ${this._query}` }] : [];
+      for (const column of this._columns) {
+        for (const value of this._filters[column.key] || []) parts.push({ drop: 'filter', key: column.key, value, words: `${column.label}: ${column.labelOf(value)}` });
+        const range = this._ranges[column.key];
+        if (range) parts.push({ drop: 'range', key: column.key, words: `${column.label}: ${this._between(column, range)}` });
+      }
+      return parts;
+    }
+
+    _partAttributes({ drop, key, value }) {
+      return `data-drop="${drop}"${key === undefined ? '' : ` data-key="${esc(key)}"`}${value === undefined ? '' : ` data-value="${esc(value)}"`}`;
+    }
+
+    // The preset, then a chip for each part applied, then Clear all while anything narrows.
+    _appliedHtml() {
+      const labelOf = (key) => this._columnFor(key)?.label ?? key;
+      const parts = this._narrowings();
+      if (this._group.length) parts.push({ drop: 'group', words: `Grouped by ${this._group.map(labelOf).join(', then ')}` });
+      if (this._sort) parts.push({ drop: 'sort', words: `Sorted by ${labelOf(this._sort.key)}, ${this._sort.direction}` });
+      const chips = parts.map((part) => `<button class="sb-search__chip" type="button" ${this._partAttributes(part)} aria-label="Remove ${esc(part.words)}">${esc(part.words)}<span class="sb-search__chip-x" aria-hidden="true">×</span></button>`);
+      return (this._preset ? `<span>Preset: <strong>${esc(this._preset.label)}</strong></span>` : '') + chips.join('')
+        + (this._isNarrowed ? '<button class="sb-search__clear" type="button">Clear all</button>' : '');
+    }
+
+    // Up to three parts that, taken away on their own, would show something, most first.
+    _waysBack() {
+      return this._narrowings()
+        .map((part) => ({ ...part, count: this._countWithout(part) }))
+        .filter((way) => way.count)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, MOST_WAYS_BACK);
+    }
+
+    _countWithout(part) {
+      const saved = [this._query, this._filters, this._ranges];
+      this._filters = Object.fromEntries(Object.entries(this._filters).map(([key, chosen]) => [key, new Set(chosen)]));
+      this._ranges = { ...this._ranges };
+      this._without(part);
+      const pattern = this._pattern();
+      const count = this._rows.filter((row) => this._passes(row, pattern)).length;
+      [this._query, this._filters, this._ranges] = saved;
+      return count;
     }
 
     _narrowed() {
@@ -858,29 +1050,23 @@
         this._syncFilters();
       }
       const toggle = this.querySelector('.sb-search__toggle');
-      if (!toggle) return;
+      toggle.parentElement.hidden = !this._columns.some((column) => column.filter || column.range);
       toggle.setAttribute('aria-expanded', this._filtersOpen);
-      this.querySelector('.sb-search__chosen').innerHTML = this._filtersOpen ? '' : this._chosenHtml() || 'None chosen';
-    }
-
-    // The values chosen, in words: "Status: Delayed · Operator: LNER, Northern".
-    _chosenHtml() {
-      return this._columns.flatMap((column) => {
-        const chosen = this._filters[column.key];
-        const range = this._ranges[column.key];
-        return [
-          chosen?.size ? `${esc(column.label)}: <strong>${[...chosen].map((key) => esc(column.labelOf(key))).join(', ')}</strong>` : '',
-          range ? `${esc(column.label)}: <strong>${esc(this._between(column, range))}</strong>` : ''
-        ];
-      }).filter(Boolean).join(' · ');
+      const chosen = this._narrowings().filter((part) => part.drop !== 'query').length;
+      toggle.textContent = chosen ? `Filters (${chosen})` : 'Filters';
     }
 
     _between(column, { from, to }) {
       return `${column.labelOf(from)} – ${column.labelOf(to)}`;
     }
 
+    // Each field's values or range, under its category's heading once any field has one, categories in their first order.
     _filtersHtml() {
-      return this._columns.map((column) => (column.filter ? this._valuesHtml(column) : '') + (column.range ? this._rangeHtml(column) : '')).join('');
+      const html = (column) => (column.filter ? this._valuesHtml(column) : '') + (column.range ? this._rangeHtml(column) : '');
+      const filtered = this._columns.filter((column) => column.filter || column.range);
+      const categories = [...new Set(filtered.map((column) => column.category))];
+      return categories.map((category) => (category === null ? '' : `<span class="sb-search__category">${esc(category)}</span>`)
+        + filtered.filter((column) => column.category === category).map(html).join('')).join('');
     }
 
     _valuesHtml(column) {
@@ -944,20 +1130,35 @@
       const box = this.querySelector('.sb-search__results');
       if (!box) return;
       const results = this._results();
-      this.querySelector('.sb-search__count').innerHTML = `${results.length} of ${this._rows.length} shown${this._isNarrowed ? ' · <button class="sb-search__clear" type="button">Clear</button>' : ''}`;
+      this._count(results.length);
       this._drawn = [];
       if (!results.length) {
-        const empty = this._rows.length ? 'Nothing matches. Try fewer filters or a shorter search.' : this.getAttribute('empty-text') || 'Nothing yet.';
-        box.innerHTML = `<p class="sb-search__empty">${esc(empty)}</p>`;
+        const ways = this._rows.length ? this._waysBack() : [];
+        const empty = !this._rows.length ? this.getAttribute('empty-text') || 'Nothing yet.'
+          : ways.length ? 'Nothing matches. Any of these would show something:' : 'Nothing matches. Try fewer filters or a shorter search.';
+        box.innerHTML = `<p class="sb-search__empty">${esc(empty)}</p>`
+          + (ways.length ? `<p class="sb-search__ways">${ways.map((way) => `<button class="sb-search__way" type="button" ${this._partAttributes(way)}>Remove ${esc(way.words)} to see ${way.count}</button>`).join('')}</p>` : '');
         return;
       }
       const budget = { left: this._showAll ? Infinity : this._limit };
       const pattern = this.match ? null : this._pattern();
-      const groups = this._groups(results);
+      const groups = this._groups(results) || [{ rows: results }];
       this._own = [];
       box.innerHTML = (this.view === 'table' ? this._tableHtml(groups, budget, pattern) : this._listHtml(groups, budget, pattern))
         + (budget.left < 0 ? `<button class="sb-search__more" type="button">Show all ${results.length}</button>` : '');
-      box.querySelectorAll('.sb-search__own').forEach((slot, i) => slot.replaceWith(this._own[i]));
+      box.querySelectorAll('.sb-search__own').forEach((slot) => slot.replaceWith(this._own[slot.dataset.own]));
+    }
+
+    // How many are shown, lit for a moment when that changes.
+    _count(shown) {
+      const count = this.querySelector('.sb-search__count');
+      count.textContent = `${shown} of ${this._rows.length} shown`;
+      if (this._lastShown !== null && this._lastShown !== shown) {
+        count.classList.remove('sb-search__count--changed');
+        void count.offsetWidth; // so the mark starts again
+        count.classList.add('sb-search__count--changed');
+      }
+      this._lastShown = this._rows.length ? shown : null; // items arriving aren't a change
     }
 
     // Takes rows from the budget shared by every group; overdrawing it marks that some weren't drawn.
@@ -967,26 +1168,47 @@
       return taken;
     }
 
-    _headingHtml(group) {
-      return `<span>${esc(group.label)}</span><span class="sb-search__tally">${group.rows.length}</span>`;
+    // A place for one of the sandbox's own elements, filled once the results are drawn.
+    _ownSlot(element) {
+      return `<span class="sb-search__own" data-own="${this._own.push(element) - 1}"></span>`;
     }
 
+    // What the sandbox says a group's heading is: text, an element, or nothing to keep the field's label.
+    _ownHeading(group) {
+      return this._heading?.({ key: group.key, value: group.value, label: group.label, level: group.level, items: group.rows.map((row) => row.item) });
+    }
+
+    _headingWords(group, words) {
+      return `<span>${esc(words)}</span><span class="sb-search__tally">${group.rows.length}</span>`;
+    }
+
+    _headingHtml(group) {
+      const own = this._ownHeading(group);
+      if (own instanceof Element) return `<div class="sb-search__heading sb-search__heading--own">${this._ownSlot(own)}</div>`;
+      const tag = `h${Math.min(group.level + 2, 6)}`;
+      return `<${tag} class="sb-search__heading sb-search__heading--${group.level}">${this._headingWords(group, own ?? group.label)}</${tag}>`;
+    }
+
+    // Sections within sections, one level for each key grouped by; the innermost hold the items.
     _listHtml(groups, budget, pattern) {
       return groups.map((group) => {
-        const rows = this._spend(group.rows, budget);
-        if (!rows.length) return '';
-        return `<section class="sb-search__group">
-          ${group.label === undefined ? '' : `<h3 class="sb-search__heading">${this._headingHtml(group)}</h3>`}
-          <ul class="sb-search__items sb-search__items--${this.view}">${rows.map((row) => this._itemHtml(row, pattern)).join('')}</ul>
+        const inner = group.groups ? this._listHtml(group.groups, budget, pattern) : this._itemsHtml(this._spend(group.rows, budget), pattern);
+        if (!inner) return '';
+        return `<section class="sb-search__group${group.level ? ` sb-search__group--${group.level}` : ''}">
+          ${group.level ? this._headingHtml(group) : ''}${inner}
         </section>`;
       }).join('');
+    }
+
+    _itemsHtml(rows, pattern) {
+      if (!rows.length) return '';
+      return `<ul class="sb-search__items sb-search__items--${this.view}">${rows.map((row) => this._itemHtml(row, pattern)).join('')}</ul>`;
     }
 
     _itemHtml(row, pattern) {
       const own = this._drawItem?.(row.item, this.view);
       if (own instanceof Element) {
-        this._own.push(own);
-        return `<li ${this._itemAttributes(row, 'sb-search__item--own')}><span class="sb-search__own"></span>${this._foundHtml(row, pattern, [])}</li>`;
+        return `<li ${this._itemAttributes(row, 'sb-search__item--own')}>${this._ownSlot(own)}${this._foundHtml(row, pattern, [])}</li>`;
       }
       const { title, subtitle, details = [] } = this._card();
       const show = (key) => this._marked(row.texts[key] ?? keyOf(row.item[key]), pattern);
@@ -1020,14 +1242,24 @@
       return `${start > 0 ? '…' : ''}${this._marked(text.slice(start, end), pattern)}${end < text.length ? '…' : ''}`;
     }
 
+    // Groups within groups as one run of the innermost, each headed by every level's words, so a table's columns
+    // line up throughout. The sandbox's own headings count here only as text.
+    _innermost(groups, above = []) {
+      return groups.flatMap((group) => {
+        const own = group.level ? this._ownHeading(group) : null;
+        const words = group.level ? [...above, own == null || own instanceof Element ? group.label : own] : above;
+        return group.groups ? this._innermost(group.groups, words) : [{ group, words }];
+      });
+    }
+
     _tableHtml(groups, budget, pattern) {
-      const columns = this._columns;
+      const columns = this._shown;
       const cell = (column) => (column.number ? ' class="sb-search__cell--number"' : '');
-      const bodies = groups.map((group) => {
+      const bodies = this._innermost(groups).map(({ group, words }) => {
         const rows = this._spend(group.rows, budget);
         if (!rows.length) return '';
         return `<tbody>
-          ${group.label === undefined ? '' : `<tr><th class="sb-search__heading" colspan="${columns.length}" scope="colgroup">${this._headingHtml(group)}</th></tr>`}
+          ${words.length ? `<tr><th class="sb-search__heading" colspan="${columns.length}" scope="colgroup">${this._headingWords(group, words.join(' · '))}</th></tr>` : ''}
           ${rows.map((row) => `<tr ${this._itemAttributes(row)}>${columns.map((column) => `<td${cell(column)}>${this._marked(row.texts[column.key], pattern)}</td>`).join('')}</tr>`).join('')}
         </tbody>`;
       }).join('');
@@ -1043,7 +1275,7 @@
       const classes = ['sb-search__item', ...extra];
       if (item === this._selected) classes.push('sb-search__item--selected');
       if (!isEmpty(item.id) && this._highlight.has(String(item.id))) classes.push('sb-search__item--highlighted');
-      return `class="${classes.join(' ')}" tabindex="0" data-index="${index}"`
+      return `class="${classes.join(' ')}"${this.choose === 'item' ? ' tabindex="0"' : ''} data-index="${index}"`
         + (isEmpty(item.id) ? '' : ` data-ref="${esc(item.id)}"`)
         + (item.tone ? ` data-tone="${esc(item.tone)}"` : '');
     }

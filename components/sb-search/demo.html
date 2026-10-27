@@ -37,6 +37,9 @@
     .asset strong { font-size: 14px; }
     .asset span { color: var(--sb-muted); font-size: 12px; }
     .asset__track { height: 6px; border-radius: 3px; background: var(--sb-surface-2); }
+    .asset__watch { justify-self: start; padding: 1px 8px; border: 1px solid var(--sb-border); border-radius: 999px; background: var(--sb-surface-2); color: inherit; font: 12px var(--sb-font); cursor: pointer; }
+    .asset__watch[aria-pressed="true"] { border-color: var(--sb-accent); background: var(--sb-accent-soft); }
+    .asset__watch:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
     .asset__bar { display: block; height: 100%; min-width: 3px; border-radius: 3px; background: var(--sb-accent); }
   </style>
 </head>
@@ -75,7 +78,7 @@
   search.items = model.services;   // [{ id: '1A10', from: 'Leeds', operator: 'Northern', delay: 0 }, …]
 &lt;/script&gt;</pre>
       <p>That's enough: every field is searched and sortable, and fields with a few repeated values become filters and groups. Say more through <code>fields</code> (labels, formats, which to filter and group by) and <code>card</code> (what the list and grid show), or draw items your own way with <code>drawItem</code>. Where the sandbox knows better, hand it functions: a field's <code>value</code> and <code>compare</code>, or a <code>match</code> and <code>filter</code> of its own.</p>
-      <p>Write <code>presets</code> for the questions people will ask most, and set <code>preset</code> to start on one. Put the sandbox's own content about the chosen item in a child with <code>slot="detail"</code>, and fill it on <code>sb-select</code>: it shows in a pane beside the results, or is left free for content that shows itself, such as a dialog.</p>
+      <p>Write <code>presets</code> for the questions people will ask most, each with an <code>about</code> saying what it shows, and set <code>preset</code> to start on one. Put the sandbox's own content about the chosen item in a child with <code>slot="detail"</code>, and fill it on <code>sb-select</code>: it shows in a pane beside the results, or is left free for content that shows itself, such as a dialog.</p>
 
       <h3>Making it reveal, not just list</h3>
       <ul>
@@ -91,7 +94,7 @@
     <h2 class="part">Examples</h2>
     <section class="example">
       <h2>Train services today</h2>
-      <p>The services as the model holds them, with labels and formats. Choose a service to see it in the pane beside the results. Try the presets, a stop the cards don't show (Doncaster), drag the departure times, or open it full screen.</p>
+      <p>The services as the model holds them, with labels and formats. Choose a service to see it in the pane beside the results. Try the presets, each saying what it shows (Morning peak groups by operator, then by status, with headings of the sandbox's own), a stop the services call at, which is searched but never shown (Doncaster), drag the departure times, or open it full screen.</p>
       <sb-search id="trains" placeholder="Search services and stations…">
         <div slot="detail" class="service" id="train-detail"></div>
       </sb-search>
@@ -99,8 +102,8 @@
 
     <section class="example">
       <h2>Assets on a power grid</h2>
-      <p>A grid of the sandbox's own cards, each showing its capacity as a bar against the largest, grouped by region, with functions of the sandbox's own: capacity grouped into bands, condition sorted from good to poor, a range over age, and a search that also finds an asset by its id.</p>
-      <sb-search id="assets" view="grid" placeholder="Search assets, or an id like GA-104…"></sb-search>
+      <p>A grid of the sandbox's own cards, each showing its capacity as a bar against the largest and with a Watch button of its own; with nothing to open, the cards are never chosen. They're grouped by region, with filters under what the asset is and the state it's in, with functions of the sandbox's own: capacity grouped into bands, condition sorted from good to poor, a range over age, and a search that also finds an asset by its id.</p>
+      <sb-search id="assets" view="grid" choose="none" placeholder="Search assets, or an id like GA-104…"></sb-search>
     </section>
   </main>
 
@@ -138,7 +141,7 @@
     trains.fields = [
       { key: 'id', label: 'Service' },
       { key: 'route', label: 'Route' },
-      { key: 'calls', label: 'Calls at', format: (stops) => stops.join(', ') },
+      { key: 'calls', label: 'Calls at', format: (stops) => stops.join(', '), show: false },
       { key: 'departs', label: 'Departs', value: (train) => minutesOf(train.departs), format: clock, range: true },
       { key: 'operator', label: 'Operator' },
       { key: 'status', label: 'Status' },
@@ -150,11 +153,17 @@
 
     trains.presets = [
       { label: 'Everything today', sort: { key: 'departs' } },
-      { label: 'Trouble first', filters: { status: ['Delayed', 'Cancelled'] }, sort: { key: 'delay', direction: 'descending' } },
-      { label: 'Morning peak', ranges: { departs: [7 * 60, 9 * 60 + 30] }, group: 'operator', sort: { key: 'departs' } },
+      { label: 'Trouble first', about: 'Delayed and cancelled services, the longest delays first.', filters: { status: ['Delayed', 'Cancelled'] }, sort: { key: 'delay', direction: 'descending' } },
+      { label: 'Morning peak', about: 'Departures from 07:00 to 09:30, by operator, then by status.', ranges: { departs: [7 * 60, 9 * 60 + 30] }, group: ['operator', 'status'], sort: { key: 'departs' } },
       { label: 'Long trains', filters: { status: ['On time', 'Late'] }, sort: { key: 'carriages', direction: 'descending' }, view: 'table' }
     ];
     trains.preset = 'Everything today';
+    // An operator's heading says how many of its services are in trouble, which the label alone can't.
+    trains.heading = ({ key, label, items }) => {
+      if (key !== 'operator') return null;
+      const trouble = items.filter((train) => train.status === 'Delayed' || train.status === 'Cancelled').length;
+      return trouble ? `${label} · ${trouble} delayed or cancelled` : `${label} · all running`;
+    };
     // The detail is the sandbox's own: built from the chosen service, as text, never markup.
     const detail = document.getElementById('train-detail');
     const el = (tag, text) => Object.assign(document.createElement(tag), text == null ? {} : { textContent: text });
@@ -182,12 +191,12 @@
     const assets = document.getElementById('assets');
     assets.fields = [
       { key: 'name', label: 'Name' },
-      { key: 'kind', label: 'Kind' },
-      { key: 'region', label: 'Region' },
+      { key: 'kind', label: 'Kind', category: 'The asset' },
+      { key: 'region', label: 'Region', category: 'The asset' },
       { key: 'capacity', label: 'Capacity', format: (mw) => `${mw} MW` },
       { key: 'band', label: 'Size', value: (asset) => band(asset.capacity), compare: (a, b) => parseInt(a.replace(/\D+/, '')) - parseInt(b.replace(/\D+/, '')) || a.localeCompare(b), filter: false },
-      { key: 'age', label: 'Age', format: (years) => `${years} years`, range: true },
-      { key: 'condition', label: 'Condition', compare: (a, b) => CONDITIONS.indexOf(a) - CONDITIONS.indexOf(b) }
+      { key: 'age', label: 'Age', format: (years) => `${years} years`, range: true, category: 'Its state' },
+      { key: 'condition', label: 'Condition', category: 'Its state', compare: (a, b) => CONDITIONS.indexOf(a) - CONDITIONS.indexOf(b) }
     ];
     assets.card = { title: 'name', subtitle: 'kind', details: ['region', 'capacity', 'age', 'condition'] };
     assets.items = PLACES.map((place, i) => {
@@ -208,12 +217,13 @@
       || [asset.name, asset.kind, asset.region, asset.condition].some((words) => words.toLowerCase().includes(text.toLowerCase()));
     assets.presets = [
       { id: 'by-region', label: 'By region', group: 'region' },
-      { id: 'worn', label: 'Worn and old', filters: { condition: ['Poor'] }, ranges: { age: [30, 48] }, sort: { key: 'age', direction: 'descending' } },
+      { id: 'worn', label: 'Worn and old', about: 'Assets in poor condition and over 30 years old: the first to replace.', filters: { condition: ['Poor'] }, ranges: { age: [30, 48] }, sort: { key: 'age', direction: 'descending' } },
       { id: 'big', label: 'Biggest first', group: 'band', sort: { key: 'capacity', direction: 'descending' } }
     ];
     assets.preset = 'by-region';
 
-    // In the grid, each asset drawn the sandbox's own way; the list keeps the search's look.
+    // In the grid, each asset drawn the sandbox's own way, with a button of its own; the list keeps the search's look.
+    const watched = new Set();
     const largest = Math.max(...assets.items.map((asset) => asset.capacity));
     assets.drawItem = (asset, view) => {
       if (view !== 'grid') return null;
@@ -222,8 +232,18 @@
       const bar = Object.assign(el('span'), { className: 'asset__bar' });
       bar.style.width = `${(asset.capacity / largest) * 100}%`;
       track.append(bar);
+      const watch = Object.assign(el('button'), { type: 'button', className: 'asset__watch' });
+      const show = () => {
+        watch.textContent = watched.has(asset.id) ? 'Watching' : 'Watch';
+        watch.setAttribute('aria-pressed', watched.has(asset.id));
+      };
+      watch.addEventListener('click', () => {
+        watched.has(asset.id) ? watched.delete(asset.id) : watched.add(asset.id);
+        show();
+      });
+      show();
       tile.append(el('strong', asset.name), el('span', `${asset.kind} · ${asset.region}`), track,
-        el('span', `${asset.capacity} MW · ${asset.age} years · ${asset.condition}`));
+        el('span', `${asset.capacity} MW · ${asset.age} years · ${asset.condition}`), watch);
       return tile;
     };
   </script>
