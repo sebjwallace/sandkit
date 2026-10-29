@@ -648,3 +648,81 @@ test('every tag, with what it means and what carries it; one in use but never de
   ]);
   assertEqual(createDiscovery().tags(), [], 'none without tags');
 });
+
+// ---- Problems, choices and ways of working ----
+
+// A network team's discovery over two iterations: a feeder that trips on cold mornings, the options
+// and trade-off weighed, the recommendation followed, and the solution applied.
+const grid = createDiscovery({
+  sources: [{ id: 'SRC-1', iteration: 1, format: 'notes' }, { id: 'SRC-2', iteration: 2, format: 'data' }],
+  excerpts: [
+    { id: 'SRC-1.1', iteration: 1, source: 'SRC-1', quote: 'tripped again at 07:12' },
+    { id: 'SRC-1.2', iteration: 1, source: 'SRC-1', quote: 'slow once, not fast twice' },
+    { id: 'SRC-1.3', iteration: 1, source: 'SRC-1', quote: 'life-critical within 30 minutes' },
+    { id: 'SRC-2.1', iteration: 2, source: 'SRC-2', quote: 'no trips in December' },
+  ],
+  metrics: [{ id: 'MET-1', iteration: 1 }],
+  incidents: [{ id: 'INC-1', iteration: 1, at: 'SRC-1.1', resolved: 'SRC-2.1' }],
+  problems: [{ id: 'PRB-1', iteration: 1, setIn: 'SRC-1.1', shownBy: ['INC-1'] }, { id: 'PRB-2', iteration: 1 }],
+  hypotheses: [{ id: 'HYP-1', iteration: 1, from: 'PRB-1' }, { id: 'HYP-2', iteration: 1, from: 'PRB-1' }],
+  observations: [
+    { id: 'OBS-1', iteration: 2, tests: ['HYP-1', '+'] },
+    { id: 'OBS-2', iteration: 2, tests: ['HYP-2', '−'] },
+    { id: 'OBS-3', iteration: 2, tests: ['REQ-1', '+'] },
+  ],
+  principles: [{ id: 'PRN-1', iteration: 1, setIn: 'SRC-1.2', status: 'followed' }],
+  patterns: [{ id: 'PAT-1', iteration: 1, status: 'applied' }],
+  antipatterns: [{ id: 'APT-1', iteration: 1, status: 'removed' }],
+  requirements: [{ id: 'REQ-1', iteration: 1, setIn: 'SRC-1.3' }],
+  optimizations: [{ id: 'OPZ-1', iteration: 1, metric: 'MET-1', status: 'improving' }],
+  strategies: [{ id: 'STR-1', iteration: 1, aims: ['OPZ-1'], follows: ['PRN-1'], status: 'in force' }],
+  options: [{ id: 'OPT-1', iteration: 1, from: ['PAT-1'] }, { id: 'OPT-2', iteration: 1 }, { id: 'OPT-3', iteration: 1 }],
+  tradeoffs: [{ id: 'TRD-1', iteration: 1, between: ['OPT-1', 'OPZ-1'], status: 'accepted' }],
+  recommendations: [{ id: 'REC-1', iteration: 1, recommends: 'OPT-1', restsOn: ['TRD-1'] }, { id: 'REC-2', iteration: 1, recommends: 'OPT-2' }],
+  disputes: [{ id: 'DSP-1', iteration: 1, about: ['HYP-1'] }],
+  decisions: [{ id: 'DEC-1', iteration: 2, status: 'accepted', restsOn: ['OPT-1', 'OPT-2', 'REC-1', 'REC-2', 'REQ-1', 'STR-1', 'APT-1'], chose: 'OPT-1', settles: 'DSP-1' }],
+  solutions: [{ id: 'SOL-1', iteration: 2, solves: ['PRB-1'], from: ['OPT-1', 'DEC-1'], applied: 'SRC-2.1' }, { id: 'SOL-2', iteration: 2, solves: 'PRB-2' }],
+});
+const gridStatus = (ids, asOf) => ids.map((id) => grid.status(id, { asOf }));
+
+test('a hypothesis is untested until an observation tests it, then supported or refuted; a requirement met or not met', () => {
+  assertEqual(gridStatus(['HYP-1', 'HYP-2', 'REQ-1'], 1), ['untested', 'untested', 'untested']);
+  assertEqual(gridStatus(['HYP-1', 'HYP-2', 'REQ-1'], 2), ['supported', 'refuted', 'met']);
+});
+
+test('a problem is open until a solution to it is applied; an incident until what resolves it arrives', () => {
+  assertEqual(gridStatus(['PRB-1', 'PRB-2', 'INC-1', 'SOL-1', 'SOL-2'], 1), ['open', 'open', 'open', 'proposed', 'proposed']);
+  assertEqual(gridStatus(['PRB-1', 'PRB-2', 'INC-1', 'SOL-1', 'SOL-2'], 2), ['solved', 'open', 'resolved', 'applied', 'proposed']);
+});
+
+test('an option is chosen or set aside by the decision weighing it; a recommendation followed or declined', () => {
+  assertEqual(gridStatus(['OPT-1', 'OPT-2', 'OPT-3', 'REC-1', 'REC-2'], 1), ['open', 'open', 'open', 'proposed', 'proposed']);
+  assertEqual(gridStatus(['OPT-1', 'OPT-2', 'OPT-3', 'REC-1', 'REC-2'], 2), ['chosen', 'set aside', 'open', 'followed', 'declined']);
+});
+
+test('a dispute is open until an agreement or decision settles it; the ways of working keep what their records say', () => {
+  assertEqual(gridStatus(['DSP-1'], 1).concat(gridStatus(['DSP-1'], 2)), ['open', 'settled']);
+  assertEqual(gridStatus(['PRN-1', 'PAT-1', 'APT-1', 'OPZ-1', 'STR-1', 'TRD-1']), ['followed', 'applied', 'removed', 'improving', 'in force', 'accepted']);
+});
+
+test('what a choice rests on says how it steers it, and a solution solves its problem', () => {
+  assertEqual([['OPT-1', 'DEC-1'], ['OPT-2', 'DEC-1'], ['REC-1', 'DEC-1'], ['REQ-1', 'DEC-1'], ['STR-1', 'DEC-1'], ['APT-1', 'DEC-1'],
+    ['OPZ-1', 'STR-1'], ['PRN-1', 'STR-1'], ['PAT-1', 'OPT-1'], ['TRD-1', 'REC-1'], ['OPT-1', 'TRD-1'], ['REC-1', 'OPT-1']].map(([a, b]) => meansIn(grid, a, b)),
+  ['chosen in', 'weighed in', 'advises', 'requires', 'guides', 'warns against', 'aims', 'guides', 'guides', 'weighs', 'weighed in', 'recommends']);
+  assertEqual([['SOL-1', 'PRB-1'], ['INC-1', 'PRB-1'], ['PRB-1', 'HYP-1'], ['DSP-1', 'HYP-1'], ['DSP-1', 'DEC-1'], ['MET-1', 'OPZ-1'],
+    ['OBS-1', 'HYP-1'], ['OBS-2', 'HYP-2'], ['OBS-3', 'REQ-1'], ['SRC-1.1', 'INC-1'], ['SRC-1.1', 'PRB-1'], ['SRC-1.2', 'PRN-1'], ['SRC-1.3', 'REQ-1']].map(([a, b]) => meansIn(grid, a, b)),
+  ['solves', 'shows', 'prompts', 'disputes', 'settled by', 'measures', 'bears out', 'refutes', 'meets', 'reports', 'raises', 'states', 'sets']);
+});
+
+test('a decision goes under review when a hypothesis it rests on is refuted after it was taken', () => {
+  const later = createDiscovery({
+    hypotheses: [{ id: 'HYP-1', iteration: 1 }],
+    observations: [{ id: 'OBS-1', iteration: 2, tests: ['HYP-1', '−'] }],
+    decisions: [{ id: 'DEC-1', iteration: 1, status: 'accepted', restsOn: ['HYP-1'] }],
+  });
+  assertEqual(later.reviewReasons('DEC-1', { asOf: 2 }), [{ ref: 'HYP-1', now: 'refuted', why: 'rests on' }]);
+});
+
+test('a problem comes back when a solution to it arrives', () => {
+  assertEqual(grid.appearances('PRB-1'), [1, 2]);
+});

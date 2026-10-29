@@ -55,7 +55,7 @@ Components and the engine for domain discovery, which never know each other: the
 
 | Component | What it does |
 |---|---|
-| [`sb-discovery-card`](components/sb-discovery-card/manifest.md) | One card of discovery, in 27 kinds each with its icon and tone: compact on a board, normal, or expanded in a modal; what it means in strips, what it rests on in folds of passages, cards, options and slots; sources and excerpts always compact, on paper, an excerpt showing its words, a region of an image or rows of data; when, by whom and in which iteration it was made. |
+| [`sb-discovery-card`](components/sb-discovery-card/manifest.md) | One card of discovery, in 41 kinds each with its icon and tone, and an optional title after its code: compact on a board, normal, or expanded in a modal; what it means in strips, what it rests on in folds of passages, cards, options and slots; sources and excerpts always compact, on paper, an excerpt showing its words, a region of an image or rows of data; when, by whom and in which iteration it was made. |
 
 | Engine | What it works out |
 |---|---|

@@ -1,5 +1,10 @@
 # discovery changelog
 
+## 0.3.3 · 2026-10-29
+- Takes fourteen more kinds: `hypotheses`, `problems`, `incidents`, `strategies`, `disputes`, `requirements`, `principles`, `patterns`, `antipatterns`, `optimizations`, `solutions`, `options`, `tradeoffs` and `recommendations`, with what each rests on and what each link means.
+- Works out their statuses: a hypothesis supported or refuted, and a requirement met or not, by the observations testing it; a problem solved once a solution to it is applied; an incident resolved and a solution applied once what shows it arrives; an option chosen or set aside, and a recommendation followed or declined, by the decisions taking or weighing it; a dispute settled once an agreement or decision settles it. Strategies, principles, patterns, anti-patterns, optimizations and trade-offs keep what their records say.
+- A decision can name the option it took (`chose`), and an agreement or decision the disputes it settles (`settles`). A decision resting on a hypothesis that's refuted afterwards comes up for review.
+
 ## 0.3.2 · 2026-10-27
 - Weighing follows superseded excerpts: a claim citing an excerpt that has been replaced by an iteration is weighed on the replacement instead, its passage saying which it `replaces`, and an excerpt reached twice counts once. Before, the wrong excerpt kept counting, and citing the correction beside it counted both.
 

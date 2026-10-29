@@ -1,5 +1,10 @@
 # sb-discovery-card changelog
 
+## 0.1.4 · 2026-10-29
+- Fourteen new kinds, for weighing choices, naming problems and recording ways of working: `hypothesis`, `problem` and `incident` with what we know; `strategy`, `dispute`, `requirement`, `principle`, `pattern`, `antipattern`, `optimization`, `solution`, `option`, `tradeoff` and `recommendation` with where we're going. Each has its own icon and tone.
+- A card can carry a `title`, a few words after its code in the header, compact or full.
+- New status words: `chosen`, `improving`, `followed`, `applied`, `solved`, `resolved`, `settled` and `removed` read as good; `worsening` and `present` as bad; `steady` and `set aside` as muted.
+
 ## 0.1.3 · 2026-10-26
 - A new kind, `excerpt`, in yellow, its icon a dotted box round a few lines: a piece of one source, on its paper and always compact, showing its words (and page), a region of an image, or rows of data (`excerpt: { source, quote?, page?, image?, region?, rows?, columns? }`). It lights for its source's code too.
 - A passage in a fold can name its `excerpt`: it goes by the excerpt's code, opens it, and lights for it or its source.

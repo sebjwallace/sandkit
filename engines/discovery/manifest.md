@@ -35,7 +35,7 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 
 ## What it takes
 
-`createDiscovery({ sources, claims, questions, assumptions, inferences, observations, predictions, outcomes, investigations, experiments, actions, decisions, goals, metrics, excerpts, tags, definitions, opinions, feedback, agreements, constraints, risks, awaited, entities, primitives, scenarios, rules, model })`. Give it the kinds the sandbox has; any left out is empty. Each list is plain records, each saying the `iteration` it was raised in; the engine never changes them.
+`createDiscovery({ sources, claims, questions, assumptions, inferences, observations, predictions, outcomes, investigations, experiments, actions, decisions, goals, metrics, excerpts, tags, definitions, opinions, feedback, agreements, constraints, risks, awaited, entities, primitives, hypotheses, problems, incidents, strategies, disputes, requirements, principles, patterns, antipatterns, optimizations, solutions, options, tradeoffs, recommendations, scenarios, rules, model })`. Give it the kinds the sandbox has; any left out is empty. Each list is plain records, each saying the `iteration` it was raised in; the engine never changes them.
 
 **A source**, as discovery weighs it, from its entry in the catalogue (see the [sources practice](../../practices/sources.md)):
 
@@ -68,10 +68,17 @@ const { createDiscovery } = require('./lib/sandkit/engines/discovery/discovery.j
 | investigation | the sources whose `gatheredBy` names it |
 | experiment | the observations whose `resultOf` names it |
 | action | `status`, as written, and `done`, the excerpt or record showing it's done |
-| decision | `status`, as written, and `restsOn: [id, …]` |
+| decision | `status`, as written, `restsOn: [id, …]`, `chose` (the option it took) and `settles` (a dispute it settles) |
+| hypothesis, requirement | the observations testing it |
+| problem | the solutions whose `solves` names it |
+| incident | `resolved`, the excerpt or record showing it's resolved |
+| solution | `solves` (a problem, or several), `applied` (the excerpt or record showing it's applied), and `status`, as written until then |
+| option | the decisions weighing it (`restsOn`) and taking it (`chose`) |
+| recommendation | `recommends`, the option or solution it recommends; the decisions taking what it recommends, or resting on it and taking another |
+| dispute | the agreements and decisions whose `settles` names it |
 | feedback | `said`, the excerpt it was said in, `about` (what it's about: an id, or several), `verdict` (`works` or `wrong`), `declined` (the reason, when not acted on), and the records founded on it |
 
-**What each kind rests on,** which makes the links. Each citation names an excerpt, and an excerpt rests on its `source`. A claim on the excerpts it asserts from, and it informs questions (`informs`); a question on the excerpt raising it (`raisedBy`) and those answering it (`answers`); a decision on `restsOn` and the excerpts it cites (`sources`); an action and a risk on what brought them about (`from`) and their sources; a prediction and an experiment on `from`, an experiment also on its excerpt (`setIn`); a goal, assumption, definition, agreement and constraint on the excerpt setting them (`setIn`, `said` for an opinion), an agreement or constraint also on `from`; an inference on its `premises`; an observation on the excerpt it was read from (`at`), and it bears on what it `tests`, its experiment (`resultOf`) and its `metric`; an outcome on `from` and its sources, and it bears on what it's measured `against`; an investigation on what prompted it (`prompt`), and a source on the investigation that gathered it (`gatheredBy`); entities, primitives, scenarios and rules on what they're `foundedOn`; awaited material on what it's `for`; feedback on the excerpt it was `said` in, and it bears on what it's `about`. And any record rests on those it `supersedes`.
+**What each kind rests on,** which makes the links. Each citation names an excerpt, and an excerpt rests on its `source`. A claim on the excerpts it asserts from, and it informs questions (`informs`); a question on the excerpt raising it (`raisedBy`) and those answering it (`answers`); a decision on `restsOn` and the excerpts it cites (`sources`); an action and a risk on what brought them about (`from`) and their sources; a prediction and an experiment on `from`, an experiment also on its excerpt (`setIn`); a goal, assumption, definition, agreement and constraint on the excerpt setting them (`setIn`, `said` for an opinion), an agreement or constraint also on `from`; an inference on its `premises`; an observation on the excerpt it was read from (`at`), and it bears on what it `tests`, its experiment (`resultOf`) and its `metric`; an outcome on `from` and its sources, and it bears on what it's measured `against`; an investigation on what prompted it (`prompt`), and a source on the investigation that gathered it (`gatheredBy`); entities, primitives, scenarios and rules on what they're `foundedOn`; awaited material on what it's `for`; feedback on the excerpt it was `said` in, and it bears on what it's `about`. A hypothesis on the excerpt stating it (`setIn`) and what prompted it (`from`); a problem on the excerpt raising it (`setIn`) and what shows it (`shownBy`); an incident on the excerpt reporting it (`at`); a strategy on its excerpt (`setIn`), what it `aims` at and the principles and patterns it `follows`; a requirement on its excerpt (`setIn`) and what brought it about (`from`); a principle, pattern, anti-pattern or optimization on its excerpt (`setIn`), an optimization also on its `metric`; a solution and an option on what they come `from` and their `sources`, and a solution bears on what it `solves`; a trade-off on what it's weighed `between` and its sources; a recommendation on what it `restsOn` and its sources, and it bears on what it `recommends`; a dispute on its excerpt (`setIn`), and it bears on what it's `about`; a decision also on the option it `chose`, and an agreement or decision on the dispute it `settles`. And any record rests on those it `supersedes`.
 
 **The model**, `model: { versions, candidates }`, the classes the sandbox writes, handed in since the engine can't know them:
 
@@ -103,7 +110,7 @@ A scenario or rule needs no code until there's a model to run it on. Without `pl
 | `inputsOf(id)` | What a record rests on: `{ material, records }`, its material being the sources and excerpts. |
 | `excerptsOf(id)` | Every excerpt a record rests on, all the way back through what it rests on: the passages behind a scenario, a rule or a decision. The walk stops at sources. |
 | `tags()` | Every tag, `[{ tag, means, declared, on }]`: those declared, in their order, then any in use but never declared (`declared: false`, `means: null`). `on` lists the ids carrying it, sources first; empty for a tag declared but unused. |
-| `appearances(id)` | The iterations it appears in: the one it was raised in, each later one bringing new material for it, the one where something replaced it, and, for decisions, goals, predictions, experiments, metrics, assumptions and inferences, each one bringing back what they rest on, so they can be judged again; an investigation also when what it gathered arrives. |
+| `appearances(id)` | The iterations it appears in: the one it was raised in, each later one bringing new material for it, the one where something replaced it, and, for decisions, goals, predictions, experiments, metrics, assumptions, hypotheses, inferences, requirements, optimizations and problems, each one bringing back what they rest on, so they can be judged again; an investigation also when what it gathered arrives. |
 | `iteration(k)` | What iteration `k` shows: `{ cards, links }`. Each card is `{ id, as }`, `as` being `raised`, `updated` (back with new material) or `carried` (an earlier one this iteration's cards rest on, as it last stood, with `from`, the iteration it stood in). Links, `{ from, to, means }`, are those among the cards shown, each to the version of what it rests on that stood by then; what brought a record about links to it only in the iteration where it did. Which order cards stand in is the sandbox's to choose. |
 | `standing(k)` | Everything standing by iteration `k`, for a sandbox following it all rather than what the iteration changed: `{ cards, links }`. Every source and record raised by then; those `iteration(k)` shows raised or updated are so, the rest `carried`, with `from`, the iteration where they last changed. Links, `{ from, to, means }`, are every one among them from `links()`. |
 | `status(id, { asOf? })` | Any record's status as of an iteration, by its kind's rule (below). A kind without a rule keeps the `status` its record says. |
@@ -116,7 +123,7 @@ A scenario or rule needs no code until there's a model to run it on. Without `pl
 | `partOfClass(cls, k)` | The part a class is in the model of iteration `k`. |
 | `primitivesOf(entityId)` | The primitives an entity's class is made of, in any version. |
 | `definitionOf(partId)` | The definition its name rests on: one it's founded on, defining that word; `null` if none. |
-| `reviewReasons(decisionId, { asOf? })` | Why a decision needs another look: `[{ ref, now, why }]`, where `why` is `rests on` (a claim or assumption it rests on that has turned since it was taken) or `predicted` (a prediction of its not borne out). Empty when it stands. Put them in words as the sandbox likes. |
+| `reviewReasons(decisionId, { asOf? })` | Why a decision needs another look: `[{ ref, now, why }]`, where `why` is `rests on` (a claim, assumption or hypothesis it rests on that has turned since it was taken) or `predicted` (a prediction of its not borne out). Empty when it stands. Put them in words as the sandbox likes. |
 
 **What a link means** (`means`), from the kinds it joins and what their records say:
 
@@ -126,10 +133,11 @@ A scenario or rule needs no code until there's a model to run it on. Without `pl
 | an excerpt to a claim | `supports` or `disputes`, by its stance; from a source that speaks to what should be, `says it should` or `says it shouldn’t`, since it isn't counted |
 | an excerpt to a question | `asks` (raising it) or `answers` |
 | an excerpt to a goal, constraint, agreement, experiment, observation, assumption, definition, opinion or feedback | `sets`, `imposes`, `records`, `records`, `captures`, `states`, `defines`, `voices`, `voices` |
+| an excerpt to a hypothesis, problem, incident, strategy, dispute, requirement, principle, pattern, anti-pattern or optimization | `states`, `raises`, `reports`, `sets`, `voices`, `sets`, `states`, `describes`, `describes`, `sets` |
 | an excerpt or a source to an entity, primitive, scenario or rule | `founds` |
 | feedback to what it's about | `bears out` (it works) or `disputes` (it's wrong) |
 | an excerpt to anything else | `records` if its source's catalogue `role` is `decision`, else `informs` |
-| an observation to an assumption | `bears out` or `refutes`; to a prediction, `supports` or `doubts`; to an experiment, `result` |
+| an observation to an assumption or hypothesis | `bears out` or `refutes`; to a requirement, `meets` or `fails`; to a prediction, `supports` or `doubts`; to an experiment, `result` |
 | into a metric; an investigation to a source | `reading of`; `gathered` |
 | a primitive to an entity | `part of` |
 | into a run; a run to a test | `run in`, or `tried in` for a trial; `meets` or `doesn’t meet` |
@@ -137,8 +145,13 @@ A scenario or rule needs no code until there's a model to run it on. Without `pl
 | into an investigation, experiment or inference | `prompts`, `calls for`, `premise` |
 | an outcome to a decision; to what it's against | `prompts`; `meets`, `partly meets` or `fails`, by its result |
 | an inference to an outcome; into an outcome | `explains`; `shows` |
-| into a decision | `aims` from a goal, `constrains` from a constraint, else `grounds` |
-| into a question, action, constraint or agreement, prediction, risk | `informs`, `calls for`, `brings about`, `predicts`, `raises` |
+| a metric to an optimization; a solution to a problem | `measures`; `solves` |
+| a dispute to what it's about; to what settles it | `disputes`; `settled by` |
+| an option to a decision | `chosen in` when the decision `chose` it, else `weighed in` |
+| a recommendation to what it recommends | `recommends` |
+| into a decision, strategy, option, solution or recommendation | `aims` from a goal or optimization, `constrains` from a constraint, `requires` from a requirement, `guides` from a principle, pattern or strategy, `warns against` from an anti-pattern, `weighs` from a trade-off, `advises` from a recommendation; into a decision, anything else `grounds` |
+| into a hypothesis; into a trade-off | `prompts`; `weighed in` |
+| into a question, action, constraint, agreement or requirement, prediction, risk, problem | `informs`, `calls for`, `brings about`, `predicts`, `raises`, `shows` |
 | into awaited material | `awaits` |
 | a record to the one replacing it | `replaced by` |
 
@@ -159,13 +172,21 @@ Anything else `rests on`. Use the words as they are, or say them the sandbox's w
 | claim | its standing |
 | question | `answered` once an excerpt answering it has been picked out and its answer is written; `unresolved` until then |
 | assumption | `untested` until an observation tests it; `refuted` by any no, whatever says yes; otherwise `confirmed` |
-| inference | `shaken` once any premise is in doubt (a claim refuted or contested, an assumption refuted, an inference shaken); otherwise `sound` |
+| inference | `shaken` once any premise is in doubt (a claim refuted or contested, an assumption or hypothesis refuted, an inference shaken); otherwise `sound` |
+| hypothesis | `untested` until an observation tests it; `refuted` by any no, whatever says yes; otherwise `supported` |
+| requirement | `untested` until an observation tests it; `not met` by any no; otherwise `met` |
 | prediction | measured by the latest outcome against it: `borne out`, `partly`, `not borne out`; before one, `in doubt` or `supported` by results, else `pending` |
 | investigation | `done` once a source it gathered has arrived; `under way` until then |
 | experiment | `done` once a result has arrived; `planned` until then |
 | action | `done` once what shows it has arrived; until then its written `status` |
 | decision | `review` when it has review reasons; otherwise its written `status`. Grounds already in doubt when it was taken were part of its reasoning, not a reason. |
 | outcome | its `result` |
+| problem | `solved` once a solution to it is applied; `open` until then |
+| incident | `resolved` once what shows it has arrived; `open` until then |
+| solution | `applied` once what shows it has arrived; until then its written `status`, or `proposed` |
+| option | `chosen` once a decision takes it; `set aside` once a decision weighing it takes another; `open` until then |
+| recommendation | `followed` once a decision takes what it recommends; `declined` once a decision resting on it takes another; `proposed` until then |
+| dispute | `settled` once an agreement or decision settling it is raised; `open` until then |
 | feedback | `declined` when written so; `answered` once a record founded on it has been raised; `open` until then |
 | entity, primitive | `rejected` once turned down; `integrated` once a version of the model holds it; `trying` once a candidate tries it; `proposed` until then |
 | scenario, rule | `met` when it passes against the model as it stood; `not met` otherwise. Without code, the `status` its record says, if any |

@@ -1,6 +1,6 @@
 # sb-discovery-card
 
-One card of domain discovery: a source gathered, a claim made from it, a question still open, a decision taken, a part of the model, a test, a run. Each kind has its own icon and tone, so many cards read at a glance. Read the [domain discovery practice](../../practices/domain-discovery.md) first: it says what each kind is for and how the cards fit together.
+One card of domain discovery: a source gathered, a claim made from it, a question still open, a problem and its solution, the options and trade-offs behind a decision, a part of the model, a test, a run. Each kind has its own icon and tone, so many cards read at a glance. Read the [domain discovery practice](../../practices/domain-discovery.md) first: it says what each kind is for and how the cards fit together.
 
 The card knows the kinds of discovery, which belong to the method rather than to any subject, and nothing else. It works nothing out: the sandbox decides every status, score and link, as of whichever iteration it shows, and the card draws what it's given.
 
@@ -38,6 +38,7 @@ Use this component through the interface below. You don't need to read its sourc
 |---|---|---|
 | `id` | yes | The card's code, such as `CLM-1`. Shown, and carried as `data-ref`. |
 | `kind` | yes | One of the kinds below. Sets the icon and tone; an unknown kind gets a plain icon. |
+| `title` | no | A few words after the code in the header, compact or full: a name for the card, or its kind spelt out. |
 | `status` | no | The status word the sandbox worked out, such as `corroborated`. Its tone comes from the word (below). |
 | `byline` | no | Where it came from in the world: "Raised by…", "Decided by…". |
 | `badges` | no | `[{ text, tone?, title? }]` beside the status: a basis, a score, a stance. Without a tone, a quiet italic pill. |
@@ -68,9 +69,9 @@ The practice asks every card for `created`, `by` and `iteration`; the card shows
 | `{ option: { title, pros?, cons?, chosen?, ref? } }` | An option weighed; the chosen one marked, the rest faded. |
 | `{ slot: 'name' }` | The card's children marked `slot="name"`, such as a scenario's steps. |
 
-**Kinds.** What we know: `source`, `excerpt`, `investigation`, `observation`, `metric`, `claim`, `definition`, `opinion`, `inference`, `assumption`, `question`, `feedback`, `awaited`. Where we're going: `outcome`, `goal`, `prediction`, `agreement`, `constraint`, `decision`, `experiment`, `action`, `risk`. What we're building: `entity`, `primitive`, `scenario`, `rule`, `run`.
+**Kinds.** What we know: `source`, `excerpt`, `investigation`, `observation`, `metric`, `claim`, `definition`, `opinion`, `inference`, `assumption`, `hypothesis`, `problem`, `incident`, `question`, `feedback`, `awaited`. Where we're going: `outcome`, `goal`, `strategy`, `prediction`, `agreement`, `dispute`, `requirement`, `constraint`, `principle`, `pattern`, `antipattern`, `optimization`, `solution`, `option`, `tradeoff`, `recommendation`, `decision`, `experiment`, `action`, `risk`. What we're building: `entity`, `primitive`, `scenario`, `rule`, `run`.
 
-**Status tones.** Good: corroborated, answered, confirmed, met, integrated, done, borne out, supported, sound, in force, worked, accepted, on track, earns its place, arrived. Warn: contested, unresolved, trying, in doubt, untested, shaken, partly, review, not yet, open. Bad: refuted, broken, not met, rejected, not borne out, failed, off track. Accent: single source, proposed, under way, planned, to do. Any other word is muted: held, holds, pending, awaited, superseded, unbacked, declined.
+**Status tones.** Good: corroborated, answered, confirmed, met, integrated, done, borne out, supported, sound, in force, worked, accepted, on track, earns its place, arrived, chosen, improving, followed, applied, solved, resolved, settled, removed. Warn: contested, unresolved, trying, in doubt, untested, shaken, partly, review, not yet, open. Bad: refuted, broken, not met, rejected, not borne out, failed, off track, worsening, present. Accent: single source, proposed, under way, planned, to do. Any other word is muted: held, holds, pending, awaited, superseded, unbacked, declined, steady, set aside.
 
 ## Attributes
 
@@ -104,7 +105,7 @@ Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-su
 
 Materials, as [STYLE.md](../../STYLE.md) describes: a card with a header band, a record; and paper for sources and passages, with a 12px fold.
 
-Classes: `sb-discovery-card` (`--expanded`, `--highlighted`), `sb-discovery-card__card`, `__head`, `__icon`, `__id`, `__byline`, `__badges`, `__badge`, `__status`, `__format`, `__body` (`--split`), `__column`, `__strip` (`--main`, `--note`, `--answer`, `--warn`, `--expect`, `--unresolved`), `__label`, `__text`, `__fold`, `__items`, `__item`, `__paper`, `__slip`, `__stance`, `__source`, `__passage-note`, `__quote`, `__excerpt`, `__page`, `__crop`, `__rows`, `__cell` (`--head`), `__option` (`--chosen`), `__option-head`, `__option-title`, `__chosen`, `__points`, `__point` (`--pro`, `--con`), `__compact` (`--assumed`, `--carried`, `--awaited`), `__compact-head`, `__compact-text`, `__note`, `__file`, `__foot`, `__meta`, `__meta-label`, `__meta-text`, `__part--highlighted`. The element carries `data-ref`, `data-kind` and `data-status` as soon as it has a card, even before it's on the page; compact cards and full cards carry `data-kind` for their tone.
+Classes: `sb-discovery-card` (`--expanded`, `--highlighted`), `sb-discovery-card__card`, `__head`, `__icon`, `__id`, `__title`, `__byline`, `__badges`, `__badge`, `__status`, `__format`, `__body` (`--split`), `__column`, `__strip` (`--main`, `--note`, `--answer`, `--warn`, `--expect`, `--unresolved`), `__label`, `__text`, `__fold`, `__items`, `__item`, `__paper`, `__slip`, `__stance`, `__source`, `__passage-note`, `__quote`, `__excerpt`, `__page`, `__crop`, `__rows`, `__cell` (`--head`), `__option` (`--chosen`), `__option-head`, `__option-title`, `__chosen`, `__points`, `__point` (`--pro`, `--con`), `__compact` (`--assumed`, `--carried`, `--awaited`), `__compact-head`, `__compact-text`, `__note`, `__file`, `__foot`, `__meta`, `__meta-label`, `__meta-text`, `__part--highlighted`. The element carries `data-ref`, `data-kind` and `data-status` as soon as it has a card, even before it's on the page; compact cards and full cards carry `data-kind` for their tone.
 
 A board that folds a column down can hide everything in a compact card but its icon and code: `.sb-discovery-card__compact > :not(.sb-discovery-card__compact-head), .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }`.
 

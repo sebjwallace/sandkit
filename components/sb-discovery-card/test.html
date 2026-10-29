@@ -82,6 +82,20 @@
       assertEqual(part(card({ id: 'X-1', kind: 'hunch' }), 'icon').title, 'hunch');
     });
 
+    test('knows the kinds that weigh choices, name problems and hold ways of working', () => {
+      const kinds = { hypothesis: 'Hypothesis', problem: 'Problem', incident: 'Incident', strategy: 'Strategy', dispute: 'Dispute',
+        requirement: 'Requirement', principle: 'Principle', pattern: 'Pattern', antipattern: 'Anti-pattern', optimization: 'Optimization',
+        solution: 'Solution', option: 'Option', tradeoff: 'Trade-off', recommendation: 'Recommendation' };
+      assertEqual(Object.keys(kinds).map((kind) => part(card({ id: 'X-1', kind }), 'icon').title), Object.values(kinds));
+    });
+
+    test('a title follows the code, in the header and on a compact card', () => {
+      const titled = { ...CLAIM, title: 'Otters gone' };
+      assertEqual(all(card(titled), 'head > *').slice(1, 3), ['CLM-1', 'Otters gone']);
+      assertEqual(all(card(titled, 'variant="compact"'), 'compact-head > *').slice(1, 3), ['CLM-1', 'Otters gone']);
+      assertEqual(text(card(), 'title'), null);
+    });
+
     // ---- Normal ----
 
     test('is normal by default: the header, the strips, then folds closed and counted', () => {
@@ -302,12 +316,12 @@
 
     test('displays text as text, never as markup', () => {
       const x = '<b>x</b>';
-      const element = card({ id: x, kind: x, status: x, byline: x, badges: [{ text: x, title: x }], text: x, notes: [x], file: x,
+      const element = card({ id: x, kind: x, title: x, status: x, byline: x, badges: [{ text: x, title: x }], text: x, notes: [x], file: x,
         strips: [{ tone: 'main', label: x, text: x }],
         folds: [{ label: x, items: [x, { passage: { source: x, quote: x, note: x } }, { card: { id: x, kind: x, text: x } }, { option: { title: x, pros: [x], cons: [x] } }] }],
         created: x, by: x, iteration: x, meta: [{ label: x, text: x }] }, 'variant="expanded"');
       assertEqual(element.querySelectorAll('b').length, 0);
-      assertEqual(text(element, 'byline'), x);
+      assertEqual([text(element, 'byline'), text(element, 'title')], [x, x]);
       element.variant = 'compact';
       assertEqual(element.querySelectorAll('b').length, 0);
       assertEqual(text(element, 'compact-text'), x);

@@ -1,4 +1,4 @@
-// Sandkit discovery 0.3.2 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit discovery 0.3.3 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The engine of domain discovery: the method's rules, written once. Given the sandbox's records,
 // it works out what follows from them, the same way every time, so a record holds only what
 // someone wrote and never a conclusion. It draws nothing and knows no component.
@@ -33,13 +33,16 @@
   // A claim in doubt: some of what speaks to how things are says no.
   const DOUBTED = ['refuted', 'contested'];
 
+  // A field holding one id or several, as a list.
+  const list = (ids) => [ids ?? []].flat();
+
   // What each kind's fields point at, as links [from, to]: what a record rests on points at it, and
   // what it bears on it points at. Passages and cited sources link a source to the record citing it.
   const EDGES = {
     claim: (r) => [...Object.keys(r.assertions ?? {}).map((id) => [id, r.id]), ...(r.informs ?? []).map((id) => [r.id, id])],
     excerpt: (r) => [[r.source, r.id]],
     question: (r) => [[r.raisedBy, r.id], ...(r.answers ?? []).map((id) => [id, r.id])],
-    decision: (r) => [...(r.restsOn ?? []), ...(r.sources ?? [])].map((id) => [id, r.id]),
+    decision: (r) => [...(r.restsOn ?? []), ...(r.sources ?? []), ...list(r.chose), ...list(r.settles)].map((id) => [id, r.id]),
     action: (r) => [r.from, ...(r.sources ?? [])].map((id) => [id, r.id]),
     risk: (r) => [...[r.from ?? []].flat(), ...(r.sources ?? [])].map((id) => [id, r.id]),
     awaited: (r) => [[r.for, r.id]],
@@ -58,18 +61,36 @@
     opinion: (r) => [[r.said, r.id]],
     feedback: (r) => [[r.said, r.id], ...[r.about ?? []].flat().map((id) => [r.id, id])],
     outcome: (r) => [...[r.from ?? []].flat(), ...(r.sources ?? [])].map((id) => [id, r.id]).concat([[r.id, r.against]]),
-    agreement: (r) => [[r.setIn, r.id], [r.from, r.id]],
+    agreement: (r) => [[r.setIn, r.id], [r.from, r.id], ...list(r.settles).map((id) => [id, r.id])],
     constraint: (r) => [[r.setIn, r.id], [r.from, r.id]],
+    hypothesis: (r) => [[r.setIn, r.id], ...list(r.from).map((id) => [id, r.id])],
+    problem: (r) => [[r.setIn, r.id], ...list(r.shownBy).map((id) => [id, r.id])],
+    incident: (r) => [[r.at, r.id]],
+    strategy: (r) => [r.setIn, ...list(r.aims), ...list(r.follows)].map((id) => [id, r.id]),
+    dispute: (r) => [[r.setIn, r.id], ...list(r.about).map((id) => [r.id, id])],
+    requirement: (r) => [[r.setIn, r.id], [r.from, r.id]],
+    principle: (r) => [[r.setIn, r.id]],
+    pattern: (r) => [[r.setIn, r.id]],
+    antipattern: (r) => [[r.setIn, r.id]],
+    optimization: (r) => [[r.setIn, r.id], [r.metric, r.id]],
+    solution: (r) => [...list(r.from), ...list(r.sources)].map((id) => [id, r.id]).concat(list(r.solves).map((id) => [r.id, id])),
+    option: (r) => [...list(r.from), ...list(r.sources)].map((id) => [id, r.id]),
+    tradeoff: (r) => [...list(r.between), ...list(r.sources)].map((id) => [id, r.id]),
+    recommendation: (r) => [...list(r.restsOn), ...list(r.sources)].map((id) => [id, r.id]).concat([[r.id, r.recommends]]),
   };
 
   // Kinds that come back when what they rest on changes, so they can be judged again: a decision
-  // reviewed against new grounds, a goal or prediction newly measured, an assumption or inference
-  // retested, a metric or experiment with a new reading.
-  const COMES_BACK = ['decision', 'goal', 'prediction', 'experiment', 'metric', 'assumption', 'inference'];
+  // reviewed against new grounds, a goal or prediction newly measured, an assumption, hypothesis,
+  // inference or requirement retested, a metric, optimization or experiment with a new reading, and
+  // a problem with something new solving or showing it.
+  const COMES_BACK = ['decision', 'goal', 'prediction', 'experiment', 'metric', 'assumption', 'inference',
+    'hypothesis', 'requirement', 'optimization', 'problem'];
 
   function createDiscovery({ sources = [], claims = [], questions = [], assumptions = [], inferences = [], observations = [],
     predictions = [], outcomes = [], investigations = [], experiments = [], actions = [], decisions = [], goals = [], metrics = [],
     excerpts = [], tags = [], definitions = [], opinions = [], feedback = [], agreements = [], constraints = [], risks = [], awaited = [], entities = [], primitives = [],
+    hypotheses = [], problems = [], incidents = [], strategies = [], disputes = [], requirements = [], principles = [], patterns = [], antipatterns = [],
+    optimizations = [], solutions = [], options = [], tradeoffs = [], recommendations = [],
     scenarios = [], rules = [], model: { versions = [], candidates = [] } = {} } = {}) {
     // The model being built: one version per iteration, `{ iteration, parts: { partId: Class } }`,
     // and candidates trying a proposal, `{ iteration, tries, parts }`. Every version is kept, so every
@@ -175,7 +196,10 @@
     const lists = { excerpt: excerpts, claim: claims, question: questions, assumption: assumptions, inference: inferences, observation: observations,
       prediction: predictions, outcome: outcomes, investigation: investigations, experiment: experiments, action: actions, decision: decisions,
       goal: goals, metric: metrics, definition: definitions, opinion: opinions, agreement: agreements, constraint: constraints, risk: risks,
-      awaited, feedback, entity: entities, primitive: primitives, scenario: scenarios, rule: rules, run: runs };
+      awaited, feedback, entity: entities, primitive: primitives, scenario: scenarios, rule: rules, run: runs,
+      hypothesis: hypotheses, problem: problems, incident: incidents, strategy: strategies, dispute: disputes, requirement: requirements,
+      principle: principles, pattern: patterns, antipattern: antipatterns, optimization: optimizations, solution: solutions, option: options,
+      tradeoff: tradeoffs, recommendation: recommendations };
     const recordOf = new Map(Object.entries(lists).flatMap(([kind, list]) => list.map((record) => [record.id, { kind, record }])));
     const kindOf = (id) => recordOf.get(id)?.kind;
 
@@ -196,6 +220,8 @@
       // Answered once an excerpt that answers it has been picked out, and the answer is written up.
       question: (question, asOf) => (question.answer && (question.answers ?? []).some((id) => arrivedById(id, asOf)) ? 'answered' : 'unresolved'),
       assumption: (assumption, asOf) => tested(assumption.id, asOf, ['refuted', 'confirmed', 'untested']),
+      hypothesis: (hypothesis, asOf) => tested(hypothesis.id, asOf, ['refuted', 'supported', 'untested']),
+      requirement: (requirement, asOf) => tested(requirement.id, asOf, ['not met', 'met', 'untested']),
       // Shaken once any premise is in doubt.
       inference: (inference, asOf) => ((inference.premises ?? []).some((id) => inDoubt(id, asOf)) ? 'shaken' : 'sound'),
       // Measured by the latest outcome against it; until then, supported or put in doubt by results.
@@ -210,6 +236,23 @@
       // Done once what shows it's done has arrived.
       action: (action, asOf) => (action.done && arrivedById(action.done, asOf) ? 'done' : action.status),
       decision: (decision, asOf) => (reviewReasons(decision.id, { asOf }).length ? 'review' : decision.status),
+      // Resolved, and applied, once what shows it has arrived; a solution keeps its written status until then.
+      incident: (incident, asOf) => (incident.resolved && arrivedById(incident.resolved, asOf) ? 'resolved' : 'open'),
+      solution: (solution, asOf) => (solution.applied && arrivedById(solution.applied, asOf) ? 'applied' : solution.status ?? 'proposed'),
+      // Solved once a solution to it is applied; settled once a record settling it is raised.
+      problem: (problem, asOf) => (solutions.some((s) => list(s.solves).includes(problem.id) && arrived(s, asOf) && status(s.id, { asOf }) === 'applied') ? 'solved' : 'open'),
+      dispute: (dispute, asOf) => ([...agreements, ...decisions].some((r) => list(r.settles).includes(dispute.id) && arrived(r, asOf)) ? 'settled' : 'open'),
+      // Chosen by a decision taking it, set aside by one weighing it and taking another; open until then.
+      option: (option, asOf) => {
+        const decided = decisions.filter((d) => arrived(d, asOf) && [...(d.restsOn ?? []), ...list(d.chose)].includes(option.id));
+        return decided.some((d) => list(d.chose).includes(option.id)) ? 'chosen' : decided.length ? 'set aside' : 'open';
+      },
+      // Followed once a decision takes what it recommends, declined by one resting on it that takes another.
+      recommendation: (recommendation, asOf) => {
+        const decided = decisions.filter((d) => arrived(d, asOf) && d.chose);
+        if (decided.some((d) => list(d.chose).includes(recommendation.recommends))) return 'followed';
+        return decided.some((d) => (d.restsOn ?? []).includes(recommendation.id)) ? 'declined' : 'proposed';
+      },
       outcome: (outcome) => outcome.result,
       // Feedback is declined when written so, with the reason; answered once something is founded on it.
       feedback: (comment, asOf) => (comment.declined ? 'declined'
@@ -236,7 +279,7 @@
 
     function inDoubt(id, asOf) {
       if (kindOf(id) === 'claim') return DOUBTED.includes(status(id, { asOf }));
-      if (kindOf(id) === 'assumption') return status(id, { asOf }) === 'refuted';
+      if (['assumption', 'hypothesis'].includes(kindOf(id))) return status(id, { asOf }) === 'refuted';
       if (kindOf(id) === 'inference') return status(id, { asOf }) === 'shaken';
       return false;
     }
@@ -254,7 +297,7 @@
       });
       return [
         ...turned(claims, (s) => DOUBTED.includes(s)),
-        ...turned(assumptions, (s) => s === 'refuted'),
+        ...turned([...assumptions, ...hypotheses], (s) => s === 'refuted'),
         ...predictions.filter((p) => p.from === id && status(p.id, { asOf }) === 'not borne out').map((p) => ({ ref: p.id, now: 'not borne out', why: 'predicted' })),
       ];
     }
@@ -286,11 +329,17 @@
     // an action. The sandbox chooses how to say it and how to tone it.
     const FROM_SOURCE = { goal: 'sets', constraint: 'imposes', agreement: 'records', experiment: 'records', observation: 'captures',
       assumption: 'states', definition: 'defines', opinion: 'voices', feedback: 'voices',
+      hypothesis: 'states', problem: 'raises', incident: 'reports', strategy: 'sets', dispute: 'voices', requirement: 'sets',
+      principle: 'states', pattern: 'describes', antipattern: 'describes', optimization: 'sets',
       entity: 'founds', primitive: 'founds', scenario: 'founds', rule: 'founds' };
     const INTO = { entity: 'founds', primitive: 'founds', scenario: 'founds', rule: 'founds', investigation: 'prompts',
-      experiment: 'calls for', inference: 'premise' };
+      experiment: 'calls for', inference: 'premise', hypothesis: 'prompts', tradeoff: 'weighed in' };
     const LATER_INTO = { outcome: 'shows', question: 'informs', action: 'calls for', constraint: 'brings about', agreement: 'brings about',
-      prediction: 'predicts', risk: 'raises' };
+      prediction: 'predicts', risk: 'raises', requirement: 'brings about', problem: 'shows' };
+    // The records that make or shape a choice, and what each kind of record steering one means for it.
+    const CHOOSING = ['decision', 'strategy', 'option', 'solution', 'recommendation'];
+    const STEERS = { goal: 'aims', optimization: 'aims', constraint: 'constrains', requirement: 'requires', principle: 'guides',
+      pattern: 'guides', antipattern: 'warns against', strategy: 'guides', tradeoff: 'weighs', recommendation: 'advises' };
     const RESULTS = { worked: 'meets', partly: 'partly meets', failed: 'fails' };
     const isNo = (mark) => mark === '−' || mark === '-';
     function meaningOf(from, to) {
@@ -309,10 +358,16 @@
         return FROM_SOURCE[b] ?? (said.role === 'decision' ? 'records' : 'informs');
       }
       if (a === 'outcome' && b === 'decision') return 'prompts';
-      if (b === 'assumption') return isNo(record(from).tests?.[1]) ? 'refutes' : 'bears out';
+      if (a === 'observation' && ['assumption', 'hypothesis'].includes(b)) return isNo(record(from).tests?.[1]) ? 'refutes' : 'bears out';
+      if (a === 'observation' && b === 'requirement') return isNo(record(from).tests?.[1]) ? 'fails' : 'meets';
       if (a === 'observation' && b === 'prediction') return isNo(record(from).tests[1]) ? 'doubts' : 'supports';
       if (a === 'observation' && b === 'experiment') return 'result';
       if (b === 'metric') return 'reading of';
+      if (a === 'metric' && b === 'optimization') return 'measures';
+      if (a === 'solution' && b === 'problem') return 'solves';
+      if (a === 'dispute') return [record(from).about].flat().includes(to) ? 'disputes' : 'settled by';
+      if (a === 'recommendation' && b !== 'decision') return 'recommends';
+      if (a === 'option' && b === 'decision') return list(record(to).chose).includes(from) ? 'chosen in' : 'weighed in';
       if (a === 'investigation' && b === 'source') return 'gathered';
       if (a === 'primitive' && b === 'entity') return 'part of';
       if (a === 'feedback' && [record(from).about].flat().includes(to)) return record(from).verdict === 'wrong' ? 'disputes' : 'bears out';
@@ -321,7 +376,8 @@
       if (INTO[b]) return INTO[b];
       if (a === 'inference' && b === 'outcome') return 'explains';
       if (a === 'outcome') return RESULTS[record(from).result];
-      if (b === 'decision') return { goal: 'aims', constraint: 'constrains' }[a] ?? 'grounds';
+      if (CHOOSING.includes(b) && STEERS[a]) return STEERS[a];
+      if (b === 'decision') return 'grounds';
       return LATER_INTO[b] ?? 'rests on';
     }
 
@@ -417,7 +473,7 @@
           nodes.push({ key: key(id, k), id, k, as: i ? 'updated' : 'raised' });
           for (const s of from) if (iterationOf(s) > before && iterationOf(s) <= k) found.push([key(s, iterationOf(s)), key(id, k)]);
           for (const r of records) {
-            if (i && [record.from, record.prompt].includes(r)) continue;
+            if (i && [...list(record.from), record.prompt].includes(r)) continue;
             const version = latest(r, k);
             if (version > before || (!i && version)) found.push([key(r, version), key(id, k)]);
           }

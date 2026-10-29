@@ -23,7 +23,7 @@ Everything discovery records is a card with a code, whose prefix names its kind 
 - **Screen before deriving.** Never write a card from material that hasn't been screened, and never quote into a card what screening cleared out.
 - **Every card records its own making** (in its record; see Records): `created` (when), `by` (`Agent` or the person) and `iteration` (the one it was raised in). Add whatever else is worth keeping as `meta`: the rows an observation was read from, the model a run tried, the version a piece of feedback was made on. Source material carries its own details in the catalogue; cards carry theirs.
 - **A card rests on excerpts,** not whole sources: the pieces of a source it cites, with whether they say yes, no or ask. An excerpt is picked out once and cited by its code wherever it's used (see Records).
-- **A new kind earns its place** only with parts or connections the others lack. Prefer a variant of an existing kind.
+- **A new kind earns its place** when people would name it so and it isn't an existing kind under another name: a problem and its solution are kinds, since people set them out that way, but evidence is an excerpt or observation cited, and a concern a risk or an opinion. Prefer a variant of an existing kind for anything else.
 
 ## Setting up
 
@@ -76,7 +76,7 @@ Sources, excerpts and records carry tags, so people can find them: search, filte
 
 **What we know**
 
-Every status below is worked out by the [discovery engine](../engines/discovery/manifest.md) (`discovery.status`), never written in a record.
+Every status below is worked out by the [discovery engine](../engines/discovery/manifest.md) (`discovery.status`), never written in a record, except where it's a judgement someone makes rather than something that follows: goals, optimizations, strategies, agreements, constraints, principles, patterns, anti-patterns, trade-offs and risks keep the `status` their record states, and a decision, an action or a solution states one until something overrides it.
 
 | Prefix | Kind | What it is | Status, worked out |
 |---|---|---|---|
@@ -89,6 +89,9 @@ Every status below is worked out by the [discovery engine](../engines/discovery/
 | OPN | Opinion | A view someone holds, said in a source. | – |
 | INF | Inference | A conclusion reasoned from premises. | sound, shaken when a premise changes |
 | ASM | Assumption | Taken as true without evidence, so it can be tested. | untested, confirmed, refuted |
+| HYP | Hypothesis | A possible explanation, put up to be tested: what prompted it, and what would bear it out. | untested, supported, refuted |
+| PRB | Problem | Something wrong now that people feel: who feels it, and what shows it (incidents, observations, claims). | open, solved |
+| INC | Incident | Something that went wrong once, at a time: what happened, its effect, what resolved it. | open, resolved |
 | QST | Question | Something open, raised in a source, answered by sources. | unresolved, answered |
 | FB | Feedback | What someone who knows the domain said of the model, on one version (see below). | open, answered, declined |
 | NEXT | Awaited | Material asked for and not yet arrived: what it's for. | – |
@@ -98,14 +101,25 @@ Every status below is worked out by the [discovery engine](../engines/discovery/
 | Prefix | Kind | What it is | Status, worked out |
 |---|---|---|---|
 | OUT | Outcome | What actually happened, measured against a goal or prediction. | worked, partly, failed |
-| GOL | Goal | Where we're trying to get to, as a target on a metric. | on track, off track |
+| GOL | Goal | Where we're trying to get to, as a target on a metric: met once reached, then done. | on track, off track |
+| OPZ | Optimization | A measure always pushed one way, never done: its metric, which way, and what else is weighed against it. | improving, steady, worsening |
+| STR | Strategy | How we mean to get there across many choices: what it aims at, the principles and patterns it follows, what it rules out. | in force, set aside |
 | PRD | Prediction | A decision's bet on what it will bring about, by when. | pending, supported or in doubt, borne out, partly, not borne out |
 | AGR | Agreement | Terms between parties: a standard, protocol or contract, changed only with them. | in force |
+| DSP | Dispute | A point parties haven't settled: the parties, each one's position, what it's about. Often settled by an agreement. | open, settled |
+| REQ | Requirement | Something that must be so: how firm, and where it comes from. Observations test it. | untested, met, not met |
 | CON | Constraint | Something that rules options out: how firm, what it rules out, where it comes from, what it protects. | holds |
-| DEC | Decision | A question, the options weighed, the one chosen, the reason, who decided, what it rests on. | accepted, review when something it rests on changed after it was decided |
+| PRN | Principle | A rule of thumb someone chooses by: why, and what it gives way to. | followed, set aside |
+| PAT | Pattern | A known way of solving a recurring problem: what it solves, what it costs. | applied |
+| APT | Anti-pattern | A known way that looks right but goes wrong: how it goes wrong, what to do instead. | present, removed |
+| SOL | Solution | What answers a problem: the problem it solves, what it's built from, what it leaves. | proposed, applied |
+| OPT | Option | One way a choice could go, with what's for and against it. A decision weighs it and may take it. | open, chosen, set aside |
+| TRD | Trade-off | What one thing costs in another: what it gives, what it costs, what it's weighed between. | accepted |
+| REC | Recommendation | Advice on which way to go, and why: the option or solution it recommends, who it's for, and when it wouldn't hold. | proposed, followed, declined |
+| DEC | Decision | A question, the options weighed (inline, or option records it rests on), the one chosen (`chose`), the reason, who decided, what it rests on, and any dispute it `settles`. | accepted, review when something it rests on changed after it was decided |
 | EXP | Experiment | A test run on purpose, on the world or on the model, with what would bear it out written first. | planned, done |
 | ACT | Action | Something to do, brought about by a decision. | to do, done |
-| RSK | Risk | Something that might go wrong, brought about by a decision. | open |
+| RSK | Risk | Something that might go wrong: raised by someone (a concern), or brought about by a decision. | open |
 
 **What we're building**
 
@@ -166,14 +180,14 @@ A recommended layout, not a required one (see "What's fixed and what's yours"). 
 
 | Board | Columns, in order |
 |---|---|
-| What we know | Gathered (sources, and finished investigations beside them, folded), Excerpted (the excerpts cited, in place of whole sources), Captured (observations), Interpreted (metrics, claims, definitions, opinions, feedback), Reasoned (inferences), Assumed, Open (questions), Under way (investigations still looking), Awaited |
-| Where we're going | Rests on (what a decision rests on from What we know, folded), In force (outcomes, goals, predictions, agreements, constraints standing), Decided, Brought about (experiments, actions, risks, and what a decision brought about in this iteration), Awaited |
+| What we know | Gathered (sources, and finished investigations beside them, folded), Excerpted (the excerpts cited, in place of whole sources), Captured (observations), Interpreted (metrics, claims, definitions, opinions, feedback), Reasoned (inferences), Assumed (assumptions, hypotheses), Open (questions, problems and incidents still open), Under way (investigations still looking), Awaited |
+| Where we're going | Rests on (what a decision rests on from What we know, folded), In force (outcomes, goals, optimizations, strategies, predictions, agreements, requirements, constraints, principles, patterns and anti-patterns standing), Weighing (options, trade-offs, recommendations, solutions proposed and disputes still open), Decided, Brought about (experiments, actions, risks, solutions applied, and what a decision brought about in this iteration), Awaited |
 | What we're building | Founded on (folded), Proposed, Trying, Integrated, Runs, Met, Not met yet, Rejected |
 | Scenarios (everything standing, from `discovery.standing(k)`) | Founded on (folded), Superseded (scenarios and rules replaced in this iteration), Scenarios, Rules, Feedback (on them) |
 
 - **Columns hold a card's role in the iteration, not its kind.** An investigation is under way until a source it gathered arrives, then gathered; a prediction is brought about in the iteration its decision made it, and in force after.
 - **Links are signal, not noise.** Every link answers a question: what supports or disputes a claim, what shaped a decision or what it brought about, what a part is founded on. Label each with what it means: the [discovery engine](../engines/discovery/manifest.md) gives every link its meaning (`means`: "supports", "founds", "brings about"), to use as it is or say your own way. What brought a card about is linked only in the iteration where it did; afterwards it stands in force, and that history stays on the card.
-- **Tone links by what they mean,** so a chain reads before its labels do: what supports, answers or bears out in `good`; what disputes, refutes or puts in doubt in `bad`; what rests on an assumption or constrains in `warn`; bookkeeping, such as gathered, captures or informs, and what a plan says should be, `muted`, since it shows but doesn't count; the rest the default accent.
+- **Tone links by what they mean,** so a chain reads before its labels do: what supports, answers, bears out, meets or solves in `good`; what disputes, refutes, fails or puts in doubt in `bad`; what rests on an assumption or hypothesis, constrains, requires or warns against in `warn`; bookkeeping, such as gathered, captures or informs, and what a plan says should be, `muted`, since it shows but doesn't count; the rest the default accent.
 - **A grounding column holds only cards linked to the board's own,** folded, and links between two grounding cards are left out.
 - **Set the board again for each iteration:** its cards (compact, `openable`, as of that iteration), its columns and its links. Carried cards keep the `carried` mark.
 - **Fold cards with their column,** so a folded column shows each card's icon and code:

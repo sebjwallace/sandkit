@@ -1,4 +1,4 @@
-// Sandkit sb-discovery-card 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-discovery-card 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
 // One card of domain discovery: a source, a claim, a question, a decision, a run, or any other
 // kind the practice names, each with its own icon and tone. Shown compact on a board, normal with
 // its folds closed, or expanded near full screen with every fold open. The sandbox works out every status and what's "as of" when; the card
@@ -49,15 +49,29 @@
     opinion: { label: 'Opinion', tone: mix('warn', 'bad', 60), icon: '<circle cx="6" cy="5.5" r="2.5"/><path d="M1.75 13.75a4.25 4.25 0 0 1 8.5 0"/><path d="M11 2.5h3.5v3h-1.25L12 6.75V5.5h-1z"/>' },
     inference: { label: 'Inference', tone: TONE.accent, icon: '<circle cx="8" cy="4" r="1.25" fill="currentColor"/><circle cx="4.25" cy="11.5" r="1.25" fill="currentColor"/><circle cx="11.75" cy="11.5" r="1.25" fill="currentColor"/>' },
     assumption: { label: 'Assumption', tone: TONE.warn, icon: '<path d="M3 3.5h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.5L4.5 14v-2.5H3a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" stroke-dasharray="2 1.6"/>' },
+    hypothesis: { label: 'Hypothesis', tone: mix('warn', 'accent', 75), icon: '<path d="M8 1.75a4.25 4.25 0 0 0-2.5 7.7c.5.4.75.9.75 1.55v.5h3.5V11c0-.65.25-1.15.75-1.55A4.25 4.25 0 0 0 8 1.75z"/><path d="M6.5 13.75h3"/>' },
+    problem: { label: 'Problem', tone: mix('bad', 'warn', 70), icon: '<path d="M5.5 1.75h5l3.75 3.75v5l-3.75 3.75h-5L1.75 10.5v-5z"/><path d="M8 5v3.5M8 10.9v.1"/>' },
+    incident: { label: 'Incident', tone: TONE.bad, icon: '<path d="M9 1.75 3.5 9h4l-1 5.25L12.5 7h-4z"/>' },
     question: { label: 'Question', tone: TONE.warn, icon: '<circle cx="8" cy="8" r="6.25"/><path d="M6.25 6.4a1.8 1.8 0 1 1 2.5 1.65c-.45.25-.75.6-.75 1.1v.35"/><path d="M8 11.4v.1"/>' },
     feedback: { label: 'Feedback', tone: mix('accent', 'warn'), icon: '<path d="M3.5 2.5 12 6.75l-3.75 1.5L6.75 12z"/><path d="m8.5 8.5 4 4"/>' },
     awaited: { label: 'Awaited', tone: TONE.muted, icon: `<g stroke-dasharray="2 1.6">${PAGE}</g>` },
     // Where we're going
     outcome: { label: 'Outcome', tone: TONE.text, icon: '<path d="M13.5 3.5v4a2 2 0 0 1-2 2h-8"/><path d="m6 6.5-3 3 3 3"/>' },
     goal: { label: 'Goal', tone: TONE.accent, icon: '<circle cx="8" cy="8" r="6.25"/><circle cx="8" cy="8" r="3.25"/><circle cx="8" cy="8" r="0.6" fill="currentColor"/>' },
+    strategy: { label: 'Strategy', tone: mix('accent', 'good', 70), icon: '<circle cx="3.25" cy="12.75" r="1.5"/><circle cx="12.75" cy="3.25" r="1.5"/><path d="M4.75 12.75c3.5 0 1.5-4.75 5-4.75 2.25 0 3-1.5 3-3.25" stroke-dasharray="2 1.6"/>' },
     prediction: { label: 'Prediction', tone: TONE.accent, icon: '<path d="M2.5 13.5 10.5 5.5" stroke-dasharray="2 1.8"/><path d="M6.5 4.5h5v5"/>' },
     agreement: { label: 'Agreement', tone: mix('accent', 'good'), icon: '<path d="M6.5 9.5 9.5 6.5"/><path d="M7 4.5 8.25 3.25a2.5 2.5 0 0 1 3.5 3.5L10.5 8"/><path d="M5.5 8 4.25 9.25a2.5 2.5 0 0 0 3.5 3.5L9 11.5"/>' },
+    dispute: { label: 'Dispute', tone: mix('warn', 'bad'), icon: '<path d="M7 4.5 8.25 3.25a2.5 2.5 0 0 1 3.5 3.5L10.5 8"/><path d="M5.5 8 4.25 9.25a2.5 2.5 0 0 0 3.5 3.5L9 11.5"/><path d="m2.5 2.5 1.75 1.75M13.5 13.5l-1.75-1.75"/>' },
+    requirement: { label: 'Requirement', tone: mix('accent', 'text', 70), icon: '<path d="M3.5 14.25V2"/><path d="M3.5 2.5h9l-2 3 2 3h-9"/>' },
     constraint: { label: 'Constraint', tone: mix('accent', 'bad'), icon: '<path d="M2.5 2.5v11M13.5 2.5v11"/><path d="M5 8h6"/><path d="m7 6-2 2 2 2M9 6l2 2-2 2"/>' },
+    principle: { label: 'Principle', tone: mix('accent', 'text'), icon: '<circle cx="8" cy="8" r="6.25"/><path d="M8 3.75 9.6 8 8 12.25 6.4 8z"/>' },
+    pattern: { label: 'Pattern', tone: mix('accent', 'muted'), icon: '<rect x="2.25" y="2.25" width="4.75" height="4.75" rx="1"/><rect x="9" y="2.25" width="4.75" height="4.75" rx="1"/><rect x="2.25" y="9" width="4.75" height="4.75" rx="1"/><rect x="9" y="9" width="4.75" height="4.75" rx="1"/>' },
+    antipattern: { label: 'Anti-pattern', tone: mix('bad', 'muted'), icon: '<rect x="2.25" y="2.25" width="4.75" height="4.75" rx="1"/><rect x="9" y="2.25" width="4.75" height="4.75" rx="1"/><rect x="2.25" y="9" width="4.75" height="4.75" rx="1"/><rect x="9" y="9" width="4.75" height="4.75" rx="1"/><path d="M1.25 14.75 14.75 1.25"/>' },
+    optimization: { label: 'Optimization', tone: TONE.accent, icon: '<path d="M2.25 13.25h11.5" stroke-dasharray="2 1.6"/><path d="M2.5 2.5c1.5 6 4.5 8.75 11.25 9"/>' },
+    solution: { label: 'Solution', tone: mix('good', 'accent', 70), icon: '<circle cx="5" cy="11" r="3"/><path d="M7.1 8.9 13.5 2.5M11 5l2 2M9.25 6.75l1.5 1.5"/>' },
+    option: { label: 'Option', tone: mix('good', 'muted'), icon: '<circle cx="3.75" cy="4.75" r="1.75"/><circle cx="3.75" cy="11.25" r="1.75"/><circle cx="3.75" cy="11.25" r="0.5" fill="currentColor"/><path d="M7.5 4.75h6M7.5 11.25h6"/>' },
+    tradeoff: { label: 'Trade-off', tone: mix('warn', 'good'), icon: '<path d="M8 4.5v9M5.5 13.5h5M2.5 5.25l11-2"/><path d="M2.5 5.25v2.5M13.5 3.25v2.5"/><path d="M.75 7.75h3.5a1.75 1.75 0 0 1-3.5 0zM11.75 5.75h3.5a1.75 1.75 0 0 1-3.5 0z"/>' },
+    recommendation: { label: 'Recommendation', tone: mix('good', 'accent'), icon: '<path d="M8 1.75 9.9 5.7l4.35.6-3.15 3.05.75 4.3L8 11.6l-3.85 2.05.75-4.3L1.75 6.3l4.35-.6z"/>' },
     decision: { label: 'Decision', tone: TONE.good, icon: '<path d="M8 14.5V9l4.5-5.5"/><path d="M9.75 3.5h2.75v2.75"/><path d="M8 9 3.5 3.5" opacity="0.35"/>' },
     experiment: { label: 'Experiment', tone: TONE.good, icon: '<path d="M6 2h4M6.5 2v4.5L3 13a.75.75 0 0 0 .65 1.1h8.7A.75.75 0 0 0 13 13L9.5 6.5V2"/><path d="M4.75 10.5h6.5"/>' },
     action: { label: 'Action', tone: TONE.accent, icon: '<rect x="2.25" y="2.25" width="11.5" height="11.5" rx="2"/><path d="m5 8.25 2 2 4-4.5"/>' },
@@ -82,11 +96,11 @@
 
   // Every status word the practice uses, by what it says: fine, needs a look, wrong, under way, or settled.
   const STATUS_TONES = {
-    good: ['corroborated', 'answered', 'confirmed', 'met', 'integrated', 'done', 'borne out', 'supported', 'sound', 'in force', 'worked', 'accepted', 'on track', 'earns its place', 'arrived'],
+    good: ['corroborated', 'answered', 'confirmed', 'met', 'integrated', 'done', 'borne out', 'supported', 'sound', 'in force', 'worked', 'accepted', 'on track', 'earns its place', 'arrived', 'chosen', 'improving', 'followed', 'applied', 'solved', 'resolved', 'settled', 'removed'],
     warn: ['contested', 'unresolved', 'trying', 'in doubt', 'untested', 'shaken', 'partly', 'review', 'not yet', 'open'],
-    bad: ['refuted', 'broken', 'not met', 'rejected', 'not borne out', 'failed', 'off track'],
+    bad: ['refuted', 'broken', 'not met', 'rejected', 'not borne out', 'failed', 'off track', 'worsening', 'present'],
     accent: ['single source', 'proposed', 'under way', 'planned', 'to do'],
-    muted: ['held', 'holds', 'pending', 'awaited', 'superseded', 'unbacked', 'declined'],
+    muted: ['held', 'holds', 'pending', 'awaited', 'superseded', 'unbacked', 'declined', 'steady', 'set aside'],
   };
 
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -126,6 +140,7 @@
 
     .sb-discovery-card__card { overflow: hidden; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); transition: border-color 0.15s, box-shadow 0.15s; }
     .sb-discovery-card__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; background: var(--sb-discovery-card-band, var(--sb-surface-2, #eef0f3)); border-bottom: 1px solid var(--sb-border, #d5d9e0); }
+    .sb-discovery-card__title { font-weight: 600; }
     .sb-discovery-card__byline { flex: 1 1 120px; min-width: 0; color: var(--sb-muted, #616e7c); font-size: 12px; }
     .sb-discovery-card__badges { flex: none; display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
     .sb-discovery-card__body { display: grid; gap: 12px; padding: 12px 14px; }
@@ -263,6 +278,7 @@
     if (nested) root.dataset.ref = card.id;
     const head = el('span', 'compact-head');
     head.append(icon(card), el('span', 'id', card.id));
+    if (card.title) head.append(el('span', 'title', card.title));
     if (card.status) head.append(status(card.status));
     if (card.format) head.append(el('span', 'format', card.format));
     root.append(head);
@@ -441,7 +457,7 @@
 
     // ---- Public API ----
 
-    // { id, kind, byline, status, badges: [{ text, tone, title }], text, notes, file, format,
+    // { id, kind, title, byline, status, badges: [{ text, tone, title }], text, notes, file, format,
     //   marks, strips: [{ tone, label, text }], folds: [{ label, items }],
     //   created, by, iteration, meta: [{ label, text }] }
     get card() { return this._card; }
@@ -496,6 +512,7 @@
       badges.append(...(card.badges ?? []).map(badge));
       if (card.status) badges.append(status(card.status));
       head.append(icon(card), el('span', 'id', card.id));
+      if (card.title) head.append(el('span', 'title', card.title));
       if (card.byline) head.append(el('span', 'byline', card.byline));
       head.append(badges);
       const slotted = (name) => this._slots.get(name) ?? [];

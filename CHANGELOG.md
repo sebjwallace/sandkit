@@ -4,6 +4,11 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.75 · 2026-10-29
+- `sb-discovery-card` 0.1.4: fourteen new kinds (hypothesis, problem, incident, strategy, dispute, requirement, principle, pattern, anti-pattern, optimization, solution, option, trade-off and recommendation), and an optional `title` after a card's code. Recorded in DECISIONS.md.
+- `engines/discovery` 0.3.3 takes the fourteen kinds, with what each rests on, what each link means and the statuses that follow: a hypothesis supported or refuted and a requirement met or not by observations, a problem solved once a solution to it is applied, an option chosen or set aside and a recommendation followed or declined by the decisions weighing them, a dispute settled. A decision names the option it took (`chose`) and any dispute it `settles`.
+- The domain discovery practice describes the new kinds and where they go on the boards, says which kinds keep the status their record states, and lets a risk be raised by someone (a concern) as well as brought about by a decision.
+
 ## 0.2.74 · 2026-10-27
 - `engines/discovery` 0.3.2 weighs a claim citing a superseded excerpt on the excerpt replacing it, so a wrong excerpt stops counting once corrected, and a claim is never edited to fix a citation. The domain discovery practice says how to correct an excerpt, and to show a source with only its excerpts that aren't superseded.
 - `tools/sources.mjs check` checks a discovery sandbox's excerpts (`records/excerpts.js`): each is in a catalogued source, its quote is in the file, as `sb-source` finds it, and one in an image has a region. Superseded excerpts are noted, not checked; an excerpts file without an `EXCERPTS` list it can read fails, rather than passing unchecked. Before, it checked only the model's `ITEMS`, which a discovery sandbox doesn't have, so excerpts citing the wrong file went unnoticed. The domain discovery practice names the list `EXCERPTS`.
