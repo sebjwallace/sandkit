@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.76 · 2026-10-29
+- Nothing becomes a source without the person's say-so. The sources practice no longer tells the agent to save parts of a chat as it goes: it proposes what it would bring in, from the chat, the web or anywhere else, and adds it only once the person agrees, since most of a chat is working talk and some of it may be irrelevant or not meant to be kept. What a person puts in `sources/` themselves is theirs to add. The domain discovery practice and the template's `AGENTS.md` say the same.
+
 ## 0.2.75 · 2026-10-29
 - `sb-discovery-card` 0.1.4: fourteen new kinds (hypothesis, problem, incident, strategy, dispute, requirement, principle, pattern, anti-pattern, optimization, solution, option, trade-off and recommendation), and an optional `title` after a card's code. Recorded in DECISIONS.md.
 - `engines/discovery` 0.3.3 takes the fourteen kinds, with what each rests on, what each link means and the statuses that follow: a hypothesis supported or refuted and a requirement met or not by observations, a problem solved once a solution to it is applied, an option chosen or set aside and a recommendation followed or declined by the decisions weighing them, a dispute settled. A decision names the option it took (`chose`) and any dispute it `settles`.

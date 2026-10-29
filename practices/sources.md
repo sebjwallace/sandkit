@@ -8,7 +8,9 @@ A sandbox is only as good as what's behind it, and people can only trust what th
 
 ## What counts as source material
 
-Source material comes from outside the sandbox: whatever people, organisations or agents elsewhere wrote, said or made. Documents, white papers, articles, web pages, PDFs, data, images and recordings, brought in by a person or by you. A conversation counts too: when someone tells you in a chat how things work, what they think of the model or what they've decided, save the part that matters as a source (`format: "transcript"`, the person as its author), so it can be quoted like anything else.
+Source material comes from outside the sandbox: whatever people, organisations or agents elsewhere wrote, said or made. Documents, white papers, articles, web pages, PDFs, data, images and recordings, brought in by a person or by you. A conversation can count too: what someone tells you in a chat about how things work, what they think of the model or what they've decided can be saved as a source (`format: "transcript"`, the person as its author), so it can be quoted like anything else.
+
+**Nothing becomes a source without the person's say-so.** What a person puts in `sources/` or its inbox themselves is theirs to add. Anything you'd bring in, from the chat, the web or anywhere else, you propose first: what you'd save, from where, and why it matters to the sandbox. Add it only once they agree, and as they shape it. Take particular care with the chat: most of it is working talk, not material, and some of it may be irrelevant or not meant to be kept. Never save it as you go.
 
 What you write inside the sandbox isn't source material. Your analyses, summaries and findings cite sources; they aren't sources themselves. In a discovery sandbox they're cards (see [domain discovery](domain-discovery.md)); otherwise they live in the model's items and the journal. A readable copy of a file (below) is the same words in another form, not your writing.
 
@@ -17,7 +19,7 @@ What you write inside the sandbox isn't source material. Your analyses, summarie
 Nothing is kept in a sandbox, or used from it, until it has been screened. A sandbox is read by other people, shared and exported, so material that could harm someone goes wherever the sandbox goes.
 
 - **Ask first what counts as sensitive here.** Before the first source, ask the person what they treat as confidential or classified in this subject: names, customers, figures, sites, anything else. Record their rules, never the material itself, in the sandbox's `AGENTS.md` under **Sensitive material**, so every later session screens the same way.
-- **Screen everything, wherever it came from:** what arrives in the inbox, what a person copied straight into `sources/`, what's already catalogued when you first read it, and chat excerpts before you save them.
+- **Screen everything, wherever it came from:** what arrives in the inbox, what a person copied straight into `sources/`, what's already catalogued when you first read it, and chat excerpts the person has agreed to save, before you save them.
 - **Look for** personal data about people who could be identified (as data protection law such as the GDPR defines it); anything confidential to an organisation, or covered by the person's rules; anything dangerous to keep, such as credentials, security details or instructions for harm; and anything offensive or hurtful to the people who will read the sandbox, stakeholders included.
 - **Raise it, never fix it silently.** Tell the person what you found, where, and what you propose: redact, paraphrase, cut, or leave it as it is. Something can look sensitive and not be, or be sensitive in ways you can't know, so they decide. Don't use the source until they have.
 - **Act on what they decide.** A redacted or paraphrased copy replaces the original, which is removed from the sandbox once they agree: keeping it would keep the problem. Mark each change in the text, such as `[name removed]`, say in the catalogue's `summary` that the source was redacted, record it in the journal, and never write what was removed anywhere.
@@ -33,7 +35,7 @@ sources/
 ```
 
 - **Sources are never edited,** except to clear sensitive material when screening. A correction or a newer version comes in as a new source that supersedes the old one, so whatever cited the old one can still be checked against what it said.
-- **Anything can be dropped into the inbox:** by a person, by you, or by the sandbox itself when it saves comments. Nothing waits there for long; see "Processing the inbox".
+- **Anything can be dropped into the inbox:** by a person, by you once they've agreed to it, or by the sandbox itself when someone saves comments. Nothing waits there for long; see "Processing the inbox".
 
 ## The catalogue
 
