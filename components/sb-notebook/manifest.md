@@ -46,6 +46,7 @@ Every direct child is a section, in order, and any element can be one. The noteb
 ## What it shows
 
 - **A head** with the notebook's title and a summary: "6 sections · 1 collapsed · 4 people", or while filtering "Showing 2 of 6 · Clear". Below it, ▲ and ▼ with the position ("3 of 6"), **Expand all** and **Collapse all**, the filters, and an outline of every section, the current one marked, key ones starred and collapsed ones dimmed. The filters and the outline start closed, and each opens and closes from its heading.
+- **Focus mode**, from the icon beside the title, fills the window below the shell's header (`--sb-header-height`) with the sections alone, whatever the page's width. **Exit focus**, floating at the top right, or Esc goes back to the page, the current section still in view.
 - **On a notebook at least 760px wide** the head is a boxed column beside the sections, following the page as it scrolls. It sticks below the shell's compact header, if there is one (`--sb-header-height`). Narrower, it's a bar across the top, sticking as the page scrolls.
 - **A bar for each section:** its title, ★ Key, kind, who and when, and its code counts. Clicking it collapses or opens the section. A collapsed section shows only its bar, so nothing leaves the order.
 
@@ -65,6 +66,7 @@ Choosing opens the sections that match and collapses the rest, keeping every bar
 | Attribute | Meaning |
 |---|---|
 | `heading` | The notebook's title. |
+| `focus-mode` | Present while the notebook fills the window. |
 
 ## Properties and methods
 
@@ -76,6 +78,7 @@ Choosing opens the sections that match and collapses the rest, keeping every bar
 | `expand(index)`, `collapse(index)`, `expandAll()`, `collapseAll()` | Open or collapse sections, quietly. **Expand all** and **Collapse all** in the head do the same, and fire nothing either. |
 | `filter` | `{ codes, kinds, people, key }`: lists of prefixes, kinds and people, and key only. Setting it applies it without firing `sb-filter`; `{}` clears it. |
 | `prefixes` | Names for code prefixes in the filters, such as `{ DEC: 'Decisions' }`. Without a name, the prefix is shown. |
+| `focusMode` | `true` while the notebook fills the window. Setting it is quiet. |
 | `refresh()` | Count the codes in each section again. |
 | `reveal(ref, place)` | Open the section holding `place`, an element on the page, or without one the first section holding a part marked `data-ref="ref"` (its bar included). Quiet, and keeps the viewer's filter. Returns `true`, or `false` if no section holds it. |
 
@@ -88,12 +91,13 @@ All bubble.
 | `sb-section` | `{ index, element }` | A viewer moves to a section: ▲ ▼, the outline, the keyboard, or `goTo`, `next()`, `previous()`. |
 | `sb-toggle` | `{ index, element, open }` | A viewer collapses or opens a section by its bar. |
 | `sb-filter` | `{ filter }` | A viewer changes the filters, or clears them. |
+| `sb-focus-mode` | `{ focusMode }` | A viewer goes into focus mode or out of it, by the button or Esc. |
 
 ## Styling
 
-Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-radius`.
+Theme tokens: `--sb-bg` (behind the sections in focus mode), `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-radius`.
 
-Classes: `sb-notebook__head`, `sb-notebook__heading`, `sb-notebook__summary`, `sb-notebook__nav`, `sb-notebook__position`, `sb-notebook__panel-toggle`, `sb-notebook__facets`, `sb-notebook__facet` (`aria-pressed="true"` when chosen), `sb-notebook__outline`, `sb-notebook__entry` (`aria-current="true"` for the current section, `data-collapsed`), `sb-notebook__bar` (`data-open`, `data-key`, `data-relevance`, `data-unmatched`), `sb-notebook__toggle`, `sb-notebook__title`, `sb-notebook__key`, `sb-notebook__kind`, `sb-notebook__who`, `sb-notebook__codes`, and `sb-notebook__section` on each section. A notebook laid out wide has `data-wide`.
+Classes: `sb-notebook__head`, `sb-notebook__heading`, `sb-notebook__summary`, `sb-notebook__nav`, `sb-notebook__position`, `sb-notebook__enter` and `sb-notebook__exit` (into and out of focus mode), `sb-notebook__panel-toggle`, `sb-notebook__facets`, `sb-notebook__facet` (`aria-pressed="true"` when chosen), `sb-notebook__outline`, `sb-notebook__entry` (`aria-current="true"` for the current section, `data-collapsed`), `sb-notebook__bar` (`data-open`, `data-key`, `data-relevance`, `data-unmatched`), `sb-notebook__toggle`, `sb-notebook__title`, `sb-notebook__key`, `sb-notebook__kind`, `sb-notebook__who`, `sb-notebook__codes`, and `sb-notebook__section` on each section. A notebook laid out wide has `data-wide`.
 
 ## Notes
 

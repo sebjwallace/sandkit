@@ -271,6 +271,34 @@
       assertEqual(el.filter, { codes: [], kinds: [], people: [], key: false });
     });
 
+    // ---- Focus mode ----
+
+    test('focus mode fills the window with the sections alone, and Exit focus or Escape leaves', () => {
+      const el = notebook();
+      const changes = recordEvents(el, 'sb-focus-mode');
+      const shown = (name) => getComputedStyle(el.querySelector(`.sb-notebook__${name}`)).display !== 'none';
+      assertEqual([shown('head'), shown('exit')], [true, false]);
+      el.querySelector('.sb-notebook__enter').click();
+      assertEqual([el.focusMode, getComputedStyle(el).position, shown('head'), shown('exit')], [true, 'fixed', false, true]);
+      assertEqual(document.activeElement, el.querySelector('.sb-notebook__exit'));
+      el.querySelector('.sb-notebook__exit').click();
+      el.querySelector('.sb-notebook__enter').click();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      assertEqual([el.focusMode, shown('head')], [false, true]);
+      assertEqual(changes.map((e) => e.detail.focusMode), [true, false, true, false]);
+      assertEqual(el.sections.length, 4);
+    });
+
+    test('focus mode puts the head across the top, and setting it is quiet', () => {
+      const el = notebook(WORKSHOP, 'style="width: 900px"');
+      const changes = recordEvents(el, 'sb-focus-mode');
+      el.focusMode = true;
+      assertEqual([el.hasAttribute('focus-mode'), el.hasAttribute('data-wide')], [true, false]);
+      el.focusMode = false;
+      assertEqual(el.hasAttribute('data-wide'), true);
+      assertEqual(changes.length, 0);
+    });
+
     // ---- Locating ----
 
     test('reveal opens the section holding a ref, quietly, and says whether it found one', () => {

@@ -1,4 +1,4 @@
-// Sandkit sb-notebook 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-notebook 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A workshop's sections in one page, in order. Each direct child is a section, given a header bar
 // with its kind, who and when, and the codes inside it counted from data-ref. Sections open and
 // collapse; key ones are marked, asides start collapsed. An outline and up and down controls move
@@ -25,7 +25,11 @@
   const CSS = `
     .sb-notebook { display: block; }
     .sb-notebook__head { position: sticky; top: var(--sb-header-height, 0px); z-index: 1; display: grid; gap: 6px; padding: 8px 0; background: var(--sb-surface, #fff); border-bottom: 1px solid var(--sb-border, #d5d9e0); }
-    .sb-notebook__heading { margin: 0; font-size: 16px; font-weight: 700; }
+    .sb-notebook__top { display: flex; align-items: flex-start; gap: 8px; }
+    .sb-notebook__heading { flex: 1; margin: 0; font-size: 16px; font-weight: 700; }
+    .sb-notebook__enter { flex: none; display: inline-flex; margin-left: auto; padding: 5px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-muted, #616e7c); cursor: pointer; }
+    .sb-notebook__enter:hover { border-color: var(--sb-muted, #616e7c); color: var(--sb-text, #1f2933); }
+    .sb-notebook__icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
     .sb-notebook__summary { color: var(--sb-muted, #616e7c); font-size: 13px; }
     .sb-notebook__nav { display: flex; align-items: center; gap: 4px; font-size: 13px; }
     .sb-notebook__nav button { padding: 2px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: inherit; cursor: pointer; }
@@ -63,6 +67,15 @@
     .sb-notebook[data-wide] .sb-notebook__outline { max-height: none; }
     .sb-notebook[data-wide] .sb-notebook__facets { padding-bottom: 8px; border-bottom: 1px solid var(--sb-border, #d5d9e0); }
     .sb-notebook[data-wide] > .sb-notebook__head + .sb-notebook__bar { margin-top: 0; }
+
+    /* Focus mode: the sections fill the window below the shell's header, with only a way back. */
+    .sb-notebook[focus-mode] { position: fixed; inset: var(--sb-header-height, 0px) 0 0; z-index: 40; overflow-y: auto; overscroll-behavior: contain; padding: 56px 32px 48px; background: var(--sb-bg, #f5f6f8); }
+    .sb-notebook[focus-mode] > .sb-notebook__head { display: none; }
+    .sb-notebook[focus-mode] > .sb-notebook__bar { scroll-margin-top: 56px; }
+    .sb-notebook__exit { display: none; }
+    .sb-notebook[focus-mode] > .sb-notebook__exit { position: fixed; top: calc(var(--sb-header-height, 0px) + 12px); right: 32px; z-index: 1; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 999px; background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: inherit; font-size: 13px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15); cursor: pointer; }
+    .sb-notebook__exit:hover { border-color: var(--sb-muted, #616e7c); }
+    .sb-notebook__esc { color: var(--sb-muted, #616e7c); font: inherit; font-size: 11px; }
 
     .sb-notebook__bar { margin-top: 10px; scroll-margin-top: 100px; }
     .sb-notebook__bar[data-unmatched] { opacity: 0.55; }
@@ -120,6 +133,13 @@
     return [...counts].map(([prefix, count]) => `${count} ${prefix}`).join(' · ');
   }
 
+  // Corners pointing out, and in: the usual signs for filling the window and leaving it.
+  const ICONS = {
+    enter: 'M3 6.5V3h3.5M13 6.5V3H9.5M3 9.5V13h3.5M13 9.5V13H9.5',
+    exit: 'M6.5 3v3.5H3M9.5 3v3.5H13M6.5 13V9.5H3M9.5 13V9.5H13'
+  };
+  const icon = (name) => `<svg class="sb-notebook__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS[name]}"/></svg>`;
+
   const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
 
   // Facets: choices within one widen the match, choices across them narrow it.
@@ -150,7 +170,7 @@
   class SbNotebook extends HTMLElement {
     static origin = ORIGIN;
 
-    static observedAttributes = ['heading'];
+    static observedAttributes = ['heading', 'focus-mode'];
 
     constructor() {
       super();
@@ -166,12 +186,9 @@
       this._panels = {}; // filter and outline opened by the viewer; closed until then
       // Sections added or removed later get their bars too.
       this._observer = new MutationObserver(() => this._render());
-      this._resizeObserver = new ResizeObserver(() => {
-        if (this._wide === this.clientWidth >= WIDE) return;
-        this.toggleAttribute('data-wide', this.clientWidth >= WIDE);
-        this._render();
-      });
+      this._resizeObserver = new ResizeObserver(() => { if (this._fit()) this._render(); });
       this._onScroll = () => this._followScroll();
+      this._onEscape = (e) => { if (e.key === 'Escape' && this.focusMode) this._changeFocusMode(false); };
       this.addEventListener('click', (e) => this._onClick(e));
       this.addEventListener('keydown', (e) => this._onKey(e));
     }
@@ -181,6 +198,7 @@
       this.classList.add('sb-notebook');
       this._resizeObserver.observe(this);
       document.addEventListener('scroll', this._onScroll, { capture: true, passive: true });
+      document.addEventListener('keydown', this._onEscape);
       if (this._built) {
         this._observer.observe(this, { childList: true });
         return;
@@ -197,15 +215,19 @@
       this._observer.disconnect();
       this._resizeObserver.disconnect();
       document.removeEventListener('scroll', this._onScroll, { capture: true });
+      document.removeEventListener('keydown', this._onEscape);
     }
 
-    attributeChangedCallback() { this._render(); }
+    attributeChangedCallback() {
+      this._fit();
+      this._render();
+    }
 
     // ---- Public API ----
 
     // The sections: this element's own children, apart from the parts it adds.
     get sections() {
-      return [...this.children].filter((child) => !child.matches('.sb-notebook__head, .sb-notebook__bar'));
+      return [...this.children].filter((child) => !child.matches('.sb-notebook__head, .sb-notebook__bar, .sb-notebook__exit'));
     }
 
     // The section in view, or last gone to.
@@ -253,6 +275,11 @@
       this._render();
     }
 
+    // Whether the sections fill the window, with the head put away.
+    // Setting it fires no event: sb-focus-mode reports the viewer's choice.
+    get focusMode() { return this.hasAttribute('focus-mode'); }
+    set focusMode(on) { this.toggleAttribute('focus-mode', Boolean(on)); }
+
     // Counts the codes in each section again, for parts drawn after the section was added.
     refresh() {
       this.sections.forEach((section) => this._codes.delete(section));
@@ -278,6 +305,10 @@
       this._built = true;
       this._head = Object.assign(document.createElement('div'), { className: 'sb-notebook__head' });
       this.prepend(this._head);
+      this.append(Object.assign(document.createElement('button'), {
+        type: 'button', className: 'sb-notebook__exit', title: 'Back to the page',
+        innerHTML: `${icon('exit')}Exit focus<kbd class="sb-notebook__esc">Esc</kbd>`
+      }));
       this._render();
       this._observer.observe(this, { childList: true });
     }
@@ -317,7 +348,10 @@
         </button></li>`;
       }).join('');
       this._head.innerHTML = `
-        ${heading ? `<h2 class="sb-notebook__heading">${esc(heading)}</h2>` : ''}
+        <div class="sb-notebook__top">
+          ${heading ? `<h2 class="sb-notebook__heading">${esc(heading)}</h2>` : ''}
+          <button type="button" class="sb-notebook__enter" data-action="focus-mode" data-focus="focus-mode" aria-label="Focus mode" title="Focus mode: fill the window">${icon('enter')}</button>
+        </div>
         <span class="sb-notebook__summary">${esc(summary)}${filtering ? ' · <button type="button" class="sb-notebook__clear" data-action="clear" data-focus="clear">Clear</button>' : ''}</span>
         <div class="sb-notebook__nav">
           <button type="button" data-action="previous" data-focus="previous" aria-label="Previous section">▲</button>
@@ -336,6 +370,14 @@
     }
 
     get _wide() { return this.hasAttribute('data-wide'); }
+
+    // Wide enough for the head beside the sections, unless in focus mode. True if that changed.
+    _fit() {
+      const wide = !this.focusMode && this.clientWidth >= WIDE;
+      if (this._wide === wide) return false;
+      this.toggleAttribute('data-wide', wide);
+      return true;
+    }
 
     // The filters and the outline stay closed until a viewer opens them.
     _panelOpen(panel) { return Boolean(this._panels[panel]); }
@@ -463,6 +505,7 @@
     // ---- Interaction ----
 
     _onClick(e) {
+      if (e.target.closest('.sb-notebook__exit')) return this._changeFocusMode(false);
       const bar = e.target.closest('.sb-notebook__bar');
       if (bar?.parentElement === this) return this._toggle(Number(bar.dataset.index));
       if (!this._head?.contains(e.target)) return;
@@ -476,6 +519,7 @@
       if (action === 'clear') this._changeFilter({});
       if (action === 'expand-all') this.expandAll();
       if (action === 'collapse-all') this.collapseAll();
+      if (action === 'focus-mode') this._changeFocusMode(!this.focusMode);
       if (action === 'filter' || action === 'outline') {
         this._panels[action] = !this._panelOpen(action);
         this._render();
@@ -493,6 +537,14 @@
     _changeFilter(filter) {
       this.filter = filter;
       this.dispatchEvent(new CustomEvent('sb-filter', { bubbles: true, detail: { filter: this.filter } }));
+    }
+
+    // Into or out of focus mode, keeping the current section in view and the keyboard on the way back.
+    _changeFocusMode(on) {
+      this.focusMode = on;
+      this.querySelector(on ? '.sb-notebook__exit' : '.sb-notebook__enter').focus({ preventScroll: true });
+      this._bars.get(this.current.element)?.scrollIntoView({ block: 'start' });
+      this.dispatchEvent(new CustomEvent('sb-focus-mode', { bubbles: true, detail: { focusMode: on } }));
     }
 
     _toggle(index) {
