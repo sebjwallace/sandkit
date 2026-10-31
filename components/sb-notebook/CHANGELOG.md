@@ -1,5 +1,8 @@
 # sb-notebook changelog
 
+## 0.1.5 · 2026-10-31
+- **The address keeps your place**, with the `address` attribute and an `id`: `?ridge-fire=3` for the current section, and `&focus=ridge-fire` in focus mode. A reload or a shared link opens that section and goes to it, in focus mode if the address says so. The address is replaced, never added to the history, so Back still leaves the page.
+
 ## 0.1.4 · 2026-10-30
 - **Focus mode**, from the icon beside the notebook's title: the sections fill the window below the shell's header, with the head put away, so wide sections get every pixel. **Exit focus**, floating at the top right, or Esc brings the page back. The `focus-mode` attribute and `focusMode` property set it quietly; a viewer's choice fires `sb-focus-mode`.
 

@@ -60,6 +60,7 @@
         <li><strong>Running a workshop.</strong> Add a section as each thing comes up: a source to look at, a question, a quick simulation, a decision.</li>
         <li><strong>Coming back to one later.</strong> The key sections are open and marked, the asides tucked away, and every section says who and when.</li>
         <li><strong>Wide work inside a section.</strong> The icon beside the title fills the window with the sections alone; Esc brings the page back.</li>
+        <li><strong>Sharing a place in it.</strong> With <code>address</code>, the page's address follows the section you're on and focus mode, so a reload or a shared link opens that section.</li>
         <li><strong>An audit trail.</strong> The codes inside each section are counted on its bar, so you can see where the decisions and questions are without opening anything.</li>
       </ul>
 
@@ -72,7 +73,7 @@
 
       <h3>Getting started</h3>
       <p>Every direct child is a section. Describe each with attributes; the notebook never changes what's inside. See the <a href="manifest.md">manifest</a> for the full contract.</p>
-      <pre>&lt;sb-notebook id="ridge-fire" heading="Ridge fire · afternoon planning"&gt;
+      <pre>&lt;sb-notebook id="ridge-fire" address heading="Ridge fire · afternoon planning"&gt;
   &lt;section heading="Will the wind turn before 16:00?" kind="question"
            by="Ana Lima" time="2026-08-14T13:20" relevance="key"&gt;
     &lt;p&gt;… &lt;span data-ref="QST-2"&gt;QST-2&lt;/span&gt; …&lt;/p&gt;
@@ -94,8 +95,8 @@
 
     <section class="example">
       <h2>Holding a wildfire at the ridge</h2>
-      <p>An incident team's afternoon planning session on a fire moving uphill. Click a bar to collapse or open it, or choose Decisions to open only the sections with decisions in them. The buttons below go to a code, opening the section that holds it.</p>
-      <sb-notebook id="ridge-fire" heading="Ridge fire · afternoon planning, 14 August">
+      <p>An incident team's afternoon planning session on a fire moving uphill. Click a bar to collapse or open it, or choose Decisions to open only the sections with decisions in them. The buttons below go to a code, opening the section that holds it. Move to another section and reload: you're back where you were.</p>
+      <sb-notebook id="ridge-fire" address heading="Ridge fire · afternoon planning, 14 August">
         <section heading="The afternoon spread forecast" kind="source" by="Agent" time="2026-08-14T13:05">
           <p>The fire behaviour analyst's forecast (<span class="code" data-ref="SRC-4">SRC-4</span>), as the model reads it:</p>
           <p class="quote">"Expect rates of spread of 1.5 to 2 km/h upslope once relative humidity drops below 20%, likely after 14:30."</p>

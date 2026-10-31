@@ -299,6 +299,51 @@
       assertEqual(changes.length, 0);
     });
 
+    // ---- The address ----
+
+    // Runs with the page's address set to `search`, putting the test page's own back afterwards.
+    function atAddress(search, run) {
+      const page = location.href;
+      history.replaceState(history.state, '', search);
+      try { run(); } finally { history.replaceState(history.state, '', page); }
+    }
+
+    test('with address, a notebook opens the section the address names, in focus mode if it says so', () => {
+      atAddress('?ridge=4&focus=ridge', () => {
+        const el = notebook(WORKSHOP, 'id="ridge" address');
+        assertEqual([el.current.index, el.focusMode], [3, true]);
+        assert(!el.sections[3].hidden, 'the aside was opened');
+      });
+    });
+
+    test('with address, moving and focus mode are kept in the address, leaving the rest of it alone', () => {
+      atAddress('?other=1&focus=other', () => {
+        const el = notebook(WORKSHOP, 'id="ridge" address');
+        el.goTo(2);
+        assertEqual(location.search, '?other=1&focus=other&ridge=3');
+        el.focusMode = true;
+        assertEqual(location.search, '?other=1&focus=ridge&ridge=3');
+        el.focusMode = false;
+        assertEqual(location.search, '?other=1&ridge=3');
+      });
+    });
+
+    test('without address, or without an id, the address is neither read nor written', () => {
+      atAddress('?ridge=4&focus=ridge', () => {
+        mount(`<div><sb-notebook id="ridge">${WORKSHOP}</sb-notebook><sb-notebook address>${WORKSHOP}</sb-notebook></div>`);
+        const [plain, unnamed] = document.querySelectorAll('#test-fixture sb-notebook');
+        plain.goTo(1);
+        unnamed.goTo(1);
+        assertEqual([plain.focusMode, location.search], [false, '?ridge=4&focus=ridge']);
+      });
+    });
+
+    test('an address naming no section is left as the start', () => {
+      atAddress('?ridge=9', () => {
+        assertEqual(notebook(WORKSHOP, 'id="ridge" address').current.index, 0);
+      });
+    });
+
     // ---- Locating ----
 
     test('reveal opens the section holding a ref, quietly, and says whether it found one', () => {

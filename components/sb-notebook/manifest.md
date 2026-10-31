@@ -67,6 +67,15 @@ Choosing opens the sections that match and collapses the rest, keeping every bar
 |---|---|
 | `heading` | The notebook's title. |
 | `focus-mode` | Present while the notebook fills the window. |
+| `address` | With an `id`, keeps the current section and focus mode in the page's address, so a reload or a shared link comes back to them. See below. |
+
+## The address
+
+With `address`, a notebook keeps your place in the page's address: `?ridge-fire=3` while section 3 is current, and `&focus=ridge-fire` in focus mode. Opening that address, by reloading or from a shared link, opens section 3, goes to it, and fills the window if focus mode was on. The address follows ▲ ▼, the outline, scrolling and focus mode, and is replaced rather than added to the history, so Back still leaves the page. Each notebook uses its own `id`, so several on a page keep their places side by side; other parts of the address are left alone. Without `address`, or without an `id`, the address is never read or changed.
+
+```html
+<sb-notebook id="ridge-fire" address heading="Ridge fire · afternoon planning">…</sb-notebook>
+```
 
 ## Properties and methods
 
@@ -104,7 +113,7 @@ Classes: `sb-notebook__head`, `sb-notebook__heading`, `sb-notebook__summary`, `s
 - **Readability:** a notebook is one workshop. Mark the few sections that matter as `key` and the side talk as `aside`, so someone arriving later sees the decisions first. Split a long series of workshops into a page each (the [pages practice](../../practices/pages.md)).
 - **Names and times on every section** turn a page of notes into evidence of who decided what, and when.
 - **`data-ref` is the one thing a notebook looks for in its sections.** It never looks at which components are inside; a section's `kind` says what it is.
-- **Nothing is remembered between visits.** Opening, collapsing and filtering last until the page reloads.
+- **Only the place is kept, and only with `address`.** Opening, collapsing and filtering last until the page reloads.
 - **Keyboard:** Alt with ↑ and ↓ moves between sections from anywhere in the notebook; in the outline, ↑ and ↓ alone do.
 - **The current section follows scrolling** by hand in a browser; tests don't depend on it.
 - **Dependencies:** none.

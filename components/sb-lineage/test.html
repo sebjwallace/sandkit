@@ -555,7 +555,8 @@
       tool(element, 'Full screen').click();
       const box = element.querySelector('.sb-lineage__box');
       assertEqual([element.fullscreen, box.classList.contains('sb-lineage__box--full'), getComputedStyle(box).position, box.getAttribute('role')], [true, true, 'fixed', 'dialog']);
-      assertEqual([box.offsetWidth, box.offsetHeight], [innerWidth, innerHeight]);
+      const { clientWidth, clientHeight } = document.documentElement; // the window, less any scrollbars
+      assertEqual([box.offsetWidth, box.offsetHeight], [clientWidth, clientHeight]);
       assertEqual(element.offsetHeight, height, 'its place is held');
       assertEqual(document.activeElement, tool(element, 'Leave full screen'));
       tool(element, 'Leave full screen').click();

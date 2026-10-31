@@ -59,7 +59,7 @@ Prepare with the person who asked for the workshop, then build the page.
 
 A workshop is a page of its own (see the [pages practice](pages.md)), sharing the sandbox's model, so it can be exported and shared on its own afterwards.
 
-- **The page is an [`sb-notebook`](../components/sb-notebook/manifest.md):** one section per moment in the session, each with its kind, who led it and when. Mark the sections that matter `key`, and side discussions `aside`. A week later the page reads as the record of what was asked, found, corrected and decided, with names on all of it.
+- **The page is an [`sb-notebook`](../components/sb-notebook/manifest.md):** one section per moment in the session, each with its kind, who led it and when. Mark the sections that matter `key`, and side discussions `aside`. A week later the page reads as the record of what was asked, found, corrected and decided, with names on all of it. Give it an `id` and `address`, so a link can take someone straight to a section.
 - **Open with a section** giving the purpose, the exit conditions, who is here (a row of [`sb-person`](../components/sb-person/manifest.md) badges, the agent's among them) and how you'll work, including that answers stay hidden until everyone has answered, and that being wrong is the point.
 - **Give everything people will discuss a code** ([identifiers practice](identifiers.md)), such as `PRD-` for predictions, `POL-` polls, `FRK-` forks, `QST-` questions, `DEC-` decisions and `FB-` feedback, and mark it with `data-ref`. The notebook counts codes per section and filters by them, and comments cite them.
 - **Keep comment mode on** ([feedback practice](feedback.md)), so anyone can point at anything and say what they think.

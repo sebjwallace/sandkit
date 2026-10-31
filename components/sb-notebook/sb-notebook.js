@@ -1,4 +1,4 @@
-// Sandkit sb-notebook 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-notebook 0.1.5 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A workshop's sections in one page, in order. Each direct child is a section, given a header bar
 // with its kind, who and when, and the codes inside it counted from data-ref. Sections open and
 // collapse; key ones are marked, asides start collapsed. An outline and up and down controls move
@@ -309,8 +309,42 @@
         type: 'button', className: 'sb-notebook__exit', title: 'Back to the page',
         innerHTML: `${icon('exit')}Exit focus<kbd class="sb-notebook__esc">Esc</kbd>`
       }));
+      const arrived = this._readAddress();
       this._render();
+      if (arrived) this._bars.get(this.current.element).scrollIntoView({ block: 'start' });
       this._observer.observe(this, { childList: true });
+    }
+
+    // ---- The address ----
+    // With `address` and an id, the address bar keeps the current section and focus mode,
+    // as ?workshop=3&focus=workshop, so a reload or a shared link comes back to them.
+
+    get _linked() { return this.hasAttribute('address') && Boolean(this.id); }
+
+    // Opens the section the address names and goes to it, quietly. True if it named one.
+    _readAddress() {
+      if (!this._linked) return false;
+      const params = new URLSearchParams(location.search);
+      if (params.get('focus') === this.id) this.focusMode = true;
+      const index = Number(params.get(this.id)) - 1;
+      const section = this.sections[index];
+      if (!section) return false;
+      this._current = index;
+      this._pinned = section;
+      this._open.set(section, true);
+      history.scrollRestoration = 'manual'; // the browser's own would scroll somewhere else
+      return true;
+    }
+
+    // Replaces the address rather than adding to the history, so Back still leaves the page.
+    _writeAddress() {
+      if (!this._linked) return;
+      const params = new URLSearchParams(location.search);
+      params.set(this.id, this.current.index + 1);
+      if (this.focusMode) params.set('focus', this.id);
+      else if (params.get('focus') === this.id) params.delete('focus');
+      const search = `?${params}`;
+      if (search !== location.search) history.replaceState(history.state, '', search + location.hash);
     }
 
     // Everything is redrawn from the sections and their state; focus stays on the same control.
@@ -419,6 +453,7 @@
       this._head.querySelectorAll('.sb-notebook__entry').forEach((entry) => {
         entry.setAttribute('aria-current', String(Number(entry.dataset.index) === index));
       });
+      this._writeAddress();
     }
 
     _renderSection(section, index) {
