@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.77 · 2026-11-02
+- Licences and sharing. The sources practice has the agent check who owns material and what its terms allow, as part of screening: it says what it found when proposing material, never gets round a login, paywall or a site's refusal of automated reading, and records the terms in the catalogue's new `licence` field. Where a copy shouldn't be kept, it keeps a digest in its own words in `sources/digests/` (`format: "digest"`). Before a sandbox is shared, it names anything that may not be the person's to share, and they decide. The template's `AGENTS.md` asks who the sandbox is for; the pages and building practices and the README point to the check before sharing. Recorded in DECISIONS.md.
+
 ## 0.2.76 · 2026-10-29
 - Nothing becomes a source without the person's say-so. The sources practice no longer tells the agent to save parts of a chat as it goes: it proposes what it would bring in, from the chat, the web or anywhere else, and adds it only once the person agrees, since most of a chat is working talk and some of it may be irrelevant or not meant to be kept. What a person puts in `sources/` themselves is theirs to add. The domain discovery practice and the template's `AGENTS.md` say the same.
 

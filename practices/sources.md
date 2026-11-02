@@ -1,6 +1,6 @@
 # Sources
 
-How a sandbox keeps the material it was built from, and how everything in it traces back to that material. Read this when a sandbox is built from sources (documents, interviews, data, images), whenever files arrive in its inbox, and before citing a source from the model.
+How a sandbox keeps the material it was built from, and how everything in it traces back to that material. Read this when a sandbox is built from sources (documents, interviews, data, images), whenever files arrive in its inbox, before citing a source from the model, and before the sandbox is shared.
 
 ## Why it matters
 
@@ -10,20 +10,51 @@ A sandbox is only as good as what's behind it, and people can only trust what th
 
 Source material comes from outside the sandbox: whatever people, organisations or agents elsewhere wrote, said or made. Documents, white papers, articles, web pages, PDFs, data, images and recordings, brought in by a person or by you. A conversation can count too: what someone tells you in a chat about how things work, what they think of the model or what they've decided can be saved as a source (`format: "transcript"`, the person as its author), so it can be quoted like anything else.
 
-**Nothing becomes a source without the person's say-so.** What a person puts in `sources/` or its inbox themselves is theirs to add. Anything you'd bring in, from the chat, the web or anywhere else, you propose first: what you'd save, from where, and why it matters to the sandbox. Add it only once they agree, and as they shape it. Take particular care with the chat: most of it is working talk, not material, and some of it may be irrelevant or not meant to be kept. Never save it as you go.
+**Nothing becomes a source without the person's say-so.** What a person puts in `sources/` or its inbox themselves is theirs to add. Anything you'd bring in, from the chat, the web or anywhere else, you propose first: what you'd save, from where, why it matters to the sandbox, and what its terms allow (see "Licences"). Add it only once they agree, and as they shape it. Take particular care with the chat: most of it is working talk, not material, and some of it may be irrelevant or not meant to be kept. Never save it as you go.
 
-What you write inside the sandbox isn't source material. Your analyses, summaries and findings cite sources; they aren't sources themselves. In a discovery sandbox they're cards (see [domain discovery](domain-discovery.md)); otherwise they live in the model's items and the journal. A readable copy of a file (below) is the same words in another form, not your writing.
+What you write inside the sandbox isn't source material. Your analyses, summaries and findings cite sources; they aren't sources themselves. In a discovery sandbox they're cards (see [domain discovery](domain-discovery.md)); otherwise they live in the model's items and the journal. A readable copy of a file (below) is the same words in another form, not your writing. A digest is the one exception: your account of material that can't be kept, standing in for it as a source (see "Digests").
 
 ## Screening
 
 Nothing is kept in a sandbox, or used from it, until it has been screened. A sandbox is read by other people, shared and exported, so material that could harm someone goes wherever the sandbox goes.
 
-- **Ask first what counts as sensitive here.** Before the first source, ask the person what they treat as confidential or classified in this subject: names, customers, figures, sites, anything else. Record their rules, never the material itself, in the sandbox's `AGENTS.md` under **Sensitive material**, so every later session screens the same way.
+- **Ask first what counts as sensitive here, and who the sandbox is for.** Before the first source, ask the person what they treat as confidential or classified in this subject (names, customers, figures, sites, anything else), and who will see the sandbox: just them, their team or organisation, or the public. Who it's for says how careful sharing needs to be. Record both, never the material itself, in the sandbox's `AGENTS.md` under **Sensitive material**, so every later session screens the same way.
 - **Screen everything, wherever it came from:** what arrives in the inbox, what a person copied straight into `sources/`, what's already catalogued when you first read it, and chat excerpts the person has agreed to save, before you save them.
 - **Look for** personal data about people who could be identified (as data protection law such as the GDPR defines it); anything confidential to an organisation, or covered by the person's rules; anything dangerous to keep, such as credentials, security details or instructions for harm; and anything offensive or hurtful to the people who will read the sandbox, stakeholders included.
+- **Check the rights too:** who owns the material and what its terms allow (see "Licences").
 - **Raise it, never fix it silently.** Tell the person what you found, where, and what you propose: redact, paraphrase, cut, or leave it as it is. Something can look sensitive and not be, or be sensitive in ways you can't know, so they decide. Don't use the source until they have.
 - **Act on what they decide.** A redacted or paraphrased copy replaces the original, which is removed from the sandbox once they agree: keeping it would keep the problem. Mark each change in the text, such as `[name removed]`, say in the catalogue's `summary` that the source was redacted, record it in the journal, and never write what was removed anywhere.
 - **What you derive is screened too.** A quote carries its words into the model, cards and pages, so never quote what was cleared out, and hold what you write to the same standard as what you read.
+
+## Licences
+
+Almost all material belongs to someone, and its licence or terms of use say what others may do with it. Keeping a copy to study privately is usually fine, and it's the person's call. Licences matter most when the sandbox is shared: zipped, exported or published, it takes its sources and quotes with it. You're not giving legal advice, so say so when the terms are unclear, and that the person may want to check.
+
+- **Find the terms when you propose material.** Look for a licence or terms of use on the material or its site, and say what you found, or that you found none. Roughly:
+  - **Openly licensed,** such as Creative Commons, open data or open government licences: free to keep and share on their terms, which often ask for credit.
+  - **Public but all rights reserved,** which covers most web pages, papers, books and images: fine to read, and to quote briefly with credit, but not to republish. Material with no licence stated counts as this.
+  - **Paid for or behind a login:** often for the subscriber alone.
+  - **Under a confidentiality agreement:** not to be shared beyond it at all.
+- **Never get round a block.** If a page needs a login you don't have or sits behind a paywall, or its site forbids automated reading or use by AI (in its terms or its `robots.txt`), don't work round it. Say what's in the way, and suggest the person get it themselves if their own access allows. What they then put in is theirs to add.
+- **Record the terms** in the catalogue's `licence`, and keep `author` and `origin` filled in, since they're the credit a licence asks for.
+- **Raise it, and let the person decide.** Say what the terms allow, what keeping or sharing the material would mean, and what you propose: keep it, keep a digest instead, or leave it out. If they choose to keep something that can't be shared, that's theirs to choose. It's your job to make sure they know what it would mean, then and again before sharing.
+- **Quotes and copies carry the licence.** Quote a phrase or a sentence, as citing asks, never whole passages. A readable copy of a file is the same work in another form, under the same terms.
+
+### Digests
+
+When a copy shouldn't be kept, keep a digest: your account of the material in your own words, in `sources/digests/`, with no copy of the original. Facts and ideas belong to no one; the wording does.
+
+- **Write it in your own words,** not the original's reworded closely, and never so fully that it could replace the original. A few short quotes, marked as quotes, are fine.
+- **Open it with what it is:** whose work it summarises, where from, when you read it, and what it covers and leaves out.
+- **Catalogue it** with `format: "digest"`, the original's `author`, `origin` its address, `licence` the original's terms, and a `summary` that says it's a digest. Cite it like any source: quotes are checked against the digest, and anyone can follow `origin` to the original.
+- **Screen it like any source.** Personal or confidential details stay out, however they're worded.
+- **Prefer the original when its terms allow keeping it,** since quotes are then checked against its own words.
+
+## Before the sandbox is shared
+
+When the person is about to share the sandbox (zipped, exported, put on a website), go through what's going with it, against who it's for in `AGENTS.md` and who they're sharing it with now. Look for sources whose terms don't allow sharing, material marked `internal` or `confidential` going beyond its circle, personal data, and quotes or images taken from any of them. A zipped folder takes everything in `sources/`; an exported page takes only what it points to and shows.
+
+Tell them what you found and what sharing it would mean, and offer what would make it safe to share: leave it out, keep a digest instead of a copy, cut a quote. Then do as they decide. Digests, and short quotes with credit, can usually be shared.
 
 ## The folder
 
@@ -73,7 +104,7 @@ sources/
 |---|---|
 | `id` | A code with the prefix `SRC`, never reused (see [identifiers](identifiers.md)). |
 | `title`, `path`, `summary`, `tags` | What it is and where it lives. `path` is from the sandbox's folder. In a discovery sandbox, use the declared tags (see [domain discovery](domain-discovery.md)). |
-| `format` | What kind of material, which says how to read it: `document`, `transcript`, `notes`, `data`, `image`, `pdf`, `code`, `web`, `annotations` and so on. |
+| `format` | What kind of material, which says how to read it: `document`, `transcript`, `notes`, `data`, `image`, `pdf`, `code`, `web`, `annotations`, `digest` and so on. |
 | `author` | Who wrote or said it: a person, an organisation, or an agent outside the sandbox. |
 | `authored`, `captured` | When it was written, and when it was added. They often differ. |
 | `origin` | Where it came from, such as a web address, when there is one. |
@@ -81,6 +112,7 @@ sources/
 | `stance` | How certain it is: `assertive`, `speculative`, `assumption` or `idea`. Optional. |
 | `role` | What it does: `question`, `answer`, `confirmation`, `correction`, `contradiction` or `decision`. Optional. With `respondsTo`, the source it answers or corrects. |
 | `sensitivity` | `public`, `internal` or `confidential`. `internal` when not given. |
+| `licence` | What its owner allows, as found: `"CC BY 4.0"`, `"all rights reserved"`, `"own work"`, `"unknown"`, or the terms in a few words. See "Licences". |
 | `derivedFrom` | For a readable copy: the source it was made from. Empty otherwise. |
 | `supersedes` | The source this one replaces. Set the old one's `status` to `superseded`. |
 | `copies` | The source this one repeats, such as a newsletter passing on a forum post. It adds nothing of its own, so it's counted as that one. |

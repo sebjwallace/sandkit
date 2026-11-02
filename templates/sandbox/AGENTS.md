@@ -25,7 +25,9 @@ Where this sandbox is now, and how it is meant to grow. Rewrite it at the end of
 
 ## Sensitive material
 
-What the people behind this sandbox treat as confidential, personal or otherwise sensitive, so every session screens sources the same way. Ask before the first source arrives, and keep only the rules here, never the material. See "Screening" in `lib/sandkit/practices/sources.md`.
+What the people behind this sandbox treat as confidential, personal or otherwise sensitive, and who the sandbox is for, so every session screens sources, and checks before sharing, the same way. Ask before the first source arrives, and keep only the rules here, never the material. See "Screening", "Licences" and "Before the sandbox is shared" in `lib/sandkit/practices/sources.md`.
+
+- **For:** {{just the person, their team or organisation, or the public; not asked yet}}
 
 {{the person's rules, one line each; not asked yet}}
 
@@ -36,7 +38,7 @@ What the people behind this sandbox treat as confidential, personal or otherwise
 | `index.html` | The first page: chapters and the interactive surface. |
 | `sandbox.js` | The sandbox's name, goal and pages, set on the shell. Every page includes it. |
 | `model.js` | The domain model. Code that runs, with no UI. Shared by every page. |
-| `sources/` | The material this sandbox was built from, described in `catalogue.json`, with new arrivals in `inbox/`. See `lib/sandkit/practices/sources.md`. |
+| `sources/` | The material this sandbox was built from, described in `catalogue.json`, with new arrivals in `inbox/` and digests of material that couldn't be kept in `digests/`. See `lib/sandkit/practices/sources.md`. |
 | `records/` | In a discovery sandbox, what was written from the sources: claims, questions, decisions and the rest, one script per kind. See `lib/sandkit/practices/domain-discovery.md`. |
 | `data/` | Data the pages use, as scripts that set it on the model (never fetched), if any. |
 | `JOURNAL.md` | What changed and why, one entry per version, newest first. |

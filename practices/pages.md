@@ -68,6 +68,8 @@ Run it from the sandbox folder. It puts every script, stylesheet and image the p
 
 **Report what went out.** Tell the person where it saved, list every file that went in with its size, and pass on every warning. The list is how they check they're sharing only what they mean to.
 
+**Check it's theirs to share.** Before handing over, go through what the page quotes and shows as the [sources practice](sources.md#before-the-sandbox-is-shared) describes, and name anything whose licence or sensitivity doesn't suit where it's going. They decide.
+
 **Warnings to act on, not hide:**
 - **A file named in code** (an image path in `model.js`) isn't included. Load it with a tag the export can follow, or as data in a script.
 - **`fetch` or `XMLHttpRequest`** won't work in the export. Load the data as a script instead.
