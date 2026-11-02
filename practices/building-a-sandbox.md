@@ -96,7 +96,12 @@ Put the goal in `sandbox.js`, which shows it in the header of every page, where 
 
 ## 4. Build the model
 
-The model in `model.js` is the heart of the sandbox: the subject captured as code that runs. Build it before any interface, and keep it free of UI.
+The model in `model.js` is the heart of the sandbox: the subject captured as code that runs. Build it before any interface.
+
+**The model is the domain, and only the domain.** It captures the subject's things, rules and behaviour as plain data and functions, and knows nothing outside itself: no page, no components, no saving, no network, no clock (pass time in). Given the same input it gives the same output, so it can be tested on its own and lifted into another sandbox or tool unchanged.
+
+**Everything else depends on the model, never the other way round.** Preparing what the page shows (labels, grouping, what's lit, the shape a component wants) is a view model's job: functions in the page, or in `view.js` once several pages share them, that read the model and never change its rules. Saving, loading and wiring live in the page. If the model would need to change only because a view did, that code belongs in the view model.
+
 
 - **Start small.** The fewest moving parts that show chapter 1's idea. Add more as later chapters need them.
 - **Give it a small, clear interface,** like the template's: `state`, `step()`, `reset()`, `setOption()`. The page reads state and calls these; it never reaches inside.

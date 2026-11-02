@@ -1,5 +1,7 @@
 // The domain model: the subject captured as code that runs.
-// No UI here. The page reads `state`, calls `step()` and `reset()`, and changes options.
+// Pure domain only: it knows nothing of pages, components, saving or the clock.
+// Shaping state for display is the view model's job, in the page or view.js.
+// The page reads `state`, calls `step()` and `reset()`, and changes options.
 
 // The rules the model follows, with codes to cite them by (see lib/sandkit/practices/identifiers.md).
 const RULES = [

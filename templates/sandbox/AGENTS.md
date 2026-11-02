@@ -43,7 +43,8 @@ Every place personal data is kept, so nothing is shared by accident: what kind, 
 |---|---|
 | `index.html` | The first page: chapters and the interactive surface. |
 | `sandbox.js` | The sandbox's name, goal and pages, set on the shell. Every page includes it. |
-| `model.js` | The domain model. Code that runs, with no UI. Shared by every page. |
+| `model.js` | The domain model: pure domain code that knows nothing of pages, components or saving. Shared by every page. See the guide, step 4. |
+| `view.js` | The view model: functions that turn the model's state into what the pages show, if several pages share them. |
 | `sources/` | The material this sandbox was built from, described in `catalogue.json`, with new arrivals in `inbox/` and digests of material that couldn't be kept in `digests/`. See `lib/sandkit/practices/sources.md`. |
 | `records/` | In a discovery sandbox, what was written from the sources: claims, questions, decisions and the rest, one script per kind. See `lib/sandkit/practices/domain-discovery.md`. |
 | `data/` | Data the pages use, as scripts that set it on the model (never fetched), if any. |
