@@ -31,6 +31,12 @@ What the people behind this sandbox treat as confidential, personal or otherwise
 
 {{the person's rules, one line each; not asked yet}}
 
+### Personal information in this sandbox
+
+Every place personal data is kept, so nothing is shared by accident: what kind, whose, and where, never the data itself. Add a line whenever some is kept, remove it when it's cleared, and go through this list before anything is shared. See "Screening" and "Before the sandbox is shared" in `lib/sandkit/practices/sources.md`.
+
+{{one line each, such as "SRC-4: drivers' names and phone numbers"; none yet}}
+
 ## Files
 
 | File | What it is |

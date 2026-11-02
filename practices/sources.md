@@ -20,11 +20,12 @@ Nothing is kept in a sandbox, or used from it, until it has been screened. A san
 
 - **Ask first what counts as sensitive here, and who the sandbox is for.** Before the first source, ask the person what they treat as confidential or classified in this subject (names, customers, figures, sites, anything else), and who will see the sandbox: just them, their team or organisation, or the public. Who it's for says how careful sharing needs to be. Record both, never the material itself, in the sandbox's `AGENTS.md` under **Sensitive material**, so every later session screens the same way.
 - **Screen everything, wherever it came from:** what arrives in the inbox, what a person copied straight into `sources/`, what's already catalogued when you first read it, and chat excerpts the person has agreed to save, before you save them.
-- **Look for** personal data about people who could be identified (as data protection law such as the GDPR defines it); anything confidential to an organisation, or covered by the person's rules; anything dangerous to keep, such as credentials, security details or instructions for harm; and anything offensive or hurtful to the people who will read the sandbox, stakeholders included.
+- **Look for** personal data about people who could be identified (as data protection law such as the GDPR defines it), the person's own included: their name, contact details, address or anything else about them, which people rarely think of as sensitive; anything confidential to an organisation, or covered by the person's rules; anything dangerous to keep, such as credentials, security details or instructions for harm; and anything offensive or hurtful to the people who will read the sandbox, stakeholders included.
 - **Check the rights too:** who owns the material and what its terms allow (see "Licences").
 - **Raise it, never fix it silently.** Tell the person what you found, where, and what you propose: redact, paraphrase, cut, or leave it as it is. Something can look sensitive and not be, or be sensitive in ways you can't know, so they decide. Don't use the source until they have.
 - **Act on what they decide.** A redacted or paraphrased copy replaces the original, which is removed from the sandbox once they agree: keeping it would keep the problem. Mark each change in the text, such as `[name removed]`, say in the catalogue's `summary` that the source was redacted, record it in the journal, and never write what was removed anywhere.
-- **What you derive is screened too.** A quote carries its words into the model, cards and pages, so never quote what was cleared out, and hold what you write to the same standard as what you read.
+- **What you derive is screened too.** A quote carries its words into the model, cards and pages, so never quote what was cleared out, and hold what you write to the same standard as what you read: the model, records, journal, pages and saved comments, which carry viewers' names, can hold personal data as easily as a source.
+- **Register what's kept.** Whenever personal data stays in the sandbox, anywhere, add a line to **Personal information in this sandbox** in the sandbox's `AGENTS.md`: what kind it is, whose, and where, never the data itself, such as "SRC-4: drivers' names and phone numbers" or "`model.js`, `DRIVERS`: drivers' names". Remove the line when it's cleared. Every session reads that file first, so the next one knows what's there without finding it again.
 
 ## Licences
 
@@ -52,9 +53,11 @@ When a copy shouldn't be kept, keep a digest: your account of the material in yo
 
 ## Before the sandbox is shared
 
-When the person is about to share the sandbox (zipped, exported, put on a website), go through what's going with it, against who it's for in `AGENTS.md` and who they're sharing it with now. Look for sources whose terms don't allow sharing, material marked `internal` or `confidential` going beyond its circle, personal data, and quotes or images taken from any of them. A zipped folder takes everything in `sources/`; an exported page takes only what it points to and shows.
+When the person is about to share the sandbox (zipped, exported, put on a website), go through what's going with it, against who it's for in `AGENTS.md` and who they're sharing it with now. Start from the personal information register in `AGENTS.md`, then look over what's going anyway, since people edit files themselves and a register can fall behind; add anything it missed. Look for sources whose terms don't allow sharing, material marked `internal` or `confidential` going beyond its circle, personal data, and quotes or images taken from any of them. A zipped folder takes everything in `sources/`; an exported page takes only what it points to and shows.
 
 Tell them what you found and what sharing it would mean, and offer what would make it safe to share: leave it out, keep a digest instead of a copy, cut a quote. Then do as they decide. Digests, and short quotes with credit, can usually be shared.
+
+**Personal data needs a plain warning and a clear yes.** Say exactly what would go, whose it is, and who would then see it, the person's own details included, and that it can't be taken back once shared. Go ahead with it only once they've said yes to those items by name; until then, offer to share without them.
 
 ## The folder
 
