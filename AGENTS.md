@@ -22,7 +22,7 @@ A component is done when it has all of these:
 3. `CHANGELOG.md`, newest first, `## x.y.z · yyyy-mm-dd`.
 4. `test.html`: the public contract, two instances side by side, text never rendered as markup.
 5. `demo.html`: **About** (the guide: where it helps, where something else fits, getting started, making it reveal) then **Examples** in two contrasting domains. It loads only its own component and the shell.
-6. A line in `CATALOG.md`, the tag added to `test/collisions/test.html` and `test/isolation/test.html`, and a decision in `DECISIONS.md` if one was made. Bump the component count in the root `CHANGELOG.md`.
+6. A line in `CATALOG.md` and a line in its Find by need for each need it serves, the tag added to `test/collisions/test.html` and `test/isolation/test.html`, and a decision in `DECISIONS.md` if one was made. Bump the component count in the root `CHANGELOG.md`.
 
 **Change only the component you're working on.** If keeping the look consistent would mean changing others (see `STYLE.md`), name each one and ask the author first; never update them unasked.
 

@@ -4,6 +4,10 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
 
+## 0.2.80 · 2026-11-03
+- Agents compose from the catalog first. `CATALOG.md` opens with **Find by need**, the catalog indexed by what a subject needs, and `test/catalog` keeps it covering every component and engine. `tools/setup.mjs` keeps a copy in each sandbox's `AGENTS.md` between `sandkit:find-by-need` markers, replacing only what's between them and adding the block to older sandboxes, and the template's `AGENTS.md` opens Sandkit components with the rule to look there before building anything by hand. The building guide plans each chapter's parts first, the journal entry gains a **Parts** line naming what was built by hand and why (and any **candidate** for Sandkit), and the handover a **Built by hand** line.
+- Sandboxes carry `CLAUDE.md`, holding `@AGENTS.md`, for agents that read only that file. Setup adds it to any sandbox without one and never replaces one that's there.
+
 ## 0.2.79 · 2026-11-02
 - The domain model is pure. The building guide says what the model is: the domain alone, as plain data and functions that know nothing of pages, components, saving or the clock, giving the same output for the same input. A view model, in the page or a new optional `view.js`, prepares what the page shows, and everything depends on the model, never the reverse. The template's `AGENTS.md` and `model.js` say the same. Recorded in DECISIONS.md.
 

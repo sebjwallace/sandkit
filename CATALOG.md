@@ -2,6 +2,111 @@
 
 Everything Sandkit offers, one line each. Read a practice before the components that support it, and a component's `manifest.md` for its full contract. Use components through their manifests; you don't need to read their source.
 
+## Find by need
+
+The same catalog from the subject's side: find the need, then read the manifest of what serves it. A component can serve several needs, and a need several components.
+
+### Running and trying things
+
+- Let people play, pause, step and change speed → `sb-controls`
+- Let people turn the model's knobs and see the effect → `sb-parameters`
+- Scrub back and forth through a run, with named moments → `sb-scrubber`
+- Code or an algorithm stepped through, line by line → `sb-code`
+
+### Change and time
+
+- Values change over time and the trend matters → `sb-chart`
+- Things that happened, in order → `sb-log`, `sb-timeline`
+- Moments and spans laid out in time, with now marked → `sb-timeline`
+- Headline figures, their change and whether it's good news → `sb-stat`
+
+### Rules and decisions
+
+- Show which rule applies next and which just applied → `sb-rules`
+- One rule read closely: its branch in force, held or broken → `sb-rule`
+- A choice that branches on answers down to outcomes → `sb-decision-tree`
+- Expected behaviour as Given / When / Then, checked as it plays → `sb-scenario`
+- A decision made: the options weighed, the one chosen and why → `sb-choice`
+- A status earned or lost: approved, verified, superseded → `sb-stamp`
+
+### Structure and relationships
+
+- Modes and transitions, with what's active now → `sb-statechart`, `sb-graph`
+- A network of nodes and links, with things moving along them → `sb-graph`
+- Nested things, like folders or an outline → `sb-tree`
+- Kinds of things, what they inherit and how they relate → `sb-ontology`
+- Entities, their fields and what refers to what → `sb-erd`
+- Where things come from and what they lead to → `sb-lineage`
+- Software systems, explored level by level → `sb-c4`
+- Which sets things belong to, and the overlaps → `sb-venn`
+- Everywhere a thing appears on the page, and what it links to → `sb-xref`
+
+### Flow and process
+
+- Steps of a process with branches and lanes, the current one marked → `sb-flowchart`
+- Things moving through stages, with limits → `sb-kanban`
+- Who sends what to whom, in order → `sb-sequence`
+- A workflow lit up as it runs → `sb-graph`, `sb-flowchart`
+
+### Space and maths
+
+- A space of cells coloured by state, which people can paint → `sb-grid`
+- Vectors, points and shapes on a plane, moved by matrices → `sb-plane`
+- A matrix or vector to read or edit → `sb-matrix`
+- An equation whose parts light up what they stand for → `sb-math`
+- A picture, map or plan to zoom into, with places marked → `sb-image`
+
+### Comparing and summarising
+
+- Things compared on one measure → `sb-bars`
+- Rows and columns to sort, search and filter → `sb-table`
+- A large collection to search, filter, sort and group → `sb-search`
+- Headline figures against their targets → `sb-stat`
+
+### Data
+
+- A data set's shape: fields, types, gaps and odd values → `sb-profile`
+- Which fields determine others or go together → `sb-dependencies`
+- JSON with the parts that matter picked out → `sb-json`
+
+### Explaining and guiding
+
+- Text with the parts that matter marked and explained → `sb-annotate`
+- A definition, tip, warning or question set apart → `sb-callout`
+- A guided tour of the page, one part at a time → `sb-tour`
+- A story told across several views, step by step → `sb-walkthrough`
+- A code people can point at to light up every mention → `sb-id`
+- Everything on the page that can be pointed at, as an outline → `sb-outliner`
+- What something is, when people point at it → `sb-inspect-mode`
+- Why something is there, traced back on a click → `sb-trace-mode`
+- A screen or clickable flow of an interface → `sb-wireframe`
+
+### Laying out the page
+
+- Chapters or views, one at a time → `sb-tabs`
+- Sections that open and close, saying what changed inside → `sb-accordion`
+- A view people can pop out, move and dock back → `sb-panel`
+- The one thing that needs attention now, over the page → `sb-modal`
+- Notes, sources and diagrams together on a board to pan and zoom → `sb-board`
+
+### Working with people
+
+- Comments from people exploring, gathered for the agent → `sb-comments`
+- A question put to a group, answers hidden until all are in → `sb-poll`
+- A prediction made before the reveal → `sb-poll`
+- Who someone is, and everywhere they appear → `sb-person`
+- A workshop's record, in sections to filter and move through → `sb-notebook`
+- Handing something to the agent, and showing its reply → `sb-handoff`
+- A decision a group records together → `sb-choice`
+
+### Sources and evidence
+
+- The sandbox's source material, to search and filter → `sb-sources`
+- One source, with the passages the model cites marked → `sb-source`
+- What something rests on, back to its sources → `sb-lineage`
+- Discovering a domain on purpose: cards of claims, questions and decisions → `sb-discovery-card`, `discovery`
+- Weighing claims, and what stands as of each iteration → `discovery`
+
 ## Tools
 
 Run from a Sandkit clone with Node. Not copied into sandboxes.
