@@ -1,7 +1,7 @@
 // Tests for the tools. Plain assertions, no libraries; run with `node tools/test.mjs`.
 
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, request } from 'node:http';
 import { networkInterfaces, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 
 const SETUP = resolve(fileURLToPath(import.meta.url), '../setup.mjs');
 const COMPONENTS = resolve(fileURLToPath(import.meta.url), '../../components');
+const MECHANISMS = resolve(fileURLToPath(import.meta.url), '../../mechanisms');
+const FIXTURE_MECHANISM = resolve(fileURLToPath(import.meta.url), '../fixtures/mechanism');
 
 // Tests run one after another, each waiting for the last, so a test can be async.
 let queue = Promise.resolve();
@@ -145,6 +147,40 @@ test('an engine is copied with its manifest and changelog, tagged once, recorded
   assert(/- discovery \d+\.\d+\.\d+/.test(source) && source.includes('- engines/discovery/discovery.js'), 'its version and files recorded');
 });
 
+// Sandkit has no mechanisms yet, so the fixture stands in for one in mechanisms/ while a test runs.
+async function withFixtureMechanism(name, fn) {
+  const folder = join(MECHANISMS, name);
+  assert(!existsSync(folder), `mechanisms/${name} already exists`);
+  cpSync(join(FIXTURE_MECHANISM, 'lib/sandkit/mechanisms/sb-tally'), folder, { recursive: true });
+  if (name !== 'sb-tally') renameSync(join(folder, 'sb-tally.js'), join(folder, `${name}.js`));
+  try { await fn(); } finally { rmSync(folder, { recursive: true, force: true }); }
+}
+
+test('a mechanism is copied with its manifest and changelog, tagged once before model.js, recorded, and kept on update', (sandbox) => withFixtureMechanism('sb-tally', () => {
+  setup(sandbox, 'sb-log', 'sb-tally');
+  for (const file of ['sb-tally.js', 'manifest.md', 'CHANGELOG.md']) assert(existsSync(join(sandbox, `lib/sandkit/mechanisms/sb-tally/${file}`)), `missing ${file}`);
+  setup(sandbox);
+  const lines = read(sandbox, 'index.html').split('\n').map((line) => line.trim());
+  const tag = '<script src="lib/sandkit/mechanisms/sb-tally/sb-tally.js"></script>';
+  assertEqual(lines.filter((line) => line === tag).length, 1);
+  assertEqual(lines[lines.indexOf(tag) + 1], '<script src="model.js"></script>');
+  const source = read(sandbox, 'lib/sandkit/SOURCE.md');
+  assert(source.includes('- sb-tally 0.1.0') && source.includes('- mechanisms/sb-tally/sb-tally.js'), 'its version and files recorded');
+}));
+
+test('a sandbox\'s model loads a mechanism set up in it, under Node', (sandbox) => withFixtureMechanism('sb-tally', () => {
+  setup(sandbox, 'sb-tally');
+  cpSync(join(FIXTURE_MECHANISM, 'model.js'), join(sandbox, 'model.js'));
+  const turnedAway = execFileSync('node', ['-e', 'console.log(require("./model.js").createModel().stock(5))'], { cwd: sandbox, encoding: 'utf8' });
+  assertEqual(turnedAway.trim(), '2');
+}));
+
+test('a name that\'s both a component and a mechanism is refused, before anything is copied', (sandbox) => withFixtureMechanism('sb-log', () => {
+  const result = setup(sandbox, 'sb-log');
+  assert(!result.ok && result.output.includes('more than one of Sandkit\'s components and mechanisms'), 'explains');
+  assert(!existsSync(join(sandbox, 'index.html')), 'nothing copied');
+}));
+
 test('a new sandbox gets sandbox.js, the page template, the sources folder, and the export, serve and sources tools', (sandbox) => {
   setup(sandbox);
   for (const file of ['sandbox.js', 'lib/sandkit/templates/page.html', 'lib/sandkit/tools/export.mjs', 'lib/sandkit/tools/serve.mjs', 'lib/sandkit/tools/sources.mjs', 'sources/catalogue.json', 'sources/inbox/.gitkeep', 'lib/sandkit/shell/sb-export.js']) {
@@ -185,7 +221,7 @@ test('SOURCE.md records the repository, commit, date and every file copied', (sa
 
 test('an unknown component is refused before anything is copied', (sandbox) => {
   const result = setup(sandbox, 'sb-nothing');
-  assert(!result.ok && result.output.includes('no component or engine called sb-nothing'), 'explains');
+  assert(!result.ok && result.output.includes('no component, engine or mechanism called sb-nothing'), 'explains');
   assert(!existsSync(join(sandbox, 'index.html')), 'nothing copied');
 });
 

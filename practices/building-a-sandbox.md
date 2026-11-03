@@ -38,20 +38,22 @@ Then sketch the chapters: one line each, starting with the most fundamental idea
 
 The sandbox lives in its own folder. Fetch Sandkit (for example `git clone --depth 1 https://github.com/sebjwallace/sandkit` into a temporary location).
 
-**If Node is available,** one command does all of the setup below, and running it again adds components or engines, or updates the copies. Name components by their tag and engines by their folder:
+**If Node is available,** one command does all of the setup below, and running it again adds components, engines or mechanisms, or updates the copies. Name components and mechanisms by their names, and engines by their folder:
 
 ```sh
 node <sandkit>/tools/setup.mjs <sandbox-folder> sb-log sb-id
 node <sandkit>/tools/setup.mjs <sandbox-folder> discovery
+node <sandkit>/tools/setup.mjs <sandbox-folder> sb-store
 ```
 
 **Otherwise, copy by hand,** with a copy command (`cp`) or the file manager. Never copy by reading each file and writing it out: that puts every script's source into your context, which is the reading Sandkit exists to save.
 
 1. **Copy the template.** Copy the contents of `templates/sandbox/` into the sandbox folder. Then paste the catalog's **Find by need** section, without its heading, between the `sandkit:find-by-need` markers in the sandbox's `AGENTS.md`, and again whenever you update Sandkit.
 2. **Copy what the sandbox uses into `lib/sandkit/`, keeping Sandkit's own paths.** Links between manifests and practices then still work.
-   - Always: `CATALOG.md`, `CHANGELOG.md`, `STYLE.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`, and `sb-comments` (below), which the template uses.
+   - Always: `CATALOG.md`, `CHANGELOG.md`, `STYLE.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `practices/mechanisms.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`, and `sb-comments` (below), which the template uses.
    - For each component used: `components/<name>/<name>.js`, `components/<name>/manifest.md` and `components/<name>/CHANGELOG.md`.
    - For each engine used, when the sandbox follows a method that has one, such as domain discovery: `engines/<name>/<name>.js`, `engines/<name>/manifest.md` and `engines/<name>/CHANGELOG.md`, with a script tag for it like a component's.
+   - For each mechanism the model uses: `mechanisms/<name>/<name>.js`, `mechanisms/<name>/manifest.md` and `mechanisms/<name>/CHANGELOG.md`, with a script tag for it **before** `model.js`'s, since the model needs it when it loads.
    - Every practice the sandbox follows, from `practices/`.
    - Not tests or demos. They stay in Sandkit.
 3. **Record the source and versions** in `lib/sandkit/SOURCE.md`. Each version is the top entry of its changelog, and also appears in its script's first line.
@@ -65,12 +67,12 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> discovery
    - sb-log 0.1.0
 
    ## Files
-   - CATALOG.md, CHANGELOG.md, STYLE.md, practices/building-a-sandbox.md, practices/journal.md, practices/identifiers.md
+   - CATALOG.md, CHANGELOG.md, STYLE.md, practices/building-a-sandbox.md, practices/journal.md, practices/mechanisms.md, practices/identifiers.md
    - shell/sb-theme-settings.js, shell/sb-shell.js, shell/sb-export.js, shell/manifest.md, shell/CHANGELOG.md
    - templates/page.html, tools/export.mjs
    - components/sb-log/sb-log.js, components/sb-log/manifest.md, components/sb-log/CHANGELOG.md
    ```
-4. **Add a script tag** for each component to the page that uses it, after the shell's.
+4. **Add a script tag** for each component to the page that uses it, after the shell's, and for each mechanism before `model.js`'s.
 
 ```
 my-sandbox/
@@ -81,7 +83,8 @@ my-sandbox/
     templates/    page.html
     tools/        export.mjs
     components/   sb-log/  sb-log.js  manifest.md  CHANGELOG.md
-    practices/    building-a-sandbox.md  journal.md  identifiers.md
+    mechanisms/   sb-store/  sb-store.js  manifest.md  CHANGELOG.md
+    practices/    building-a-sandbox.md  journal.md  mechanisms.md  identifiers.md
 ```
 
 **Use components through their manifests. Don't read their source.** The work of building a component was done once, so a sandbox can reuse it cheaply; the manifest is the part you need, at about a third of the size, and reading the source spends the tokens Sandkit is meant to save. If a component seems not to do what its manifest says, check the manifest and its changelog first, and read the source only as a last resort. Never edit files in `lib/`. To change a component, eject it into the sandbox's own `components/` folder, as `AGENTS.md` describes.
@@ -99,6 +102,15 @@ Put the goal in `sandbox.js`, which shows it in the header of every page, where 
 The model in `model.js` is the heart of the sandbox: the subject captured as code that runs. Build it before any interface.
 
 **The model is the domain, and only the domain.** It captures the subject's things, rules and behaviour as plain data and functions, and knows nothing outside itself: no page, no components, no saving, no network, no clock (pass time in). Given the same input it gives the same output, so it can be tested on its own and lifted into another sandbox or tool unchanged.
+
+**Compose it from mechanisms where they fit.** Mechanisms are the reusable parts of domain models: a store that fills and runs dry, an input that varies over time. Read the [mechanisms practice](mechanisms.md) before building the model.
+
+**Plan the model's parts first.** Before building the model, or any later change that adds to it, list what it needs, and against each write what serves it:
+
+- a Sandkit mechanism, found in **Find by need** in `AGENTS.md` (or the [catalog](../CATALOG.md#find-by-need)), or
+- **by hand**, naming the mechanisms considered and why none fits.
+
+Mark a part built by hand **candidate** if it seems general beyond this subject: a possible future Sandkit mechanism. It goes in the same journal **Parts** line as the page's parts. Until the catalog has mechanisms, this simply records the model's parts, which is where candidates come from.
 
 **Everything else depends on the model, never the other way round.** Preparing what the page shows (labels, grouping, what's lit, the shape a component wants) is a view model's job: functions in the page, or in `view.js` once several pages share them, that read the model and never change its rules. Saving, loading and wiring live in the page. If the model would need to change only because a view did, that code belongs in the view model.
 
@@ -185,7 +197,8 @@ Try first:      the one thing to do first
 What it shows:  one line per chapter built
 Checked:        what was checked, if anything, or what the person should look at
 Assumed:        what is simplified or rests on assumptions
-Built by hand:  parts made without a component, and why (from the journal's Parts)
+Built by hand:  parts of the page or model made without a component or
+                mechanism, and why (from the journal's Parts)
 Rough edges:    known issues left for later
 Feedback:       if comments came in, which ones this iteration answered (FB- codes)
 Next:           2–4 named directions, each with what it adds and what it costs

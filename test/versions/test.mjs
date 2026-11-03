@@ -47,6 +47,15 @@ for (const name of readdirSync(join(ROOT, 'engines')).filter((name) => !name.sta
   });
 }
 
+// Folders only, so mechanisms/.gitkeep, there while it's empty, is never taken for one.
+const mechanisms = readdirSync(join(ROOT, 'mechanisms'), { withFileTypes: true }).filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'));
+for (const { name } of mechanisms) {
+  test(`mechanisms/${name}: its script states its changelog's latest version`, () => {
+    const version = checkChangelog(`mechanisms/${name}/CHANGELOG.md`);
+    assert(headerVersion(`mechanisms/${name}/${name}.js`) === version, `header says ${headerVersion(`mechanisms/${name}/${name}.js`)}, changelog says ${version}`);
+  });
+}
+
 test('shell: every script states its changelog\'s latest version', () => {
   const version = checkChangelog('shell/CHANGELOG.md');
   for (const script of ['shell/sb-shell.js', 'shell/sb-theme-settings.js', 'shell/sb-export.js']) {

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Mechanisms: loading in a page</title>
+  <script src="../harness.js"></script>
+  <!-- A sandbox page loads its mechanisms first, then the model that composes them. -->
+  <script src="../../tools/fixtures/mechanism/lib/sandkit/mechanisms/sb-tally/sb-tally.js"></script>
+  <script src="../../tools/fixtures/mechanism/model.js"></script>
+</head>
+<body>
+  <script>
+    // The Node half of this check is in test.mjs, which requires the same model.
+    test('a model finds a mechanism loaded before it, without declaring it again', () => {
+      const model = createModel();
+      assertEqual(model.stock(5), 2);
+      assertEqual(model.onShelf, 3);
+    });
+  </script>
+</body>
+</html>

@@ -3,6 +3,7 @@
 //
 //   node tools/setup.mjs path/to/sandbox sb-id sb-log
 //   node tools/setup.mjs path/to/sandbox discovery                   an engine, named by its folder
+//   node tools/setup.mjs path/to/sandbox sb-store                    a mechanism, named by its folder
 //   node tools/setup.mjs path/to/sandbox sb-log --page stock.html    tags go on another page
 //
 // - A folder without an index.html starts from the template. Existing files are never overwritten.
@@ -11,9 +12,10 @@
 //   between <!-- sandkit:find-by-need --> markers. Only what's between them is replaced; without them (an older sandbox),
 //   the block is added at the end of the Sandkit components section, or of the file. Nothing outside it changes.
 // - Copies the shell, the catalog, the style guide, the practices, the page template, the export, serve and sources tools, sb-comments
-//   (the template's comment mode), and each named component or engine (plus any the sandbox already has) into lib/sandkit/, keeping Sandkit's
-//   paths, with their manifests and changelogs.
-// - Adds a script tag to index.html, or the page named, for each component or engine named that doesn't have one yet.
+//   (the template's comment mode), and each named component, engine or mechanism (plus any the sandbox already has) into lib/sandkit/,
+//   keeping Sandkit's paths, with their manifests and changelogs.
+// - Adds a script tag to index.html, or the page named, for each component, engine or mechanism named that doesn't have one yet:
+//   a mechanism's before model.js's, since the model needs it when it loads, and the rest after the last Sandkit script.
 // - Writes lib/sandkit/SOURCE.md, recording every version.
 // - When updating, reports what changed since the installed versions, breaking changes first.
 // - A retired component a sandbox still has is left as it is, with a note of what replaces it.
@@ -44,13 +46,14 @@ function setup(folder, requested, page = 'index.html') {
   if (!existsSync(join(sandbox, page))) fail(`${folder} has no page called ${page}. Start one from lib/sandkit/templates/page.html.`);
 
   const kept = installedIn(lib, 'components').filter((name) => RETIRED[name]);
-  const components = [...new Set([...EVERY_SANDBOX, ...installedIn(lib, 'components'), ...requested.filter((name) => !isEngine(name))])]
+  const components = [...new Set([...EVERY_SANDBOX, ...installedIn(lib, 'components'), ...requested.filter((name) => kindOf(name) === 'components')])]
     .filter((name) => !RETIRED[name]);
   const engines = [...new Set([...installedIn(lib, 'engines'), ...requested.filter(isEngine)])];
-  const packages = ['shell', ...components, ...engines].map(packageOf);
+  const mechanisms = [...new Set([...installedIn(lib, 'mechanisms'), ...requested.filter(isMechanism)])];
+  const packages = ['shell', ...components, ...engines, ...mechanisms].map(packageOf);
   const installed = Object.fromEntries(packages.map((p) => [p.name, versionIn(join(lib, p.script))]));
 
-  const files = [...ALWAYS_COPIED, ...practices(), ...components.flatMap(componentFiles), ...engines.flatMap(engineFiles)];
+  const files = [...ALWAYS_COPIED, ...practices(), ...[...components, ...engines, ...mechanisms].flatMap(filesOf)];
   for (const file of files) {
     mkdirSync(dirname(join(lib, file)), { recursive: true });
     cpSync(join(SANDKIT, file), join(lib, file));
@@ -60,7 +63,7 @@ function setup(folder, requested, page = 'index.html') {
   writeFileSync(join(lib, 'SOURCE.md'), sourceRecord(files, versions));
 
   console.log(isNew ? `Created ${folder} from the template.` : `Updated ${folder}.`);
-  const parts = [...components, ...engines.map((name) => `the ${name} engine`)];
+  const parts = [...components, ...engines.map((name) => `the ${name} engine`), ...mechanisms.map((name) => `the ${name} mechanism`)];
   console.log(`Copied ${files.length} files into lib/sandkit/${parts.length ? `, with ${parts.join(', ')}` : ''}.`);
   if (indexChanged && !isNew) console.log('Refreshed the Find by need index in AGENTS.md.');
   if (tagged.added.length) console.log(`Added script tags for ${tagged.added.join(', ')} to ${page}.`);
@@ -71,16 +74,21 @@ function setup(folder, requested, page = 'index.html') {
 
 // ---- What to copy ----
 
-// An engine is named by its folder in engines/, a component by its tag.
-const isEngine = (name) => existsSync(join(SANDKIT, 'engines', name));
+// Every part is named by its folder: a component's is its tag, a mechanism's its sb- name, an engine's its method.
+const KINDS = ['components', 'engines', 'mechanisms'];
+const kindsOf = (name) => KINDS.filter((kind) => existsSync(join(SANDKIT, kind, name)));
+const kindOf = (name) => kindsOf(name)[0] ?? 'components';
+const isEngine = (name) => kindOf(name) === 'engines';
+const isMechanism = (name) => kindOf(name) === 'mechanisms';
 
-// Only components and engines with a manifest are ready for sandboxes; the rest are still in progress.
+// Only parts with a manifest are ready for sandboxes; the rest are still in progress.
 function checkAvailable(name) {
   if (RETIRED[name]) fail(`${name} is retired from Sandkit. Use ${RETIRED[name]} instead: see CATALOG.md.`);
-  const folder = join(SANDKIT, isEngine(name) ? 'engines' : 'components', name);
+  if (kindsOf(name).length > 1) fail(`${name} is in more than one of Sandkit's ${kindsOf(name).join(' and ')}, so it can't tell which you mean. Rename one of them.`);
+  const folder = join(SANDKIT, kindOf(name), name);
   if (existsSync(join(folder, 'manifest.md'))) return;
   if (existsSync(folder)) fail(`${name} is still in progress (see CATALOG.md), so it can't be set up yet.`);
-  fail(`Sandkit has no component or engine called ${name}. See CATALOG.md for what's available.`);
+  fail(`Sandkit has no component, engine or mechanism called ${name}. See CATALOG.md for what's available.`);
 }
 
 function installedIn(lib, kind) {
@@ -89,9 +97,8 @@ function installedIn(lib, kind) {
 }
 
 const practices = () => readdirSync(join(SANDKIT, 'practices')).map((file) => `practices/${file}`);
-const componentFiles = (name) => [`components/${name}/${name}.js`, `components/${name}/manifest.md`, `components/${name}/CHANGELOG.md`];
-const engineFiles = (name) => [`engines/${name}/${name}.js`, `engines/${name}/manifest.md`, `engines/${name}/CHANGELOG.md`];
-const scriptOf = (name) => (isEngine(name) ? `engines/${name}/${name}.js` : `components/${name}/${name}.js`);
+const scriptOf = (name) => `${kindOf(name)}/${name}/${name}.js`;
+const filesOf = (name) => [scriptOf(name), `${kindOf(name)}/${name}/manifest.md`, `${kindOf(name)}/${name}/CHANGELOG.md`];
 
 // Sandboxes set up before the template had CLAUDE.md get it now; one already there is the sandbox's own.
 function addAgentPointer(sandbox) {
@@ -138,18 +145,23 @@ function withIndex(text, block) {
 // Matches script tags that stand on their own line, so commented-out examples don't count.
 const SANDKIT_TAG = /^([ \t]*)<script src="(lib\/sandkit\/[^"]+)"><\/script>$/gm;
 
-// New tags go after the last Sandkit script tag, so they load after the shell.
-function addScriptTags(indexPath, components) {
+const MODEL_TAG = /^([ \t]*)<script src="model\.js"><\/script>$/m;
+
+// A mechanism's tag goes just before model.js's, since the model needs it when it loads.
+// Other tags, and a mechanism's on a page without the model, go after the last Sandkit script tag,
+// so they load after the shell.
+function addScriptTags(indexPath, parts) {
   let html = readFileSync(indexPath, 'utf8');
   const added = [], missing = [];
-  for (const name of components) {
+  for (const name of parts) {
     const src = `lib/sandkit/${scriptOf(name)}`;
     const tags = [...html.matchAll(SANDKIT_TAG)];
     if (tags.some((tag) => tag[2] === src)) continue;
+    const modelTag = isMechanism(name) && html.match(MODEL_TAG);
     const lastTag = tags.at(-1);
-    if (!lastTag) { missing.push(name); continue; }
-    const end = lastTag.index + lastTag[0].length;
-    html = `${html.slice(0, end)}\n${lastTag[1]}<script src="${src}"></script>${html.slice(end)}`;
+    if (modelTag) html = `${html.slice(0, modelTag.index)}${modelTag[1]}<script src="${src}"></script>\n${html.slice(modelTag.index)}`;
+    else if (lastTag) html = `${html.slice(0, lastTag.index + lastTag[0].length)}\n${lastTag[1]}<script src="${src}"></script>${html.slice(lastTag.index + lastTag[0].length)}`;
+    else { missing.push(name); continue; }
     added.push(name);
   }
   writeFileSync(indexPath, html);
@@ -157,7 +169,7 @@ function addScriptTags(indexPath, components) {
 }
 
 // ---- Versions ----
-// A component's or engine's version is the top entry of its changelog, repeated in its script's first line
+// A component's, engine's or mechanism's version is the top entry of its changelog, repeated in its script's first line
 // ("// Sandkit sb-log 0.1.0 · …"), so a copied script always says what it is. The shell's two
 // scripts share one version.
 
@@ -243,5 +255,5 @@ const args = process.argv.slice(2);
 const pageAt = args.indexOf('--page');
 const page = pageAt >= 0 ? args.splice(pageAt, 2)[1] : 'index.html';
 const [folder, ...requested] = args;
-if (!folder || !page) fail('Usage: node tools/setup.mjs <sandbox-folder> [component or engine ...] [--page <page.html>]');
+if (!folder || !page) fail('Usage: node tools/setup.mjs <sandbox-folder> [component, engine or mechanism ...] [--page <page.html>]');
 setup(folder, requested, page);

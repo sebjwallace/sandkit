@@ -1,7 +1,12 @@
 // The domain model: the subject captured as code that runs.
 // Pure domain only: it knows nothing of pages, components, saving or the clock.
 // Shaping state for display is the view model's job, in the page or view.js.
+// Compose it from mechanisms where they fit (see lib/sandkit/practices/mechanisms.md).
 // The page reads `state`, calls `step()` and `reset()`, and changes options.
+
+// Mechanisms load before this file in each page. Under Node, for model tests, the model loads
+// them itself, one line each (declaring them in the page again would fail):
+// if (typeof module !== 'undefined') globalThis.SbStore = require('./lib/sandkit/mechanisms/sb-store/sb-store.js');
 
 // The rules the model follows, with codes to cite them by (see lib/sandkit/practices/identifiers.md).
 const RULES = [

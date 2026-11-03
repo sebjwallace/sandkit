@@ -9,7 +9,7 @@ Sandkit is a toolkit for domain sandboxing. Read `README.md` for what it is, `DE
 - **One small step at a time, with the author deciding.** Propose briefly, recommend, then build. Keep answers short.
 - **Simplicity first.** Push back on anything, including the author's own ideas, that adds complexity it doesn't earn.
 - **Code that reads clearly:** small named helpers, comments only where intent isn't obvious, no cleverness, no bloat.
-- **Components never reference each other.** Composition happens in sandboxes, through slots and the `sb-highlight` event, as the practices describe; a manifest never names another component. `test/isolation` enforces it.
+- **Components never reference each other.** Composition happens in sandboxes, through slots and the `sb-highlight` event, as the practices describe; a manifest never names another component. `test/isolation` enforces it. Mechanisms likewise never reference each other, components or engines; the domain model composes them.
 
 ## Adding or changing a component
 
@@ -28,9 +28,24 @@ A component is done when it has all of these:
 
 **Changing a committed component:** add a changelog entry and bump the version (until 1.0: breaking changes raise the minor version, anything else the patch), and update the script's first line to match. `test/versions` checks they agree.
 
+## Adding or changing a mechanism
+
+**Mechanisms compute; components render; neither knows the other.** A mechanism is a pure part of a domain model, general across subjects; read `practices/mechanisms.md` and the principles in `CONTRIBUTING.md` first.
+
+A mechanism is done when it has all of these:
+
+1. `mechanisms/sb-name/sb-name.js`, first line `// Sandkit sb-name 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit`, one classic script declaring exactly one global named after it (`SbStore` in `sb-store.js`), ending `if (typeof module !== 'undefined') module.exports = SbStore;`. Its name is unique among components and mechanisms alike. `test/mechanisms` checks it's pure.
+2. `manifest.md`, short, opening with "Use this mechanism through the interface below…" and naming the mechanisms practice: purpose, settings, inputs and outputs each with its unit, operations, invariants, and one example of composing it.
+3. `CHANGELOG.md`, newest first, `## x.y.z · yyyy-mm-dd`.
+4. `test.mjs`: regression tests from at least three unrelated subjects, each named for its subject, and invariance tests over seeded random settings.
+5. `demo.html`: the mechanism at work for people, through views written by hand and styled as `STYLE.md` describes: **About** (where it helps, where something else fits, getting started) then **Examples** in two contrasting domains. It loads its own mechanism and the shell; a component copied in to show it is the exception, not the rule.
+6. A line in `CATALOG.md` and a line in its Find by need for each need it serves, and a decision in `DECISIONS.md` if one was made. Give the new mechanism count in the root `CHANGELOG.md` entry, as for components.
+
+Changing a committed mechanism follows the same versioning as a component, and every existing test must still pass, or the change must show that a test was too narrow.
+
 ## Checking work
 
-- **While working, test only what you changed.** Components share nothing, so a change to one can't affect another: run that component's own `test.html`, and nothing else. Add `node test/versions/test.mjs` after a version bump, and `test/collisions` and `test/isolation` when adding a component. Run tests only when the change needs checking. To run one page:
+- **While working, test only what you changed.** Components share nothing, so a change to one can't affect another: run that component's own `test.html`, and nothing else. Add `node test/versions/test.mjs` after a version bump, `test/collisions` and `test/isolation` when adding a component, and a mechanism's own `test.mjs` with `node test/mechanisms/test.mjs` when adding or changing a mechanism. Run tests only when the change needs checking. To run one page:
   `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --allow-file-access-from-files --user-data-dir=<fresh temp dir> --virtual-time-budget=10000 --dump-dom file://<page>`
   The results are the JSON in `#test-results`. Delete the temp dir afterwards. `node test/run.mjs` takes no path: given one, it still runs everything.
 - **The full suite once, before committing:** `node test/run.mjs` (headless Chrome for every `test.html`, Node for every `test.mjs`). It must pass. Running it earlier is the exception, for a change that really reaches across Sandkit (the shell, the harness, the runner), never the habit.

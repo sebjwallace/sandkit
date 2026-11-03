@@ -10,6 +10,15 @@ Open an issue describing:
 - **Where it would be used.** At least two quite different sandboxes, to show it is general rather than tied to one domain.
 - **Its interface.** The data it takes, the events it fires, and any methods.
 
+## Proposing a mechanism
+
+Open an issue describing:
+
+- **What it does,** generically: the piece of how things work it captures.
+- **Three unrelated subjects it serves,** with what it stands for in each, such as a store as a rainwater tank, a home battery and a bank account.
+- **Its settings, and why each is needed:** which subjects need it, and what it opens up.
+- **Its invariants:** what holds for any settings, such as nothing created or lost.
+
 ## Principles
 
 Every component, and every change to one, should hold to these. [DECISIONS.md](DECISIONS.md) records the reasoning behind each.
@@ -23,6 +32,22 @@ Every component, and every change to one, should hold to these. [DECISIONS.md](D
 - **Small and clear.** Plain JavaScript, no build step, no installs. Code that reads almost like an explanation of itself, without growing bigger for the sake of it.
 - **Safe to package.** A classic script with no fetches or external assets, so it survives single-file export.
 
+## Principles of a mechanism
+
+A mechanism is a reusable part of a domain model; the [mechanisms practice](practices/mechanisms.md) says how they're used and how they grow. Every mechanism, and every change to one, should hold to these.
+
+- **Pure, plain JavaScript.** Pure functions over plain data, no framework or library. It knows nothing of Sandkit: no components, engines, other mechanisms, shell, DOM, storage or network, so it could be lifted into any project and still work.
+- **Values in, values out.** Operations return new values, never changing what they're given, and each returns what happened (added, spilled, supplied, short), not only the new state.
+- **Time and randomness passed in.** The step length, the time and a random function are arguments; it never reads a clock or calls `Math.random`.
+- **Domain-free.** No name, setting or output names a domain concept. Rename every domain noun to a generic one: if it still makes sense, it belongs.
+- **Configured, never specialised.** A setting is earned when two unrelated subjects need it. Compose before adding options; a flag that changes what it fundamentally does means another mechanism. What changes over time is an argument to each step. Behavioural choices are short named lists of recognised policies, each tested. No hooks taking custom functions.
+- **Units declared.** Plain numbers, with every setting, input and output's unit in the script and the manifest, and checked in tests.
+- **Single values, not ranges.** A model working in ranges runs it once per value.
+- **Contained.** One global, its name with the `sb-` prefix in capitals (`SbStore` for `sb-store`), so it's unlikely to clash wherever it's used and always reads as Sandkit's. Names are unique across components and mechanisms.
+- **Independent.** Mechanisms never call each other; the domain model composes them.
+- **Small, with a smaller manifest.** Using one must be clearly cheaper than writing one.
+- **Proven general by its tests.** Regression tests from at least three unrelated subjects, and invariance tests over seeded random settings. A change must pass them all, or show that a test was itself too narrow.
+
 ## What a component needs
 
 ```
@@ -35,6 +60,19 @@ components/sb-example/
 ```
 
 `sb-log` is a good model to follow. Before styling a component, or changing how one looks, read [STYLE.md](STYLE.md): it says which tokens, tones and materials to use, and which other components share a look. Components stay isolated, and the guide is what keeps them consistent: change only the component you're working on, and ask before changing any other to match. Add the component to [CATALOG.md](CATALOG.md), and its tag to the lists in `test/collisions/test.html` and `test/isolation/test.html`.
+
+## What a mechanism needs
+
+```
+mechanisms/sb-example/
+  sb-example.js   one classic script, one global (SbExample); its first line names it, with its version and licence
+  manifest.md     short: purpose, settings, inputs, outputs with units, operations, invariants, an example
+  CHANGELOG.md    one entry per release, newest first
+  test.mjs        regression tests from three unrelated subjects, and invariance tests
+  demo.html       the mechanism at work, through views written by hand
+```
+
+Add the mechanism to [CATALOG.md](CATALOG.md), under Mechanisms and in Find by need.
 
 ## Versions and changelogs
 

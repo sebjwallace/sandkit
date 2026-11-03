@@ -136,6 +136,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [Modes](practices/modes.md) | Other ways of using a sandbox for a while, such as commenting or tracing: one shape for every mode, and one at a time through the page-wide `sb-mode` event. Supported by the modes below. |
 | [Workshops](practices/workshops.md) | Working through a sandbox's model with the people who know the subject, until they understand it, have corrected it and own it: principles, roles, preparing, the workshop page, activities (predict and reveal, confidence checks, forks, checking sources, questions, decisions), the round trip with the agent, and closing. Supported by `sb-notebook`, `sb-person`, `sb-poll`, `sb-handoff` and `sb-choice`. |
 | [Domain discovery](practices/domain-discovery.md) | Discovering a domain on purpose, an iteration at a time: a record of cards that are never edited, each kind and what it's for, tags declared with what they mean, weighing claims, growing and trying the model, feedback from people who know the domain, and showing the cards on three boards per iteration. Supported by `sb-discovery-card` and `sb-lineage`. |
+| [Mechanisms](practices/mechanisms.md) | Building a domain model from mechanisms, the reusable parts of domain models: when to use one, composing them in `model.js` and how things interact, configuring, ranges, loading in a page and in Node, ejecting one to change it, and how candidates become mechanisms. |
 | [Feedback](practices/feedback.md) | Collecting comments with `sb-comments`, and what the agent does on receiving them: saved as sources, `FB-` codes, answered in the journal. Supported by `sb-comments`. |
 
 ## Shell
@@ -165,6 +166,12 @@ Components and the engine for domain discovery, which never know each other: the
 | Engine | What it works out |
 |---|---|
 | [`discovery`](engines/discovery/manifest.md) | The method's rules, from the sandbox's records: weighing claims on the excerpts they cite, every status as of any iteration, what rests on what and what each link means, what each iteration shows or has standing, what replaces what, every excerpt a record rests on, every tag and what it means, and the model's runs and compression signal. |
+
+## Mechanisms
+
+Reusable parts of domain models: small, pure pieces of how something works, composed in a sandbox's `model.js`. They know nothing of components, engines or each other. Read the [mechanisms practice](practices/mechanisms.md) first.
+
+None yet. The first will be a store, then a driver, allocation and conversion.
 
 ## Components
 

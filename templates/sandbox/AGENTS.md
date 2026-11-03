@@ -54,6 +54,7 @@ Every place personal data is kept, so nothing is shared by accident: what kind, 
 | `lib/sandkit/` | Sandkit components, shell and practices, copied in. See `SOURCE.md` for where they came from. |
 | `parts.js` | Functions returning HTML for parts used on more than one page or chapter, if any. |
 | `components/` | Components this sandbox owns (ejected or written here), if any. |
+| `mechanisms/` | Mechanisms this sandbox owns (ejected), if any. |
 
 ## Sandkit components
 
@@ -68,6 +69,15 @@ What serves each need, kept current from `lib/sandkit/CATALOG.md` by Sandkit's s
 
 <!-- sandkit:find-by-need -->
 <!-- /sandkit:find-by-need -->
+
+## Sandkit mechanisms
+
+**Before writing any part of the domain model, find it among the mechanisms in the index above.** Write it by hand only when nothing fits, and record why in the journal's Parts line (see the building guide, step 4). Read `lib/sandkit/practices/mechanisms.md` before building or changing the model.
+
+- **Use them through their manifests** (`lib/sandkit/mechanisms/<name>/manifest.md`), never their source.
+- **Don't edit anything in `lib/`.**
+- **To change a mechanism, eject it:** copy its folder into `mechanisms/`, rename it with this sandbox's own prefix (its folder, file and global: `sb-store` and `SbStore` become, say, `wh-store` and `WhStore`), note where it came from at the top of the file, and point the model and pages at the new copy. From then on it belongs to this sandbox.
+- **Compose them in `model.js`,** never inside each other, naming things for what they are in the subject.
 
 ## This sandbox's components
 

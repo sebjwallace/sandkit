@@ -22,6 +22,8 @@ A domain sandbox is a small, self-contained application that houses an interacti
 
 The **model** is the core: the subject captured as code that runs. It expresses the rules, the moving parts, the cause and effect. Code alone is as opaque as anything else, so the sandbox surrounds it with things you can see, handle and experiment with: simulations, controls, scenarios to play out, tables that highlight which rule has just applied, diagrams that respond as the model changes.
 
+So a sandbox has two models. The **domain model** is the subject itself, and knows nothing of how it's shown. The **view model** prepares what each page shows from it. The view model uses the domain model, never the other way round, so the subject stays clear of the screen and can be tested, trusted and carried elsewhere on its own.
+
 Alongside these sit the explanation, the sources, and whatever else helps. A sandbox can be organised into chapters, so a subject is worked through one stage at a time, much as a well-designed game introduces one idea before the next.
 
 AI does most of the building. You do the exploring, the questioning and the steering.
@@ -98,6 +100,14 @@ A trustworthy sandbox makes clear where everything came from. Any behaviour in t
 
 Sandkit's [sources practice](practices/sources.md) keeps this record. The material a sandbox is built from is kept beside it and catalogued, every rule, figure and assumption in the model cites the passages it rests on, and anything on the page can be traced back to them: click a button, ask why it's there, and follow the reasoning to the very words of an interview or a standard. Gaps show too: something resting on nothing cited is marked as such. A journal of every change, and why, means whoever takes up a sandbox later knows what is understood, what is still open, and where to begin.
 
+## Why it's built from parts
+
+Building a good part takes a lot of energy up front: thought, attempts, edge cases found and fixed, tests written, until it settles and matures. That energy isn't lost. Like metal cast in a foundry, it is spent once, at heat, and then held in the finished part, which can be used again and again, for purposes nobody foresaw. The part pays back far more than it cost.
+
+An AI assistant can build everything from scratch, and it works. But it spends that energy every time, and keeps none of it. Sandkit exists to capture what goes into domain sandboxing and deposit it in parts, so it compounds rather than evaporates.
+
+The value of a part is in what it does, not in how much of it there is. A mature part may be only a few dozen lines, yet hold every lesson learnt along the way.
+
 ## What is in this repository
 
 Sandboxes for very different subjects tend to need the same kinds of pieces: logs, parameters, identifying codes, charts, diagrams. Sandkit provides these as ready-made parts, so each sandbox can concentrate on its subject rather than its scaffolding. An agent uses each part through its manifest, a short contract, rather than reading its code, so the work that went into a part is spent once and costs little each time it's reused.
@@ -108,6 +118,7 @@ sandkit/
   AGENTS.md         how agents work on Sandkit itself
   practices/        guides to doing things well, starting with building a sandbox
   components/       reusable building blocks, each in its own folder with a demo
+  mechanisms/       reusable parts of domain models, each with its tests
   engines/          a method's rules, written once, for sandboxes that follow it
   shell/            the environment around a sandbox: header, settings, theming
   templates/        the starting point for a new sandbox
@@ -120,6 +131,8 @@ sandkit/
 ```
 
 **Components** are the parts you see and work with. They give you and the AI a shared, visual way to engage with a model, rather than exchanging only text. Each finished component has a demo that shows it at work and explains where it helps.
+
+**Mechanisms** are the same idea for the domain model: small, pure pieces of how something works that recur across many subjects. A store that fills, spills and runs dry is a rainwater tank, a home battery, a pantry or a bank account; the subject gives it its meaning, and the mechanism gives it its behaviour. Components compose the page; mechanisms compose the domain model. Each is proven general by tests drawn from several unrelated subjects. There are none yet: the first will be a store, then an input that varies over time, a limited supply shared out by rules, and one thing converted into another. See the [mechanisms practice](practices/mechanisms.md).
 
 **Practices** teach an AI, and anyone else, to do the things around the components well: building a sandbox from start to finish, or using identifying codes consistently.
 
