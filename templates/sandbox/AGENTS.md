@@ -10,7 +10,7 @@ This folder is a domain sandbox: a small, self-contained application that houses
 4. **`lib/sandkit/practices/building-a-sandbox.md`,** the method this sandbox follows.
 5. **Any other practice the sandbox follows,** such as `lib/sandkit/practices/domain-discovery.md` when it discovers a domain, on a page of its own (`discovery.html` by default) linked from the header.
 6. **`lib/sandkit/practices/workshops.md`,** when asked to workshop the sandbox: to review, correct or hand over its model with the people who know the subject.
-7. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
+7. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers in detail; the index under Sandkit components below covers most needs. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
 
 ## Where it stands
 
@@ -49,6 +49,7 @@ Every place personal data is kept, so nothing is shared by accident: what kind, 
 | `records/` | In a discovery sandbox, what was written from the sources: claims, questions, decisions and the rest, one script per kind. See `lib/sandkit/practices/domain-discovery.md`. |
 | `data/` | Data the pages use, as scripts that set it on the model (never fetched), if any. |
 | `JOURNAL.md` | What changed and why, one entry per version, newest first. |
+| `CLAUDE.md` | One line pointing to this file, for agents that read only `CLAUDE.md`. |
 | `style.css` | The sandbox's own styles, using the theme tokens (`--sb-*`) as `lib/sandkit/STYLE.md` describes. |
 | `lib/sandkit/` | Sandkit components, shell and practices, copied in. See `SOURCE.md` for where they came from. |
 | `parts.js` | Functions returning HTML for parts used on more than one page or chapter, if any. |
@@ -56,10 +57,17 @@ Every place personal data is kept, so nothing is shared by accident: what kind, 
 
 ## Sandkit components
 
+**Before building any part of a page, find it in the index below and in This sandbox's components.** Build by hand only when nothing fits, and record why in the journal's Parts line (see the building guide, step 5).
+
 - **Use them through their manifests** (`lib/sandkit/components/<name>/manifest.md`, `lib/sandkit/shell/manifest.md`, and for any engine `lib/sandkit/engines/<name>/manifest.md`). Don't read their source: it costs about three times as much as the manifest, which says all you need to use them.
 - **Don't edit anything in `lib/`.** It is a copy, and may be replaced when Sandkit is updated.
 - **To change a component, eject it:** copy its folder into `components/`, rename it (replace every occurrence of its tag name, e.g. `sb-log`, with a new one), note where it came from at the top of the file, and point the pages that use it at the new copy. From then on it belongs to this sandbox.
 - **Combine components in the page,** never inside each other. The practices say which components go together and how to wire them.
+
+What serves each need, kept current from `lib/sandkit/CATALOG.md` by Sandkit's setup. Copying by hand, paste the catalog's Find by need section between these markers.
+
+<!-- sandkit:find-by-need -->
+<!-- /sandkit:find-by-need -->
 
 ## This sandbox's components
 

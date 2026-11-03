@@ -43,6 +43,7 @@ The version identifies the entry, so cite it like a code: "the reorder rule was 
 **Why:** The person saw stores reorder twice after a stock-out and pointed out these are two different behaviours. Source: their comment in this session.
 **Retired:** RUL-014 → RUL-020, RUL-021.
 **Open:** QST-009, whether the stock-out reorder skips the usual lead time.
+**Parts:** stock trend → `sb-chart`; reorder rules → `sb-rules`; warehouse floor plan → by hand (considered `sb-plane`, `sb-wireframe`: neither draws a floor plan), candidate.
 ```
 
 - **Heading:** version · date · kind (`Breaking`, `Added` or `Fixed`).
@@ -50,6 +51,7 @@ The version identifies the entry, so cite it like a code: "the reorder rule was 
 - **Why** (required): the reason, and what prompted it: the person, a source (`SRC-`), comments they sent (`FB-`, see the [feedback practice](feedback.md)), a contradiction, or your own finding.
 - **Retired** (only if any): each retired code and what replaced it, or "removed" if nothing did.
 - **Open** (optional): questions or doubts the change leaves.
+- **Parts** (when the entry adds or changes parts of a page): each part by its need, and what serves it: a Sandkit component, one of the sandbox's own, or **by hand**, naming the components considered and why none fits, and **candidate** if it seems useful beyond this subject. See "Plan the parts first" in the [building guide](building-a-sandbox.md#5-build-chapter-1s-surface).
 
 Keep entries short. They record reasons, not a narration of the work; Git, where there is one, holds the line-by-line changes.
 

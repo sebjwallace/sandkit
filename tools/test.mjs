@@ -50,10 +50,62 @@ const scriptTags = (html, name) =>
 
 test('a new sandbox starts from the template, with the shell, catalog, style guide and practices', (sandbox) => {
   assert(setup(sandbox).ok, 'setup succeeded');
-  for (const file of ['index.html', 'model.js', 'style.css', 'AGENTS.md', 'JOURNAL.md', 'lib/sandkit/CATALOG.md', 'lib/sandkit/STYLE.md',
+  for (const file of ['index.html', 'model.js', 'style.css', 'AGENTS.md', 'CLAUDE.md', 'JOURNAL.md', 'lib/sandkit/CATALOG.md', 'lib/sandkit/STYLE.md',
     'lib/sandkit/shell/sb-shell.js', 'lib/sandkit/shell/manifest.md', 'lib/sandkit/practices/building-a-sandbox.md', 'lib/sandkit/practices/journal.md']) {
     assert(existsSync(join(sandbox, file)), `missing ${file}`);
   }
+});
+
+test('an existing sandbox without CLAUDE.md gets one; one already there is left alone', (sandbox) => {
+  setup(sandbox);
+  rmSync(join(sandbox, 'CLAUDE.md'));
+  setup(sandbox);
+  assertEqual(read(sandbox, 'CLAUDE.md'), '@AGENTS.md\n');
+  writeFileSync(join(sandbox, 'CLAUDE.md'), 'our own\n');
+  setup(sandbox);
+  assertEqual(read(sandbox, 'CLAUDE.md'), 'our own\n');
+});
+
+const INDEX_START = '<!-- sandkit:find-by-need -->';
+const INDEX_END = '<!-- /sandkit:find-by-need -->';
+const findByNeed = () => readFileSync(resolve(COMPONENTS, '../CATALOG.md'), 'utf8').match(/^## Find by need\n+([\s\S]*?)\n+^## /m)[1];
+const indexBlock = () => `${INDEX_START}\n${findByNeed()}\n${INDEX_END}`;
+const count = (text, part) => text.split(part).length - 1;
+
+test('a new sandbox\'s AGENTS.md has the catalog\'s Find by need index, once, under Sandkit components', (sandbox) => {
+  setup(sandbox);
+  const agents = read(sandbox, 'AGENTS.md');
+  assert(count(agents, INDEX_START) === 1 && count(agents, INDEX_END) === 1, 'one block');
+  assert(agents.includes(indexBlock()), 'the catalog\'s index between the markers');
+  const at = agents.indexOf(INDEX_START);
+  assert(agents.lastIndexOf('\n## Sandkit components', at) > agents.lastIndexOf('\n## This sandbox', at), 'inside Sandkit components');
+});
+
+test('running again refreshes the index and changes nothing outside it', (sandbox) => {
+  setup(sandbox);
+  const fresh = read(sandbox, 'AGENTS.md');
+  const [before, after] = [fresh.slice(0, fresh.indexOf(INDEX_START)), fresh.slice(fresh.indexOf(INDEX_END) + INDEX_END.length)];
+  writeFileSync(join(sandbox, 'AGENTS.md'), `${before}Our notes.\n${INDEX_START}\nstale\n${INDEX_END}\nMore notes.${after}`);
+  const { output } = setup(sandbox);
+  assertEqual(read(sandbox, 'AGENTS.md'), `${before}Our notes.\n${indexBlock()}\nMore notes.${after}`);
+  assert(output.includes('Refreshed the Find by need index in AGENTS.md.'), 'says so');
+  assert(!setup(sandbox).output.includes('Refreshed'), 'quiet when nothing changed');
+});
+
+test('an older sandbox without markers gets the index at the end of Sandkit components, once', (sandbox) => {
+  setup(sandbox);
+  const original = '# Ours\n\n## Sandkit components\n\n- Use them.\n\n## Conventions\n\n- Ours.\n';
+  writeFileSync(join(sandbox, 'AGENTS.md'), original);
+  setup(sandbox);
+  setup(sandbox);
+  assertEqual(read(sandbox, 'AGENTS.md'), `# Ours\n\n## Sandkit components\n\n- Use them.\n\n${indexBlock()}\n\n## Conventions\n\n- Ours.\n`);
+});
+
+test('without a Sandkit components section, the index goes at the end of the file', (sandbox) => {
+  setup(sandbox);
+  writeFileSync(join(sandbox, 'AGENTS.md'), '# Ours\n\nNotes.');
+  setup(sandbox);
+  assertEqual(read(sandbox, 'AGENTS.md'), `# Ours\n\nNotes.\n\n${indexBlock()}\n`);
 });
 
 test('a new sandbox has comment mode: sb-comments copied, loaded once and in the shell\'s modes', (sandbox) => {

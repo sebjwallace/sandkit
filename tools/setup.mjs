@@ -6,6 +6,10 @@
 //   node tools/setup.mjs path/to/sandbox sb-log --page stock.html    tags go on another page
 //
 // - A folder without an index.html starts from the template. Existing files are never overwritten.
+// - A sandbox without CLAUDE.md gets the template's, so agents that read only that file still find AGENTS.md.
+// - The one exception to never overwriting: the catalog's Find by need index is kept current in the sandbox's AGENTS.md,
+//   between <!-- sandkit:find-by-need --> markers. Only what's between them is replaced; without them (an older sandbox),
+//   the block is added at the end of the Sandkit components section, or of the file. Nothing outside it changes.
 // - Copies the shell, the catalog, the style guide, the practices, the page template, the export, serve and sources tools, sb-comments
 //   (the template's comment mode), and each named component or engine (plus any the sandbox already has) into lib/sandkit/, keeping Sandkit's
 //   paths, with their manifests and changelogs.
@@ -35,6 +39,8 @@ function setup(folder, requested, page = 'index.html') {
 
   const isNew = !existsSync(join(sandbox, 'index.html'));
   if (isNew) cpSync(join(SANDKIT, 'templates', 'sandbox'), sandbox, { recursive: true, force: false });
+  addAgentPointer(sandbox);
+  const indexChanged = refreshFindByNeed(join(sandbox, 'AGENTS.md'));
   if (!existsSync(join(sandbox, page))) fail(`${folder} has no page called ${page}. Start one from lib/sandkit/templates/page.html.`);
 
   const kept = installedIn(lib, 'components').filter((name) => RETIRED[name]);
@@ -56,6 +62,7 @@ function setup(folder, requested, page = 'index.html') {
   console.log(isNew ? `Created ${folder} from the template.` : `Updated ${folder}.`);
   const parts = [...components, ...engines.map((name) => `the ${name} engine`)];
   console.log(`Copied ${files.length} files into lib/sandkit/${parts.length ? `, with ${parts.join(', ')}` : ''}.`);
+  if (indexChanged && !isNew) console.log('Refreshed the Find by need index in AGENTS.md.');
   if (tagged.added.length) console.log(`Added script tags for ${tagged.added.join(', ')} to ${page}.`);
   if (tagged.missing.length) console.log(`Add script tags for ${tagged.missing.join(', ')} to ${page} yourself: no Sandkit script tag was found to place them after.`);
   reportChanges(versions.filter((v) => v.from && v.from !== v.to));
@@ -85,6 +92,46 @@ const practices = () => readdirSync(join(SANDKIT, 'practices')).map((file) => `p
 const componentFiles = (name) => [`components/${name}/${name}.js`, `components/${name}/manifest.md`, `components/${name}/CHANGELOG.md`];
 const engineFiles = (name) => [`engines/${name}/${name}.js`, `engines/${name}/manifest.md`, `engines/${name}/CHANGELOG.md`];
 const scriptOf = (name) => (isEngine(name) ? `engines/${name}/${name}.js` : `components/${name}/${name}.js`);
+
+// Sandboxes set up before the template had CLAUDE.md get it now; one already there is the sandbox's own.
+function addAgentPointer(sandbox) {
+  const pointer = join(sandbox, 'CLAUDE.md');
+  if (!existsSync(pointer)) cpSync(join(SANDKIT, 'templates', 'sandbox', 'CLAUDE.md'), pointer);
+}
+
+// ---- The Find by need index ----
+// Copied into the sandbox's AGENTS.md so it's in front of the agent whenever it chooses a part.
+
+const INDEX_START = '<!-- sandkit:find-by-need -->';
+const INDEX_END = '<!-- /sandkit:find-by-need -->';
+
+// The body of the catalog's Find by need section, without its heading.
+function findByNeed() {
+  const catalog = readFileSync(join(SANDKIT, 'CATALOG.md'), 'utf8');
+  return catalog.match(/^## Find by need\n+([\s\S]*?)\n+^## /m)[1];
+}
+
+// Returns whether AGENTS.md changed.
+function refreshFindByNeed(agentsPath) {
+  if (!existsSync(agentsPath)) return false;
+  const text = readFileSync(agentsPath, 'utf8');
+  const updated = withIndex(text, `${INDEX_START}\n${findByNeed()}\n${INDEX_END}`);
+  if (updated !== text) writeFileSync(agentsPath, updated);
+  return updated !== text;
+}
+
+// Replaces the block between the markers, or adds it at the end of the Sandkit components section, or of the file.
+function withIndex(text, block) {
+  const start = text.indexOf(INDEX_START);
+  const end = text.indexOf(INDEX_END);
+  if (start >= 0 && end > start) return text.slice(0, start) + block + text.slice(end + INDEX_END.length);
+
+  const section = text.indexOf('\n## Sandkit components');
+  const nextSection = section < 0 ? -1 : text.indexOf('\n## ', section + 1);
+  const at = nextSection < 0 ? text.length : nextSection;
+  const before = text.slice(0, at);
+  return `${before}${before.endsWith('\n') ? '\n' : '\n\n'}${block}\n${text.slice(at)}`;
+}
 
 // ---- Script tags ----
 

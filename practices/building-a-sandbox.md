@@ -47,7 +47,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> discovery
 
 **Otherwise, copy by hand,** with a copy command (`cp`) or the file manager. Never copy by reading each file and writing it out: that puts every script's source into your context, which is the reading Sandkit exists to save.
 
-1. **Copy the template.** Copy the contents of `templates/sandbox/` into the sandbox folder.
+1. **Copy the template.** Copy the contents of `templates/sandbox/` into the sandbox folder. Then paste the catalog's **Find by need** section, without its heading, between the `sandkit:find-by-need` markers in the sandbox's `AGENTS.md`, and again whenever you update Sandkit.
 2. **Copy what the sandbox uses into `lib/sandkit/`, keeping Sandkit's own paths.** Links between manifests and practices then still work.
    - Always: `CATALOG.md`, `CHANGELOG.md`, `STYLE.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`, and `sb-comments` (below), which the template uses.
    - For each component used: `components/<name>/<name>.js`, `components/<name>/manifest.md` and `components/<name>/CHANGELOG.md`.
@@ -74,7 +74,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> discovery
 
 ```
 my-sandbox/
-  index.html  sandbox.js  model.js  style.css  AGENTS.md  JOURNAL.md
+  index.html  sandbox.js  model.js  style.css  AGENTS.md  CLAUDE.md  JOURNAL.md
   lib/sandkit/
     SOURCE.md  CATALOG.md  CHANGELOG.md  STYLE.md
     shell/        sb-theme-settings.js  sb-shell.js  sb-export.js  manifest.md  CHANGELOG.md
@@ -137,11 +137,19 @@ Run them after changing the model. They are the cheapest tests there are; keep t
 
 Each chapter introduces one idea, much as a well-designed game introduces one mechanic before the next. It has a short explanation, something to try, and the interactive model.
 
+**Plan the parts first.** Before writing a chapter's surface, or any later change that adds parts, list each part it needs by its need, and against each one write what serves it:
+
+- a Sandkit component, found in **Find by need** in `AGENTS.md` (or the [catalog](../CATALOG.md#find-by-need)),
+- one of the sandbox's own components, listed in `AGENTS.md`, or
+- **by hand**, naming the components considered and why none fits.
+
+If a part built by hand seems useful beyond this subject, mark it **candidate**: a possible future Sandkit component. One short line per part; it's a check, not a document. The plan goes in the journal entry's **Parts** line (see the [journal practice](journal.md#the-entry)).
+
 - **Reveal, don't merely display.** Show why things happen: highlight the rule that fired, the stock that ran out, the cause behind the effect.
 - **Modes come with the shell.** Every sandbox has comment mode from the template, wired once in `sandbox.js`. Once the model cites its sources, add trace mode, so people can ask why anything is there; once it has labels people could misread, inspect mode. See the [modes practice](modes.md).
 - **Add an outliner once the model has traces.** When things on the page connect, such as inputs to the rules they feed and what those rules show, give the shell an [`sb-outliner`](../components/sb-outliner/manifest.md) in its `panels` slot, with the model's `traceOf`: people point to see a whole path light up, and pin it to keep it lit while they change things. See "Keeping things lit" in the [highlighting practice](highlighting.md).
-- **Choose components from the catalog,** and combine them in the page. The practices say which components go together and how to wire them. Components never go inside one another unless a component offers a slot for exactly that.
-- **Write what the sandbox needs itself** in the page or in `model.js`. Not everything needs a component. Make hand-built parts point, light up and be found like components: see "Your own parts" in the [highlighting practice](highlighting.md#your-own-parts).
+- **Combine components in the page.** The practices say which components go together and how to wire them. Components never go inside one another unless a component offers a slot for exactly that.
+- **Write what nothing fits yourself** in the page or in `model.js`. Make hand-built parts point, light up and be found like components: see "Your own parts" in the [highlighting practice](highlighting.md#your-own-parts).
 - **Move reused parts out of the page.** When a piece of the surface is used by more than one chapter or page, make it one of the sandbox's own components: a function in `parts.js` or, once it has state of its own, a custom element in `components/`. See the [domain components practice](domain-components.md).
 - **Make it two-way.** Let people change things (parameters, scenarios, controls) and see the model respond.
 
@@ -177,6 +185,7 @@ Try first:      the one thing to do first
 What it shows:  one line per chapter built
 Checked:        what was checked, if anything, or what the person should look at
 Assumed:        what is simplified or rests on assumptions
+Built by hand:  parts made without a component, and why (from the journal's Parts)
 Rough edges:    known issues left for later
 Feedback:       if comments came in, which ones this iteration answered (FB- codes)
 Next:           2–4 named directions, each with what it adds and what it costs
