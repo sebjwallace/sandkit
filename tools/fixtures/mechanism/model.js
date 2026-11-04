@@ -3,12 +3,12 @@
 if (typeof module !== 'undefined') globalThis.SbTally = require('./lib/sandkit/mechanisms/sb-tally/sb-tally.js');
 
 function createModel() {
-  let shelf = SbTally.create(3);
+  let shelf = SbTally.create({ limit: 3 });
 
   // Puts `amount` on the shelf, returning how many didn't fit.
   function stock(amount) {
     const result = SbTally.add(shelf, amount);
-    shelf = result.tally;
+    shelf = result.state;
     return result.turnedAway;
   }
 
