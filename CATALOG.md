@@ -6,6 +6,12 @@ Everything Sandkit offers, one line each. Read a practice before the components 
 
 The same catalog from the subject's side: find the need, then read the manifest of what serves it. A component can serve several needs, and a need several components.
 
+### How the subject works
+
+- Something accumulates, and can overflow or run out → `sb-store`
+- A supply that's met only in full, or refused → `sb-store`
+- How long a supply lasts at the current rate → `sb-store`
+
 ### Running and trying things
 
 - Let people play, pause, step and change speed → `sb-controls`
@@ -171,7 +177,11 @@ Components and the engine for domain discovery, which never know each other: the
 
 Reusable parts of domain models: small, pure pieces of how something works, composed in a sandbox's `model.js`. They know nothing of components, engines or each other. Read the [mechanisms practice](practices/mechanisms.md) first.
 
-None yet. The first will be a store, then a driver, allocation and conversion.
+| Mechanism | What it does |
+|---|---|
+| [`sb-store`](mechanisms/sb-store/manifest.md) | A level between a floor and a ceiling, filled and taken from: what was added, spilled, refused, supplied or short, in before out within a step, and how long it lasts. A stock. |
+
+Next come a driver and encounter, then allocation and conversion.
 
 ## Components
 

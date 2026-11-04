@@ -156,6 +156,8 @@ Settled decisions for Sandkit, newest last. One line each, with the reason.
 - **Statistical invariance tests record their tolerance,** with a line on why it was chosen, so a loose test can be seen to be loose.
 - **Laws about capacity hold for one mechanism, not for networks of them,** and say so where written: more capacity never hurts a single store, but can across a network (Braess's paradox; Belady's anomaly in caches).
 - **Concurrency belongs to allocation, not to stores.** Taking one request at a time, each on the state the last returned, can never double-spend, but order then decides who gets what; when it shouldn't, that's a separate job with its own rules.
+- **`sb-store`: two policies, in before out, no clock.** Overflow and shortfall are separate policies because a bank declines a payment whole while a tank part-supplies, and a venue refuses a booking whole while a battery exports its surplus. `step` puts in before taking out, so what arrives can meet this step's demand before any overflow is judged; a model wanting the reverse calls `take` then `fill`. It has no clock, so a model turns rates into amounts, and `lasts` is the one place time appears. A floor must be finite, since an unlimited source doesn't need a store; a capacity may be infinite. Deciding between claimants is left to allocation.
+- **`invariants.accounted` is given the state from before.** It checks the level moved by exactly `added − supplied`, which a result alone can't show.
 
 ## Sandbox shell and theming
 
