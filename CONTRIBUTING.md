@@ -38,15 +38,22 @@ A mechanism is a reusable part of a domain model; the [mechanisms practice](prac
 
 - **Pure, plain JavaScript.** Pure functions over plain data, no framework or library. It knows nothing of Sandkit: no components, engines, other mechanisms, shell, DOM, storage or network, so it could be lifted into any project and still work.
 - **Values in, values out.** Operations return new values, never changing what they're given, and each returns what happened (added, spilled, supplied, short), not only the new state.
+- **One shape.** `create(settings)` returns the state, a plain object holding its settings too, and every operation takes it first.
+- **A stock or a flow, and it says which.** A stock owns a level: its operations return `{ state, ...what happened }`, and its `step` applies everything that happens to it in one model step. A flow computes a change for someone else's level: its `create` holds only its settings, and its operations return only what happened.
+- **Order within a step is part of the contract.** When an operation does several things in one step, its manifest states the order, such as in before out.
+- **Exact stepping by default.** Anything advanced over time is stepped exactly, not by simple (Euler) steps, unless a setting asks otherwise.
+- **Invalid input throws,** with a message that says what to do instead. A silent zero hides bugs in the model.
 - **Time and randomness passed in.** The step length, the time and a random function are arguments; it never reads a clock or calls `Math.random`.
 - **Domain-free.** No name, setting or output names a domain concept. Rename every domain noun to a generic one: if it still makes sense, it belongs.
-- **Configured, never specialised.** A setting is earned when two unrelated subjects need it. Compose before adding options; a flag that changes what it fundamentally does means another mechanism. What changes over time is an argument to each step. Behavioural choices are short named lists of recognised policies, each tested. No hooks taking custom functions.
+- **Configured, never specialised.** A setting is earned when two unrelated subjects need it. Compose before adding options; a flag that changes what it fundamentally does means another mechanism. What varies between steps is an argument to the operation, as an optional last argument where it's optional. Behavioural choices are named strings, listed in an exported `POLICIES` object and checked in `create`, each tested; an unknown one throws. No hooks taking custom functions: rules particular to a subject live in the model's composition, on purpose.
 - **Units declared.** Plain numbers, with every setting, input and output's unit in the script and the manifest, and checked in tests.
 - **Single values, not ranges.** A model working in ranges runs it once per value.
 - **Contained.** One global, its name with the `sb-` prefix in capitals (`SbStore` for `sb-store`), so it's unlikely to clash wherever it's used and always reads as Sandkit's. Names are unique across components and mechanisms.
 - **Independent.** Mechanisms never call each other; the domain model composes them.
+- **One equation, one home.** If two mechanisms would contain the same equation, one owns it and the other uses it or leaves it out.
 - **Small, with a smaller manifest.** Using one must be clearly cheaper than writing one.
 - **Proven general by its tests.** Regression tests from at least three unrelated subjects, and invariance tests over seeded random settings. A change must pass them all, or show that a test was itself too narrow.
+- **Honest tests.** Regression tests take their expected numbers from outside the mechanism: a published figure, a theory, or arithmetic stated in the test. Statistical invariance tests record their tolerance and why. A law about capacity says that it holds for one mechanism, not for networks of them.
 
 ## What a component needs
 
@@ -66,7 +73,7 @@ components/sb-example/
 ```
 mechanisms/sb-example/
   sb-example.js   one classic script, one global (SbExample); its first line names it, with its version and licence
-  manifest.md     short: purpose, settings, inputs, outputs with units, operations, invariants, an example
+  manifest.md     short: purpose, stock or flow, settings, inputs, outputs with units, operations and their order, invariants, an example
   CHANGELOG.md    one entry per release, newest first
   test.mjs        regression tests from three unrelated subjects, and invariance tests
   demo.html       the mechanism at work, through views written by hand

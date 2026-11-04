@@ -147,7 +147,7 @@ for (const name of MECHANISMS) {
   });
 
   test(`${name}'s manifest names no component, engine or other mechanism`, () => {
-    const manifest = read(join(ROOT, 'mechanisms', name, 'manifest.md'));
+    const manifest = read(join(ROOT, 'mechanisms', name, 'manifest.md')).replaceAll(name, '');
     const named = [
       ...(/(^|[^\w-])sb-[a-z]/.test(manifest) ? ['a component'] : []),
       ...ENGINES.filter((engine) => mentions(manifest, engine)),

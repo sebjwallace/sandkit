@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-store demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-store.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; min-width: 0; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example .note { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code, .note code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+
+    /* Controls */
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 18px; margin-bottom: 12px; font-size: 12px; }
+    .controls label { display: grid; gap: 2px; color: var(--sb-muted); }
+    .controls label span { display: flex; justify-content: space-between; gap: 8px; }
+    .controls b { color: var(--sb-text); font-weight: 600; }
+    .controls input[type=range] { width: 100%; margin: 0; accent-color: var(--sb-accent); }
+    .controls select { font: inherit; color: var(--sb-text); background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 4px 6px; }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; }
+    .actions label { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+    button { font: inherit; font-size: 13px; color: var(--sb-text); background: var(--sb-surface-2); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 5px 12px; cursor: pointer; }
+    button:hover { background: var(--sb-accent-soft); }
+    button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 2px; }
+    button.main { color: var(--sb-accent-text); background: var(--sb-accent); border-color: var(--sb-accent); }
+    button.main:hover { background: var(--sb-accent); }
+
+    /* The tank */
+    .tanks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 8px; }
+    .tank { margin: 0; min-width: 0; }
+    .tank figcaption { font-size: 12px; font-weight: 600; text-align: center; }
+    .tank svg { display: block; width: 100%; max-width: 380px; margin: 0 auto; }
+    .tank .walls { fill: var(--sb-surface-2); stroke: var(--sb-border); }
+    .tank .water { fill: color-mix(in srgb, var(--sb-accent) 45%, var(--sb-surface)); transition: y 0.25s, height 0.25s; }
+    .tank .bound { stroke: var(--sb-text); stroke-width: 2; }
+    .tank .zero { stroke: var(--sb-muted); stroke-dasharray: 3 3; }
+    .tank .pipe { stroke: var(--sb-muted); stroke-width: 3; fill: none; }
+    .tank text { font-size: 12px; fill: var(--sb-muted); }
+    .tank text.value { fill: var(--sb-text); font-weight: 600; }
+    .tank .spill { fill: none; stroke: var(--sb-warn); stroke-width: 5; opacity: 0; }
+    .tank .alarm { font-weight: 700; opacity: 0; }
+    .tank .alarm--warn { fill: var(--sb-warn); }
+    .tank .alarm--bad { fill: var(--sb-bad); }
+    .tank .is-on { opacity: 1; }
+
+    /* What happened */
+    .happened { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px; margin: 0 0 8px; }
+    .happened div { margin: 0; padding: 6px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
+    .happened dt { font-size: 11px; color: var(--sb-muted); }
+    .happened dd { margin: 0; font-size: 18px; font-weight: 600; }
+    .is-warn { background: color-mix(in srgb, var(--sb-warn) 18%, var(--sb-surface)); border-color: var(--sb-warn); }
+    .is-bad { background: color-mix(in srgb, var(--sb-bad) 14%, var(--sb-surface)); border-color: var(--sb-bad); }
+    .is-good { background: color-mix(in srgb, var(--sb-good) 12%, var(--sb-surface)); border-color: var(--sb-good); }
+    .reading { min-height: 21px; margin: 0 0 8px; font-size: 14px; }
+    .compared { margin: 0 0 8px; padding: 8px 12px; font-size: 13px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
+
+    /* Lists of steps */
+    .steps-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { font-weight: 600; text-align: right; color: var(--sb-muted); }
+    th:first-child, td:first-child { text-align: left; }
+    td { text-align: right; font-variant-numeric: tabular-nums; }
+    th, td { padding: 3px 8px; border-bottom: 1px solid var(--sb-border); white-space: nowrap; }
+    td.is-warn, td.is-bad { font-weight: 700; }
+
+    /* Days of water */
+    .days { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 6px; margin-bottom: 10px; }
+    .day { display: grid; gap: 3px; font-size: 11px; text-align: center; min-width: 0; }
+    .day__tank { position: relative; height: 110px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); overflow: hidden; }
+    .day__water { position: absolute; left: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--sb-accent) 45%, var(--sb-surface)); }
+    .day__level { position: absolute; left: 0; right: 0; bottom: 4px; font-size: 12px; font-weight: 600; }
+    .day__mark { min-height: 32px; padding: 1px 2px; border: 1px solid transparent; border-radius: var(--sb-radius); overflow-wrap: anywhere; }
+
+    /* The account */
+    .gauge { position: relative; height: 26px; margin: 22px 0 26px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); }
+    .gauge__used { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--sb-accent) 45%, var(--sb-surface)); transition: left 0.25s, width 0.25s; }
+    .gauge__used.is-overdrawn { background: color-mix(in srgb, var(--sb-warn) 55%, var(--sb-surface)); }
+    .gauge__tick { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--sb-text); }
+    .gauge__label { position: absolute; top: 30px; font-size: 11px; color: var(--sb-muted); transform: translateX(-50%); white-space: nowrap; }
+    .statement { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+    .statement li { padding: 4px 10px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); }
+
+    @media (prefers-reduced-motion: reduce) { .tank .water, .gauge__used { transition: none; } }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-store">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <p>A level between a floor and a ceiling: it overflows when full and runs short when empty.</p>
+  </sb-shell>
+
+  <main>
+    <h2 class="part">About</h2>
+    <article class="guide">
+      <p>A rainwater tank, a home battery, a bank account and a stockpile of drinking water have little in common, except that each holds a level with limits. Things go wrong at those limits: more arrives than there's room for, or more is asked for than is there. <code>sb-store</code> holds that behaviour, tested across unrelated subjects, so a domain model doesn't have to get its edges right again. The subject gives a store its meaning; the store gives the subject its behaviour.</p>
+
+      <h3>Where it helps</h3>
+      <ul>
+        <li><strong>Something accumulates and can overflow or run out,</strong> such as water in a tank or charge in a battery.</li>
+        <li><strong>A supply is met only in full, or refused,</strong> such as a payment from an account or a booking at a venue.</li>
+        <li><strong>How long a supply lasts</strong> at the current rate.</li>
+      </ul>
+
+      <h3>Where something else fits better</h3>
+      <ul>
+        <li><strong>Things that expire.</strong> A store doesn't know which units are older; best-before dates and first-in-first-out need an ageing stock.</li>
+        <li><strong>Losses over time.</strong> Leakage, evaporation and interest are proportional change, composed alongside the store.</li>
+        <li><strong>Sharing between claimants.</strong> Taken one at a time, whoever asks first gets what they ask for. When order shouldn't decide, that's allocation.</li>
+        <li><strong>A line or two of arithmetic.</strong> If nothing can overflow or run short, a plain number will do.</li>
+      </ul>
+
+      <h3>Getting started</h3>
+      <p>Set it up in a sandbox with <code>tools/setup.mjs &lt;sandbox&gt; sb-store</code>, then use it in <code>model.js</code>. It keeps no clock, so turn rates into amounts first:</p>
+      <pre>let tank = SbStore.create({ capacity: 2000, level: 300 });   // litres
+
+const today = SbStore.step(tank, caughtRain, dailyUse);      // in before out
+tank = today.state;
+today.spilled;                                               // what happened: keep it, show it</pre>
+      <p>The full contract is in the <a href="manifest.md">manifest</a>.</p>
+    </article>
+
+    <h2 class="part">Try it</h2>
+    <section class="example">
+      <h2>A level, a step at a time</h2>
+      <p class="note">Press Step and watch the ceiling. Then turn on the comparison: the same numbers, but filling first and taking afterwards, spill what in before out would have used.</p>
+
+      <div class="controls" id="try-controls"></div>
+      <div class="actions">
+        <button class="main" id="try-step">Step</button>
+        <button id="try-run">Run</button>
+        <button id="try-reset">Reset</button>
+        <label><input type="checkbox" id="try-compare"> Compare with fill then take</label>
+      </div>
+
+      <div class="tanks" id="try-tanks"></div>
+      <p class="compared" id="try-compared" hidden></p>
+      <dl class="happened" id="try-happened"></dl>
+      <p class="reading" id="try-reading" aria-live="polite"></p>
+      <div class="steps-wrap"><table id="try-steps"></table></div>
+    </section>
+
+    <h2 class="part">Examples</h2>
+    <section class="example">
+      <h2>A household's water through an outage</h2>
+      <p class="note">The taps stop on day 1. UK guidance is 3 litres per person per day for 3 days; water companies must provide at least 10 litres per person per day within the first 24 hours. The stockpile's containers are its capacity, so emergency water beyond them can't be stored. Change when supply arrives, and find the days that go short.</p>
+      <div class="controls" id="water-controls"></div>
+      <p class="reading" id="water-reading"></p>
+      <div class="days" id="water-days"></div>
+    </section>
+
+    <section class="example">
+      <h2>A bank account with an overdraft</h2>
+      <p class="note">The floor is the overdraft limit, below zero, and a payment that won't fit is declined whole: a store with <code>shortfall: 'reject'</code>. Try the £600 rent from the start, then the repair.</p>
+      <div class="controls" id="bank-controls"></div>
+      <div class="actions" id="bank-actions"></div>
+      <p class="reading" id="bank-reading" aria-live="polite"></p>
+      <div class="gauge" id="bank-gauge"></div>
+      <ul class="statement" id="bank-statement"></ul>
+    </section>
+  </main>
+
+  <script>
+    // ---- Small helpers for writing views by hand ----
+
+    const byId = (id) => document.getElementById(id);
+
+    // Text always goes in as text, never as markup.
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function svgEl(tag, attributes = {}, text) {
+      const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    const round = (x) => Math.round(x * 100) / 100;
+
+    // A labelled slider. Returns a reader of its value; `onChange` runs as it moves.
+    function slider(parent, { label, min, max, step, value, unit = '' }, onChange) {
+      const wrap = el('label');
+      const heading = el('span');
+      const shown = el('b', '', `${value}${unit}`);
+      heading.append(label, shown);
+      const input = el('input');
+      Object.assign(input, { type: 'range', min, max, step, value });
+      input.addEventListener('input', () => { shown.textContent = `${input.value}${unit}`; onChange(); });
+      wrap.append(heading, input);
+      parent.append(wrap);
+      return () => Number(input.value);
+    }
+
+    function choice(parent, { label, options, value }, onChange) {
+      const wrap = el('label');
+      wrap.append(el('span', '', label));
+      const select = el('select');
+      for (const [optionValue, text] of options) {
+        const option = el('option', '', text);
+        option.value = optionValue;
+        select.append(option);
+      }
+      select.value = value;
+      select.addEventListener('change', onChange);
+      wrap.append(select);
+      parent.append(wrap);
+      return () => select.value;
+    }
+
+    // ---- Try it: one level, drawn between its floor and ceiling ----
+
+    const SCALE = { low: -60, high: 210, top: 34, bottom: 214, left: 92, right: 208 };
+    const yOf = (value) => SCALE.bottom - ((value - SCALE.low) / (SCALE.high - SCALE.low)) * (SCALE.bottom - SCALE.top);
+
+    function createTank(parent, title) {
+      const figure = el('figure', 'tank');
+      const svg = svgEl('svg', { viewBox: '0 0 300 248', role: 'img', 'aria-label': `${title}, a level between a floor and a ceiling` });
+      const part = (tag, attributes, text) => { const node = svgEl(tag, attributes, text); svg.append(node); return node; };
+      const { left, right } = SCALE;
+      const middle = (left + right) / 2;
+
+      const parts = {
+        walls: part('rect', { class: 'walls', x: left, width: right - left }),
+        water: part('rect', { class: 'water', x: left, width: right - left }),
+        zero: part('line', { class: 'zero', x1: left, x2: right }),
+        zeroLabel: part('text', { x: right + 6 }, '0'),
+        ceiling: part('line', { class: 'bound', x1: left - 8, x2: right + 8 }),
+        ceilingLabel: part('text', { x: left - 12, 'text-anchor': 'end' }),
+        floor: part('line', { class: 'bound', x1: left - 8, x2: right + 8 }),
+        floorLabel: part('text', { x: left - 12, 'text-anchor': 'end' }),
+        level: part('text', { class: 'value', x: middle, 'text-anchor': 'middle' }),
+        inPipe: part('line', { class: 'pipe', x1: middle, x2: middle, y1: 16 }),
+        inLabel: part('text', { x: middle + 8, y: 16 }),
+        outPipe: part('line', { class: 'pipe', x1: middle, x2: middle, y2: 242 }),
+        outLabel: part('text', { x: middle + 8, y: 242 }),
+        spill: part('path', { class: 'spill' }),
+        over: part('text', { class: 'alarm alarm--warn', x: right + 14 }),
+        short: part('text', { class: 'alarm alarm--bad', x: left - 12, y: 240, 'text-anchor': 'end' })
+      };
+
+      figure.append(el('figcaption', '', title), svg);
+      parent.append(figure);
+      return { figure, parts };
+    }
+
+    function drawTank({ parts }, state, happened, inflow, outflow) {
+      const top = yOf(state.capacity);
+      const bottom = yOf(state.floor);
+      const zero = yOf(0);
+      const set = (node, attributes) => { for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value); };
+
+      set(parts.walls, { y: top, height: bottom - top });
+      set(parts.water, { y: yOf(state.level), height: bottom - yOf(state.level) });
+      set(parts.ceiling, { y1: top, y2: top });
+      set(parts.floor, { y1: bottom, y2: bottom });
+      set(parts.zero, { y1: zero, y2: zero });
+      set(parts.zeroLabel, { y: zero + 4 });
+      // A floor at zero already says where zero is.
+      for (const node of [parts.zero, parts.zeroLabel]) node.setAttribute('visibility', state.floor === 0 ? 'hidden' : 'visible');
+      set(parts.ceilingLabel, { y: top + 4 });
+      set(parts.floorLabel, { y: bottom + 4 });
+      parts.ceilingLabel.textContent = `ceiling ${state.capacity}`;
+      parts.floorLabel.textContent = `floor ${state.floor}`;
+
+      const inBounds = Math.max(state.level, state.floor + 16);
+      set(parts.level, { y: yOf(inBounds) + 14 });
+      parts.level.textContent = round(state.level);
+
+      set(parts.inPipe, { y2: top - 2 });
+      set(parts.outPipe, { y1: bottom + 2 });
+      parts.inLabel.textContent = `in ${inflow}`;
+      parts.outLabel.textContent = `out ${outflow}`;
+
+      const { spilled = 0, rejected = 0, short = 0 } = happened || {};
+      const overflowed = spilled > 0 || rejected > 0;
+      parts.spill.setAttribute('d', `M${SCALE.right} ${top + 4} h10 v${Math.min(bottom - top, 70)}`);
+      parts.spill.classList.toggle('is-on', spilled > 0);
+      parts.over.classList.toggle('is-on', overflowed);
+      set(parts.over, { y: top + 30 });
+      parts.over.textContent = spilled > 0 ? `spilled ${round(spilled)}` : `refused ${round(rejected)}`;
+      parts.short.classList.toggle('is-on', short > 0);
+      parts.short.textContent = `short ${round(short)}`;
+    }
+
+    // What one store went through since the last reset.
+    const freshRun = (store) => ({ store, last: null, spilled: 0, rejected: 0, supplied: 0, short: 0 });
+
+    function record(run, store, { spilled = 0, rejected = 0, supplied = 0, short = 0 }, last) {
+      return { store, last, spilled: run.spilled + spilled, rejected: run.rejected + rejected, supplied: run.supplied + supplied, short: run.short + short };
+    }
+
+    const tryControls = byId('try-controls');
+    const restart = () => resetTry();
+    const read = {
+      capacity: slider(tryControls, { label: 'Capacity', min: 50, max: 200, step: 5, value: 100 }, restart),
+      floor: slider(tryControls, { label: 'Floor', min: -50, max: 50, step: 5, value: 0 }, restart),
+      inflow: slider(tryControls, { label: 'Inflow per step', min: 0, max: 80, step: 1, value: 30 }, () => drawTry()),
+      outflow: slider(tryControls, { label: 'Outflow per step', min: 0, max: 80, step: 1, value: 25 }, () => drawTry()),
+      overflow: choice(tryControls, { label: 'When more arrives than fits', value: 'spill', options: [['spill', 'spill: keep what fits'], ['reject', 'reject: refuse it all']] }, restart),
+      shortfall: choice(tryControls, { label: 'When more is asked than is there', value: 'partial', options: [['partial', 'partial: supply what there is'], ['reject', 'reject: supply nothing']] }, restart)
+    };
+
+    const tanks = byId('try-tanks');
+    const mainTank = createTank(tanks, 'In before out');
+    const otherTank = createTank(tanks, 'Fill, then take');
+
+    const FIELDS = [['added', ''], ['spilled', 'is-warn'], ['rejected', 'is-warn'], ['supplied', ''], ['short', 'is-bad']];
+    let together, separately, stepCount, stepRows, runTimer;
+
+    function resetTry() {
+      const settings = { capacity: read.capacity(), floor: read.floor(), overflow: read.overflow(), shortfall: read.shortfall() };
+      const level = Math.min(settings.capacity, Math.max(settings.floor, 80));
+      const store = SbStore.create({ ...settings, level });
+      together = freshRun(store);
+      separately = freshRun(store);
+      stepCount = 0;
+      stepRows = [];
+      drawTry();
+    }
+
+    function stepTry() {
+      const inflow = read.inflow();
+      const outflow = read.outflow();
+
+      const now = SbStore.step(together.store, inflow, outflow);
+      together = record(together, now.state, now, now);
+
+      const filled = SbStore.fill(separately.store, inflow);
+      const taken = SbStore.take(filled.state, outflow);
+      const both = { ...filled, ...taken };
+      separately = record(separately, taken.state, both, both);
+
+      stepCount += 1;
+      stepRows = [{ step: stepCount, level: now.state.level, ...now }, ...stepRows].slice(0, 6);
+      drawTry();
+    }
+
+    function describe({ spilled, rejected, supplied, short }, state) {
+      const notes = [];
+      if (spilled > 0) notes.push(`${round(spilled)} spilled: no room for it, even after this step's demand.`);
+      if (rejected > 0) notes.push(`All ${round(rejected)} arriving refused: it wouldn't fit, and reject takes all or none.`);
+      if (short > 0) notes.push(state.shortfall === 'reject'
+        ? `All ${round(short)} asked for went short: it wasn't all there, and reject supplies all or none.`
+        : `${round(short)} short: only ${round(supplied)} was there to supply.`);
+      return notes.join(' ') || 'Everything that arrived was kept or used, and everything asked for was supplied.';
+    }
+
+    function drawHappened(last) {
+      const list = byId('try-happened');
+      list.replaceChildren(...FIELDS.map(([field, tone]) => {
+        const value = last ? last[field] : 0;
+        const cell = el('div', value > 0 ? tone : '');
+        cell.append(el('dt', '', field), el('dd', '', round(value)));
+        return cell;
+      }));
+    }
+
+    function drawSteps() {
+      const head = el('tr');
+      for (const title of ['Step', 'Level', ...FIELDS.map(([field]) => field)]) head.append(el('th', '', title));
+      const rows = stepRows.map((row) => {
+        const tr = el('tr');
+        tr.append(el('td', '', row.step), el('td', '', round(row.level)));
+        for (const [field, tone] of FIELDS) tr.append(el('td', row[field] > 0 ? tone : '', round(row[field])));
+        return tr;
+      });
+      byId('try-steps').replaceChildren(head, ...rows);
+    }
+
+    function drawComparison(comparing) {
+      const summary = byId('try-compared');
+      summary.hidden = !comparing;
+      summary.classList.remove('is-good');
+      if (!comparing) return;
+      if (!stepCount) { summary.textContent = 'Both start level. Step them with the same numbers.'; return; }
+      const lost = (run) => run.spilled + run.rejected;
+      const spared = lost(separately) - lost(together);
+      const steps = `${stepCount} step${stepCount === 1 ? '' : 's'}`;
+      summary.classList.toggle('is-good', spared > 0);
+      summary.textContent = spared > 0
+        ? `Over ${steps}, in before out has spared ${round(spared)}: ${round(lost(together))} spilled or refused against ${round(lost(separately))}, and it has supplied ${round(together.supplied)} against ${round(separately.supplied)}.`
+        : `Over ${steps}, the order hasn't mattered yet: both have lost ${round(lost(together))}. Try raising the inflow, or starting nearer the ceiling.`;
+    }
+
+    function drawTry() {
+      const comparing = byId('try-compare').checked;
+      const inflow = read.inflow();
+      const outflow = read.outflow();
+      otherTank.figure.hidden = !comparing;
+      drawTank(mainTank, together.store, together.last, inflow, outflow);
+      drawTank(otherTank, separately.store, separately.last, inflow, outflow);
+      drawComparison(comparing);
+      drawHappened(together.last);
+      drawSteps();
+      byId('try-reading').textContent = together.last ? describe(together.last, together.store) : 'Nothing has happened yet: press Step.';
+    }
+
+    function stopRunning() {
+      clearInterval(runTimer);
+      runTimer = null;
+      byId('try-run').textContent = 'Run';
+    }
+
+    byId('try-step').addEventListener('click', stepTry);
+    byId('try-reset').addEventListener('click', () => { stopRunning(); resetTry(); });
+    byId('try-compare').addEventListener('change', drawTry);
+    byId('try-run').addEventListener('click', () => {
+      if (runTimer) { stopRunning(); return; }
+      runTimer = setInterval(stepTry, 700);
+      byId('try-run').textContent = 'Pause';
+    });
+
+    resetTry();
+
+    // ---- A household's water through an outage ----
+
+    const DRINKING_PER_PERSON = 3;      // litres a day: UK guidance
+    const EMERGENCY_PER_PERSON = 10;    // litres a day: what water companies must provide
+    const GUIDANCE_DAYS = 3;
+    const OUTAGE_DAYS = 7;
+
+    // The domain model for this example, composed from the store: before supply arrives the household only
+    // takes; once it arrives, each day is one step, in before out.
+    function outage({ people, stockpile, supplyDay }) {
+      const need = people * DRINKING_PER_PERSON;
+      const delivered = people * EMERGENCY_PER_PERSON;
+      let store = SbStore.create({ capacity: stockpile, level: stockpile });
+      const lasts = SbStore.lasts(store, need);
+      const days = [];
+      for (let day = 1; day <= OUTAGE_DAYS; day++) {
+        const arriving = day >= supplyDay;
+        const today = arriving ? SbStore.step(store, delivered, need) : SbStore.take(store, need);
+        store = today.state;
+        days.push({ day, arriving, delivered, level: store.level, short: today.short, spilled: today.spilled || 0 });
+      }
+      return { need, lasts, days, capacity: stockpile };
+    }
+
+    const NEVER = OUTAGE_DAYS + 1;
+    const waterControls = byId('water-controls');
+    const drawWaterSoon = () => drawWater();
+    const water = {
+      people: slider(waterControls, { label: 'People', min: 1, max: 8, step: 1, value: 4 }, drawWaterSoon),
+      stockpile: slider(waterControls, { label: 'Stockpile, in full containers', min: 0, max: 60, step: 6, value: 30, unit: ' L' }, drawWaterSoon),
+      supplyDay: choice(waterControls, {
+        label: 'Emergency supply arrives',
+        value: '2',
+        options: [['2', 'on day 2'], ['3', 'on day 3'], ['4', 'on day 4'], ['5', 'on day 5'], [String(NEVER), 'not this week']]
+      }, drawWaterSoon)
+    };
+
+    function drawWaterDay({ day, arriving, delivered, level, short, spilled }, capacity) {
+      const node = el('div', 'day');
+      const tank = el('div', 'day__tank');
+      const fill = el('div', 'day__water');
+      fill.style.height = `${capacity ? (level / capacity) * 100 : 0}%`;
+      tank.append(fill, el('div', 'day__level', `${round(level)} L`));
+
+      const notes = [];
+      if (arriving) notes.push(`+${delivered} L arrive`);
+      if (short > 0) notes.push(`${round(short)} L short`);
+      if (spilled > 0) notes.push(`${round(spilled)} L not stored`);
+      const mark = el('div', `day__mark ${short > 0 ? 'is-bad' : spilled > 0 ? 'is-warn' : ''}`, notes.join(', '));
+
+      node.append(el('strong', '', `Day ${day}`), tank, mark);
+      return node;
+    }
+
+    function drawWater() {
+      const people = water.people();
+      const stockpile = water.stockpile();
+      const result = outage({ people, stockpile, supplyDay: Number(water.supplyDay()) });
+      const shortDays = result.days.filter(({ short }) => short > 0).map(({ day }) => day);
+      const guidance = people * DRINKING_PER_PERSON * GUIDANCE_DAYS;
+      const reach = `At ${result.need} L a day, ${stockpile} L lasts ${round(result.lasts)} days alone; guidance for ${people} ${people === 1 ? 'person' : 'people'} is ${guidance} L.`;
+      const outcome = shortDays.length
+        ? `Short on ${shortDays.length === 1 ? 'day' : 'days'} ${shortDays.join(', ')}.`
+        : 'No day goes short, and once supply arrives the stockpile stops falling.';
+      byId('water-reading').textContent = `${reach} ${outcome}`;
+      byId('water-days').replaceChildren(...result.days.map((day) => drawWaterDay(day, result.capacity)));
+    }
+
+    drawWater();
+
+    // ---- A bank account with an overdraft ----
+
+    const OPENING_BALANCE = 50;
+    const GAUGE = { low: -1000, high: 1000 };
+    const PAYMENTS = [['Rent', 600], ['Repair', 400], ['Train fare', 40]];
+    const PAY_IN = 300;
+
+    const pounds = (x) => `${x < 0 ? '−' : ''}£${Math.abs(round(x))}`;
+    const gaugeAt = (x) => ((Math.min(GAUGE.high, Math.max(GAUGE.low, x)) - GAUGE.low) / (GAUGE.high - GAUGE.low)) * 100;
+
+    let account, statement;
+    const bankControls = byId('bank-controls');
+    const overdraftLimit = slider(bankControls, { label: 'Overdraft limit (changing it starts again)', min: 0, max: 1000, step: 100, value: 500, unit: '' }, () => resetBank());
+
+    function resetBank() {
+      account = SbStore.create({ floor: -overdraftLimit(), level: OPENING_BALANCE, shortfall: 'reject' });
+      statement = [];
+      drawBank();
+    }
+
+    function pay(name, amount) {
+      const available = account.level - account.floor;
+      const paid = SbStore.take(account, amount);
+      account = paid.state;
+      statement.unshift(paid.short > 0
+        ? { tone: 'is-bad', text: `${name}, ${pounds(amount)}: declined whole. Only ${pounds(available)} was available, so nothing left the account.` }
+        : { tone: '', text: `${name}, ${pounds(amount)}: paid. Balance ${pounds(account.level)}.` });
+      drawBank();
+    }
+
+    function payIn(amount) {
+      const received = SbStore.fill(account, amount);
+      account = received.state;
+      statement.unshift({ tone: 'is-good', text: `Paid in ${pounds(received.added)}. Balance ${pounds(account.level)}.` });
+      drawBank();
+    }
+
+    function drawBank() {
+      const available = account.level - account.floor;
+      byId('bank-reading').textContent = `Balance ${pounds(account.level)}, with ${pounds(available)} available. At £20 a day, that lasts ${round(SbStore.lasts(account, 20))} days.`;
+
+      const low = gaugeAt(Math.min(0, account.level));
+      const high = gaugeAt(Math.max(0, account.level));
+      const used = el('div', `gauge__used ${account.level < 0 ? 'is-overdrawn' : ''}`);
+      used.style.left = `${low}%`;
+      used.style.width = `${high - low}%`;
+
+      const marker = (value, label) => {
+        const tick = el('div', 'gauge__tick');
+        tick.style.left = `${gaugeAt(value)}%`;
+        const text = el('div', 'gauge__label', label);
+        text.style.left = `${gaugeAt(value)}%`;
+        return [tick, text];
+      };
+      // The floor and zero are labelled apart, so they stay readable when the limit is small.
+      byId('bank-gauge').replaceChildren(used, ...marker(0, '£0'), ...(account.floor < -100 ? marker(account.floor, `floor ${pounds(account.floor)}`) : []));
+
+      byId('bank-statement').replaceChildren(...statement.map(({ tone, text }) => el('li', tone, text)));
+    }
+
+    const bankActions = byId('bank-actions');
+    for (const [name, amount] of PAYMENTS) {
+      const button = el('button', '', `Pay ${name.toLowerCase()}, ${pounds(amount)}`);
+      button.addEventListener('click', () => pay(name, amount));
+      bankActions.append(button);
+    }
+    const payInButton = el('button', '', `Pay in ${pounds(PAY_IN)}`);
+    payInButton.addEventListener('click', () => payIn(PAY_IN));
+    const startAgain = el('button', '', 'Start again');
+    startAgain.addEventListener('click', resetBank);
+    bankActions.append(payInButton, startAgain);
+
+    resetBank();
+  </script>
+</body>
+</html>

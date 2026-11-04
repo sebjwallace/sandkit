@@ -35,7 +35,7 @@ A component is done when it has all of these:
 A mechanism is done when it has all of these:
 
 1. `mechanisms/sb-name/sb-name.js`, first line `// Sandkit sb-name 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit`, one classic script declaring exactly one global named after it (`SbStore` in `sb-store.js`), ending `if (typeof module !== 'undefined') module.exports = SbStore;`. Its name is unique among components and mechanisms alike. `test/mechanisms` checks it's pure.
-2. `manifest.md`, short, opening with "Use this mechanism through the interface below…" and naming the mechanisms practice: purpose, settings, inputs and outputs each with its unit, operations, invariants, and one example of composing it.
+2. `manifest.md`, short, opening with "Use this mechanism through the interface below…" and naming the mechanisms practice: purpose, whether it's a stock or a flow, settings, inputs and outputs each with its unit, operations and any order within a step, invariants, and one example of composing it.
 3. `CHANGELOG.md`, newest first, `## x.y.z · yyyy-mm-dd`.
 4. `test.mjs`: regression tests from at least three unrelated subjects, each named for its subject, and invariance tests over seeded random settings.
 5. `demo.html`: the mechanism at work for people, through views written by hand and styled as `STYLE.md` describes: **About** (where it helps, where something else fits, getting started) then **Examples** in two contrasting domains. It loads its own mechanism and the shell; a component copied in to show it is the exception, not the rule.
