@@ -5,7 +5,8 @@
 // The page reads `state`, calls `step()` and `reset()`, and changes options.
 
 // Mechanisms load before this file in each page. Under Node, for model tests, the model loads
-// them itself, one line each (declaring them in the page again would fail):
+// them itself, one line each (declaring them in the page again would fail). So loading this file
+// under Node also sets their globals; model tests still require them explicitly, to say where they come from:
 // if (typeof module !== 'undefined') globalThis.SbStore = require('./lib/sandkit/mechanisms/sb-store/sb-store.js');
 
 // The rules the model follows, with codes to cite them by (see lib/sandkit/practices/identifiers.md).

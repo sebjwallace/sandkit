@@ -110,7 +110,7 @@ The model in `model.js` is the heart of the sandbox: the subject captured as cod
 - a Sandkit mechanism, found in **Find by need** in `AGENTS.md` (or the [catalog](../CATALOG.md#find-by-need)), or
 - **by hand**, naming the mechanisms considered and why none fits.
 
-Mark a part built by hand **candidate** if it seems general beyond this subject: a possible future Sandkit mechanism. It goes in the same journal **Parts** line as the page's parts. Until the catalog has mechanisms, this simply records the model's parts, which is where candidates come from.
+Mark a part built by hand **candidate** if it seems general beyond this subject: a possible future Sandkit mechanism. It goes in the same journal **Parts** line as the page's parts: start the journal entry now, with that line, and complete it at the end of the iteration. Until the catalog has mechanisms, this simply records the model's parts, which is where candidates come from.
 
 **Everything else depends on the model, never the other way round.** Preparing what the page shows (labels, grouping, what's lit, the shape a component wants) is a view model's job: functions in the page, or in `view.js` once several pages share them, that read the model and never change its rules. Saving, loading and wiring live in the page. If the model would need to change only because a view did, that code belongs in the view model.
 
@@ -127,6 +127,7 @@ Mark a part built by hand **candidate** if it seems general beyond this subject:
 ```js
 // Model tests: plain assertions that keep the model anchored. No libraries.
 // Run with `node model.test.js`, or load this after model.js in a page and read the console.
+// A mechanism the tests use is required here too, as the mechanisms practice says.
 const { createModel } = typeof require === 'function' ? require('./model.js') : window;
 
 function test(name, fn) {
@@ -155,7 +156,7 @@ Each chapter introduces one idea, much as a well-designed game introduces one me
 - one of the sandbox's own components, listed in `AGENTS.md`, or
 - **by hand**, naming the components considered and why none fits.
 
-If a part built by hand seems useful beyond this subject, mark it **candidate**: a possible future Sandkit component. One short line per part; it's a check, not a document. The plan goes in the journal entry's **Parts** line (see the [journal practice](journal.md#the-entry)).
+If a part built by hand seems useful beyond this subject, mark it **candidate**: a possible future Sandkit component. One short line per part; it's a check, not a document. The plan goes in the journal entry's **Parts** line, so start the entry now and complete it at the end of the iteration (see the [journal practice](journal.md#when-to-write-an-entry)). The handover's **Built by hand** line is drawn from it.
 
 - **Reveal, don't merely display.** Show why things happen: highlight the rule that fired, the stock that ran out, the cause behind the effect.
 - **Modes come with the shell.** Every sandbox has comment mode from the template, wired once in `sandbox.js`. Once the model cites its sources, add trace mode, so people can ask why anything is there; once it has labels people could misread, inspect mode. See the [modes practice](modes.md).
@@ -182,7 +183,7 @@ A sandbox aims to be built with as little testing as possible. Testing is overhe
 
 ## 8. Record it in the journal
 
-Add an entry to `JOURNAL.md` saying what changed and why, which raises the sandbox's version, and update **Where it stands** in `AGENTS.md`. If the folder uses Git, commit the change with its entry, and tag a breaking version. See the [journal practice](journal.md).
+Complete the entry in `JOURNAL.md`, started when you planned the parts, saying what changed and why, which raises the sandbox's version, and update **Where it stands** in `AGENTS.md`. If the folder uses Git, commit the change with its entry, and tag a breaking version. See the [journal practice](journal.md).
 
 ## 9. Hand it over
 
@@ -231,7 +232,7 @@ A sandbox starts as one page, and many stay that way. When it grows heavy, or a 
 Sandkit, the shell and each component have their own version, recorded in `lib/sandkit/SOURCE.md`, and their own changelog. Versions follow semantic versioning: until 1.0, a breaking change raises the minor version (0.1 to 0.2).
 
 1. **Note the installed versions** in `SOURCE.md`.
-2. **Re-copy the files** listed there from the latest Sandkit, with a copy command as above, keeping their paths, and update `SOURCE.md`. With Node, `node <sandkit>/tools/setup.mjs <sandbox-folder>` does this and lists everything that changed since the installed versions, breaking changes first.
+2. **Re-copy the files** listed there from the latest Sandkit, with a copy command as above, keeping their paths, and update `SOURCE.md`. Without Node, also copy the **Sandkit components** and **Sandkit mechanisms** sections, between their `sandkit:` markers, from `templates/sandbox/AGENTS.md` into the sandbox's `AGENTS.md`, and paste the catalog's Find by need into the first. With Node, `node <sandkit>/tools/setup.mjs <sandbox-folder>` does all this and lists everything that changed since the installed versions, breaking changes first. Keep the sandbox's own notes outside those markers, since what's inside is replaced.
 3. **Read each changelog** for the entries newer than the installed version. Entries marked **Breaking** say how to migrate: apply them to the sandbox's own code.
 4. **Open the sandbox** to see it still works.
 

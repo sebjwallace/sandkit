@@ -2,7 +2,16 @@
 
 Sandkit's own version covers the practices, the sandbox template and the tools. Each component, and the shell, has its own version and changelog in its folder.
 
-Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries say how to migrate.
+Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries start `**Breaking:**` and say how to migrate.
+
+## 0.2.83 · 2026-11-05
+- Follow-ups from the first real use of a mechanism, in a household resilience sandbox's water chapter. 1 mechanism.
+- `tools/setup.mjs` tags every installed mechanism before `model.js` on every page that loads the model, on every run, whatever `--page` says, and reports which pages it tagged. It always says what changed: the root changelog's entries since the installed Sandkit version, breaking first with their indented points, then plainly if no part's version moved or nothing changed at all. `SOURCE.md` keeps a fixed order, so updates give small diffs, and the output names the folder rather than printing "Updated ..".
+- Setup keeps all of Sandkit's guidance in a sandbox's `AGENTS.md` current. **Sandkit components** (with Find by need inside) and **Sandkit mechanisms** sit between `sandkit:components` and `sandkit:mechanisms` markers, refreshed on every run, with nothing outside them touched. An older sandbox has those sections found by their headings and replaced, or added in the template's position, with the old text saved to `lib/sandkit/AGENTS-replaced.md` first, under a heading giving the date and the update. **Put back any lines your sandbox had added there, outside the markers.** Recorded in `DECISIONS.md`.
+- `sb-store` 0.1.1: amounts are exactly zero when nothing happened, proved by laws on a decimal grid, and the manifest gains a store that starts full and running across a range.
+- The mechanisms practice covers more than one page, ranges on both sides (pair the ends by the outcome they produce), a mechanism's raw results inside the model's log, and requiring mechanisms in tests. The template's `model.js` notes that loading the model loads its mechanisms.
+- The journal gains a **Changed** kind, versioned like **Added**, with "Is it breaking?" still asked first. The journal entry starts when planning, with its **Parts** line, and is completed at the end. Recorded in `DECISIONS.md`.
+- Breaking entries are written in one form from now on, and `test/versions` flags others in new entries.
 
 ## 0.2.82 · 2026-11-04
 - The first mechanism: `sb-store`, a level between a floor and a ceiling, filled and taken from. 1 mechanism. It's proven by invariance tests over seeded random settings, and regression tests from a household's water stockpile, a rainwater tank, a home battery, a bank account and venue seating. Its demo steps a tank by hand.

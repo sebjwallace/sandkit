@@ -63,6 +63,12 @@ state.overflowed += today.spilled;
 
 - **Name things for what they are in the subject** (`tank`, `roofArea`); mechanisms are named for what they generically are (`SbStore`). That's what makes a composed model read as a description of its domain, and the `Sb` says where the subject ends and Sandkit's parts begin: a store is the subject's, `SbStore` is the mechanism.
 - **Each operation returns what happened,** not only the new state: what was added, spilled, supplied or short. Keep it: it's what the model logs, traces and the page shows.
+- **Naming for the subject applies to the model's own vocabulary.** A model may also keep a mechanism's raw result as it was returned, nested under one name, so its tests can check it with the mechanism's invariants. The page reads the subject's names:
+  ```js
+  const today = SbStore.step(state.tank, caught, demand);
+  log.push({ day, before: state.tank, store: today, overflowed: today.spilled, unmet: today.short });
+  // In a model test: SbStore.invariants.accounted(entry.store, { before: entry.before, inflow: caught, outflow: demand })
+  ```
 - **Mechanisms never call each other.** The model passes one's results to the next.
 - **The wiring holds subject-specific logic on purpose.** Mechanisms take no custom functions, so rules particular to a subject, such as multiplying two curves or a supply chain's ordering rule, live in this composition code. That's the intended place for them, not a gap.
 
@@ -93,17 +99,24 @@ Each mechanism has a few fixed settings, listed with their units in its manifest
 
 A mechanism works in single values. Where the model works in ranges, such as a low and a high estimate, run the mechanism once for each and show both.
 
+When more than one input is a range:
+
+- **Pair the ends by the outcome they produce, not by their labels.** The *pessimistic* run takes the end of each input that makes the outcome worse; the *optimistic* run takes the opposite. For water: the least supply with the heaviest use, and the most supply with the lightest use. Not the low supply with the low use.
+- **If it's unclear which end makes things worse,** run every combination of ends (four for two ranges), report the worst and best outcome, and say which way was used.
+
 ## Loading
 
 A mechanism is one classic script declaring one global named after it (`SbStore` in `sb-store.js`), so it works in a page opened by double-clicking, where modules don't load. It ends by exporting itself for Node.
 
-- **In the page,** its script tag goes before `model.js`'s, since the model needs it when it loads. `tools/setup.mjs` puts it there.
+- **In the page,** its script tag goes before `model.js`'s, since the model needs it when it loads. A mechanism belongs to the model, not to a page, so **every page that loads `model.js` loads its mechanisms first**. `tools/setup.mjs` tags every page that loads the model, on every run. After adding a page, add the tags or run setup again.
 - **In Node,** the model loads it for itself, only when it's running under Node, since in the page it's already there and declaring it again would fail:
   ```js
   if (typeof module !== 'undefined') globalThis.SbStore = require('./lib/sandkit/mechanisms/sb-store/sb-store.js');
   ```
 
-The template's `model.js` shows where these lines go.
+- **In tests,** require each mechanism explicitly at the top of a model test, with the same line, even though requiring `model.js` also sets its global: that's a side effect, easy to miss, and the explicit line says where the name comes from.
+
+The template's `model.js` shows where the model's lines go.
 
 ## Changing one
 
