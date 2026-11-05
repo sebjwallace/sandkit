@@ -1,4 +1,4 @@
-// Sandkit sb-store 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-store 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A level between a floor and a ceiling, filled and taken from. A stock.
 //
 // Units: Q is any one quantity (litres, kWh, pounds, people). Every setting, amount and output is in Q.
@@ -6,7 +6,8 @@
 // `lasts` is the one place time appears.
 //
 // State: { capacity, floor, level, overflow, shortfall }, plain data, never changed.
-// Every operation that moves the level returns { state, ...what happened }.
+// Every operation that moves the level returns { state, ...what happened }. Amounts are exactly zero when
+// nothing happened, and otherwise accurate to rounding (relative 1e-9).
 
 const SbStore = (() => {
   const POLICIES = {
@@ -44,31 +45,42 @@ const SbStore = (() => {
     if (!Number.isFinite(value) || value < 0) fail(where, `${name} must be a finite number, zero or more (got ${value}); ${otherWay}`);
   }
 
+  // Rounding leaves residue about 1e-16 of the numbers worked with, growing slowly as a level is carried from step
+  // to step, so two values this close, relative to those numbers, count as the same. A model testing `spilled > 0`
+  // is then never misled, and a reject policy never refuses an amount that fits. It's far above rounding and far below
+  // any amount a model means.
+  const PRECISION = 1e-9;
+  const isClose = (a, b, ...workedWith) => Math.abs(a - b) <= PRECISION * Math.max(...[a, b, ...workedWith].filter(Number.isFinite).map(Math.abs));
+  const exceeds = (a, b, ...workedWith) => a > b && !isClose(a, b, ...workedWith);
+
   // What can be supplied of `amount` when `available` is there, by the shortfall policy.
-  function supply(state, amount, available) {
-    if (amount <= available) return amount;
+  function supply(state, amount, available, ...workedWith) {
+    if (!exceeds(amount, available, ...workedWith)) return amount;
     return state.shortfall === 'reject' ? 0 : available;
   }
 
-  // Rounding must never carry a level past its bounds.
-  const withLevel = (state, level) => ({ ...state, level: Math.min(Math.max(level, state.floor), state.capacity) });
+  // A level that reaches a bound sits exactly on it, and rounding never carries it past.
+  function withLevel(state, level, ...workedWith) {
+    if (isClose(level, state.capacity, ...workedWith)) return { ...state, level: state.capacity };
+    if (isClose(level, state.floor, ...workedWith)) return { ...state, level: state.floor };
+    return { ...state, level: Math.min(Math.max(level, state.floor), state.capacity) };
+  }
 
   // amount: Q → { state, added Q, spilled Q, rejected Q }, where added + spilled + rejected = amount
   function fill(state, amount) {
     requireAmount('fill', 'amount', amount, 'to take away, use SbStore.take');
-    const room = state.capacity - state.level;
-    if (amount <= room) return { state: withLevel(state, state.level + amount), added: amount, spilled: 0, rejected: 0 };
+    const filled = state.level + amount;
+    if (!exceeds(filled, state.capacity, state.level, amount)) return { state: withLevel(state, filled, state.level, amount), added: amount, spilled: 0, rejected: 0 };
     if (state.overflow === 'reject') return { state, added: 0, spilled: 0, rejected: amount };
+    const room = state.capacity - state.level;
     return { state: withLevel(state, state.capacity), added: room, spilled: amount - room, rejected: 0 };
   }
 
   // amount: Q → { state, supplied Q, short Q }, where supplied + short = amount
   function take(state, amount) {
     requireAmount('take', 'amount', amount, 'to add, use SbStore.fill');
-    const available = state.level - state.floor;
-    const supplied = supply(state, amount, available);
-    const level = supplied === available ? state.floor : state.level - supplied;
-    return { state: withLevel(state, level), supplied, short: amount - supplied };
+    const supplied = supply(state, amount, state.level - state.floor, state.level, state.floor);
+    return { state: withLevel(state, state.level - supplied, state.level, supplied), supplied, short: amount - supplied };
   }
 
   // Everything that happens to the store in one model step, in before out: what arrives can meet this
@@ -77,17 +89,17 @@ const SbStore = (() => {
   function step(state, inflow, outflow) {
     requireAmount('step', 'inflow', inflow, 'for a net outflow, pass it as outflow');
     requireAmount('step', 'outflow', outflow, 'for a net inflow, pass it as inflow');
-    const room = state.capacity - state.level;
-    const pool = state.level - state.floor + inflow;
-    const supplied = supply(state, outflow, pool);
-    const excess = inflow - supplied - room;
+    const supplied = supply(state, outflow, state.level - state.floor + inflow, state.level, state.floor, inflow);
+    const short = outflow - supplied;
+    const wouldBe = state.level + inflow - supplied;
+    const workedWith = [state.level, inflow, supplied];
 
-    if (excess > 0 && state.overflow === 'reject') {
-      return { ...take(state, outflow), added: 0, spilled: 0, rejected: inflow };
+    if (!exceeds(wouldBe, state.capacity, ...workedWith)) {
+      return { state: withLevel(state, wouldBe, ...workedWith), added: inflow, spilled: 0, rejected: 0, supplied, short };
     }
-    const spilled = Math.max(0, excess);
-    const level = spilled > 0 ? state.capacity : supplied === pool ? state.floor : state.level + inflow - supplied;
-    return { state: withLevel(state, level), added: inflow - spilled, spilled, rejected: 0, supplied, short: outflow - supplied };
+    if (state.overflow === 'reject') return { ...take(state, outflow), added: 0, spilled: 0, rejected: inflow };
+    const spilled = inflow - supplied - (state.capacity - state.level);
+    return { state: withLevel(state, state.capacity), added: inflow - spilled, spilled, rejected: 0, supplied, short };
   }
 
   // How long until the floor at a steady net rate out. netOutRate: Q per unit of time → that unit of time.

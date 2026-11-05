@@ -16,7 +16,7 @@ A sandbox changes a little at a time, steered by the people exploring it. Withou
 
 ## When to write an entry
 
-After every meaningful change, which in practice means every iteration (see [building a sandbox](building-a-sandbox.md)). Not for exploratory edits that were thrown away: the journal records what the sandbox became, not how you got there.
+After every meaningful change, which in practice means every iteration (see [building a sandbox](building-a-sandbox.md)). **Start the entry when planning,** with its **Parts** line, and complete it at the end. Not for exploratory edits that were thrown away: the journal records what the sandbox became, not how you got there.
 
 Sources count: cataloguing new ones ("Catalogued SRC-14 to SRC-17") and citing them from the model are changes like any other, recorded as **Added** (see the [sources practice](sources.md)).
 
@@ -28,9 +28,10 @@ Each entry raises the sandbox's version, by semantic versioning, as Sandkit's ow
 |---|---|---|---|
 | **Breaking** | Something someone may have cited no longer holds: a code was retired, renamed, split or merged, or the model now behaves in a way that changes what people would conclude. | `0.2.4` → `0.3.0` | `1.2.4` → `2.0.0` |
 | **Added** | New codes, chapters, components, sources or behaviour, with nothing existing broken. | `0.2.4` → `0.2.5` | `1.2.4` → `1.3.0` |
+| **Changed** | An existing behaviour or presentation reworked, with nothing anyone cited made wrong. | `0.2.4` → `0.2.5` | `1.2.4` → `1.3.0` |
 | **Fixed** | Wording, styling or corrections that change no meaning. | `0.2.4` → `0.2.5` | `1.2.4` → `1.2.5` |
 
-**Is it breaking?** Ask: could anything someone has cited, shared or concluded now be wrong or missing? If so, it's breaking.
+**Is it breaking?** Ask this first: could anything someone has cited, shared or concluded now be wrong or missing? If so, it's breaking, however small or however like a rework it seems.
 
 The version identifies the entry, so cite it like a code: "the reorder rule was split in 0.3.0".
 
@@ -46,7 +47,7 @@ The version identifies the entry, so cite it like a code: "the reorder rule was 
 **Parts:** stock trend → `sb-chart`; reorder rules → `sb-rules`; warehouse floor plan → by hand (considered `sb-plane`, `sb-wireframe`: neither draws a floor plan), candidate. Model: shelf stock → `sb-store`; reorder timing → by hand (considered `sb-store`: it holds stock but doesn't wait out a lead time), candidate.
 ```
 
-- **Heading:** version · date · kind (`Breaking`, `Added` or `Fixed`).
+- **Heading:** version · date · kind (`Breaking`, `Added`, `Changed` or `Fixed`).
 - **Changed** (required): what changed, citing every code touched.
 - **Why** (required): the reason, and what prompted it: the person, a source (`SRC-`), comments they sent (`FB-`, see the [feedback practice](feedback.md)), a contradiction, or your own finding.
 - **Retired** (only if any): each retired code and what replaced it, or "removed" if nothing did.

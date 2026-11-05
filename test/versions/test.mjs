@@ -23,12 +23,23 @@ const headerVersion = (path) => read(path).match(/^\/\/ Sandkit \S+ (\S+) · MIT
 const isSemver = (v) => /^\d+\.\d+\.\d+$/.test(v);
 const newerFirst = (list) => list.every((r, i) => i === 0 || r.version.localeCompare(list[i - 1].version, undefined, { numeric: true }) < 0);
 
+// Entries before this date spell it other ways too, and setup still recognises them.
+const ONE_BREAKING_FORM_FROM = '2026-11-05';
+
+function checkBreakingForm(path) {
+  for (const entry of read(path).split(/^## /m).slice(1)) {
+    const [, date] = entry.match(/^\S+ · (\S+)/) ?? [];
+    if (date >= ONE_BREAKING_FORM_FROM) assert(!/\*\*Breaking(?!:\*\*)/.test(entry), `${path}: write "**Breaking:**" in ${entry.split('\n')[0]}`);
+  }
+}
+
 function checkChangelog(path) {
   assert(existsSync(join(ROOT, path)), `${path} is missing`);
   const list = releases(path);
   assert(list.length, `${path} has no releases`);
   list.forEach((r) => assert(isSemver(r.version) && /^\d{4}-\d{2}-\d{2}$/.test(r.date), `${path}: "${r.version} · ${r.date}" isn't "x.y.z · yyyy-mm-dd"`));
   assert(newerFirst(list), `${path}: releases should be newest first`);
+  checkBreakingForm(path);
   return list[0].version;
 }
 

@@ -127,6 +127,96 @@ test('a fill or step reaching the top leaves the level exactly at the capacity, 
   assert(SbStore.take(SbStore.create(justEmpties), 6.844).state.level === -0.602, 'take exactly to the floor');
 });
 
+// ---- Exact zeros, on a decimal grid ----
+// Amounts in tenths and hundredths are where rounding shows. The true result comes from whole numbers of tenths or
+// hundredths, so it owes nothing to the store or to floating point.
+
+function trueStep(s, inflow, outflow) {
+  const supplyFrom = (available) => (outflow <= available ? outflow : s.shortfall === 'reject' ? 0 : available);
+  const fromPool = supplyFrom(s.level - s.floor + inflow);
+  const wouldBe = s.level + inflow - fromPool;
+  if (wouldBe <= s.capacity) return { level: wouldBe, added: inflow, spilled: 0, rejected: 0, supplied: fromPool, short: outflow - fromPool };
+  if (s.overflow === 'reject') {
+    const supplied = supplyFrom(s.level - s.floor);
+    return { level: s.level - supplied, added: 0, spilled: 0, rejected: inflow, supplied, short: outflow - supplied };
+  }
+  const spilled = wouldBe - s.capacity;
+  return { level: s.capacity, added: inflow - spilled, spilled, rejected: 0, supplied: fromPool, short: outflow - fromPool };
+}
+
+function trueFill(s, amount) {
+  const { level, added, spilled, rejected } = trueStep(s, amount, 0);
+  return { level, added, spilled, rejected };
+}
+
+function trueTake(s, amount) {
+  const supplied = amount <= s.level - s.floor ? amount : s.shortfall === 'reject' ? 0 : s.level - s.floor;
+  return { level: s.level - supplied, supplied, short: amount - supplied };
+}
+
+const OPERATIONS = {
+  step: (state, s, inflow, outflow) => [SbStore.step(state, inflow / s.grid, outflow / s.grid), trueStep(s, inflow, outflow)],
+  fill: (state, s, inflow) => [SbStore.fill(state, inflow / s.grid), trueFill(s, inflow)],
+  take: (state, s, inflow, outflow) => [SbStore.take(state, outflow / s.grid), trueTake(s, outflow)]
+};
+
+// Runs of operations, each store in whole numbers of tenths or hundredths, its true level carried beside the real one.
+function overDecimalRuns(check) {
+  const random = seeded(2026);
+  const whole = (high) => Math.floor(random() * (high + 1));
+  for (let run = 0; run < 4000; run++) {
+    const grid = pick(random, [10, 100]);
+    const capacity = (1 + whole(100)) * grid + whole(grid);
+    const floor = random() < 0.75 ? 0 : -whole(50 * grid);
+    const s = { grid, capacity, floor, level: floor + whole(capacity - floor), overflow: pick(random, SbStore.POLICIES.overflow), shortfall: pick(random, SbStore.POLICIES.shortfall) };
+    let state = SbStore.create({ ...s, capacity: capacity / grid, floor: floor / grid, level: s.level / grid });
+    for (let i = 0; i < 25; i++) {
+      // Half the time, amounts that leave the level exactly at a bound or exactly meet the demand.
+      const inflow = random() < 0.5 ? s.capacity - s.level + whole(3 * grid) : whole(100 * grid);
+      const outflow = random() < 0.5 ? inflow : random() < 0.5 ? s.level - s.floor + inflow : whole(100 * grid);
+      const [result, truth] = OPERATIONS[pick(random, ['step', 'step', 'fill', 'take'])](state, s, inflow, outflow);
+      check(result, truth, s);
+      state = result.state;
+      s.level = truth.level;
+    }
+  }
+}
+
+for (const amount of ['spilled', 'short', 'rejected', 'added', 'supplied']) {
+  test(`exact zeros: ${amount} is exactly 0 whenever the true result has none, and otherwise right`, () => overDecimalRuns((result, truth, s) => {
+    if (truth[amount] === undefined) return;
+    if (truth[amount] === 0) assert(result[amount] === 0, `${amount} should be exactly 0, got ${result[amount]}`);
+    else assert(result[amount] > 0 && Math.abs(result[amount] - truth[amount] / s.grid) <= 1e-9 * (truth[amount] / s.grid), `${amount}: expected ${truth[amount] / s.grid}, got ${result[amount]}`);
+  }));
+}
+
+test('exact bounds: on a decimal grid, the level is exactly at a bound whenever the true level is, and otherwise right', () => overDecimalRuns((result, truth, s) => {
+  const { level, capacity, floor } = result.state;
+  if (truth.level === s.capacity) assert(level === capacity, `expected exactly ${capacity}, got ${level}`);
+  else if (truth.level === s.floor) assert(level === floor, `expected exactly ${floor}, got ${level}`);
+  else assert(Math.abs(level - truth.level / s.grid) <= 1e-9 * Math.max(Math.abs(capacity), Math.abs(floor)), `level: expected ${truth.level / s.grid}, got ${level}`);
+}));
+
+test('exact zeros: the case that found it, 69.4 in and 62 out of 14.4 in a store of 21.8, spills nothing', () => {
+  const today = SbStore.step(SbStore.create({ capacity: 21.8, level: 14.4 }), 69.4, 62);
+  assert(today.spilled === 0, `spilled ${today.spilled}`);
+  assert(today.state.level === 21.8, `level ${today.state.level}`);
+});
+
+test('exact zeros: reject never refuses an amount that fits, which rounding could make seem not to', () => {
+  const room = SbStore.create({ capacity: 0.3, level: 0.1, overflow: 'reject' });
+  assert(0.1 + 0.2 > 0.3, 'these numbers do round up');
+  assert(SbStore.fill(room, 0.2).rejected === 0, 'fill');
+  const held = SbStore.create({ level: 0.3, floor: 0.1, shortfall: 'reject' });
+  assert(SbStore.take(held, 0.2).supplied === 0.2, 'take');
+});
+
+test('rounding: a real amount far smaller than the numbers is still kept when they\'re small too', () => {
+  const small = SbStore.create({ capacity: 1e-6, level: 0 });
+  assert(SbStore.fill(small, 2e-6).spilled > 0, 'a small store spills in its own scale');
+  assert(SbStore.take(small, 1e-6).short === 1e-6, 'and runs short in it');
+});
+
 test('reject is all-or-nothing: added is 0 or the whole amount, and supplied likewise', () => {
   overRandomRuns((result, operation) => {
     const { added, supplied, spilled = 0 } = result;

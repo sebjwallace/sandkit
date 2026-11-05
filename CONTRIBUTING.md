@@ -92,7 +92,7 @@ Every change to a component, the shell or Sandkit itself gets a changelog entry,
 ```
 
 - **Choose the version by semantic versioning.** Until 1.0, a breaking change raises the minor version (0.1.0 to 0.2.0) and anything else the patch (0.1.0 to 0.1.1). From 1.0, breaking changes raise the major version.
-- **Breaking entries say how to migrate,** so an agent updating a sandbox can apply them without reading the source.
+- **Breaking entries start `**Breaking:**` and say how to migrate,** so an agent updating a sandbox can apply them without reading the source.
 - **Update the version in the script's first line too.** `test/versions` checks they agree.
 - **Add an entry to the root `CHANGELOG.md`** for changes to practices, the template or tools, and when releasing Sandkit as a whole.
 

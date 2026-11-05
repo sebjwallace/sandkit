@@ -1,10 +1,10 @@
 // Tests for the tools. Plain assertions, no libraries; run with `node tools/test.mjs`.
 
 import { execFileSync, spawn } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, request } from 'node:http';
 import { networkInterfaces, tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SETUP = resolve(fileURLToPath(import.meta.url), '../setup.mjs');
@@ -83,31 +83,103 @@ test('a new sandbox\'s AGENTS.md has the catalog\'s Find by need index, once, un
   assert(agents.lastIndexOf('\n## Sandkit components', at) > agents.lastIndexOf('\n## This sandbox', at), 'inside Sandkit components');
 });
 
-test('running again refreshes the index and changes nothing outside it', (sandbox) => {
+// Sandkit's sections as a fresh sandbox has them, markers included.
+function currentSection(name) {
+  const fresh = mkdtempSync(join(tmpdir(), 'sandkit-fresh-'));
+  try {
+    setup(fresh);
+    const agents = read(fresh, 'AGENTS.md');
+    const end = `<!-- /sandkit:${name} -->`;
+    return agents.slice(agents.indexOf(`<!-- sandkit:${name} -->`), agents.indexOf(end) + end.length);
+  } finally {
+    rmSync(fresh, { recursive: true, force: true });
+  }
+}
+
+const COMPONENTS_SECTION = currentSection('components');
+const MECHANISMS_SECTION = currentSection('mechanisms');
+const REPLACED = 'lib/sandkit/AGENTS-replaced.md';
+
+test('a new sandbox\'s AGENTS.md has Sandkit\'s sections between markers, the index inside the first', (sandbox) => {
+  setup(sandbox);
+  const agents = read(sandbox, 'AGENTS.md');
+  assert(agents.includes(`${COMPONENTS_SECTION}\n\n${MECHANISMS_SECTION}\n\n## This sandbox's components`), 'in the template\'s place');
+  assert(COMPONENTS_SECTION.startsWith('<!-- sandkit:components -->\n## Sandkit components') && COMPONENTS_SECTION.includes(indexBlock()), 'components, with the index');
+  assert(MECHANISMS_SECTION.startsWith('<!-- sandkit:mechanisms -->\n## Sandkit mechanisms'), 'mechanisms');
+});
+
+test('a current sandbox is left unchanged, and nothing is saved', (sandbox) => {
+  setup(sandbox);
+  const before = read(sandbox, 'AGENTS.md');
+  const { output } = setup(sandbox);
+  assertEqual(read(sandbox, 'AGENTS.md'), before);
+  assert(!output.includes('Refreshed') && !existsSync(join(sandbox, REPLACED)), output);
+});
+
+test('what\'s between the markers is refreshed, and the sandbox\'s text just outside them stays byte for byte', (sandbox) => {
   setup(sandbox);
   const fresh = read(sandbox, 'AGENTS.md');
-  const [before, after] = [fresh.slice(0, fresh.indexOf(INDEX_START)), fresh.slice(fresh.indexOf(INDEX_END) + INDEX_END.length)];
-  writeFileSync(join(sandbox, 'AGENTS.md'), `${before}Our notes.\n${INDEX_START}\nstale\n${INDEX_END}\nMore notes.${after}`);
+  const stale = (name) => `<!-- sandkit:${name} -->\nstale\n<!-- /sandkit:${name} -->`;
+  const withSections = (first, second) => `Ours, before.  \n\n\n${first}Ours, between.\t${second}\nOurs, after.\n\n\n`;
+  writeFileSync(join(sandbox, 'AGENTS.md'), withSections(stale('components'), stale('mechanisms')));
   const { output } = setup(sandbox);
-  assertEqual(read(sandbox, 'AGENTS.md'), `${before}Our notes.\n${indexBlock()}\nMore notes.${after}`);
-  assert(output.includes('Refreshed the Find by need index in AGENTS.md.'), 'says so');
-  assert(!setup(sandbox).output.includes('Refreshed'), 'quiet when nothing changed');
+  assertEqual(read(sandbox, 'AGENTS.md'), withSections(COMPONENTS_SECTION, MECHANISMS_SECTION));
+  assert(output.includes('Refreshed Sandkit\'s sections in AGENTS.md.') && !existsSync(join(sandbox, REPLACED)), output);
+  assert(fresh.includes(COMPONENTS_SECTION), 'the same sections as a new sandbox');
 });
 
-test('an older sandbox without markers gets the index at the end of Sandkit components, once', (sandbox) => {
+test('an older sandbox has its sections replaced by heading, the old text saved, and the rest untouched', (sandbox) => {
   setup(sandbox);
-  const original = '# Ours\n\n## Sandkit components\n\n- Use them.\n\n## Conventions\n\n- Ours.\n';
-  writeFileSync(join(sandbox, 'AGENTS.md'), original);
-  setup(sandbox);
-  setup(sandbox);
-  assertEqual(read(sandbox, 'AGENTS.md'), `# Ours\n\n## Sandkit components\n\n- Use them.\n\n${indexBlock()}\n\n## Conventions\n\n- Ours.\n`);
+  const oldIndex = `${INDEX_START}\nold index\n${INDEX_END}`;
+  writeFileSync(join(sandbox, 'AGENTS.md'), `# Ours\n\n## Sandkit components\n\n- Use them.\n- Our own line.\n\n${oldIndex}\n\n## Sandkit mechanisms\n\n- Old advice.\n\n## Conventions\n\n- Ours.\n`);
+  const { output } = setup(sandbox);
+  assertEqual(read(sandbox, 'AGENTS.md'), `# Ours\n\n${COMPONENTS_SECTION}\n\n${MECHANISMS_SECTION}\n\n## Conventions\n\n- Ours.\n`);
+  const saved = read(sandbox, REPLACED);
+  assert(saved.includes('## Sandkit components\n\n- Use them.\n- Our own line.') && saved.includes('## Sandkit mechanisms\n\n- Old advice.'), saved);
+  assert(!saved.includes('old index'), 'not the index, which was never the sandbox\'s');
+  assert(output.includes('Saved the text those sections replaced to lib/sandkit/AGENTS-replaced.md'), output);
+  const after = setup(sandbox);
+  assert(!after.output.includes('Saved the text') && read(sandbox, REPLACED) === saved, 'once only');
 });
 
-test('without a Sandkit components section, the index goes at the end of the file', (sandbox) => {
+test('an older sandbox without a mechanisms section gets one in the template\'s position', (sandbox) => {
   setup(sandbox);
-  writeFileSync(join(sandbox, 'AGENTS.md'), '# Ours\n\nNotes.');
+  writeFileSync(join(sandbox, 'AGENTS.md'), '# Ours\n\n## Sandkit components\n\n- Use them.\n\n## This sandbox\'s components\n\nOurs.\n\n## Conventions\n\n- Ours.\n');
   setup(sandbox);
-  assertEqual(read(sandbox, 'AGENTS.md'), `# Ours\n\nNotes.\n\n${indexBlock()}\n`);
+  assertEqual(read(sandbox, 'AGENTS.md'), `# Ours\n\n${COMPONENTS_SECTION}\n\n${MECHANISMS_SECTION}\n\n## This sandbox's components\n\nOurs.\n\n## Conventions\n\n- Ours.\n`);
+  assert(!read(sandbox, REPLACED).includes('Sandkit mechanisms'), 'nothing to save for a section that wasn\'t there');
+});
+
+test('a section with markers keeps them when another is added before it', (sandbox) => {
+  setup(sandbox);
+  writeFileSync(join(sandbox, 'AGENTS.md'), `# Ours\n\n${MECHANISMS_SECTION}\n\n## Conventions\n`);
+  setup(sandbox);
+  assertEqual(read(sandbox, 'AGENTS.md'), `# Ours\n\n${COMPONENTS_SECTION}\n\n${MECHANISMS_SECTION}\n\n## Conventions\n`);
+  assert(!existsSync(join(sandbox, REPLACED)), 'nothing replaced');
+});
+
+test('without Sandkit\'s sections, they go at the end of the file, and an index left there goes', (sandbox) => {
+  setup(sandbox);
+  writeFileSync(join(sandbox, 'AGENTS.md'), `# Ours\n\nNotes.\n\n${INDEX_START}\nold index\n${INDEX_END}\n`);
+  setup(sandbox);
+  assertEqual(read(sandbox, 'AGENTS.md'), `# Ours\n\nNotes.\n\n${COMPONENTS_SECTION}\n\n${MECHANISMS_SECTION}\n`);
+});
+
+test('saving again adds to what was saved, never overwriting it', (sandbox) => {
+  setup(sandbox);
+  writeFileSync(join(sandbox, 'AGENTS.md'), '## Sandkit components\n\n- First.\n');
+  setup(sandbox);
+  writeFileSync(join(sandbox, 'AGENTS.md'), '## Sandkit components\n\n- Second.\n');
+  setup(sandbox);
+  writeFileSync(join(sandbox, 'AGENTS.md'), '## Sandkit components\n\n- Third.\n');
+  const [latest, , older] = rootReleases();
+  installOlderSandkit(sandbox, older);
+  setup(sandbox);
+  const saved = read(sandbox, REPLACED);
+  assert(saved.includes('- First.') && saved.includes('- Second.') && saved.includes('- Third.'), saved);
+  const today = new Date().toISOString().slice(0, 10);
+  assert(saved.includes(`## ${today}, Sandkit ${latest}\n\n## Sandkit components\n\n- Second.`), `headed by the version:\n${saved}`);
+  assert(saved.includes(`## ${today}, Sandkit ${older} → ${latest}\n\n## Sandkit components\n\n- Third.`), `headed by the update:\n${saved}`);
 });
 
 test('a new sandbox has comment mode: sb-comments copied, loaded once and in the shell\'s modes', (sandbox) => {
@@ -147,7 +219,7 @@ test('an engine is copied with its manifest and changelog, tagged once, recorded
   assert(/- discovery \d+\.\d+\.\d+/.test(source) && source.includes('- engines/discovery/discovery.js'), 'its version and files recorded');
 });
 
-// Sandkit has no mechanisms yet, so the fixture stands in for one in mechanisms/ while a test runs.
+// A fixture stands in for a mechanism in mechanisms/ while a test runs, so these tests don't depend on a real one's version.
 async function withFixtureMechanism(name, fn) {
   const folder = join(MECHANISMS, name);
   assert(!existsSync(folder), `mechanisms/${name} already exists`);
@@ -167,6 +239,56 @@ test('a mechanism is copied with its manifest and changelog, tagged once before 
   const source = read(sandbox, 'lib/sandkit/SOURCE.md');
   assert(source.includes('- sb-tally 0.1.0') && source.includes('- mechanisms/sb-tally/sb-tally.js'), 'its version and files recorded');
 }));
+
+// Five pages: three load the model, one doesn't, and one that does already has the mechanism's tag.
+const MECHANISM_TAG = '<script src="lib/sandkit/mechanisms/sb-store/sb-store.js"></script>';
+const MODEL_TAG = '<script src="model.js"></script>';
+const pageWith = (...tags) => `<!doctype html>\n<body>\n  ${tags.join('\n  ')}\n</body>\n`;
+
+function multiPageSandbox(sandbox) {
+  setup(sandbox);
+  writeFileSync(join(sandbox, 'food.html'), pageWith(MODEL_TAG));
+  writeFileSync(join(sandbox, 'sources.html'), pageWith(MODEL_TAG, '<script src="sources.js"></script>'));
+  writeFileSync(join(sandbox, 'about.html'), pageWith('<script src="about.js"></script>'));
+  writeFileSync(join(sandbox, 'tagged.html'), pageWith(MECHANISM_TAG, MODEL_TAG));
+}
+
+const isTaggedBeforeModel = (html) => html.includes(`${MECHANISM_TAG}\n  ${MODEL_TAG}`) && count(html, MECHANISM_TAG) === 1;
+
+test('a mechanism is tagged before model.js on every page that loads the model, and only those', (sandbox) => {
+  multiPageSandbox(sandbox);
+  const about = read(sandbox, 'about.html'), tagged = read(sandbox, 'tagged.html');
+  const { output } = setup(sandbox, 'sb-store');
+  for (const page of ['index.html', 'food.html', 'sources.html', 'tagged.html']) assert(isTaggedBeforeModel(read(sandbox, page)), `${page} tagged once, before model.js`);
+  assertEqual(read(sandbox, 'about.html'), about);
+  assertEqual(read(sandbox, 'tagged.html'), tagged);
+  assert(output.includes('Added script tags for sb-store to food.html, index.html, sources.html.'), `says which pages:\n${output}`);
+});
+
+test('--page doesn\'t apply to a mechanism, but still does to a component named with it', (sandbox) => {
+  multiPageSandbox(sandbox);
+  writeFileSync(join(sandbox, 'about.html'), pageWith('<script src="lib/sandkit/shell/sb-shell.js"></script>'));
+  setup(sandbox, 'sb-store', 'sb-log', '--page', 'about.html');
+  assert(!read(sandbox, 'about.html').includes('sb-store'), 'not on the page named, which has no model');
+  assert(isTaggedBeforeModel(read(sandbox, 'food.html')), 'on a page with the model');
+  assert(scriptTags(read(sandbox, 'about.html'), 'sb-log') === 1 && scriptTags(read(sandbox, 'index.html'), 'sb-log') === 0, 'the component only on the page named');
+});
+
+test('an installed mechanism reaches a page added later, without being named', (sandbox) => {
+  setup(sandbox, 'sb-store');
+  writeFileSync(join(sandbox, 'food.html'), pageWith(MODEL_TAG));
+  const { output } = setup(sandbox);
+  assert(isTaggedBeforeModel(read(sandbox, 'food.html')), 'tagged');
+  assert(output.includes('Added script tags for sb-store to food.html.'), output);
+  assert(!setup(sandbox).output.includes('Added script tags'), 'quiet when every page has it');
+});
+
+test('when no page loads the model, it says to add a mechanism\'s tags by hand', (sandbox) => {
+  setup(sandbox);
+  writeFileSync(join(sandbox, 'index.html'), read(sandbox, 'index.html').replace(MODEL_TAG, ''));
+  const { ok, output } = setup(sandbox, 'sb-store');
+  assert(ok && output.includes('Add script tags for sb-store yourself') && !read(sandbox, 'index.html').includes('sb-store'), output);
+});
 
 test('a sandbox\'s model loads a mechanism set up in it, under Node', (sandbox) => withFixtureMechanism('sb-tally', () => {
   setup(sandbox, 'sb-tally');
@@ -315,6 +437,73 @@ test('updating reports what changed since the installed version, breaking change
 test('nothing is reported when versions are unchanged', (sandbox) => {
   setup(sandbox, 'sb-log');
   assert(!setup(sandbox).output.includes('→'), 'no version changes');
+});
+
+// Pretends the sandbox was last set up from an older Sandkit.
+function installOlderSandkit(sandbox, version) {
+  const source = join(sandbox, 'lib/sandkit/SOURCE.md');
+  writeFileSync(source, readFileSync(source, 'utf8').replace(/^(Copied from Sandkit) \S+/m, `$1 ${version}`));
+}
+
+const rootReleases = () => readFileSync(resolve(COMPONENTS, '../CHANGELOG.md'), 'utf8').match(/^## \d+\.\d+\.\d+/gm).map((heading) => heading.slice(3));
+
+test('updating from an older Sandkit lists the root changelog since then, and says when no part changed', (sandbox) => {
+  setup(sandbox);
+  const [latest, previous, older] = rootReleases();
+  installOlderSandkit(sandbox, older);
+  const { output } = setup(sandbox);
+  assert(output.includes(`Sandkit ${older} → ${latest}`), `the move reported:\n${output}`);
+  assert(output.includes(`  - ${latest}: `) && output.includes(`  - ${previous}: `), 'entries since the installed version');
+  assert(!output.includes(`  - ${older}: `), 'none from the installed version');
+  assert(output.includes('No component, engine or mechanism changed version.'), 'says no part moved');
+  assert(!output.includes('Sandkit hasn\'t changed'), 'something did');
+  assert(read(sandbox, 'lib/sandkit/SOURCE.md').includes(`Copied from Sandkit ${latest} `), 'the record moves on');
+});
+
+test('the root changelog lists breaking changes first', (sandbox) => {
+  setup(sandbox);
+  const oldest = rootReleases().at(-1);
+  installOlderSandkit(sandbox, oldest);
+  const { output } = setup(sandbox);
+  assert(output.includes('    - **`sb-source-trace`:**'), 'a note\'s indented points come with it');
+  const notes = output.split('\n').filter((line) => /^ {2}- \d/.test(line));
+  const breaking = notes.map((line) => line.includes('**Breaking'));
+  assert(breaking.includes(true), 'there are some to order');
+  assert(breaking.lastIndexOf(true) < breaking.indexOf(false), 'before the rest');
+});
+
+test('updating from the same Sandkit, with nothing changed, says so', (sandbox) => {
+  setup(sandbox, 'sb-log');
+  const { output } = setup(sandbox);
+  assert(output.includes(`Sandkit hasn\'t changed: still ${rootReleases()[0]}`), output);
+  assert(!output.includes('No component, engine'), 'one statement');
+});
+
+test('a moved part is reported without saying nothing changed, and a new sandbox reports nothing', (sandbox) => {
+  const created = setup(sandbox, 'sb-log').output;
+  assert(!created.includes('Sandkit hasn\'t changed') && !created.includes('changed version'), `new sandbox quiet:\n${created}`);
+  installOlder(sandbox, 'sb-log', '0.0.1');
+  const { output } = setup(sandbox);
+  assert(output.includes('sb-log 0.0.1 →') && !output.includes('Sandkit hasn\'t changed') && !output.includes('No component, engine'), output);
+});
+
+test('SOURCE.md lists versions and files in a fixed order, whatever order they were added', (sandbox) => {
+  setup(sandbox, 'sb-log', 'sb-id', 'sb-store', 'discovery');
+  const source = read(sandbox, 'lib/sandkit/SOURCE.md');
+  const list = (from, to) => source.slice(source.indexOf(from), source.indexOf(to)).split('\n').filter((line) => line.startsWith('- ')).map((line) => line.slice(2));
+  const versions = list('## Versions', '## Files').map((line) => line.split(' ')[0]);
+  assertEqual(versions, ['Sandkit', 'shell', 'sb-comments', 'sb-id', 'sb-log', 'discovery', 'sb-store']);
+  const groupOf = (file) => ['shell/', 'components/', 'engines/', 'mechanisms/'].findIndex((folder) => file.startsWith(folder));
+  const groups = list('## Files', '\0').map(groupOf);
+  assertEqual(groups, [...groups].sort((a, b) => a - b));
+  setup(sandbox);
+  assertEqual(read(sandbox, 'lib/sandkit/SOURCE.md').split('## Versions')[1], source.split('## Versions')[1]);
+});
+
+test('it names the folder it updated, even when given as a dot', (sandbox) => {
+  setup(sandbox);
+  const output = execFileSync('node', [SETUP, '.'], { cwd: sandbox, encoding: 'utf8' });
+  assert(output.startsWith(`Updated ${basename(realpathSync(sandbox))}.\n`), output);
 });
 
 // ---- analyse.mjs ----
