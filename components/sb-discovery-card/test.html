@@ -341,6 +341,136 @@
       assertEqual([folds(a)[0].open, folds(b)[0].open], [true, false]);
     });
 
+    // ---- Contracts ----
+
+    const CONTRACT = {
+      id: 'CTR-1', kind: 'contract', status: 'in force', title: 'Keeping Northfield supplied', byline: 'Between the network team and the control room',
+      scope: [{ label: 'In scope', text: 'The Northfield feeder.' }],
+      articles: [
+        { title: 'Goals', clauses: [{ ref: 'GOL-1', text: 'Back within an hour.' }] },
+        { title: 'Constraints', note: 'in order of priority', clauses: [{ ref: 'CON-1', text: 'The breaker opens after ten seconds.', note: 'Hard' }, { text: 'One restart in five minutes.' }] },
+      ],
+      parties: [{ name: 'Network team', signed: 'Signed 12 Nov 2026' }, { name: 'Control room' }],
+      folds: [{ label: 'Amends', items: [{ card: { id: 'CTR-0', kind: 'contract', text: 'The first contract' } }] }],
+      iteration: 3,
+    };
+
+    test('a contract draws its title, scope, numbered clauses in order, and signatures', () => {
+      const element = card(CONTRACT);
+      assertEqual(text(element, 'contract-title'), 'Keeping Northfield supplied');
+      assertEqual(all(element, 'clause-number'), ['1.1', '2.1', '2.2']);
+      assertEqual(all(element, 'clause-text'), ['Back within an hour.', 'The breaker opens after ten seconds.', 'One restart in five minutes.']);
+      assertEqual(all(element, 'clause-note'), ['Hard']);
+      assertEqual(all(element, 'article-note'), ['in order of priority']);
+      assertEqual(all(element, 'party'), ['Network team', 'Control room']);
+      assertEqual(all(element, 'signed'), ['Signed 12 Nov 2026', 'awaiting signature']);
+      assertEqual(text(element, 'status'), 'in force');
+      assert(part(element, 'foot'), 'it keeps the card’s own record');
+    });
+
+    test('a contract draws on its own material, not as a record or paper', () => {
+      const element = card(CONTRACT);
+      assert(part(element, 'contract'), 'it has its sheet');
+      assertEqual([part(element, 'head'), element.querySelector('.sb-discovery-card__contract > .sb-discovery-card__paper')], [null, null]);
+    });
+
+    test('a contract is expanded with its folds open, and compact as a card', () => {
+      assertEqual(folds(card(CONTRACT)).map((f) => f.open), [false]);
+      assertEqual(folds(card(CONTRACT, 'variant="expanded"')).map((f) => f.open), [true]);
+      const compact = card(CONTRACT, 'variant="compact"');
+      assertEqual([part(compact, 'contract'), part(compact, 'compact').dataset.kind], [null, 'contract']);
+    });
+
+    test('a clause naming a record opens it and points at it; one naming nothing does neither', () => {
+      const element = card(CONTRACT);
+      const opened = [];
+      element.addEventListener('sb-open', (e) => opened.push(e.detail.ref));
+      const [, named, plain] = element.querySelectorAll('.sb-discovery-card__clause');
+      const pointing = hearHighlights();
+      named.dispatchEvent(new Event('pointerover', { bubbles: true }));
+      pointing.stop();
+      named.click();
+      plain.click();
+      assertEqual(opened, ['CON-1']);
+      assertEqual(pointing.heard, ['CON-1']);
+      assertEqual([named.localName, plain.localName], ['button', 'div']);
+    });
+
+    test('a clause lights when what it names is pointed at', () => {
+      const element = card(CONTRACT);
+      element.highlight = ['GOL-1'];
+      const lit = [...element.querySelectorAll('.sb-discovery-card__clause.sb-discovery-card__part--highlighted')].map((c) => c.dataset.ref);
+      assertEqual(lit, ['GOL-1']);
+      element.highlight = ['CTR-1'];
+      assert(element.classList.contains('sb-discovery-card--highlighted'), 'its own code lights the whole sheet');
+    });
+
+    const CONTRACT_IN_FULL = {
+      ...CONTRACT,
+      notes: ['Exported as of iteration 3.'],
+      definitions: [{ ref: 'DEF-1', term: 'Feeder', meaning: 'A line carrying load to a district.' }],
+      articles: [{ title: 'Goals', clauses: [{ ref: 'GOL-1', text: 'Back within an hour.', details: [{ label: 'Measured by', text: 'Minutes to restore.' }], cited: [{ quote: 'within the hour', from: 'SRC-1, the plan' }] }] }],
+      schedules: [{ title: 'What answers to it', clauses: [{ ref: 'SCN-1', text: 'A cold restart', details: [{ label: 'Given', text: 'an outage' }] }] }, { title: 'Sources', clauses: [{ ref: 'SRC-1', text: 'The plan' }] }],
+    };
+
+    test('definitions show when expanded or as a document, not when normal, and don’t change the numbering', () => {
+      const definitions = (attributes) => all(card(CONTRACT_IN_FULL, attributes), 'definition-term');
+      assertEqual([definitions(''), definitions('variant="expanded"'), definitions('variant="document"')], [[], ['Feeder'], ['Feeder']]);
+      assertEqual(all(card(CONTRACT_IN_FULL, 'variant="expanded"'), 'clause-number'), ['1.1']);
+    });
+
+    test('a definition shows its code; expanded, it opens and lights what it names', () => {
+      const element = card(CONTRACT_IN_FULL, 'variant="expanded"');
+      const opened = [];
+      element.addEventListener('sb-open', (e) => opened.push(e.detail.ref));
+      const row = part(element, 'definition');
+      assertEqual([row.querySelector('.sb-discovery-card__clause-ref').textContent, row.localName], ['DEF-1', 'button']);
+      row.click();
+      assertEqual(opened, ['DEF-1']);
+      element.highlight = ['DEF-1'];
+      assert(row.classList.contains('sb-discovery-card__part--highlighted'), 'it lights');
+    });
+
+    test('details, citations, notices and schedules are written out only in a document', () => {
+      const partsOf = (attributes) => {
+        const element = card(CONTRACT_IN_FULL, attributes);
+        return [all(element, 'clause-details dt'), all(element, 'cited'), all(element, 'notice'), all(element, 'article--schedule .sb-discovery-card__clause-number')];
+      };
+      assertEqual(partsOf('variant="expanded"'), [[], [], [], []]);
+      assertEqual(partsOf('variant="document"'), [['Measured by', 'Given'], ['“within the hour” SRC-1, the plan'], ['Exported as of iteration 3.'], ['A.1', 'B.1']]);
+      assertEqual(all(card(CONTRACT_IN_FULL, 'variant="document"'), 'article--schedule .sb-discovery-card__article-title'), ['Schedule A. What answers to it', 'Schedule B. Sources']);
+    });
+
+    test('a document has nothing to open or fold, but still lights what it names', () => {
+      const element = card(CONTRACT_IN_FULL, 'variant="document"');
+      assertEqual([element.querySelectorAll('button').length, folds(element).length], [0, 0]);
+      assertEqual(part(element, 'definition').querySelector('.sb-discovery-card__clause-ref').textContent, 'DEF-1');
+      assert(element.classList.contains('sb-discovery-card--document'), 'it says it’s a document');
+      element.highlight = ['GOL-1'];
+      assertEqual(element.querySelectorAll('.sb-discovery-card__clause.sb-discovery-card__part--highlighted').length, 1);
+    });
+
+    test('only a contract can be a document: any other card in that variant draws as normal', () => {
+      const element = card(CLAIM, 'variant="document"');
+      assertEqual([element.classList.contains('sb-discovery-card--document'), !!part(element, 'head')], [false, true]);
+    });
+
+    test('a contract’s words are never rendered as markup', () => {
+      const element = card({ ...CONTRACT, title: '<b>t</b>', scope: [{ label: '<i>l</i>', text: '<i>s</i>' }], articles: [{ title: '<u>a</u>', clauses: [{ ref: '<q>', text: '<em>c</em>', note: '<s>n</s>' }] }], parties: [{ name: '<b>p</b>', signed: '<b>d</b>' }], folds: [] });
+      assertEqual(element.querySelectorAll('.sb-discovery-card__contract :is(b, i, u, em, s, q)').length, 0);
+      assertEqual(text(element, 'clause-text'), '<em>c</em>');
+      const written = card({ ...CONTRACT, definitions: [{ ref: '<b>r</b>', term: '<b>t</b>', meaning: '<b>m</b>' }], notes: ['<b>n</b>'], articles: [{ title: 'a', clauses: [{ text: 'c', details: [{ label: '<b>l</b>', text: '<b>d</b>' }], cited: [{ quote: '<b>q</b>', from: '<b>f</b>' }] }] }], schedules: [{ title: '<b>s</b>', clauses: [] }], folds: [] }, 'variant="document"');
+      assertEqual(written.querySelectorAll('.sb-discovery-card__contract b').length, 0);
+    });
+
+    test('a capability wears a record’s band, with its own icon and a good status', () => {
+      const element = card({ id: 'CAP-1', kind: 'capability', status: 'available', strips: [{ tone: 'main', label: 'Capability', text: 'In stages.' }] });
+      assertEqual([part(element, 'icon').title, !!part(element, 'head')], ['Capability', true]);
+      const available = getComputedStyle(part(element, 'status')).color;
+      const good = card({ id: 'CLM-9', kind: 'claim', status: 'corroborated' });
+      assertEqual(available, getComputedStyle(part(good, 'status')).color);
+    });
+
     test('loading the same script twice is harmless and quiet', () => {
       assertEqual(consoleErrors, []);
     });

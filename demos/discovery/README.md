@@ -131,6 +131,17 @@ Every card has an id whose prefix names its kind. Each kind has its own icon and
 | ACT | Action | Something to do, brought about by a decision. | to do → done |
 | RSK | Risk | Something that might go wrong, brought about by a decision. | open, as written (see the plan: risks that come true) |
 
+### The contract
+
+| Prefix | Kind | What it is | Derived status |
+|---|---|---|---|
+| CTR | Domain contract | What the parties agree shapes the domain at one time: its scope, goals, optimizations, constraints, capabilities and principles, each list in order of priority, and their signatures. Requirements, acceptance criteria and specifications are specifics (one item, one piece of behaviour, one way of doing it). A contract is the principled artifact, general enough that any specific is one of many ways to fulfil it, and only it holds the whole in context, which is why it's what people sign. Amended by a new contract superseding it. | proposed until every party has signed, then in force; review once something it names is replaced; superseded once its amendment is signed |
+| CAP | Capability | What lets us move towards a goal; a constraint's opposite. Capabilities can be found, fall away or turn into constraints. | available, as written |
+
+They're shown above the boards, with what answers to the contract: each clause and the scenarios and rules that serve it (each test's `serves`), and at the edges the clauses nothing tests and the tests serving nothing in it. The contract isn't on the boards, since its links would drown them; its clauses are. A party signs the whole contract: a signature isn't source material and cites none.
+
+The contract can leave the sandbox. **Read the full contract** opens it as a document on A4 pages turned with arrows, for someone reading it cold: definitions first, every clause written out with its details and the words it rests on, the signatures, then schedules of what answers to it and its sources. **Save as PDF** uses the browser's own print dialog, with only the document on the page.
+
 ### What we're building
 
 | Prefix | Kind | What it is | Derived status |
@@ -172,7 +183,8 @@ These are settled. Don't re-litigate them; propose changes openly.
 12. **The compression signal is evidence for people, never a target** (see §9).
 13. **Parties aren't cards.** Who wants what and who is bound by what is part of the engine, with its own look, composed where needed (see the plan).
 14. **Source material versus cards.** What people gather is source material. Whatever the agent writes is a card, never a source. Two old exceptions remain to fix: SRC-6 and SRC-15.
-15. **Components render; models compute.** The engine prepares every view; Sandkit components only draw. This is why the card component, `sb-discovery-card`, takes a plain description of a card and never works anything out.
+15. **The contract frames the domain, and can be challenged by it.** It's discovered from the bottom up and governs from the top down. It's an aggregate, so only there is everything in context: people read it and sign the whole of it, and that's what makes it an agreement. The agent only drafts.
+16. **Components render; models compute.** The engine prepares every view; Sandkit components only draw. This is why the card component, `sb-discovery-card`, takes a plain description of a card and never works anything out.
 
 ## 7. The model
 
@@ -274,7 +286,7 @@ These are the first steps towards an `sb-entity` and an `sb-primitive` that take
 
 ## 12. Sandkit components this demo uses or changed
 
-It uses `sb-discovery-card` for every card, `sb-lineage` for the boards, `sb-modal`, `sb-source`, `sb-rule`, `sb-scenario`, `sb-outliner`, `sb-scrubber`, `sb-tabs`, `sb-json`, `sb-code`, `sb-erd`, `sb-timeline`, `sb-bars`, `sb-callout`, `sb-chart` and `sb-table`, and the shell.
+It uses `sb-discovery-card` for every card, `sb-lineage` for the boards and what answers to the contract, `sb-modal`, `sb-source`, `sb-rule`, `sb-scenario`, `sb-outliner`, `sb-scrubber`, `sb-tabs`, `sb-json`, `sb-code`, `sb-erd`, `sb-timeline`, `sb-bars`, `sb-callout`, `sb-chart` and `sb-table`, and the shell.
 
 Changed for it:
 
@@ -283,10 +295,7 @@ Changed for it:
   - `--sb-modal-height`;
   - `expandable` (a button and an `sb-size` event);
   - stacking documented, with clicks in an inner modal ignored by the outer.
-- **`sb-source-trace` 0.1.2:**
-  - `drawNode(node)` returns an element or null, so the sandbox draws the trace's nodes in its own look;
-  - `nodeSize` sets their size;
-  - frames get `--own`, and the layout and lines read the instance's size.
+- **`sb-discovery-card` 0.1.5:** the `capability` and `contract` kinds, the contract's ruled sheet, and its `document` variant.
 
 Known component issue: `sb-scenario` marks "14:15" as two numbers.
 
@@ -298,4 +307,4 @@ Known component issue: `sb-scenario` marks "14:15" as two numbers.
 - Plain words. "The agent" in prose; never name a particular AI.
 - No retail examples (transport, logistics, power grids…).
 - Commit only when asked.
-- Branch: `domain-discovery-engine-experiment-2`. There's another discovery-engine branch; the author asked that it **not be read**, so this work isn't biased by it.
+- There's another discovery-engine branch (`discovery`); the author asked that it **not be read**, so this work isn't biased by it.

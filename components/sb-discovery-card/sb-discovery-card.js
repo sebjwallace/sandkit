@@ -1,4 +1,4 @@
-// Sandkit sb-discovery-card 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-discovery-card 0.1.5 · MIT Licence · https://github.com/sebjwallace/sandkit
 // One card of domain discovery: a source, a claim, a question, a decision, a run, or any other
 // kind the practice names, each with its own icon and tone. Shown compact on a board, normal with
 // its folds closed, or expanded near full screen with every fold open. The sandbox works out every status and what's "as of" when; the card
@@ -64,6 +64,10 @@
     dispute: { label: 'Dispute', tone: mix('warn', 'bad'), icon: '<path d="M7 4.5 8.25 3.25a2.5 2.5 0 0 1 3.5 3.5L10.5 8"/><path d="M5.5 8 4.25 9.25a2.5 2.5 0 0 0 3.5 3.5L9 11.5"/><path d="m2.5 2.5 1.75 1.75M13.5 13.5l-1.75-1.75"/>' },
     requirement: { label: 'Requirement', tone: mix('accent', 'text', 70), icon: '<path d="M3.5 14.25V2"/><path d="M3.5 2.5h9l-2 3 2 3h-9"/>' },
     constraint: { label: 'Constraint', tone: mix('accent', 'bad'), icon: '<path d="M2.5 2.5v11M13.5 2.5v11"/><path d="M5 8h6"/><path d="m7 6-2 2 2 2M9 6l2 2-2 2"/>' },
+    // A constraint's opposite: nothing walling it in, and arrows pointing outward.
+    capability: { label: 'Capability', tone: mix('good', 'accent', 70), icon: '<path d="M2.25 8h11.5"/><path d="m4.75 5.5-2.5 2.5 2.5 2.5M11.25 5.5l2.5 2.5-2.5 2.5"/>' },
+    // A sheet with clauses, signed at the foot.
+    contract: { label: 'Contract', tone: TONE.text, icon: '<rect x="3" y="1.75" width="10" height="12.5" rx="0.5"/><path d="M5.5 4.75h5M5.5 7h5"/><path d="M5.25 11.25c.75-1.5 1.25-1.5 1.5 0s.75 1.25 1.25.25.75-.75 1 .25h1.5"/>' },
     principle: { label: 'Principle', tone: mix('accent', 'text'), icon: '<circle cx="8" cy="8" r="6.25"/><path d="M8 3.75 9.6 8 8 12.25 6.4 8z"/>' },
     pattern: { label: 'Pattern', tone: mix('accent', 'muted'), icon: '<rect x="2.25" y="2.25" width="4.75" height="4.75" rx="1"/><rect x="9" y="2.25" width="4.75" height="4.75" rx="1"/><rect x="2.25" y="9" width="4.75" height="4.75" rx="1"/><rect x="9" y="9" width="4.75" height="4.75" rx="1"/>' },
     antipattern: { label: 'Anti-pattern', tone: mix('bad', 'muted'), icon: '<rect x="2.25" y="2.25" width="4.75" height="4.75" rx="1"/><rect x="9" y="2.25" width="4.75" height="4.75" rx="1"/><rect x="2.25" y="9" width="4.75" height="4.75" rx="1"/><rect x="9" y="9" width="4.75" height="4.75" rx="1"/><path d="M1.25 14.75 14.75 1.25"/>' },
@@ -96,7 +100,7 @@
 
   // Every status word the practice uses, by what it says: fine, needs a look, wrong, under way, or settled.
   const STATUS_TONES = {
-    good: ['corroborated', 'answered', 'confirmed', 'met', 'integrated', 'done', 'borne out', 'supported', 'sound', 'in force', 'worked', 'accepted', 'on track', 'earns its place', 'arrived', 'chosen', 'improving', 'followed', 'applied', 'solved', 'resolved', 'settled', 'removed'],
+    good: ['corroborated', 'answered', 'confirmed', 'met', 'integrated', 'done', 'borne out', 'supported', 'sound', 'in force', 'worked', 'accepted', 'on track', 'earns its place', 'arrived', 'chosen', 'improving', 'followed', 'applied', 'solved', 'resolved', 'settled', 'removed', 'available'],
     warn: ['contested', 'unresolved', 'trying', 'in doubt', 'untested', 'shaken', 'partly', 'review', 'not yet', 'open'],
     bad: ['refuted', 'broken', 'not met', 'rejected', 'not borne out', 'failed', 'off track', 'worsening', 'present'],
     accent: ['single source', 'proposed', 'under way', 'planned', 'to do'],
@@ -195,6 +199,67 @@
     .sb-discovery-card__cell { overflow: hidden; text-overflow: ellipsis; }
     .sb-discovery-card__cell--head { color: var(--sb-muted, #616e7c); font-weight: 600; }
 
+    /* A contract: what people have agreed. A double rule round a plain sheet, a serif title, numbered
+       clauses and signature lines. Square, with no tint or fold, so it can't be taken for paper. */
+    .sb-discovery-card__contract { --sb-discovery-card-rule: color-mix(in srgb, var(--sb-text, #1f2933) 45%, transparent); --sb-discovery-card-serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif; display: grid; gap: 16px; padding: 18px 22px; border: 3px double var(--sb-discovery-card-rule); border-radius: 2px; background: var(--sb-surface, #fff); transition: border-color 0.15s, box-shadow 0.15s; }
+    .sb-discovery-card__contract-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .sb-discovery-card__contract-head .sb-discovery-card__id { background: var(--sb-surface-2, #eef0f3); }
+    .sb-discovery-card__contract-head .sb-discovery-card__status { margin-left: auto; }
+    .sb-discovery-card__contract-title { margin: 0; font: 400 20px/1.3 var(--sb-discovery-card-serif); }
+    .sb-discovery-card__contract .sb-discovery-card__byline { margin: 2px 0 0; font-family: var(--sb-discovery-card-serif); font-style: italic; }
+    .sb-discovery-card__scope { display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; margin: 0; padding: 10px 0; border-block: 1px solid var(--sb-discovery-card-rule); font-family: var(--sb-discovery-card-serif); }
+    .sb-discovery-card__scope dt { color: var(--sb-muted, #616e7c); font-style: italic; }
+    .sb-discovery-card__scope dd { margin: 0; }
+    .sb-discovery-card__article-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 0 0 4px; font: 400 14px/1.4 var(--sb-discovery-card-serif); }
+    .sb-discovery-card__article-note { color: var(--sb-muted, #616e7c); font-size: 12px; font-style: italic; }
+    .sb-discovery-card__clauses { display: grid; margin: 0; padding: 0; list-style: none; }
+    .sb-discovery-card__clause { display: grid; grid-template-columns: 2.4em minmax(0, 1fr) auto; align-items: baseline; gap: 2px 6px; width: 100%; box-sizing: border-box; padding: 3px 6px; border: 0; border-radius: 2px; background: none; color: inherit; font: inherit; text-align: left; }
+    button.sb-discovery-card__clause { cursor: pointer; }
+    button.sb-discovery-card__clause:hover { background: var(--sb-accent-soft, #eaf0ff); }
+    .sb-discovery-card__clause:focus-visible { outline: 2px solid ${TONE.accent}; outline-offset: -2px; }
+    .sb-discovery-card__clause.sb-discovery-card__part--highlighted { background: var(--sb-accent-soft, #eaf0ff); }
+    .sb-discovery-card__clause-number { color: var(--sb-muted, #616e7c); font: 13px/1.45 var(--sb-discovery-card-serif); font-variant-numeric: tabular-nums; }
+    .sb-discovery-card__clause-ref { color: var(--sb-muted, #616e7c); font: 600 11px/1.6 ui-monospace, Menlo, Consolas, monospace; }
+    .sb-discovery-card__clause-note { grid-column: 2 / -1; color: var(--sb-muted, #616e7c); font-size: 12px; font-style: italic; }
+    .sb-discovery-card__signatures { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px 24px; padding-top: 4px; }
+    .sb-discovery-card__signature { display: grid; align-content: end; gap: 3px; font-size: 12px; }
+    .sb-discovery-card__signed { min-height: 1.5em; padding: 0 2px 2px; border-bottom: 1px solid var(--sb-discovery-card-rule); font: italic 13px/1.5 var(--sb-discovery-card-serif); }
+    .sb-discovery-card__signed--awaiting { color: var(--sb-muted, #616e7c); font-size: 12px; }
+    .sb-discovery-card__definitions-title { margin: 0 0 6px; font: 400 14px/1.4 var(--sb-discovery-card-serif); }
+    .sb-discovery-card__definitions { display: grid; grid-template-columns: max-content minmax(0, 1fr) auto; margin: 0; }
+    .sb-discovery-card__definition { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: baseline; column-gap: 14px; padding: 2px 6px; border: 0; border-radius: 2px; background: none; color: inherit; font: inherit; text-align: left; }
+    button.sb-discovery-card__definition { cursor: pointer; }
+    button.sb-discovery-card__definition:hover, .sb-discovery-card__definition.sb-discovery-card__part--highlighted { background: var(--sb-accent-soft, #eaf0ff); }
+    .sb-discovery-card__definition:focus-visible { outline: 2px solid ${TONE.accent}; outline-offset: -2px; }
+    .sb-discovery-card__definition-term { font-weight: 600; }
+    .sb-discovery-card__contract--document .sb-discovery-card__definition { padding-inline: 0; }
+    /* A contract in full, to be read cold or printed: larger, with everything written out, and black
+       on white whatever the theme, so it reads the same for whoever receives it. The values are the
+       light theme's. Nothing that reads as one is split, wherever the sandbox flows it into pages. */
+    .sb-discovery-card--document { --sb-text: #1f2933; --sb-muted: #616e7c; --sb-surface: #fff; --sb-surface-2: #eef0f3; --sb-border: #d5d9e0; --sb-accent: #2563eb; --sb-accent-soft: #eaf0ff; --sb-good: #3f9142; --sb-warn: #d69e2e; --sb-bad: #c53030; }
+    .sb-discovery-card__contract--document .sb-discovery-card__contract-heading { padding-bottom: 12px; border-bottom: 3px double var(--sb-discovery-card-rule); }
+    .sb-discovery-card__contract--document .sb-discovery-card__clause, .sb-discovery-card__contract--document .sb-discovery-card__definition, .sb-discovery-card__contract--document .sb-discovery-card__signatures { break-inside: avoid; }
+    .sb-discovery-card__contract--document .sb-discovery-card__article-title, .sb-discovery-card__contract--document .sb-discovery-card__definitions-title { break-after: avoid; }
+    .sb-discovery-card__article--schedule { break-before: column; }
+    .sb-discovery-card__contract--document { gap: 22px; max-width: 76ch; margin-inline: auto; padding: 36px 44px; font-size: 14px; line-height: 1.55; }
+    .sb-discovery-card__contract--document .sb-discovery-card__contract-title { font-size: 26px; }
+    .sb-discovery-card__contract--document .sb-discovery-card__article-title, .sb-discovery-card__contract--document .sb-discovery-card__definitions-title { padding-bottom: 3px; border-bottom: 1px solid var(--sb-discovery-card-rule); font-size: 16px; }
+    .sb-discovery-card__contract--document .sb-discovery-card__clause { padding: 7px 0; }
+    .sb-discovery-card__notices { display: grid; gap: 2px; margin-top: -12px; }
+    .sb-discovery-card__notice { margin: 0; color: var(--sb-muted, #616e7c); font-size: 12px; font-style: italic; }
+    .sb-discovery-card__clause-details { grid-column: 2 / -1; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 12px; margin: 4px 0 0; font-size: 13px; }
+    .sb-discovery-card__clause-details dt { color: var(--sb-muted, #616e7c); font-style: italic; }
+    .sb-discovery-card__clause-details dd { margin: 0; }
+    .sb-discovery-card__cited { grid-column: 2 / -1; margin: 6px 0 0; padding-left: 10px; border-left: 2px solid var(--sb-discovery-card-rule); color: var(--sb-muted, #616e7c); font: italic 13px/1.5 var(--sb-discovery-card-serif); }
+    .sb-discovery-card__cited-from { font-family: var(--sb-font, system-ui, sans-serif); font-size: 12px; font-style: normal; white-space: nowrap; }
+    /* Printed, the page margin takes over from the frame, and each schedule starts a page. */
+    @media print {
+      .sb-discovery-card__contract--document { max-width: none; padding: 0; border: 0; }
+      .sb-discovery-card__article--schedule { break-before: page; }
+    }
+    .sb-discovery-card__compact[data-kind="contract"] { border: 3px double color-mix(in srgb, var(--sb-text, #1f2933) 45%, transparent); border-radius: 2px; background: var(--sb-surface, #fff); }
+    .sb-discovery-card__compact[data-kind="contract"] .sb-discovery-card__compact-text { font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif; }
+
     .sb-discovery-card__option { padding: 6px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); opacity: 0.65; }
     .sb-discovery-card__option--chosen { padding: 5px 9px; border: 2px solid ${TONE.good}; opacity: 1; }
     .sb-discovery-card__option-head { display: flex; align-items: center; gap: 6px; }
@@ -222,7 +287,7 @@
     .sb-discovery-card__note { color: var(--sb-muted, #616e7c); font-size: 11px; font-style: italic; }
     .sb-discovery-card__file { color: var(--sb-muted, #616e7c); font: 10px ui-monospace, Menlo, Consolas, monospace; }
 
-    .sb-discovery-card--highlighted > .sb-discovery-card__card, .sb-discovery-card--highlighted > .sb-discovery-card__compact,
+    .sb-discovery-card--highlighted > .sb-discovery-card__card, .sb-discovery-card--highlighted > .sb-discovery-card__compact, .sb-discovery-card--highlighted > .sb-discovery-card__contract,
     .sb-discovery-card__compact.sb-discovery-card__part--highlighted, .sb-discovery-card__option.sb-discovery-card__part--highlighted { border-color: ${TONE.accent}; box-shadow: 0 0 0 3px var(--sb-accent-soft, #eaf0ff); opacity: 1; }
     .sb-discovery-card.sb-discovery-card--highlighted > .sb-discovery-card__paper > *, .sb-discovery-card .sb-discovery-card__paper.sb-discovery-card__part--highlighted > * { background: color-mix(in srgb, ${TONE.accent} 14%, var(--sb-discovery-card-sheet)); }`;
 
@@ -425,6 +490,71 @@
     return details;
   }
 
+  // Terms and their meanings, or labelled details, as a list of pairs.
+  function pairs(part, entries) {
+    const list = el('dl', part);
+    for (const [term, meaning] of entries) list.append(el('dt', null, term), el('dd', null, meaning));
+    return list;
+  }
+
+  // One definition in a contract, with its code: a button that opens it, unless it's written out.
+  function definition({ ref, term, meaning }, written) {
+    const row = el(ref && !written ? 'button' : 'div', 'definition');
+    if (ref) row.dataset.ref = ref;
+    if (ref && !written) {
+      row.type = 'button';
+      row.dataset.open = ref;
+    }
+    row.append(el('span', 'definition-term', term), el('span', 'definition-meaning', meaning), el('span', 'clause-ref', ref ?? ''));
+    return row;
+  }
+
+  // The words a clause rests on, and where they're from.
+  function citation(quote, from) {
+    const words = el('blockquote', 'cited', `“${quote}” `);
+    words.append(el('span', 'cited-from', from));
+    return words;
+  }
+
+  // One clause of a contract, numbered by its place. A button that opens what it names, if it names
+  // one; written out in a document, with its details and the words it rests on, nothing to open.
+  function clause({ ref, text, note, details, cited }, number, written) {
+    const row = el(ref && !written ? 'button' : 'div', 'clause');
+    if (ref) row.dataset.ref = ref;
+    if (ref && !written) {
+      row.type = 'button';
+      row.dataset.open = ref;
+    }
+    row.append(el('span', 'clause-number', number), el('span', 'clause-text', text));
+    if (ref) row.append(el('span', 'clause-ref', ref));
+    if (note) row.append(el('span', 'clause-note', note));
+    if (written && details?.length) row.append(pairs('clause-details', details.map(({ label, text: said }) => [label, said])));
+    if (written) for (const { quote, from } of cited ?? []) row.append(citation(quote, from));
+    return row;
+  }
+
+  // A numbered article of a contract, or a lettered schedule, and its clauses in the order they're given.
+  function article({ title, note, clauses = [] }, number, written, schedule = false) {
+    const section = el('section', schedule ? 'article article--schedule' : 'article');
+    const heading = el('h4', 'article-title', `${schedule ? 'Schedule ' : ''}${number}. ${title}`);
+    if (note) heading.append(el('span', 'article-note', note));
+    const list = el('ol', 'clauses');
+    list.append(...clauses.map((entry, i) => {
+      const li = document.createElement('li');
+      li.append(clause(entry, `${number}.${i + 1}`, written));
+      return li;
+    }));
+    section.append(heading, list);
+    return section;
+  }
+
+  // A party's line at the foot: what they signed, or that they haven't yet.
+  function signature({ name, signed }) {
+    const box = el('div', 'signature');
+    box.append(el('span', signed ? 'signed' : 'signed signed--awaiting', signed ?? 'awaiting signature'), el('span', 'party', name));
+    return box;
+  }
+
   class SbDiscoveryCard extends HTMLElement {
     static origin = ORIGIN;
 
@@ -467,8 +597,8 @@
       this.render();
     }
 
-    // `compact` on a board, `normal` (the default), or `expanded` near full screen. A source is
-    // always compact.
+    // `compact` on a board, `normal` (the default), or `expanded` near full screen; a contract also
+    // `document`, written out in full. A source is always compact.
     get variant() { return this.getAttribute('variant') || 'normal'; }
     set variant(name) { this.setAttribute('variant', name); }
 
@@ -490,6 +620,7 @@
       this._keepSlotted();
       const card = this._card;
       this.classList.toggle('sb-discovery-card--expanded', this.variant === 'expanded');
+      this.classList.toggle('sb-discovery-card--document', this.variant === 'document' && card?.kind === 'contract');
       if (!card) {
         this.replaceChildren();
         return;
@@ -504,6 +635,7 @@
     // The full card: a header band, then strips saying what it means, then folds holding what it
     // rests on. Expanded, every fold opens, beside the strips when there are any folds.
     _full(card) {
+      if (card.kind === 'contract') return this._contract(card);
       const expanded = this.variant === 'expanded';
       const article = el('article', 'card');
       article.dataset.kind = card.kind;
@@ -534,6 +666,54 @@
       return article;
     }
 
+    // A contract, on its own material: its title and who it's between, its scope, its definitions when
+    // expanded, its numbered articles, the parties' signatures, then any folds and the card's own record.
+    // As a document, to be read cold or printed, everything is written out, schedules follow, and
+    // nothing folds or opens.
+    _contract(card) {
+      const written = this.variant === 'document';
+      const sheet = el('article', written ? 'contract contract--document' : 'contract');
+      sheet.dataset.kind = card.kind;
+      const head = el('header', 'contract-head');
+      head.append(icon(card), el('span', 'id', card.id));
+      if (card.status) head.append(status(card.status));
+      sheet.append(head);
+      const heading = el('div', 'contract-heading');
+      if (card.title) heading.append(el('h3', 'contract-title', card.title));
+      if (card.byline) heading.append(el('p', 'byline', card.byline));
+      if (heading.children.length) sheet.append(heading);
+      if (written && card.notes?.length) {
+        const notices = el('div', 'notices');
+        notices.append(...card.notes.map((note) => el('p', 'notice', note)));
+        sheet.append(notices);
+      }
+      if (card.scope?.length) {
+        const scope = el('dl', 'scope');
+        for (const { label, text } of card.scope) scope.append(el('dt', null, label), el('dd', null, text));
+        sheet.append(scope);
+      }
+      if (card.definitions?.length && this.variant !== 'normal') {
+        const definitions = el('section', 'definitions-section');
+        const list = el('div', 'definitions');
+        list.append(...card.definitions.map((entry) => definition(entry, written)));
+        definitions.append(el('h4', 'definitions-title', 'Definitions'), list);
+        sheet.append(definitions);
+      }
+      sheet.append(...(card.articles ?? []).map((entry, i) => article(entry, i + 1, written)));
+      if (card.parties?.length) {
+        const signatures = el('div', 'signatures');
+        signatures.append(...card.parties.map(signature));
+        sheet.append(signatures);
+      }
+      if (written) sheet.append(...(card.schedules ?? []).map((entry, i) => article(entry, String.fromCharCode(65 + i), true, true)));
+      const slotted = (name) => this._slots.get(name) ?? [];
+      const expanded = this.variant === 'expanded';
+      if (!written) sheet.append(...(card.folds ?? []).map((f) => fold(f, expanded || this._opened.has(f.label), slotted)));
+      const foot = footer(card);
+      if (foot) sheet.append(foot);
+      return sheet;
+    }
+
     // The card's code, kind and status on the element, set as soon as it has a card, drawn or not,
     // so a page can find or place it before it's on the page.
     _mark() {
@@ -556,7 +736,7 @@
       const lit = new Set(this._highlight);
       // An excerpt lights for its own code and for its source's.
       this.classList.toggle('sb-discovery-card--highlighted', Boolean(this._card) && [this._card.id, this._card.excerpt?.source].some((ref) => lit.has(ref)));
-      for (const part of this.querySelectorAll('.sb-discovery-card__item > [data-ref]')) {
+      for (const part of this.querySelectorAll('.sb-discovery-card__item > [data-ref], .sb-discovery-card__clause[data-ref], .sb-discovery-card__definition[data-ref]')) {
         part.classList.toggle('sb-discovery-card__part--highlighted', lit.has(part.dataset.ref) || lit.has(part.dataset.source));
       }
     }

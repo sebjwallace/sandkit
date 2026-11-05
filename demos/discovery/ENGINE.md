@@ -6,15 +6,16 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
 
 1. **Styles:** the flow, the board's folded columns (through `sb-discovery-card`'s classes), the prototype and the object view. Theme tokens with fallbacks throughout.
 2. **Markup:**
+   - the domain contract (`#contract-sheet`, `#read-contract`, `sb-lineage#contract-answers`);
    - the iteration stepper and the board toggles;
    - the flow;
    - Find a card (`sb-search#finder`, with the tags' meanings in a fold);
    - the prototype section (`sb-scrubber#afternoon`, the board, `sb-outliner#objects`);
    - the versions mock-up (`sb-chart`s, `sb-table#versions-table`);
-   - three modals: `#card-modal`, `#source-modal` (holding `sb-source#source-view`) and `#object-modal` (`size="full"`).
+   - four modals: `#card-modal`, `#source-modal` (holding `sb-source#source-view`), `#object-modal` and `#contract-modal` (both `size="full"`), and `#contract-print`, what's on the page while the contract prints.
 3. **Sources and records,** the only things written by hand:
    - **the sources:** `SOURCES`, the catalogue, in the page, each with its authored `grade`, what it `speaksTo` and the `iteration` it arrived in;
-   - **the records,** in `records/`, one script per kind, loaded before the page's script: `tags.js` (every tag, declared with what it means), `excerpts.js` (the pieces of sources the others cite, by code), `claims.js`, `questions.js`, `decisions.js` and the rest, `awaited.js`, and for the model `entities.js`, `primitives.js`, `scenarios.js` and `rules.js`. Each record carries `created`, `by` and `iteration`.
+   - **the records,** in `records/`, one script per kind, loaded before the page's script: `tags.js` (every tag, declared with what it means), `excerpts.js` (the pieces of sources the others cite, by code), `claims.js`, `questions.js`, `decisions.js` and the rest, `awaited.js`, and for the model `entities.js`, `primitives.js`, `scenarios.js` and `rules.js`, and `capabilities.js`, `optimizations.js`, `principles.js` and `contracts.js`. Each record carries `created`, `by` and `iteration`.
 4. **The model:**
    - classes `Delay`, `Platform`, `ClockTime`, `Train`, `Board`, `BoardWithPlatformChanges` and `Announcement`;
    - versions: `MODEL` and `CANDIDATES`, handed to the engine, which works out the runs;
@@ -36,10 +37,11 @@ A guide to `index.html` for whoever works on it next: how it's organised, how da
     - iterations: `ITERATIONS` (their titles), `iterationOf` (read from the record), `itemOf`;
     - everything standing: a board marked `whole` (Scenarios) asks the engine's `standing(k)` instead of `iteration(k)`;
     - drawing them: `asOf(id, k)` (a card's face as of an iteration), `faceOf` (its compact data), `drawCard` (any card, in a variant, with its slots), `nodeCard`, `ORDER` (the order cards stand in their columns) and `drawFlow`, which asks the engine what the iteration shows and gives the page's one `sb-lineage` its cards, columns and links.
-11. **Finding a card:** `drawFinder` hands `sb-search` everything raised by the iteration shown, as it stood, with its tags, drawn in the grid as compact cards (`drawItem`); `showFound` shows the chosen card with what its tags mean; `drawTagKey` lists every tag from the engine's `tags()`.
-12. **The prototype and object view:** `drawPrototype`, `showObject`, and one function per tab (`nowView`, `codeView`, `relationsView`, `overTimeView`, `constraintsView`, `valuesSeenView`, `testedByView`, `definitionView`, `provenanceView`/`provenanceItems`), plus `wirePrototype`.
-13. **Links on the board:** labelled with what the engine says each means, and toned by `toneOfLink` (its tone, as the domain discovery practice gives it). Routing, lighting chains and folding are the board's.
-14. **Opening and pointing:** `openCard` (expanded, in a modal) and `openSource` (with `citationsOf`); `wireCards` answers every card's `sb-open` and routes `sb-highlight` to every card.
+11. **The domain contract:** `contractCard` (the sheet), `contractDocument` (written out, with `DETAILS`, `writtenClause` and its schedules), `drawContract` (the sheet and what answers to it, from the engine's `answers`), `turnTo` (the pages on screen) and `saveContract` (the print dialog).
+12. **Finding a card:** `drawFinder` hands `sb-search` everything raised by the iteration shown, as it stood, with its tags, drawn in the grid as compact cards (`drawItem`); `showFound` shows the chosen card with what its tags mean; `drawTagKey` lists every tag from the engine's `tags()`.
+13. **The prototype and object view:** `drawPrototype`, `showObject`, and one function per tab (`nowView`, `codeView`, `relationsView`, `overTimeView`, `constraintsView`, `valuesSeenView`, `testedByView`, `definitionView`, `provenanceView`/`provenanceItems`), plus `wirePrototype`.
+14. **Links on the board:** labelled with what the engine says each means, and toned by `toneOfLink` (its tone, as the domain discovery practice gives it). Routing, lighting chains and folding are the board's.
+15. **Opening and pointing:** `openCard` (expanded, in a modal) and `openSource` (with `citationsOf`); `wireCards` answers every card's `sb-open` and routes `sb-highlight` to every card.
 
 ## How data flows
 
@@ -73,6 +75,9 @@ Copy the nearest existing record. The shapes that matter most:
 - **Entity or primitive proposal:** `{ id, name, purpose, proposedBy, foundedOn: [ids], rejected?: { in, why } }`.
 - **Scenario:** `{ id, title, foundedOn, steps: [{ keyword, text }], play: M => [null | { ok, actual }, …] }`, one result per step.
 - **Rule:** `{ id, kind: 'MANDATE'|'CONDITIONAL', title, foundedOn, lines: [{ keyword?, text, depth? }], check: M => [failure descriptions] }`.
+- **Scenario or rule, what it answers to:** `serves: [ids]`, the contract's clauses. No link comes of it.
+- **Capability:** `{ id, text, status, lets, limits, setIn, from? }`.
+- **Contract:** `{ id, title, scope: { in, out }, definitions, goals, optimizations, constraints, capabilities, principles, parties: [{ name, signed?: { when, iteration } }], supersedes? }`.
 
 `setIn`, `said`, `raisedBy` and `at` are `[sourceId, quote]` pairs: the passage a card rests on.
 
@@ -123,6 +128,10 @@ First check it earns its place (principle 5), and ask the author.
 
 Add a scenario or rule, founded on cards, written against `M` (classes by name). Build trains with `trainFor(M, { … })`, so tests stay plain. Give it the `iteration` it arises in. It runs against every version from then on. Met on arrival is worked out from it.
 
+### An amendment to the contract
+
+Write a new record in `records/contracts.js` naming what it `supersedes`, with its `parties`. It takes over once every party has signed. A clause new to it is marked by itself.
+
 ### A tab in the object view
 
 Write a `somethingView(part, …)` that returns an element derived from the class, instance, model or feed. Add it to the `panels` list in `showObject`. Never write a view's content by hand (principle 10).
@@ -136,4 +145,5 @@ Write a `somethingView(part, …)` that returns an element derived from the clas
 - **New capability versus a patch:** `compare` returns `inPlace` (decisions added to parts that already existed). A trial adding a new part with nothing in place is new capability.
 - **Watched runs construct the real class.** The `Proxy`'s `construct` passes the real target as `newTarget`, so `super` calls and `instanceof` behave. Methods run with the watched object as `this`, so calls inside the model are recorded too.
 - **A test the model can't run** (no `Announcement`) fails every step it checks, with the error as what happened, and still records what it touched first.
+- **A plain `http.server` lets Chrome keep old scripts,** so a new record can be missing and the page crash on it. Cache-bust, or serve with `Cache-Control: no-store`.
 - **Headless Chrome may not deliver frames.** Check the page in Claude in Chrome via `python3 -m http.server 8765 --bind 127.0.0.1`, cache-busting with `?v=N`, or `fetch(…, { cache: 'reload' })` after editing a component script.

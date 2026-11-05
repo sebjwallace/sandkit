@@ -57,11 +57,12 @@
       <p class="label" style="margin-top: 14px">Every kind</p>
       <div class="kinds" id="kinds"></div>
 
-      <h3>Three variants</h3>
+      <h3>Three variants, and one more for a contract</h3>
       <ul>
         <li><strong>Compact,</strong> on a board: its icon, code, status and a few words, small enough for twenty side by side.</li>
         <li><strong>Normal,</strong> the default: the whole card, with what it means in strips and what it rests on folded away.</li>
         <li><strong>Expanded,</strong> in a modal or near full screen: the strips on one side and every fold open on the other.</li>
+        <li><strong>Document,</strong> for a contract alone: written out in full for someone reading it cold, with its definitions and what backs it up, ready to print or save as a PDF.</li>
       </ul>
       <p>A source is always compact. Shown in full, it's the source material itself, so the sandbox opens it in its own view; the <a href="../../practices/domain-discovery.md">domain discovery practice</a> says how.</p>
 
@@ -163,6 +164,8 @@ card.addEventListener('sb-open', (e) =&gt; open(e.detail.ref, e.detail.quote));<
         ['DSP', 'dispute', 'Dispute', 'A point parties haven’t settled'],
         ['REQ', 'requirement', 'Requirement', 'Something that must be so'],
         ['CON', 'constraint', 'Constraint', 'Something that rules options out'],
+        ['CAP', 'capability', 'Capability', 'What lets us move towards a goal'],
+        ['CTR', 'contract', 'Contract', 'What people agree shapes the domain, on one sheet'],
         ['PRN', 'principle', 'Principle', 'A rule of thumb someone chooses by'],
         ['PAT', 'pattern', 'Pattern', 'A known way of solving a recurring problem'],
         ['APT', 'antipattern', 'Anti-pattern', 'A known way that looks right but goes wrong'],
@@ -330,6 +333,28 @@ card.addEventListener('sb-open', (e) =&gt; open(e.detail.ref, e.detail.quote));<
 
     const FEEDER = {
       cards: [
+        { id: 'CTR-1', kind: 'contract', status: 'in force', title: 'Keeping Northfield supplied through a cold restart', text: 'Between the network team, the control room and the district council.',
+          byline: 'Between the network team, the control room and the Northfield district council',
+          scope: [{ label: 'In scope', text: 'How the Northfield feeder is brought back after a winter outage.' }, { label: 'Out of scope', text: 'What caused the outage, and the rest of the network.' }],
+          definitions: [{ ref: 'DEF-1', term: 'Cold restart', meaning: 'Bringing load back after an outage long enough for heating to have gone cold, so everything draws at once.' }, { ref: 'DEF-2', term: 'Feeder', meaning: 'A line from the substation that carries load to a district.' }],
+          notes: ['A made-up example, to show the document variant.'],
+          schedules: [{ title: 'What answers to it', clauses: [{ ref: 'RUL-1', text: 'A feeder trips only after ten seconds over its limit', note: 'Met', details: [{ label: 'Answers to', text: 'CON-1' }] }] }],
+          articles: [
+            { title: 'Goals', clauses: [{ ref: 'GOL-1', text: 'Every district back within an hour of a winter outage.' }] },
+            { title: 'Optimizations', clauses: [{ ref: 'OPZ-1', text: 'Keep shortening how long a cold restart takes.' }] },
+            { title: 'Constraints', note: 'in order of priority', clauses: [
+              { ref: 'CON-1', text: 'The feeder’s breaker opens after ten seconds over its limit.', note: 'Hard' },
+              { ref: 'CON-2', text: 'No more than one restart attempt in five minutes.', note: 'Soft' }] },
+            { title: 'Capabilities', clauses: [{ ref: 'CAP-1', text: 'Load can be brought back street by street, in stages.', details: [{ label: 'Lets us', text: 'Restart without the surge that trips the breaker.' }, { label: 'How far it goes', text: 'Each stage takes a crew at a switching point, so it’s slow at night.' }] }] },
+            { title: 'Principles', clauses: [{ text: 'Keep people warm before keeping the restart quick.' }] },
+          ],
+          parties: [{ name: 'Network team', signed: 'Signed 12 Nov 2026' }, { name: 'Control room', signed: 'Signed 12 Nov 2026' }, { name: 'District council' }],
+          ...made('2026-11-12T10:00', 3) },
+        { id: 'CAP-1', kind: 'capability', status: 'available', text: 'Load can be brought back street by street, in stages.', byline: 'Known from the control room’s procedures',
+          strips: [{ tone: 'main', label: 'Capability', text: 'Load can be brought back street by street, in stages.' },
+            { tone: 'answer', label: 'Lets us', text: 'Restart without the surge that trips the breaker.' },
+            { tone: 'warn', label: 'How far it goes', text: 'Each stage takes a crew at a switching point, so it’s slow at night.' }],
+          ...made('2026-11-05T09:30', 3) },
         { id: 'SRC-11.1', kind: 'excerpt', format: 'image', text: 'The surge on restoring Northfield, 07:12',
           excerpt: { source: 'SRC-11', image: LOAD_TREND, region: [0.25, 0.3, 0.35, 0.65] }, ...made('2026-11-03T15:20', 3) },
         { id: 'FB-1', kind: 'feedback', status: 'answered', text: 'Northfield shouldn’t trip the moment it’s over the limit: the breaker waits 10 seconds.',
@@ -526,12 +551,12 @@ card.addEventListener('sb-open', (e) =&gt; open(e.detail.ref, e.detail.quote));<
       for (const pick of section.querySelectorAll('.pick')) pick.classList.toggle('is-picked', pick.dataset.id === id);
       // Source material is only ever compact; in full, the sandbox shows the material itself.
       const material = ['source', 'excerpt'].includes(picked.kind);
-      const variants = material ? VARIANTS.slice(0, 1) : VARIANTS;
+      const variants = material ? VARIANTS.slice(0, 1) : picked.kind === 'contract' ? [...VARIANTS, ['document', 'Document', 'written out, to read cold or print']] : VARIANTS;
       const note = material ? [Object.assign(document.createElement('p'), { className: 'label', innerHTML:
         `Normal and expanded <span>· none: in full, ${picked.kind === 'source' ? 'a source' : 'an excerpt'} opens in the sandbox’s own view of its material, as the domain discovery practice describes</span>` })] : [];
       section.querySelector('.stage').replaceChildren(...variants.map(([variant, name, where]) => {
         const holder = document.createElement('div');
-        if (variant === 'expanded') holder.className = 'is-wide';
+        if (['expanded', 'document'].includes(variant)) holder.className = 'is-wide';
         const label = document.createElement('p');
         label.className = 'label';
         label.append(`${name} `, Object.assign(document.createElement('span'), { textContent: `· ${where}` }));
