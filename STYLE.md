@@ -24,6 +24,7 @@ Most interfaces are flat: everything is a rounded box, so nothing says what it i
 |---|---|---|---|
 | Paper | Source material: what everything rests on | A sheet of `--sb-surface` mixed 6% with `#f3e2b8`, an edge of `--sb-text` at 24%, a folded corner, a soft drop shadow | `sb-source`, `sb-sources`, `sb-discovery-card`; a sandbox's own source cards, such as a trace's in the sources practice |
 | Card with a header band | A record: a decision, a card of discovery | A `--sb-surface-2` band with a border below it, above a `--sb-surface` body | `sb-choice`, `sb-discovery-card` |
+| Ruled sheet | What people have agreed: a contract | A `--sb-surface` sheet in a 3px double rule of `--sb-text` at 45%, square corners, a serif title, numbered clauses and signature lines. No tint or fold, so it can't be taken for paper | `sb-discovery-card` |
 | Amber frame | Not exploring: a mode is on | A 2px outline and a banner in `--sb-warn` | `sb-comments`, `sb-trace-mode`, `sb-inspect-mode` |
 | Dashed circle | An agent rather than a person | The person's circle drawn dashed | `sb-person` |
 | Ink | A status pressed on at one moment | A bordered stamp in one ink colour, letter-spaced capitals | `sb-stamp` |

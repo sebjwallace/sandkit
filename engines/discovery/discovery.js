@@ -1,4 +1,4 @@
-// Sandkit discovery 0.3.3 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit discovery 0.3.5 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The engine of domain discovery: the method's rules, written once. Given the sandbox's records,
 // it works out what follows from them, the same way every time, so a record holds only what
 // someone wrote and never a conclusion. It draws nothing and knows no component.
@@ -16,6 +16,7 @@
 //   discovery.iteration(2);                                   // → { cards: [{ id, as }], links: [{ from, to }] }
 //   discovery.run('RUN-3');                                   // → { tests, met, change, … }
 //   discovery.tags();                                         // → [{ tag, means, declared, on }]
+//   discovery.answers('CTR-2', { asOf: 2 });                  // → { clauses, tests, untested, servesNothing }
 //
 // See manifest.md for the full contract.
 (function () {
@@ -35,6 +36,9 @@
 
   // A field holding one id or several, as a list.
   const list = (ids) => [ids ?? []].flat();
+
+  // A contract's articles: the fields naming its clauses, in the order it reads.
+  const ARTICLES = ['goals', 'optimizations', 'constraints', 'capabilities', 'principles'];
 
   // What each kind's fields point at, as links [from, to]: what a record rests on points at it, and
   // what it bears on it points at. Passages and cited sources link a source to the record citing it.
@@ -63,6 +67,8 @@
     outcome: (r) => [...[r.from ?? []].flat(), ...(r.sources ?? [])].map((id) => [id, r.id]).concat([[r.id, r.against]]),
     agreement: (r) => [[r.setIn, r.id], [r.from, r.id], ...list(r.settles).map((id) => [id, r.id])],
     constraint: (r) => [[r.setIn, r.id], [r.from, r.id]],
+    capability: (r) => [[r.setIn, r.id], [r.from, r.id]],
+    contract: (r) => [...list(r.definitions), ...ARTICLES.flatMap((article) => list(r[article]))].map((id) => [id, r.id]),
     hypothesis: (r) => [[r.setIn, r.id], ...list(r.from).map((id) => [id, r.id])],
     problem: (r) => [[r.setIn, r.id], ...list(r.shownBy).map((id) => [id, r.id])],
     incident: (r) => [[r.at, r.id]],
@@ -90,7 +96,7 @@
     predictions = [], outcomes = [], investigations = [], experiments = [], actions = [], decisions = [], goals = [], metrics = [],
     excerpts = [], tags = [], definitions = [], opinions = [], feedback = [], agreements = [], constraints = [], risks = [], awaited = [], entities = [], primitives = [],
     hypotheses = [], problems = [], incidents = [], strategies = [], disputes = [], requirements = [], principles = [], patterns = [], antipatterns = [],
-    optimizations = [], solutions = [], options = [], tradeoffs = [], recommendations = [],
+    optimizations = [], solutions = [], options = [], tradeoffs = [], recommendations = [], capabilities = [], contracts = [],
     scenarios = [], rules = [], model: { versions = [], candidates = [] } = {} } = {}) {
     // The model being built: one version per iteration, `{ iteration, parts: { partId: Class } }`,
     // and candidates trying a proposal, `{ iteration, tries, parts }`. Every version is kept, so every
@@ -149,28 +155,35 @@
       return [...passages.values()];
     }
 
+    // One voice is a source and whatever copies it, saying one thing. However many excerpts or copies
+    // carry it, it counts once, through its lead passage: the source's own where it's cited, else the
+    // first copy's. Only sources that speak to how things are have a voice.
+    const voiceOf = (p) => `${originOf(p.source)} ${p.stance}`;
+    function leadPassages(passages) {
+      const inScope = passages.filter((p) => countsFor(source(p.source)));
+      const originals = inScope.filter((p) => p.source === originOf(p.source));
+      const leads = new Map();
+      for (const p of [...originals, ...inScope]) if (!leads.has(voiceOf(p))) leads.set(voiceOf(p), p);
+      return leads;
+    }
+
     // Weighs a claim, by its id or as a record, as of an iteration (by default, everything). Whether
     // anything rests on it tells an assumption from a conjecture when nothing backs it.
     function weigh(claimOrId, { asOf = Infinity, reliedOn = false } = {}) {
       const claim = typeof claimOrId === 'string' ? claimOf.get(claimOrId) : claimOrId;
       if (!claim) throw new Error(`No claim ${claimOrId}.`);
       const passages = passagesOf(claim, asOf);
-      const says = new Map(passages.map((p) => [p.source, p.stance]));
-
-      // A repeat says what the source it copies says, in the same claim; it adds nothing.
-      const repeats = (p) => source(p.source).copies && says.get(originOf(p.source)) === p.stance;
+      const leads = leadPassages(passages);
       const weighed = passages.map((p) => {
-        const inScope = countsFor(source(p.source)), repeated = repeats(p);
-        return { ...p, strength: strength(p.source), counted: inScope && !repeated,
-          ...(repeated && { repeats: originOf(p.source) }),
+        const inScope = countsFor(source(p.source)), lead = leads.get(voiceOf(p));
+        return { ...p, strength: strength(p.source), counted: lead === p,
+          ...(inScope && lead !== p && { repeats: lead.source }),
           ...(!inScope && { outOfScope: source(p.source).speaksTo }),
           ...(!source(p.source).grade && { ungraded: true }) };
       });
 
-      const independent = (stance) => new Set(weighed
-        .filter((p) => p.stance === stance && countsFor(source(p.source)))
-        .map((p) => originOf(p.source))).size;
-      const yes = independent('+'), no = independent('−');
+      const countedSaying = (stance) => weighed.filter((p) => p.counted && p.stance === stance);
+      const yes = countedSaying('+').length, no = countedSaying('−').length;
       const standing = yes && no ? 'contested' : no ? 'refuted' : yes >= 2 ? 'corroborated' : yes ? 'single source' : 'unbacked';
 
       const score = weighed.filter((p) => p.counted).reduce((total, p) => total + (p.stance === '+' ? p.strength : -p.strength), 0);
@@ -185,7 +198,7 @@
 
       // Repeats sit under the source they repeat, so the passages read as the evidence does.
       const order = weighed.filter((p) => !p.repeats)
-        .flatMap((p) => [p, ...weighed.filter((other) => other.repeats === p.source)]);
+        .flatMap((p) => [p, ...weighed.filter((other) => other.repeats === p.source && other.stance === p.stance)]);
 
       return { standing, score, basis, passages: order };
     }
@@ -199,7 +212,7 @@
       awaited, feedback, entity: entities, primitive: primitives, scenario: scenarios, rule: rules, run: runs,
       hypothesis: hypotheses, problem: problems, incident: incidents, strategy: strategies, dispute: disputes, requirement: requirements,
       principle: principles, pattern: patterns, antipattern: antipatterns, optimization: optimizations, solution: solutions, option: options,
-      tradeoff: tradeoffs, recommendation: recommendations };
+      tradeoff: tradeoffs, recommendation: recommendations, capability: capabilities, contract: contracts };
     const recordOf = new Map(Object.entries(lists).flatMap(([kind, list]) => list.map((record) => [record.id, { kind, record }])));
     const kindOf = (id) => recordOf.get(id)?.kind;
 
@@ -257,6 +270,8 @@
       // Feedback is declined when written so, with the reason; answered once something is founded on it.
       feedback: (comment, asOf) => (comment.declined ? 'declined'
         : [...recordOf.values()].some(({ record }) => record.foundedOn?.includes(comment.id) && iterationOf(record.id) <= asOf) ? 'answered' : 'open'),
+      // Proposed until every party has signed; then in force, unless something it names has changed since.
+      contract: (contract, asOf) => (!signedBy(contract, asOf) ? 'proposed' : reviewReasons(contract.id, { asOf }).length ? 'review' : 'in force'),
       entity: (part, asOf) => stage(part, asOf),
       primitive: (part, asOf) => stage(part, asOf),
       // A test with no code yet keeps whatever status its record says, if any.
@@ -272,7 +287,9 @@
 
     function status(id, { asOf = Infinity } = {}) {
       if (!recordOf.has(id)) throw new Error(`No record ${id}.`);
-      if (supersedersOf(id, asOf).length) return 'superseded';
+      // A contract is replaced only once its replacement has been signed: until then the old one binds.
+      const replacing = supersedersOf(id, asOf).filter((by) => kindOf(by) !== 'contract' || signedBy(recordOf.get(by).record, asOf));
+      if (replacing.length) return 'superseded';
       const { kind, record } = recordOf.get(id);
       return RULES[kind] ? RULES[kind](record, asOf) : record.status ?? null;
     }
@@ -290,6 +307,8 @@
     function reviewReasons(id, { asOf = Infinity } = {}) {
       const decision = recordOf.get(id)?.record;
       if (!decision) throw new Error(`No record ${id}.`);
+      if (kindOf(id) === 'contract') return namedBy(decision).filter((ref) => status(ref, { asOf }) === 'superseded' && status(ref, { asOf: decision.iteration ?? 0 }) !== 'superseded')
+        .map((ref) => ({ ref, now: 'superseded', why: 'names' }));
       const restsOn = decision.restsOn ?? [], taken = decision.iteration ?? 0;
       const turned = (list, isDoubted) => list.filter((r) => restsOn.includes(r.id)).flatMap((r) => {
         const then = status(r.id, { asOf: taken }), now = status(r.id, { asOf });
@@ -300,6 +319,30 @@
         ...turned([...assumptions, ...hypotheses], (s) => s === 'refuted'),
         ...predictions.filter((p) => p.from === id && status(p.id, { asOf }) === 'not borne out').map((p) => ({ ref: p.id, now: 'not borne out', why: 'predicted' })),
       ];
+    }
+
+    // ---- Contracts ----
+
+    const clausesOf = (contract) => ARTICLES.flatMap((article) => list(contract[article]));
+    const namedBy = (contract) => [...list(contract.definitions), ...clausesOf(contract)];
+    // Signed once every party has signed the whole of it, by an iteration.
+    const signedBy = (contract, asOf) => (contract.parties ?? []).length > 0
+      && contract.parties.every((party) => party.signed && arrived(party.signed, asOf));
+
+    // The contract binding by an iteration: the latest in force or under review, or null.
+    const contractAt = (k = Infinity) => contracts.filter((c) => iterationOf(c.id) <= k && ['in force', 'review'].includes(status(c.id, { asOf: k }))).pop()?.id ?? null;
+
+    // What answers to a contract, by an iteration: each clause and the scenarios and rules serving it,
+    // the clauses nothing serves, and the tests serving nothing in it. A test's `serves` isn't what it
+    // rests on, so it makes no link.
+    function answers(id, { asOf = Infinity } = {}) {
+      if (kindOf(id) !== 'contract') throw new Error(`No contract ${id}.`);
+      const contract = recordOf.get(id).record, named = clausesOf(contract);
+      const tests = [...scenarios, ...rules].filter((t) => iterationOf(t.id) <= asOf && !supersedersOf(t.id, asOf).length)
+        .map((t) => ({ id: t.id, serves: list(t.serves).filter((clause) => named.includes(clause)) }));
+      const clauses = ARTICLES.flatMap((article) => list(contract[article]).map((clause) => ({ id: clause, article,
+        tests: tests.filter((t) => t.serves.includes(clause)).map((t) => t.id) })));
+      return { clauses, tests, untested: clauses.filter((c) => !c.tests.length).map((c) => c.id), servesNothing: tests.filter((t) => !t.serves.length).map((t) => t.id) };
     }
 
     // ---- Links ----
@@ -330,16 +373,16 @@
     const FROM_SOURCE = { goal: 'sets', constraint: 'imposes', agreement: 'records', experiment: 'records', observation: 'captures',
       assumption: 'states', definition: 'defines', opinion: 'voices', feedback: 'voices',
       hypothesis: 'states', problem: 'raises', incident: 'reports', strategy: 'sets', dispute: 'voices', requirement: 'sets',
-      principle: 'states', pattern: 'describes', antipattern: 'describes', optimization: 'sets',
+      principle: 'states', pattern: 'describes', antipattern: 'describes', optimization: 'sets', capability: 'shows',
       entity: 'founds', primitive: 'founds', scenario: 'founds', rule: 'founds' };
     const INTO = { entity: 'founds', primitive: 'founds', scenario: 'founds', rule: 'founds', investigation: 'prompts',
       experiment: 'calls for', inference: 'premise', hypothesis: 'prompts', tradeoff: 'weighed in' };
     const LATER_INTO = { outcome: 'shows', question: 'informs', action: 'calls for', constraint: 'brings about', agreement: 'brings about',
-      prediction: 'predicts', risk: 'raises', requirement: 'brings about', problem: 'shows' };
+      prediction: 'predicts', risk: 'raises', requirement: 'brings about', capability: 'brings about', problem: 'shows' };
     // The records that make or shape a choice, and what each kind of record steering one means for it.
     const CHOOSING = ['decision', 'strategy', 'option', 'solution', 'recommendation'];
     const STEERS = { goal: 'aims', optimization: 'aims', constraint: 'constrains', requirement: 'requires', principle: 'guides',
-      pattern: 'guides', antipattern: 'warns against', strategy: 'guides', tradeoff: 'weighs', recommendation: 'advises' };
+      pattern: 'guides', antipattern: 'warns against', strategy: 'guides', tradeoff: 'weighs', recommendation: 'advises', capability: 'enables' };
     const RESULTS = { worked: 'meets', partly: 'partly meets', failed: 'fails' };
     const isNo = (mark) => mark === '−' || mark === '-';
     function meaningOf(from, to) {
@@ -373,6 +416,7 @@
       if (a === 'feedback' && [record(from).about].flat().includes(to)) return record(from).verdict === 'wrong' ? 'disputes' : 'bears out';
       if (b === 'run') return record(to).tries ? 'tried in' : 'run in';
       if (a === 'run') return run(from).met.includes(to) ? 'meets' : 'doesn’t meet';
+      if (b === 'contract') return a === 'definition' ? 'defines' : 'clause of';
       if (INTO[b]) return INTO[b];
       if (a === 'inference' && b === 'outcome') return 'explains';
       if (a === 'outcome') return RESULTS[record(from).result];
@@ -699,7 +743,7 @@
 
     return {
       weigh, strength, originOf, status, reviewReasons, links, inputsOf, excerptsOf, tags: tagged, appearances, iteration, standing,
-      model, runs: () => runs.map((r) => r.id), run, results, decisionsIn, partOfClass, primitivesOf, definitionOf, exercisedBy,
+      model, runs: () => runs.map((r) => r.id), run, results, decisionsIn, partOfClass, primitivesOf, definitionOf, exercisedBy, contractAt, answers,
     };
   }
 

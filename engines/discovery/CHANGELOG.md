@@ -1,5 +1,13 @@
 # discovery changelog
 
+## 0.3.5 · 2026-11-05
+- Takes `capabilities` and `contracts`. A contract names its `definitions`, `goals`, `optimizations`, `constraints`, `capabilities` and `principles`, and its `parties`, each `signed: { when, iteration }` once they've signed the whole of it. It's `proposed` until every party has signed, then `in force`, and `review` once something it names has been replaced since; it replaces the contract it `supersedes` only once signed, so the old one binds until then. `reviewReasons` covers contracts.
+- `contractAt(k)` gives the contract binding by an iteration. `answers(id)` gives what answers to one, from each scenario's and rule's `serves`: each clause and what serves it, the clauses nothing serves, and the tests serving nothing in it. `serves` makes no link, since it isn't what a test rests on.
+- New link words: `clause of` and `defines` into a contract; `shows` and `enables` for a capability.
+
+## 0.3.4 · 2026-11-05
+- Score counts each source once for each stance, as standing always did. Two excerpts of one source counted its grade twice, and so did two copies of a source the claim doesn't cite. The extra passage now says what it `repeats` and isn't counted.
+
 ## 0.3.3 · 2026-10-29
 - Takes fourteen more kinds: `hypotheses`, `problems`, `incidents`, `strategies`, `disputes`, `requirements`, `principles`, `patterns`, `antipatterns`, `optimizations`, `solutions`, `options`, `tradeoffs` and `recommendations`, with what each rests on and what each link means.
 - Works out their statuses: a hypothesis supported or refuted, and a requirement met or not, by the observations testing it; a problem solved once a solution to it is applied; an incident resolved and a solution applied once what shows it arrives; an option chosen or set aside, and a recommendation followed or declined, by the decisions taking or weighing it; a dispute settled once an agreement or decision settles it. Strategies, principles, patterns, anti-patterns, optimizations and trade-offs keep what their records say.

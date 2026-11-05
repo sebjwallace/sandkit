@@ -12,17 +12,16 @@ The working rule: **one small step at a time, the author decides.** Propose an i
 
 The foundry can try a proposal, but nothing yet takes the result into the model. Several pieces, roughly in this order:
 
-1. **Define Announcement first.** ENT-4 is flagged "no definition of its name". Add a definition card (say DEF-6, "Announcement: a PA message telling passengers of a change…"), set in a source from iteration 2 (SRC-13's minutes or the agreement SRC-14). Found ENT-4 on it. The flag disappears, which is principle 7 working.
-2. **Integration as a decision.** A decision card on Where we're going, "Integrate Announcement":
+1. **Integration as a decision.** A decision card on Where we're going, "Integrate Announcement":
    - its options are integrate, reject, or modify and retry;
    - it rests on RUN-3, whose report recommends it;
    - deciders are people (the station team or the modelling team);
    - it brings about iteration 3's model: a new `MODEL` entry with `'ENT-4': Announcement` and `changedBy: { 'ENT-4': 'DEC-n' }`.
 
    ENT-4 then moves from Trying to Integrated, and RUN-4 appears as the model's run for iteration 3. Never automatic: the run recommends, people decide (principle 11). A rejection keeps the report's reasons on the part, as ENT-3's is kept.
-3. **Proposed scenarios and rules as their own stage.** (The engine now follows a scenario or rule written without code, keeping the status its record says, so a written `status: 'proposed'` already works; what's open is whether acceptance should be worked out, and from what.) Tests are currently written and immediately run. Perhaps they too are proposed (from cards), then accepted as specification. That would make a test that's wrong visible before it's met or not. Decide whether this earns its place (principle 5) before building.
-4. **Rethink messages so RUL-2 is met without a patch.** The board has one message line, so the Ely train (late *and* moved) tells only its delay. The mock-up imagines "messages by priority, several per train" as v4, a structural change. Doing it for real is **the compression signal's real test**: a patch (another `||` in `messageFor`) should read as a patch, and a restructure should meet RUL-2 with no more decisions, or fewer. Ground it in the domain first: does the real board cycle messages? That's a question card, and maybe an investigation.
-5. **The whole model, or only what changed?** (The engine's `standing(k)` gives everything standing, as the Scenarios board uses; What we're building could use it too.) Does What we're building show every part each iteration, or only parts whose version or stage changed, carrying the rest in like other boards do? Today parts reappear only when changed. Decide what reads best as the model grows.
+2. **Proposed scenarios and rules as their own stage.** (The engine now follows a scenario or rule written without code, keeping the status its record says, so a written `status: 'proposed'` already works; what's open is whether acceptance should be worked out, and from what.) Tests are currently written and immediately run. Perhaps they too are proposed (from cards), then accepted as specification. That would make a test that's wrong visible before it's met or not. Decide whether this earns its place (principle 5) before building.
+3. **Rethink messages so RUL-2 is met without a patch.** The board has one message line, so the Ely train (late *and* moved) tells only its delay. The mock-up imagines "messages by priority, several per train" as v4, a structural change. Doing it for real is **the compression signal's real test**: a patch (another `||` in `messageFor`) should read as a patch, and a restructure should meet RUL-2 with no more decisions, or fewer. Ground it in the domain first: does the real board cycle messages? That's a question card, and maybe an investigation.
+4. **The whole model, or only what changed?** (The engine's `standing(k)` gives everything standing, as the Scenarios board uses; What we're building could use it too.) Does What we're building show every part each iteration, or only parts whose version or stage changed, carrying the rest in like other boards do? Today parts reappear only when changed. Decide what reads best as the model grows.
 
 ### 2. Events
 
@@ -134,6 +133,13 @@ Inspired by OpenTelemetry: instrument the classes so every run records **spans**
 ### 23. Prototype snippets per iteration
 
 Feedback is made on one version of the model (`version`), from what someone saw in the prototype. Showing the prototype, or a snippet of it, as it stood in each iteration, beside the scenarios and the feedback on them, would let people see how things change over time. The engine doesn't use `version` yet; the page could, to open the prototype at that iteration.
+
+### 26. The contract, from here
+
+- **Testing a clause directly.** A constraint is words, tested only by what serves it, so CON-1 stands untested. A clause might carry a check of its own, and an optimization a measure, as a rule has code.
+- **Searching for solutions.** With clauses that can be checked and measured, and priority as their order, candidates could be generated and compared against the contract, as RUN-3 is against the tests. Not before those checks exist.
+- **Serving nothing.** SCN-1 and RUL-1, departed trains, serve nothing in the contract: a clause for them, or are they out of place? The author's call.
+- **Requirements under a contract.** Most may sit at the specification level, serving a clause. Decide with a real case.
 
 ## Sandkit, beyond this demo
 

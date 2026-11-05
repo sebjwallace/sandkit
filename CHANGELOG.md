@@ -4,6 +4,12 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries start `**Breaking:**` and say how to migrate.
 
+## 0.2.84 · 2026-11-05
+- `sb-discovery-card` 0.1.5: two new kinds, `capability` and `contract`, the contract on a material of its own, recorded in `STYLE.md` and `DECISIONS.md`, with a `document` variant to read cold or save as a PDF through the browser's print dialog.
+- `discovery` 0.3.5: takes capabilities and contracts. A contract is `proposed` until every party has signed, then `in force`, and `review` once something it names is replaced. `contractAt(k)` gives the one binding, and `answers(id)` what answers to it, from each test's `serves`.
+- The domain discovery practice gains **The domain contract**: what it holds, how it differs from requirements, acceptance criteria and specifications, signing it whole and amending it, and showing it, with how to save it as a PDF through the browser's print dialog and show its pages on screen. The Domain Discovery Engine demo shows it working.
+- `discovery` 0.3.4: a claim's score counts each source once for each stance, however many excerpts or copies carry it, as its standing already did. The domain discovery practice says so.
+
 ## 0.2.83 · 2026-11-05
 - Follow-ups from the first real use of a mechanism, in a household resilience sandbox's water chapter. 1 mechanism.
 - `tools/setup.mjs` tags every installed mechanism before `model.js` on every page that loads the model, on every run, whatever `--page` says, and reports which pages it tagged. It always says what changed: the root changelog's entries since the installed Sandkit version, breaking first with their indented points, then plainly if no part's version moved or nothing changed at all. `SOURCE.md` keeps a fixed order, so updates give small diffs, and the output names the folder rather than printing "Updated ..".

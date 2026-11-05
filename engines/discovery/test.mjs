@@ -97,6 +97,50 @@ test('the score is each counted yes’s strength, less each counted no’s', () 
   assertEqual([weigh('CLM-1', { asOf: 1 }).score, weigh('CLM-1').score, weigh('CLM-4').score], [7, 3, -4]);
 });
 
+// A source quoted more than once, and copies of a source the claim never cites.
+const voices = createDiscovery({
+  sources: [...SOURCES, { id: 'SRC-8', format: 'document', copies: 'SRC-2', grade: grade(3, 'Repeats the forum too.') }],
+  excerpts: [...EXCERPTS, excerpt('SRC-8.1', 'word is they’ve gone'), excerpt('SRC-6.3', 'saw another at dawn')],
+  claims: [
+    claim('CLM-9', { 'SRC-6.1': '+', 'SRC-6.2': '+' }),
+    claim('CLM-10', { 'SRC-3.1': '+', 'SRC-8.1': '+' }),
+    claim('CLM-11', { 'SRC-3.1': '+', 'SRC-2.2': '+', 'SRC-2.1': '+' }),
+    claim('CLM-12', { 'SRC-6.1': '+', 'SRC-6.2': '−' }),
+    claim('CLM-13', { 'SRC-2.1': '+', 'SRC-3.1': '−' }),
+    claim('CLM-14', { 'SRC-6.1': '+', 'SRC-6.2': '−', 'SRC-6.3': '+' }),
+  ],
+});
+
+test('two excerpts of one source count once, the second saying what it repeats', () => {
+  const { standing, score, passages } = voices.weigh('CLM-9');
+  assertEqual([standing, score], ['single source', 4]);
+  assertEqual(passages.map((p) => [p.excerpt, p.counted, p.repeats ?? null]), [['SRC-6.1', true, null], ['SRC-6.2', false, 'SRC-6']]);
+});
+
+test('copies of a source the claim doesn’t cite count once, and none goes missing', () => {
+  const { standing, score, passages } = voices.weigh('CLM-10');
+  assertEqual([standing, score], ['single source', 2]);
+  assertEqual(passages.map((p) => [p.source, p.counted, p.repeats ?? null]), [['SRC-3', true, null], ['SRC-8', false, 'SRC-3']]);
+});
+
+test('the source’s own passage counts in place of a copy cited before it, with the repeats beneath it', () => {
+  const { score, passages } = voices.weigh('CLM-11');
+  assertEqual(score, 2);
+  assertEqual(passages.map((p) => [p.excerpt, p.counted]), [['SRC-2.2', true], ['SRC-3.1', false], ['SRC-2.1', false]]);
+});
+
+test('one source saying yes and no counts once for each, and every passage shows once', () => {
+  const { standing, score, passages } = voices.weigh('CLM-12');
+  assertEqual([standing, score, passages.length], ['contested', 0, 2]);
+  const repeated = voices.weigh('CLM-14');
+  assertEqual([repeated.score, repeated.passages.map((p) => p.excerpt)], [0, ['SRC-6.1', 'SRC-6.3', 'SRC-6.2']]);
+});
+
+test('a copy disagreeing with what it copies is a voice of its own', () => {
+  const { standing, passages } = voices.weigh('CLM-13');
+  assertEqual([standing, passages.every((p) => p.counted)], ['contested', true]);
+});
+
 // ---- Basis ----
 
 test('basis: observed when data backs it, reported when someone says so first-hand, inferred when only a summary does', () => {
@@ -726,3 +770,104 @@ test('a decision goes under review when a hypothesis it rests on is refuted afte
 test('a problem comes back when a solution to it arrives', () => {
   assertEqual(grid.appearances('PRB-1'), [1, 2]);
 });
+
+// ---- Contracts ----
+
+// A ferry service's contract, in another subject again: signed in iteration 1, then amended.
+const ferryExcerpt = (id, iteration) => ({ id, source: id.split('.')[0], quote: id, iteration });
+const FERRY = () => ({
+  sources: [{ id: 'SRC-1', iteration: 1 }, { id: 'SRC-2', iteration: 2 }],
+  excerpts: [ferryExcerpt('SRC-1.1', 1), ferryExcerpt('SRC-2.1', 2)],
+  definitions: [{ id: 'DEF-1', iteration: 1, term: 'Crossing', setIn: 'SRC-1.1' }],
+  goals: [{ id: 'GOL-1', iteration: 1, setIn: 'SRC-1.1' }, { id: 'GOL-2', iteration: 1, setIn: 'SRC-1.1' }],
+  constraints: [{ id: 'CON-1', iteration: 1, setIn: 'SRC-1.1' }, { id: 'CON-2', iteration: 2, supersedes: 'CAP-1', setIn: 'SRC-2.1' }],
+  capabilities: [{ id: 'CAP-1', iteration: 1, status: 'available', setIn: 'SRC-1.1' }],
+  principles: [{ id: 'PRN-1', iteration: 1, setIn: 'SRC-1.1' }],
+  contracts: [
+    { id: 'CTR-1', iteration: 1, definitions: ['DEF-1'], goals: ['GOL-1', 'GOL-2'], constraints: ['CON-1'], capabilities: ['CAP-1'], principles: ['PRN-1'],
+      parties: [{ name: 'Harbour', signed: { when: '2026-03-01', iteration: 1 } }, { name: 'Crew', signed: { when: '2026-03-02', iteration: 1 } }] },
+    { id: 'CTR-2', iteration: 2, supersedes: 'CTR-1', goals: ['GOL-1'], constraints: ['CON-1', 'CON-2'],
+      parties: [{ name: 'Harbour', signed: { when: '2026-04-01', iteration: 2 } }, { name: 'Crew', signed: { when: '2026-05-01', iteration: 3 } }] },
+  ],
+  scenarios: [
+    { id: 'SCN-1', iteration: 1, steps: [], serves: ['GOL-1', 'CON-1'] },
+    { id: 'SCN-2', iteration: 2, steps: [], serves: ['GOL-1'], supersedes: 'SCN-1' },
+    { id: 'SCN-3', iteration: 1, steps: [] },
+  ],
+  rules: [{ id: 'RUL-1', iteration: 3, serves: ['CON-2'] }],
+});
+const ferry = createDiscovery(FERRY());
+
+test('a contract is proposed until every party has signed, then in force', () => {
+  const unsigned = createDiscovery({ ...FERRY(), contracts: [{ id: 'CTR-1', iteration: 1, parties: [{ name: 'Harbour', signed: { when: '2026-03-01', iteration: 1 } }, { name: 'Crew' }] }, { id: 'CTR-2', iteration: 1 }] });
+  assertEqual([unsigned.status('CTR-1'), unsigned.status('CTR-2')], ['proposed', 'proposed']);
+  assertEqual(ferry.status('CTR-1', { asOf: 1 }), 'in force');
+});
+
+test('a signature counts from the iteration it was made in', () => {
+  assertEqual([ferry.status('CTR-2', { asOf: 2 }), ferry.status('CTR-2', { asOf: 3 })], ['proposed', 'in force']);
+});
+
+test('the old contract binds until its amendment is signed, whatever has been written', () => {
+  assertEqual(ferry.status('CTR-1', { asOf: 3 }), 'superseded');
+  assertEqual([ferry.contractAt(1), ferry.contractAt(2), ferry.contractAt(3), ferry.contractAt()], ['CTR-1', 'CTR-1', 'CTR-2', 'CTR-2']);
+  assertEqual(createDiscovery().contractAt(), null);
+});
+
+test('a contract comes up for review when something it names has been replaced since', () => {
+  assertEqual(ferry.status('CTR-1', { asOf: 1 }), 'in force');
+  assertEqual(ferry.status('CTR-1', { asOf: 2 }), 'review');
+  assertEqual(ferry.reviewReasons('CTR-1', { asOf: 2 }), [{ ref: 'CAP-1', now: 'superseded', why: 'names' }]);
+  assertEqual(ferry.reviewReasons('CTR-1', { asOf: 1 }), []);
+});
+
+test('a contract naming what was already replaced when written has no reason to review', () => {
+  const late = createDiscovery({ ...FERRY(), contracts: [{ id: 'CTR-1', iteration: 2, capabilities: ['CAP-1'], parties: [{ name: 'Harbour', signed: { when: '2026-04-01', iteration: 2 } }] }] });
+  assertEqual(late.status('CTR-1', { asOf: 2 }), 'in force');
+});
+
+test('a capability keeps what its record says, and a constraint can replace it', () => {
+  assertEqual([ferry.status('CAP-1', { asOf: 1 }), ferry.status('CAP-1', { asOf: 2 })], ['available', 'superseded']);
+  assert(ferry.links().some((l) => l.from === 'CAP-1' && l.to === 'CON-2' && l.means === 'replaced by'), 'it links to what replaced it');
+});
+
+test('a contract rests on what it names, each link saying so; a signature is part of it, not a link', () => {
+  const into = Object.fromEntries(ferry.links().filter((l) => l.to === 'CTR-1').map((l) => [l.from, l.means]));
+  assertEqual(into, { 'DEF-1': 'defines', 'GOL-1': 'clause of', 'GOL-2': 'clause of', 'CON-1': 'clause of', 'CAP-1': 'clause of', 'PRN-1': 'clause of' });
+  assertEqual(ferry.links().find((l) => l.to === 'CAP-1').means, 'shows');
+  assertEqual(ferry.links().find((l) => l.from === 'CTR-1' && l.to === 'CTR-2').means, 'replaced by');
+});
+
+test('a capability steers a choice, and brings about what comes from it', () => {
+  const steering = createDiscovery({ ...FERRY(), decisions: [{ id: 'DEC-1', iteration: 1, restsOn: ['CAP-1'] }], agreements: [{ id: 'AGR-1', iteration: 1 }], capabilities: [{ id: 'CAP-1', iteration: 1, setIn: 'SRC-1.1' }, { id: 'CAP-2', iteration: 1, from: 'AGR-1' }] });
+  assertEqual(steering.links().find((l) => l.to === 'DEC-1').means, 'enables');
+  assertEqual(steering.links().find((l) => l.to === 'CAP-2').means, 'brings about');
+});
+
+test('answers says what serves each clause, in the contract’s order, as of an iteration', () => {
+  const { clauses, untested, servesNothing, tests } = ferry.answers('CTR-1', { asOf: 1 });
+  assertEqual(clauses.map((c) => [c.id, c.article, c.tests]), [['GOL-1', 'goals', ['SCN-1']], ['GOL-2', 'goals', []], ['CON-1', 'constraints', ['SCN-1']], ['CAP-1', 'capabilities', []], ['PRN-1', 'principles', []]]);
+  assertEqual([untested, servesNothing], [['GOL-2', 'CAP-1', 'PRN-1'], ['SCN-3']]);
+  assertEqual(tests.find((t) => t.id === 'SCN-1').serves, ['GOL-1', 'CON-1']);
+});
+
+test('answers leaves out tests replaced or yet to come, and counts only clauses this contract has', () => {
+  const later = ferry.answers('CTR-2', { asOf: 3 });
+  assertEqual(later.tests.map((t) => t.id), ['SCN-2', 'SCN-3', 'RUL-1']);
+  assertEqual(later.clauses.map((c) => [c.id, c.tests]), [['GOL-1', ['SCN-2']], ['CON-1', []], ['CON-2', ['RUL-1']]]);
+  assertEqual(ferry.answers('CTR-1', { asOf: 3 }).servesNothing, ['SCN-3', 'RUL-1']);
+  assertThrows(() => ferry.answers('GOL-1'), 'only a contract has answers');
+});
+
+test('what a test serves isn’t what it rests on: it makes no link, and brings no excerpts', () => {
+  assert(!ferry.links().some((l) => ['SCN-1', 'SCN-3', 'RUL-1'].includes(l.to) && l.from.startsWith('GOL')), 'no link from what it serves');
+  assertEqual(ferry.excerptsOf('SCN-1'), []);
+});
+
+test('contracts and capabilities carry tags, and an iteration shows them with what they name', () => {
+  const tagged = createDiscovery({ ...FERRY(), tags: [{ tag: 'tides', means: 'x' }], contracts: [{ id: 'CTR-1', iteration: 1, tags: ['tides'], goals: ['GOL-1'], parties: [] }] });
+  assertEqual(tagged.tags()[0].on, ['CTR-1']);
+  const shown = ferry.iteration(1).cards.map((c) => c.id);
+  for (const id of ['CTR-1', 'CAP-1', 'GOL-1', 'DEF-1']) assert(shown.includes(id), `${id} is shown`);
+});
+

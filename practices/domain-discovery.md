@@ -51,7 +51,7 @@ What the agent or a person writes is kept as records, in the sandbox's `records/
 ```
 sources/   what came in from outside: documents, data, chats; screened and catalogued
 records/   what was written inside, from it: one script per kind
-  tags.js, excerpts.js, claims.js, questions.js, decisions.js, …
+  tags.js, excerpts.js, claims.js, questions.js, decisions.js, contracts.js, …
 ```
 
 - **Excerpts are the pieces of sources that records cite,** each picked out once as a record of its own, so a passage can be pointed at, traced and carried on its own, whatever its format. Its code is its source's and a number (`SRC-2.3`), and it says where it is in the source, as the [sources practice](sources.md) anchors a citation: the words (`quote`), a page (`page`), a region of an image (`region`) or rows of data (`rows`). They're listed in `records/excerpts.js` as `const EXCERPTS = [...]`, which `tools/sources.mjs check` reads to make sure each is where it says. Every citation names an excerpt: a claim's assertions are `{ 'SRC-2.3': '+' }`, and `raisedBy`, `answers`, `setIn`, `at`, `said` and `sources` hold excerpt codes. The [discovery engine](../engines/discovery/manifest.md) gives every excerpt a record rests on, all the way back (`discovery.excerptsOf`).
@@ -76,7 +76,7 @@ Sources, excerpts and records carry tags, so people can find them: search, filte
 
 **What we know**
 
-Every status below is worked out by the [discovery engine](../engines/discovery/manifest.md) (`discovery.status`), never written in a record, except where it's a judgement someone makes rather than something that follows: goals, optimizations, strategies, agreements, constraints, principles, patterns, anti-patterns, trade-offs and risks keep the `status` their record states, and a decision, an action or a solution states one until something overrides it.
+Every status below is worked out by the [discovery engine](../engines/discovery/manifest.md) (`discovery.status`), never written in a record, except where it's a judgement someone makes rather than something that follows: goals, optimizations, strategies, agreements, constraints, capabilities, principles, patterns, anti-patterns, trade-offs and risks keep the `status` their record states, and a decision, an action or a solution states one until something overrides it.
 
 | Prefix | Kind | What it is | Status, worked out |
 |---|---|---|---|
@@ -109,6 +109,7 @@ Every status below is worked out by the [discovery engine](../engines/discovery/
 | DSP | Dispute | A point parties haven't settled: the parties, each one's position, what it's about. Often settled by an agreement. | open, settled |
 | REQ | Requirement | Something that must be so: how firm, and where it comes from. Observations test it. | untested, met, not met |
 | CON | Constraint | Something that rules options out: how firm, what it rules out, where it comes from, what it protects. | holds |
+| CAP | Capability | What lets us move towards a goal, a constraint's opposite: what it lets us do, and how far it goes. | available |
 | PRN | Principle | A rule of thumb someone chooses by: why, and what it gives way to. | followed, set aside |
 | PAT | Pattern | A known way of solving a recurring problem: what it solves, what it costs. | applied |
 | APT | Anti-pattern | A known way that looks right but goes wrong: how it goes wrong, what to do instead. | present, removed |
@@ -120,6 +121,7 @@ Every status below is worked out by the [discovery engine](../engines/discovery/
 | EXP | Experiment | A test run on purpose, on the world or on the model, with what would bear it out written first. | planned, done |
 | ACT | Action | Something to do, brought about by a decision. | to do, done |
 | RSK | Risk | Something that might go wrong: raised by someone (a concern), or brought about by a decision. | open |
+| CTR | Contract | What the parties agree shapes the domain: its scope, definitions, goals, optimizations, constraints, capabilities and principles (see below). | proposed, in force, review |
 
 **What we're building**
 
@@ -130,6 +132,58 @@ Every status below is worked out by the [discovery engine](../engines/discovery/
 | SCN | Scenario | Given, When, Then, founded on cards, with code that plays it on the model. | met, not met |
 | RUL | Rule | A mandate or a condition, founded on cards, with code that checks it on the model. | met, not met |
 | RUN | Run | Every scenario and rule against one version of the model, or one candidate. Worked out, never written. | for a trial: earns its place, not yet |
+
+## The domain contract
+
+A contract is what the people involved agree shapes a domain, written down so that all of them can hold to it. It's the domain compressed to its principled parts: where it's going, what stands in the way, what lets it move, and what it holds to. Most of what's been discovered exists to find and test these.
+
+- **It's the bigger picture.** Requirements, acceptance criteria and specifications are specifics: details of how a particular goal is reached or something optimized. A contract is general enough that any specific is just one of many ways to fulfil it (below).
+- **What it holds:** its `scope` (what's in and what's out), `definitions` (so someone reading it cold can follow it), `goals` (reached, then done), `optimizations` (directions, never done), `constraints` (what stands in the way), `capabilities` (what lets us move) and `principles` (what we choose by), each named by its code, and its `parties`. `const CONTRACTS = [...]` in `records/contracts.js`.
+- **Order is priority.** Goals, optimizations and constraints each run in order of priority, which belongs to the contract, not the card, since priorities change and cards don't. A hard constraint just holds, so priority mostly matters among the soft ones.
+- **It's discovered, then it frames.** People usually tell stories first, and the contract is compressed from them; from then on it frames what comes in. It frames without being beyond question: evidence has to be able to challenge it too, or a wrong goal goes unnoticed. Don't write one too early.
+- **People read it, then sign it.** A contract is an aggregate, and that's why it can be signed: only here does each goal, constraint and capability sit in context with the rest, so only here can someone say yes to all of it. Signing is what makes it an agreement. So a party signs the whole contract, never a clause or a passage: `parties: [{ name, signed: { when, iteration } }]`, added to the record when they sign, since signing changes nothing it says. A signature isn't source material and cites none. The agent drafts and never signs; a contract is `proposed` until every party has signed.
+- **An amendment is a new contract** naming the one it `supersedes`, as the world changes, or new constraints and capabilities are found. The old one binds until the new one is signed. A contract comes up for `review` when something it names is replaced, as when a capability turns into a constraint: a `CON` superseding a `CAP`.
+- **Say what answers to it.** A scenario or rule names the clauses it serves: `serves: ['GOL-1', 'CON-2']`. It isn't what the test rests on, so it makes no link, and it can be added to an earlier test, as a tag can, since tests often come first. `discovery.answers` then gives each clause and what serves it, the clauses nothing tests, and the tests serving nothing in it. Those two edges are what's worth showing: something's untested, or a test is scope creep, or the contract is missing a clause.
+- **Keep it to a sheet.** If the clauses don't fit one screen, it hasn't compressed the domain, so merge or drop until they do.
+- **Not every domain needs one.** It suits what's engineered, where people decide how things should be. A natural phenomenon has no goals, and what it can and can't do is settled by evidence rather than signatures, so claims serve it better.
+
+### How it differs from the others
+
+Requirements, acceptance criteria and specifications are all specifics. Each is one detail of one way to reach a goal, and another could do as well. A contract is the principled artifact above them: general enough that any of them is only one variation among many that would fulfil it.
+
+| | Settles | Covers | Its role |
+|---|---|---|---|
+| **Requirement** (`REQ`) | That something must be so | One item, on its own | Loose: it can be stated without saying how it weighs against anything else |
+| **Acceptance criteria** (scenarios and rules) | How to tell a piece of work is done | One piece of behaviour | Checks: they serve the contract, downstream of it |
+| **Specification** (a model version or candidate) | How one solution works | One way of doing it | One variation of many, so people can agree the contract while the system stays free to take many forms |
+| **Contract** (`CTR`) | What the people involved agree shapes the domain, and why it's there | The whole, in context, by priority | Frames all of the above, and is the one that's signed |
+
+The others can each be right on their own and still add up to nothing anyone agreed. A contract is where they have to fit together.
+
+### Showing and sharing it
+
+Give the contract a section of its own, as the first thing on the discovery page, rather than a place on the boards: it names so much that its links would drown them. Its clauses stay on the boards as the cards they are. Beside it, show what answers to it in an [`sb-lineage`](../components/sb-lineage/manifest.md), columns for the clauses nothing tests, the clauses tested, the tests serving them, and the tests serving nothing.
+
+A contract may be what a sandbox is for, read by people who've never seen it, so it can leave as a PDF, with nothing to install and no server. [`sb-discovery-card`](../components/sb-discovery-card/manifest.md)'s `document` variant writes it out in full: pass each clause's `details` and `cited` words, `notes`, and `schedules` of what answers to it and its sources, so that nothing depends on opening anything. To save it:
+
+```js
+function saveContract() {
+  printRoot.replaceChildren(documentCard);   // a child of <body>, hidden until printing
+  document.body.classList.add('is-printing');
+  addEventListener('afterprint', () => document.body.classList.remove('is-printing'), { once: true });
+  print();                                   // the browser's own dialog saves the PDF
+}
+```
+
+```css
+@page { size: A4; margin: 20mm; @bottom-center { content: counter(page) " of " counter(pages); } }
+@media print {
+  body.is-printing > :not(#print-root) { display: none !important; }
+  body.is-printing > #print-root { display: block; }
+}
+```
+
+To show its pages on screen, put the document in a box the size of a page with its overflow hidden, flow it through columns the size of the page's text with a gap of twice the margin, and move by a page's width to turn the page. The browser breaks it as it does for print, so the pages match the PDF. Take the document's frame off there, as printing does: `max-width: none; padding: 0; border: 0`. `demos/discovery` shows it working.
 
 ## Iterations
 
@@ -145,7 +199,7 @@ A claim never gets a verdict by hand. The [discovery engine](../engines/discover
 
 - **Grades.** Each source carries an authored grade in the catalogue: a value from 1 to 5 and the reason for it, with any aspects that matter in this subject (see the [sources practice](sources.md)). Grade it when you catalogue it, and say why. A source not graded yet weighs 3, and its passages say so.
 - **In scope:** only sources that speak to how things are count. One that says what should be, such as a plan, shows but doesn't count.
-- **Copies count once:** a source repeating another counts as the one it repeats.
+- **Copies count once:** a source repeating another counts as the one it repeats. So does a source quoted twice: it counts once for each stance, however many excerpts a claim cites.
 - **Standing:** corroborated (two or more independent yeses), single source, contested (yeses and noes), refuted (only noes), unbacked.
 - **Score:** the grade of each independent yes, less each no.
 - **Basis:** observed (data or an image), reported (first-hand), inferred (only an analysis), conjecture, or assumption once something rests on it.
@@ -176,18 +230,18 @@ People who know the domain try the prototype or a run and say what they think. T
 
 ## Boards
 
-A recommended layout, not a required one (see "What's fixed and what's yours"). Each iteration is laid out on boards, each an [`sb-lineage`](../components/sb-lineage/manifest.md) holding the cards drawn compact, in columns by the part they play, with every link between them drawn and labelled. People switch between the boards and step between iterations. The first three follow the whole loop; Scenarios follows each scenario and rule from what it's founded on to the feedback on it and what replaced it.
+A recommended layout, not a required one (see "What's fixed and what's yours"). A contract has its own section rather than a place on them (see "The domain contract"). Each iteration is laid out on boards, each an [`sb-lineage`](../components/sb-lineage/manifest.md) holding the cards drawn compact, in columns by the part they play, with every link between them drawn and labelled. People switch between the boards and step between iterations. The first three follow the whole loop; Scenarios follows each scenario and rule from what it's founded on to the feedback on it and what replaced it.
 
 | Board | Columns, in order |
 |---|---|
 | What we know | Gathered (sources, and finished investigations beside them, folded), Excerpted (the excerpts cited, in place of whole sources), Captured (observations), Interpreted (metrics, claims, definitions, opinions, feedback), Reasoned (inferences), Assumed (assumptions, hypotheses), Open (questions, problems and incidents still open), Under way (investigations still looking), Awaited |
-| Where we're going | Rests on (what a decision rests on from What we know, folded), In force (outcomes, goals, optimizations, strategies, predictions, agreements, requirements, constraints, principles, patterns and anti-patterns standing), Weighing (options, trade-offs, recommendations, solutions proposed and disputes still open), Decided, Brought about (experiments, actions, risks, solutions applied, and what a decision brought about in this iteration), Awaited |
+| Where we're going | Rests on (what a decision rests on from What we know, folded), In force (outcomes, goals, optimizations, strategies, predictions, agreements, requirements, constraints, capabilities, principles, patterns and anti-patterns standing), Weighing (options, trade-offs, recommendations, solutions proposed and disputes still open), Decided, Brought about (experiments, actions, risks, solutions applied, and what a decision brought about in this iteration), Awaited |
 | What we're building | Founded on (folded), Proposed, Trying, Integrated, Runs, Met, Not met yet, Rejected |
 | Scenarios (everything standing, from `discovery.standing(k)`) | Founded on (folded), Superseded (scenarios and rules replaced in this iteration), Scenarios, Rules, Feedback (on them) |
 
 - **Columns hold a card's role in the iteration, not its kind.** An investigation is under way until a source it gathered arrives, then gathered; a prediction is brought about in the iteration its decision made it, and in force after.
 - **Links are signal, not noise.** Every link answers a question: what supports or disputes a claim, what shaped a decision or what it brought about, what a part is founded on. Label each with what it means: the [discovery engine](../engines/discovery/manifest.md) gives every link its meaning (`means`: "supports", "founds", "brings about"), to use as it is or say your own way. What brought a card about is linked only in the iteration where it did; afterwards it stands in force, and that history stays on the card.
-- **Tone links by what they mean,** so a chain reads before its labels do: what supports, answers, bears out, meets or solves in `good`; what disputes, refutes, fails or puts in doubt in `bad`; what rests on an assumption or hypothesis, constrains, requires or warns against in `warn`; bookkeeping, such as gathered, captures or informs, and what a plan says should be, `muted`, since it shows but doesn't count; the rest the default accent.
+- **Tone links by what they mean,** so a chain reads before its labels do: what supports, answers, bears out, meets, solves or enables in `good`; what disputes, refutes, fails or puts in doubt in `bad`; what rests on an assumption or hypothesis, constrains, requires or warns against in `warn`; bookkeeping, such as gathered, captures, informs or clause of, and what a plan says should be, `muted`, since it shows but doesn't count; the rest the default accent.
 - **A grounding column holds only cards linked to the board's own,** folded, and links between two grounding cards are left out.
 - **Set the board again for each iteration:** its cards (compact, `openable`, as of that iteration), its columns and its links. Carried cards keep the `carried` mark.
 - **Fold cards with their column,** so a folded column shows each card's icon and code:

@@ -9,6 +9,6 @@ const ENTITIES = [
   { id: 'ENT-3', created: '2026-10-05T12:58', by: 'Agent', iteration: 1, tags: ['platforms'], name: 'Platform', proposedBy: 'Agent', foundedOn: ['DEF-4', 'CLM-4', 'CLM-5'],
     purpose: 'A platform as a thing in its own right.',
     rejected: { in: 1, why: 'It has no state or behaviour of its own: every rule about platforms needs only its number. The Platform primitive (PRM-2) does the job with one less moving part.' } },
-  { id: 'ENT-4', created: '2026-11-04T10:31', by: 'Agent', iteration: 2, tags: ['announcements', 'platform-changes'], name: 'Announcement', proposedBy: 'Agent', foundedOn: ['DEC-2', 'CON-2', 'CON-3'],
+  { id: 'ENT-4', created: '2026-11-04T10:31', by: 'Agent', iteration: 2, tags: ['announcements', 'platform-changes'], name: 'Announcement', proposedBy: 'Agent', foundedOn: ['DEF-9', 'DEC-2', 'CON-2', 'CON-3'],
     purpose: 'A PA announcement of a platform change: for which train, and how long before it leaves.' },
 ];

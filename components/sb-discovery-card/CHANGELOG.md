@@ -1,5 +1,11 @@
 # sb-discovery-card changelog
 
+## 0.1.5 · 2026-11-05
+- Two new kinds: `capability`, a constraint's opposite, and `contract`, what people agree shapes a domain.
+- A contract wears its own material, in every variant but compact a sheet in a double rule, with a serif title, its `scope`, numbered `articles` of clauses that open and light what they name, and the `parties`' signature lines. Compact, it keeps the double rule.
+- A contract has `definitions`, shown above its articles when expanded, and a fourth variant, `document`: written out in full to be read cold or printed, with each clause's `details` and `cited` words, `notes` and lettered `schedules`, nothing to open or fold, black on white whatever the theme, its clauses kept whole wherever it's flowed into pages. A sandbox saves it as a PDF with the browser's own print dialog.
+- New status word: `available` reads as good.
+
 ## 0.1.4 · 2026-10-29
 - Fourteen new kinds, for weighing choices, naming problems and recording ways of working: `hypothesis`, `problem` and `incident` with what we know; `strategy`, `dispute`, `requirement`, `principle`, `pattern`, `antipattern`, `optimization`, `solution`, `option`, `tradeoff` and `recommendation` with where we're going. Each has its own icon and tone.
 - A card can carry a `title`, a few words after its code in the header, compact or full.

@@ -50,6 +50,11 @@ Use this component through the interface below. You don't need to read its sourc
 | `marks` | no | For a compact card: `assumed` (a dashed warning edge), `carried` (no fill), `awaited` (dashed and quiet). |
 | `strips` | no | `[{ tone, label, text }]`: what the card means, in order. |
 | `folds` | no | `[{ label, items }]`: what it rests on or holds, after the strips. |
+| `scope` | no | For a contract: `[{ label, text }]`, what it covers and leaves out, under its title. |
+| `articles` | no | For a contract: `[{ title, note?, clauses: [{ ref?, text, note? }] }]`, numbered as they're given, so an order of priority is the order you give. A clause with a `ref` opens it (`sb-open`), and points at it and lights as a passage does. As a document, a clause also writes out its `details` (`[{ label, text }]`) and the words it rests on (`cited`, `[{ quote, from }]`). |
+| `definitions` | no | For a contract: `[{ ref?, term, meaning }]`, what its words mean, above its articles for someone reading it cold, with the definition's code as `ref`. Shown expanded and as a document. Expanded, one with a `ref` opens and lights as a clause does. |
+| `schedules` | no | For a contract as a document: `[{ title, note?, clauses }]`, lettered and following the signatures, clauses as in `articles`, for what backs it up. |
+| `parties` | no | For a contract: `[{ name, signed? }]`, a signature line each. `signed` is the words on the line, such as "Signed 12 Nov 2026"; without it the line reads "awaiting signature". |
 | `created` | no | When the card was made, `yyyy-mm-ddThh:mm`, shown as "5 Mar 2026, 14:20"; any other form is shown as given. |
 | `by` | no | Who recorded it: `Agent` or a person. |
 | `iteration` | no | The iteration it was raised in. |
@@ -69,18 +74,22 @@ The practice asks every card for `created`, `by` and `iteration`; the card shows
 | `{ option: { title, pros?, cons?, chosen?, ref? } }` | An option weighed; the chosen one marked, the rest faded. |
 | `{ slot: 'name' }` | The card's children marked `slot="name"`, such as a scenario's steps. |
 
-**Kinds.** What we know: `source`, `excerpt`, `investigation`, `observation`, `metric`, `claim`, `definition`, `opinion`, `inference`, `assumption`, `hypothesis`, `problem`, `incident`, `question`, `feedback`, `awaited`. Where we're going: `outcome`, `goal`, `strategy`, `prediction`, `agreement`, `dispute`, `requirement`, `constraint`, `principle`, `pattern`, `antipattern`, `optimization`, `solution`, `option`, `tradeoff`, `recommendation`, `decision`, `experiment`, `action`, `risk`. What we're building: `entity`, `primitive`, `scenario`, `rule`, `run`.
+**Kinds.** What we know: `source`, `excerpt`, `investigation`, `observation`, `metric`, `claim`, `definition`, `opinion`, `inference`, `assumption`, `hypothesis`, `problem`, `incident`, `question`, `feedback`, `awaited`. Where we're going: `outcome`, `goal`, `strategy`, `prediction`, `agreement`, `dispute`, `requirement`, `constraint`, `capability`, `contract`, `principle`, `pattern`, `antipattern`, `optimization`, `solution`, `option`, `tradeoff`, `recommendation`, `decision`, `experiment`, `action`, `risk`. What we're building: `entity`, `primitive`, `scenario`, `rule`, `run`.
 
-**Status tones.** Good: corroborated, answered, confirmed, met, integrated, done, borne out, supported, sound, in force, worked, accepted, on track, earns its place, arrived, chosen, improving, followed, applied, solved, resolved, settled, removed. Warn: contested, unresolved, trying, in doubt, untested, shaken, partly, review, not yet, open. Bad: refuted, broken, not met, rejected, not borne out, failed, off track, worsening, present. Accent: single source, proposed, under way, planned, to do. Any other word is muted: held, holds, pending, awaited, superseded, unbacked, declined, steady, set aside.
+**Status tones.** Good: corroborated, answered, confirmed, met, integrated, done, borne out, supported, sound, in force, worked, accepted, on track, earns its place, arrived, chosen, improving, followed, applied, solved, resolved, settled, removed, available. Warn: contested, unresolved, trying, in doubt, untested, shaken, partly, review, not yet, open. Bad: refuted, broken, not met, rejected, not borne out, failed, off track, worsening, present. Accent: single source, proposed, under way, planned, to do. Any other word is muted: held, holds, pending, awaited, superseded, unbacked, declined, steady, set aside.
 
 ## Attributes
 
 | Attribute | Default | Meaning |
 |---|---|---|
-| `variant` | `normal` | `compact` on a board: icon, code, status and words. `normal`: the whole card, folds closed. `expanded`, in a modal or near full screen: every fold open, beside the strips. |
+| `variant` | `normal` | `compact` on a board: icon, code, status and words. `normal`: the whole card, folds closed. `expanded`, in a modal or near full screen: every fold open, beside the strips. `document`, for a contract only: written out in full, to be read cold or printed. Any other card draws as `normal`. |
 | `openable` | off | A compact card becomes a button that fires `sb-open`. Cards inside folds are always openable. |
 
 **Source material is always compact,** a source or an excerpt, whatever the variant. In full it's the material itself, which the sandbox shows in its own view; the practice says how.
+
+**A contract is its own sheet,** normal or expanded: its title and byline, `scope`, `definitions` when expanded, `articles`, `parties`, then any `folds` and its record. It draws no strips or badges. Compact, it's a compact card in a double rule.
+
+**A contract as a document** is the one card that can leave the sandbox. Everything is written out and nothing opens or folds: `notes` under its title, then `scope`, `definitions`, `articles` with their details and citations, `parties` and `schedules`. It's black on white whatever the theme, and flowed into pages, on paper or on screen, it keeps clauses, definitions and signatures whole and starts each schedule on a new page. To save it as a PDF, the sandbox shows only that card when printing and calls `window.print()`: the browser's own dialog does the rest, with nothing to install and no server. The [practice](../../practices/domain-discovery.md) says how, and how to show its pages on screen.
 
 ## Properties
 
@@ -103,9 +112,9 @@ Setting properties never fires events.
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-accent-text`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-radius`. Its own: `--sb-discovery-card-band` (the header and footer bands, from `--sb-surface-2`), `--sb-discovery-card-paper` (the paper's sheet), `--sb-discovery-card-tone` (a kind's tone, set per `[data-kind]`), `--sb-discovery-card-status` (a status's tone, set per `[data-status]`).
 
-Materials, as [STYLE.md](../../STYLE.md) describes: a card with a header band, a record; and paper for sources and passages, with a 12px fold.
+Materials, as [STYLE.md](../../STYLE.md) describes: a card with a header band, a record; paper for sources and passages, with a 12px fold; and a ruled sheet for a contract.
 
-Classes: `sb-discovery-card` (`--expanded`, `--highlighted`), `sb-discovery-card__card`, `__head`, `__icon`, `__id`, `__title`, `__byline`, `__badges`, `__badge`, `__status`, `__format`, `__body` (`--split`), `__column`, `__strip` (`--main`, `--note`, `--answer`, `--warn`, `--expect`, `--unresolved`), `__label`, `__text`, `__fold`, `__items`, `__item`, `__paper`, `__slip`, `__stance`, `__source`, `__passage-note`, `__quote`, `__excerpt`, `__page`, `__crop`, `__rows`, `__cell` (`--head`), `__option` (`--chosen`), `__option-head`, `__option-title`, `__chosen`, `__points`, `__point` (`--pro`, `--con`), `__compact` (`--assumed`, `--carried`, `--awaited`), `__compact-head`, `__compact-text`, `__note`, `__file`, `__foot`, `__meta`, `__meta-label`, `__meta-text`, `__part--highlighted`. The element carries `data-ref`, `data-kind` and `data-status` as soon as it has a card, even before it's on the page; compact cards and full cards carry `data-kind` for their tone.
+Classes: `sb-discovery-card` (`--expanded`, `--document`, `--highlighted`), `sb-discovery-card__card`, `__head`, `__icon`, `__id`, `__title`, `__byline`, `__badges`, `__badge`, `__status`, `__format`, `__body` (`--split`), `__column`, `__strip` (`--main`, `--note`, `--answer`, `--warn`, `--expect`, `--unresolved`), `__label`, `__text`, `__fold`, `__items`, `__item`, `__paper`, `__slip`, `__stance`, `__source`, `__passage-note`, `__quote`, `__excerpt`, `__page`, `__crop`, `__rows`, `__cell` (`--head`), `__option` (`--chosen`), `__option-head`, `__option-title`, `__chosen`, `__points`, `__point` (`--pro`, `--con`), `__compact` (`--assumed`, `--carried`, `--awaited`), `__compact-head`, `__compact-text`, `__note`, `__file`, `__contract` (`--document`), `__contract-head`, `__contract-heading`, `__contract-title`, `__scope`, `__article` (`--schedule`), `__article-title`, `__article-note`, `__clauses`, `__clause`, `__clause-number`, `__clause-text`, `__clause-ref`, `__clause-note`, `__clause-details`, `__cited`, `__cited-from`, `__definitions-section`, `__definitions-title`, `__definitions`, `__definition`, `__definition-term`, `__definition-meaning`, `__notices`, `__notice`, `__signatures`, `__signature`, `__signed` (`--awaiting`), `__party`, `__foot`, `__meta`, `__meta-label`, `__meta-text`, `__part--highlighted`. The element carries `data-ref`, `data-kind` and `data-status` as soon as it has a card, even before it's on the page; compact cards and full cards carry `data-kind` for their tone.
 
 A board that folds a column down can hide everything in a compact card but its icon and code: `.sb-discovery-card__compact > :not(.sb-discovery-card__compact-head), .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }`.
 

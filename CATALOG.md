@@ -112,6 +112,7 @@ The same catalog from the subject's side: find the need, then read the manifest 
 - What something rests on, back to its sources → `sb-lineage`
 - Discovering a domain on purpose: cards of claims, questions and decisions → `sb-discovery-card`, `discovery`
 - Weighing claims, and what stands as of each iteration → `discovery`
+- What the people involved agree shapes a domain, on one sheet, to sign, test against and share as a PDF → `sb-discovery-card`, `discovery`
 
 ## Tools
 
@@ -141,7 +142,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [Sources](practices/sources.md) | The material a sandbox was built from: `sources/` with one catalogue, an inbox to process, citations of passages from the model's `ITEMS`, and checking them. Supported by `tools/sources.mjs` and `tools/serve.mjs`. |
 | [Modes](practices/modes.md) | Other ways of using a sandbox for a while, such as commenting or tracing: one shape for every mode, and one at a time through the page-wide `sb-mode` event. Supported by the modes below. |
 | [Workshops](practices/workshops.md) | Working through a sandbox's model with the people who know the subject, until they understand it, have corrected it and own it: principles, roles, preparing, the workshop page, activities (predict and reveal, confidence checks, forks, checking sources, questions, decisions), the round trip with the agent, and closing. Supported by `sb-notebook`, `sb-person`, `sb-poll`, `sb-handoff` and `sb-choice`. |
-| [Domain discovery](practices/domain-discovery.md) | Discovering a domain on purpose, an iteration at a time: a record of cards that are never edited, each kind and what it's for, tags declared with what they mean, weighing claims, growing and trying the model, feedback from people who know the domain, and showing the cards on three boards per iteration. Supported by `sb-discovery-card` and `sb-lineage`. |
+| [Domain discovery](practices/domain-discovery.md) | Discovering a domain on purpose, an iteration at a time: a record of cards that are never edited, each kind and what it's for, tags declared with what they mean, weighing claims, growing and trying the model, feedback from people who know the domain, the domain contract the parties agree and how to save it as a PDF, and showing the cards on three boards per iteration. Supported by `sb-discovery-card` and `sb-lineage`. |
 | [Mechanisms](practices/mechanisms.md) | Building a domain model from mechanisms, the reusable parts of domain models: when to use one, composing them in `model.js` and how things interact, configuring, ranges, loading in a page and in Node, ejecting one to change it, and how candidates become mechanisms. |
 | [Feedback](practices/feedback.md) | Collecting comments with `sb-comments`, and what the agent does on receiving them: saved as sources, `FB-` codes, answered in the journal. Supported by `sb-comments`. |
 
@@ -167,11 +168,11 @@ Components and the engine for domain discovery, which never know each other: the
 
 | Component | What it does |
 |---|---|
-| [`sb-discovery-card`](components/sb-discovery-card/manifest.md) | One card of discovery, in 41 kinds each with its icon and tone, and an optional title after its code: compact on a board, normal, or expanded in a modal; what it means in strips, what it rests on in folds of passages, cards, options and slots; sources and excerpts always compact, on paper, an excerpt showing its words, a region of an image or rows of data; when, by whom and in which iteration it was made. |
+| [`sb-discovery-card`](components/sb-discovery-card/manifest.md) | One card of discovery, in 43 kinds each with its icon and tone, and an optional title after its code: compact on a board, normal, expanded in a modal, or, for a contract, written out as a document to print; what it means in strips, what it rests on in folds of passages, cards, options and slots; sources and excerpts always compact, on paper, an excerpt showing its words, a region of an image or rows of data; when, by whom and in which iteration it was made. |
 
 | Engine | What it works out |
 |---|---|
-| [`discovery`](engines/discovery/manifest.md) | The method's rules, from the sandbox's records: weighing claims on the excerpts they cite, every status as of any iteration, what rests on what and what each link means, what each iteration shows or has standing, what replaces what, every excerpt a record rests on, every tag and what it means, and the model's runs and compression signal. |
+| [`discovery`](engines/discovery/manifest.md) | The method's rules, from the sandbox's records: weighing claims on the excerpts they cite, every status as of any iteration, what rests on what and what each link means, what each iteration shows or has standing, what replaces what, every excerpt a record rests on, every tag and what it means, what answers to a domain contract and whether it's signed, and the model's runs and compression signal. |
 
 ## Mechanisms
 

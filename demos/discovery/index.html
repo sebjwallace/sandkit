@@ -51,6 +51,10 @@
   <script src="records/primitives.js"></script>
   <script src="records/scenarios.js"></script>
   <script src="records/rules.js"></script>
+  <script src="records/capabilities.js"></script>
+  <script src="records/optimizations.js"></script>
+  <script src="records/principles.js"></script>
+  <script src="records/contracts.js"></script>
 
   <style>
     body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
@@ -137,6 +141,30 @@
     .flip button { padding: 3px 10px; border: 0; border-radius: calc(var(--sb-radius) - 2px); background: none; color: var(--sb-muted); font: inherit; font-size: 12px; cursor: pointer; }
     .flip button[aria-pressed="true"] { background: var(--sb-surface); color: var(--sb-text); box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
     .flip button:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+    /* The contract: one sheet, then what answers to it. */
+    #contract-sheet { max-width: 780px; margin: 12px auto 12px; }
+    .contract-actions { display: flex; justify-content: center; margin-bottom: 18px; }
+    .contract-actions button { padding: 6px 14px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); color: var(--sb-text); font: inherit; font-size: 13px; cursor: pointer; }
+    .contract-actions button:hover { border-color: var(--sb-accent); }
+    .contract-actions button:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+    /* Saving the contract as a PDF: while it prints, it's the only thing on the page. */
+    #contract-print { display: none; }
+    @page { size: A4; margin: 20mm; @bottom-center { content: counter(page) " of " counter(pages); font: 10px Georgia, serif; color: #616e7c; } }
+    /* The contract's pages on screen: A4 at the printed margins. The document flows through columns
+       as tall and wide as a page's text, the browser breaks it as it does for print, and the book
+       shows one column at a time. Moving by a whole page is moving by a column and its gap. */
+    .book { --page-width: 210mm; --page-height: 297mm; --page-margin: 20mm; position: relative; overflow: hidden; width: var(--page-width); height: var(--page-height); margin: 0 auto 8px; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25); }
+    .book-flow { box-sizing: border-box; width: var(--page-width); height: var(--page-height); padding: var(--page-margin); columns: calc(var(--page-width) - 2 * var(--page-margin)) 1; column-gap: calc(2 * var(--page-margin)); column-fill: auto; transition: transform 0.2s; }
+    @media (prefers-reduced-motion: reduce) { .book-flow { transition: none; } }
+    .book .sb-discovery-card__contract--document { max-width: none; padding: 0; border: 0; }
+    .book-number { position: absolute; right: 0; bottom: 9mm; left: 0; color: #616e7c; font: 12px Georgia, serif; text-align: center; }
+    .page-turner { display: flex; align-items: center; gap: 8px; margin-right: auto; font-size: 13px; }
+    #contract-modal [slot="actions"] { margin: 0; }
+    @media print {
+      body.is-printing-contract { background: #fff; }
+      body.is-printing-contract > :not(#contract-print) { display: none !important; }
+      body.is-printing-contract > #contract-print { display: block; }
+    }
   </style>
 </head>
 <body>
@@ -149,7 +177,24 @@
     <section class="chapter">
       <h2>Discovering how the board decides</h2>
       <p>How Ashford International's departure board decides what to show, discovered one iteration at a time. Material is gathered from the world and read into cards: what we know, where we're going, and the model we're building, as real code tested against scenarios and rules drawn from the same material. No card is ever edited, and every status and link is worked out from the cards and the model.</p>
-      <p>Below the boards, the prototype runs the model on the afternoon's trains, and a mock-up imagines how the model might grow over many versions. For how it all works, look at the practices.</p>
+      <p>The domain contract comes first: what the parties agree shapes all of it. Below the boards, the prototype runs the model on the afternoon's trains, and a mock-up imagines how the model might grow over many versions. For how it all works, look at the practices.</p>
+    </section>
+
+    <section class="card">
+      <div class="flow-bar">
+        <h3>The domain contract</h3>
+        <div class="steps">
+          <button type="button" class="step" data-step="-1" aria-label="Previous iteration">←</button>
+          <span data-iteration-title></span>
+          <button type="button" class="step" data-step="1" aria-label="Next iteration">→</button>
+        </div>
+      </div>
+      <p class="flow-hint">What the parties agree shapes the domain, compressed to one sheet: where it’s going, what stands in the way, what lets it move, and the principles it holds to. Requirements, acceptance criteria and specifications are specifics, and any of them is just one of many ways to fulfil this. Only here does everything sit in context together, which is why this is what people sign. Each list runs in order of priority. An amendment is a new contract, which takes over once every party has signed it, so step back an iteration to see what was agreed then. Click a clause to open what it names, or read it in full for someone who’s never seen the sandbox.</p>
+      <div id="contract-sheet"></div>
+      <div class="contract-actions"><button type="button" id="read-contract">Read the full contract</button></div>
+      <h3>What answers to it</h3>
+      <p class="flow-hint">Each clause and the scenarios and rules that serve it. A clause with nothing testing it, or a test that serves no clause, stands out at the edges: either something’s untested, or the contract or the tests are missing something.</p>
+      <sb-lineage id="contract-answers"></sb-lineage>
     </section>
 
     <section class="card">
@@ -164,7 +209,7 @@
       <div class="flow-bar">
         <div class="steps">
           <button type="button" class="step" data-step="-1" aria-label="Previous iteration">←</button>
-          <span id="iteration-title"></span>
+          <span data-iteration-title></span>
           <button type="button" class="step" data-step="1" aria-label="Next iteration">→</button>
         </div>
         <div class="flip" role="group" aria-label="Board">
@@ -220,6 +265,20 @@
     <div id="object-view" class="object-view"></div>
   </sb-modal>
 
+  <sb-modal id="contract-modal" size="full">
+    <div id="contract-document" class="book">
+      <div class="book-flow"></div>
+      <div class="book-number" aria-hidden="true"></div>
+    </div>
+    <div slot="actions" class="page-turner" role="group" aria-label="Pages">
+      <button type="button" class="step" id="page-back" aria-label="Previous page">←</button>
+      <span id="page-of" aria-live="polite"></span>
+      <button type="button" class="step" id="page-on" aria-label="Next page">→</button>
+    </div>
+    <button slot="actions" type="button" id="save-contract">Save as PDF</button>
+    <button slot="actions" type="button" data-close>Close</button>
+  </sb-modal>
+
   <sb-modal id="card-modal" expandable>
     <div id="card-view"></div>
   </sb-modal>
@@ -227,6 +286,8 @@
   <sb-modal id="source-modal" expandable>
     <sb-source id="source-view"></sb-source>
   </sb-modal>
+
+  <div id="contract-print"></div>
 
   <script>
     // Ashford International's departure board, and how it decides what to show. Trains come in
@@ -743,7 +804,7 @@ Not announced,0
       inferences: INFERENCES, observations: OBSERVATIONS, predictions: PREDICTIONS, outcomes: OUTCOMES, investigations: INVESTIGATIONS,
       experiments: EXPERIMENTS, actions: ACTIONS, decisions: DECISIONS, goals: GOALS, metrics: METRICS, definitions: DEFINITIONS,
       opinions: OPINIONS, feedback: FEEDBACK, agreements: AGREEMENTS, constraints: CONSTRAINTS, risks: RISKS, awaited: AWAITED, entities: ENTITIES,
-      primitives: PRIMITIVES, scenarios: SCENARIOS, rules: RULES,
+      primitives: PRIMITIVES, scenarios: SCENARIOS, rules: RULES, capabilities: CAPABILITIES, optimizations: OPTIMIZATIONS, principles: PRINCIPLES, contracts: CONTRACTS,
       model: { versions: MODEL, candidates: CANDIDATES } });
 
     // Every link, from what something rests on to what rests on it, as the engine finds them.
@@ -1228,6 +1289,212 @@ Not announced,0
         sources(cite(risk.sources), 'No sources'),
       );
     }
+    // A capability: what it lets us do, how far it goes, and where that's known from.
+    function capabilityCard(capability) {
+      return card(
+        cardHead('capability', capability.id, `Known from ${sourceById(excerptOf(capability.setIn).source).name}, ${capability.setIn}`, [statusBadge(capability.status)]),
+        strip('main', 'Capability', capability.text),
+        strip('answer', 'Lets us', capability.lets),
+        strip('warn', 'How far it goes', capability.limits),
+        sources(cite([capability.setIn]), 'No sources'),
+      );
+    }
+
+    // An optimization: a direction, never done: its metric, which way, and what's weighed against it.
+    function optimizationCard(optimization) {
+      return card(
+        cardHead('optimization', optimization.id, `Measured by ${optimization.metric}`, [statusBadge(optimization.status)]),
+        strip('main', 'Optimization', optimization.text),
+        strip('note', 'Which way', `${itemOf(optimization.metric).name}: ${optimization.direction}.`),
+        strip('warn', 'Weighed against', optimization.weighedAgainst),
+        sources(cite([optimization.setIn]), 'No sources'),
+      );
+    }
+
+    // A principle: what people choose by, why, and what it gives way to.
+    function principleCard(principle) {
+      return card(
+        cardHead('principle', principle.id, `Stated by ${sourceById(excerptOf(principle.setIn).source).name}, ${principle.setIn}`, [statusBadge(principle.status)]),
+        strip('main', 'Principle', principle.text),
+        strip('note', 'Why', principle.why),
+        strip('expect', 'Gives way to', principle.givesWayTo),
+        sources(cite([principle.setIn]), 'No sources'),
+      );
+    }
+
+    // ---- The domain contract ----
+
+    // The contract binding by an iteration, from the engine. Amending it writes a new one.
+    const contractBy = k => itemOf(discovery().contractAt(k));
+
+    // A contract's articles, in the order it reads, and which of them run in order of priority.
+    const ARTICLES = [
+      { field: 'goals', title: 'Goals', ranked: true },
+      { field: 'optimizations', title: 'Optimizations', ranked: true },
+      { field: 'constraints', title: 'Constraints', ranked: true },
+      { field: 'capabilities', title: 'Capabilities' },
+      { field: 'principles', title: 'Principles' },
+    ];
+    const clausesOf = contract => ARTICLES.flatMap(({ field }) => contract[field]);
+
+    // A clause: what it names says, how firm a constraint is, and whether this amendment brought it in.
+    function clauseOf(id, amended) {
+      const note = [itemOf(id).firmness, amended && !clausesOf(amended).includes(id) && 'new in this amendment'].filter(Boolean).join(' · ');
+      return { ref: id, text: itemOf(id).text, note: note ? capitalised(note) : undefined };
+    }
+
+    const definitionsIn = contract => contract.definitions.map(id => ({ ref: id, term: itemOf(id).term, meaning: itemOf(id).meaning }));
+
+    function contractCard(contract, k = Infinity) {
+      const amended = CONTRACTS.find(other => other.id === contract.supersedes);
+      // A party's signature, once they'd signed by this iteration.
+      const signing = contract.parties.map(({ name, signed }) => ({ name,
+        signed: signed && signed.iteration <= k ? `Signed ${formatDate(signed.when)}` : undefined }));
+      return {
+        id: contract.id, kind: 'contract', title: contract.title, status: statusOf(contract, k),
+        byline: `Between ${contract.parties.map(party => party.name).join(', ')}${amended ? `, amending ${amended.id}` : ''}`,
+        scope: [{ label: 'In scope', text: contract.scope.in }, { label: 'Out of scope', text: contract.scope.out }],
+        definitions: definitionsIn(contract),
+        articles: ARTICLES.filter(({ field }) => contract[field].length).map(({ field, title, ranked }) => ({
+          title, note: ranked && contract[field].length > 1 ? 'in order of priority' : undefined,
+          clauses: contract[field].map(id => clauseOf(id, amended)),
+        })),
+        parties: signing,
+        folds: amended ? [fold('Amends', [{ card: faceOf({ id: amended.id, ...asOf(amended.id, k) }) }])] : [],
+        iteration: contract.iteration, created: contract.created, by: contract.by,
+      };
+    }
+
+    // ---- The contract as a document ----
+
+    // What a clause says in full, for someone who can't open it: each kind's own details.
+    const DETAILS = {
+      GOL: goal => [['Measured by', itemOf(goal.metric).name], ['Target', goal.target]],
+      OPZ: optimization => [['Which way', `${itemOf(optimization.metric).name}: ${optimization.direction}`], ['Weighed against', optimization.weighedAgainst]],
+      CON: constraint => [['Rules out', constraint.rulesOut], ['Comes from', constraint.comesFrom.text], ['Protects', constraint.protects]],
+      CAP: capability => [['Lets us', capability.lets], ['How far it goes', capability.limits]],
+      PRN: principle => [['Why', principle.why], ['Gives way to', principle.givesWayTo]],
+    };
+    const detailed = pairs => pairs.map(([label, text]) => ({ label, text }));
+
+    // The clause as a document writes it: its details, and the words it rests on with where they're from.
+    function writtenClause(id, amended) {
+      const { quote, source } = excerptOf(itemOf(id).setIn);
+      return { ...clauseOf(id, amended), details: detailed(DETAILS[kindOf(id)](itemOf(id))),
+        cited: [{ quote, from: `${sourceById(source).name}, ${itemOf(id).setIn}` }] };
+    }
+
+    // A scenario's steps or a rule's lines, each under its keyword.
+    const stepsOf = test => detailed((test.steps ?? test.lines).map(({ keyword, text }) => [keyword ?? 'Always', text]));
+
+    // Schedule A: the scenarios and rules serving the contract, how each stands, and which clauses it
+    // answers to, from the engine. Schedule B: every source its clauses and definitions cite, and how far to trust it.
+    function answersSchedule(contract, k) {
+      const served = discovery().answers(contract.id, { asOf: k }).tests.filter(test => test.serves.length);
+      return { title: 'What answers to it', note: `against the model of iteration ${k}`,
+        clauses: served.map(({ id, serves }) => ({ ref: id, text: itemOf(id).title, note: capitalised(statusOf(itemOf(id), k)),
+          details: [...stepsOf(itemOf(id)), { label: 'Answers to', text: serves.join(', ') }] })) };
+    }
+    function sourcesSchedule(contract) {
+      const cited = [...clausesOf(contract), ...contract.definitions].map(id => excerptOf(itemOf(id).setIn).source);
+      return { title: 'Sources', note: 'what the clauses and definitions rest on',
+        clauses: [...new Set(cited)].sort((a, b) => Number(a.slice(4)) - Number(b.slice(4))).map(id => {
+          const source = sourceById(id);
+          return { ref: id, text: `${source.name}: ${source.title}`, note: source.asOf,
+            details: source.grade ? [{ label: `Grade ${source.grade.value} of 5`, text: source.grade.why }] : [] };
+        }) };
+    }
+
+    function contractDocument(contract, k) {
+      const amended = CONTRACTS.find(other => other.id === contract.supersedes);
+      const view = contractCard(contract, k);
+      return { ...view,
+        notes: [`As it stood at ${ITERATIONS[k - 1].title}.`],
+        articles: ARTICLES.filter(({ field }) => contract[field].length).map(({ field, title, ranked }) => ({
+          title, note: ranked && contract[field].length > 1 ? 'in order of priority' : undefined,
+          clauses: contract[field].map(id => writtenClause(id, amended)),
+        })),
+        schedules: [answersSchedule(contract, k), sourcesSchedule(contract)],
+      };
+    }
+
+    function drawnDocument() {
+      const sheet = document.createElement('sb-discovery-card');
+      sheet.setAttribute('variant', 'document');
+      sheet.card = contractDocument(contractBy(shown.iteration), shown.iteration);
+      return sheet;
+    }
+
+    // Saving as a PDF is the browser's own print dialog. While it prints, the page holds only the
+    // document, and its title is what the dialog suggests naming the file.
+    function saveContract() {
+      const pageTitle = document.title;
+      document.getElementById('contract-print').replaceChildren(drawnDocument());
+      document.title = `${contractBy(shown.iteration).id} ${contractBy(shown.iteration).title}`;
+      document.body.classList.add('is-printing-contract');
+      window.addEventListener('afterprint', () => {
+        document.body.classList.remove('is-printing-contract');
+        document.title = pageTitle;
+      }, { once: true });
+      window.print();
+    }
+
+    // Turning the document's pages. How many there are is how many page-widths its columns run to.
+    const book = { page: 0, pages: 1 };
+    const bookFlow = () => document.querySelector('.book-flow');
+
+    function turnTo(page) {
+      book.page = Math.max(0, Math.min(page, book.pages - 1));
+      bookFlow().style.transform = `translateX(${-book.page * bookFlow().offsetWidth}px)`;
+      const label = `Page ${book.page + 1} of ${book.pages}`;
+      document.getElementById('page-of').textContent = label;
+      document.querySelector('.book-number').textContent = `${book.page + 1} of ${book.pages}`;
+      document.getElementById('page-back').disabled = book.page === 0;
+      document.getElementById('page-on').disabled = book.page === book.pages - 1;
+      document.getElementById('contract-document').scrollIntoView({ block: 'start' });
+    }
+
+    function wireContract() {
+      document.getElementById('read-contract').addEventListener('click', () => {
+        const contract = contractBy(shown.iteration), modal = document.getElementById('contract-modal');
+        bookFlow().replaceChildren(drawnDocument());
+        modal.setAttribute('heading', `Contract ${contract.id} · as of iteration ${shown.iteration}`);
+        modal.show();
+        book.pages = Math.ceil(bookFlow().scrollWidth / bookFlow().offsetWidth - 0.01);
+        turnTo(0);
+      });
+      document.getElementById('page-back').addEventListener('click', () => turnTo(book.page - 1));
+      document.getElementById('page-on').addEventListener('click', () => turnTo(book.page + 1));
+      document.getElementById('contract-modal').addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft') turnTo(book.page - 1);
+        if (e.key === 'ArrowRight') turnTo(book.page + 1);
+      });
+      document.getElementById('save-contract').addEventListener('click', saveContract);
+    }
+
+    // The contract as it stands, and what answers to it: every clause and the tests that serve it,
+    // with clauses nothing tests and tests serving no clause set apart at the edges.
+    const answers = document.getElementById('contract-answers');
+
+    function drawContract() {
+      const k = shown.iteration, contract = contractBy(k);
+      const sheet = document.createElement('sb-discovery-card');
+      sheet.card = contractCard(contract, k);
+      document.getElementById('contract-sheet').replaceChildren(sheet);
+
+      const { clauses, tests, untested, servesNothing } = discovery().answers(contract.id, { asOf: k });
+      const columns = [
+        { title: 'Nothing tests these yet', refs: untested },
+        { title: 'The contract', refs: clauses.filter(clause => clause.tests.length).map(clause => clause.id) },
+        { title: 'Scenarios and rules', refs: tests.filter(test => test.serves.length).map(test => test.id) },
+        { title: 'Serving nothing in it', refs: servesNothing },
+      ];
+      answers.direction = 'across';
+      answers.replaceChildren(...columns.flatMap(column => column.refs).map(id => nodeCard({ id, ...asOf(id, k) }, true)));
+      answers.columns = columns;
+      answers.links = tests.flatMap(test => test.serves.map(clause => ({ from: clause, to: test.id, label: 'answered by', tone: statusOf(itemOf(test.id), k) === 'met' ? 'good' : 'bad' })));
+    }
+
     const formatDate = date => new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
     function field(list, label, value) {
@@ -1255,10 +1522,10 @@ Not announced,0
     const PARTS = ['ENT', 'PRM'];
     const TESTS = ['SCN', 'RUL'];
     const BUILDING = [...PARTS, ...TESTS, 'RUN'];
-    const DIRECTION = ['OUT', 'GOL', 'PRD', 'AGR', 'CON', 'DEC', 'EXP', 'ACT', 'RSK'];
+    const DIRECTION = ['OUT', 'GOL', 'OPZ', 'PRD', 'AGR', 'CON', 'CAP', 'PRN', 'DEC', 'EXP', 'ACT', 'RSK'];
     // A card brought about by another counts as brought about only in the iteration that made it;
     // from then on it stands in force.
-    const broughtAbout = (id, k) => ['PRD', 'AGR', 'CON'].includes(kindOf(id)) && Boolean(itemOf(id).from) && iterationOf(id) === k;
+    const broughtAbout = (id, k) => ['PRD', 'AGR', 'CON', 'CAP'].includes(kindOf(id)) && Boolean(itemOf(id).from) && iterationOf(id) === k;
     const restedOnByDirection = id => KNOWING.includes(kindOf(id))
       && DIRECTION.some(kind => links().some(([from, to]) => from === id && kindOf(to) === kind));
 
@@ -1276,7 +1543,7 @@ Not announced,0
       ] },
       { title: 'Where we’re going', columns: [
         { title: 'Rests on', grounds: true, holds: restedOnByDirection },
-        { title: 'In force', holds: (id, k) => ['OUT', 'GOL', 'PRD', 'AGR', 'CON'].includes(kindOf(id)) && !broughtAbout(id, k) },
+        { title: 'In force', holds: (id, k) => ['OUT', 'GOL', 'OPZ', 'PRD', 'AGR', 'CON', 'CAP', 'PRN'].includes(kindOf(id)) && !broughtAbout(id, k) },
         { title: 'Decided', holds: id => kindOf(id) === 'DEC' },
         { title: 'Brought about', holds: (id, k) => ['EXP', 'ACT', 'RSK'].includes(kindOf(id)) || broughtAbout(id, k) },
         { title: 'Awaited', holds: awaitedFor(DIRECTION) },
@@ -1312,7 +1579,7 @@ Not announced,0
     const iterationOf = id => itemOf(id).iteration;
 
     function itemOf(id) {
-      return [...SOURCES, ...EXCERPTS, ...AWAITED, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...FEEDBACK, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...runs(), ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].find(item => item.id === id);
+      return [...SOURCES, ...EXCERPTS, ...AWAITED, ...OBSERVATIONS, ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...FEEDBACK, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...INVESTIGATIONS, ...PRIMITIVES, ...ENTITIES, ...SCENARIOS, ...RULES, ...runs(), ...GOALS, ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS, ...CONTRACTS, ...CAPABILITIES, ...OPTIMIZATIONS, ...PRINCIPLES].find(item => item.id === id);
     }
 
     // A card as it stood in one iteration: a claim weighed on what had arrived by then.
@@ -1325,6 +1592,10 @@ Not announced,0
         const then = weighed(item, k);
         return { kind: 'claim', text: item.text, status: then.standing, assumed: then.basis === 'assumption' };
       }
+      if (id.startsWith('CTR')) return { kind: 'contract', text: item.title, status: statusOf(item, k) };
+      if (id.startsWith('CAP')) return { kind: 'capability', text: item.text, status: statusOf(item, k) };
+      if (id.startsWith('OPZ')) return { kind: 'optimization', text: item.text, status: statusOf(item, k) };
+      if (id.startsWith('PRN')) return { kind: 'principle', text: item.text, status: statusOf(item, k) };
       if (id.startsWith('GOL')) return { kind: 'goal', text: item.text, status: item.status };
       if (id.startsWith('CON')) return { kind: 'constraint', text: item.text, status: item.status };
       if (id.startsWith('OUT')) return { kind: 'outcome', text: item.text, status: item.result };
@@ -1390,7 +1661,7 @@ Not announced,0
     // the rest kind by kind.
     const ORDER = [...INVESTIGATIONS, ...SOURCES, ...EXCERPTS, ...AWAITED, ...PRIMITIVES, ...ENTITIES, ...runs(), ...SCENARIOS, ...RULES, ...OBSERVATIONS,
       ...ASSUMPTIONS, ...INFERENCES, ...DEFINITIONS, ...OPINIONS, ...FEEDBACK, ...OUTCOMES, ...PREDICTIONS, ...EXPERIMENTS, ...METRICS, ...GOALS,
-      ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS].map(item => item.id);
+      ...AGREEMENTS, ...CONSTRAINTS, ...CLAIMS, ...QUESTIONS, ...DECISIONS, ...ACTIONS, ...RISKS, ...CONTRACTS, ...CAPABILITIES, ...OPTIMIZATIONS, ...PRINCIPLES].map(item => item.id);
 
     function drawFlow(root) {
       const k = shown.iteration;
@@ -1413,18 +1684,18 @@ Not announced,0
         .map(({ from, to, means }) => ({ from, to, label: means, tone: toneOfLink(means) }));
       const summary = BOARDS[shown.board].title === 'What we’re building' ? [el('p', 'flow-summary', modelSummary(k))] : [];
       root.replaceChildren(...summary, board);
-      document.getElementById('iteration-title').textContent = ITERATIONS[k - 1].title;
-      document.querySelector('[data-step="-1"]').disabled = k === 1;
-      document.querySelector('[data-step="1"]').disabled = k === ITERATIONS.length;
+      for (const title of document.querySelectorAll('[data-iteration-title]')) title.textContent = ITERATIONS[k - 1].title;
+      for (const step of document.querySelectorAll('[data-step="-1"]')) step.disabled = k === 1;
+      for (const step of document.querySelectorAll('[data-step="1"]')) step.disabled = k === ITERATIONS.length;
       for (const button of document.querySelectorAll('[data-board]')) button.setAttribute('aria-pressed', Number(button.dataset.board) === shown.board);
     }
 
     // A link's tone, as the domain discovery practice gives it, so a chain reads before its labels do.
     const LINK_TONES = {
-      good: ['supports', 'answers', 'bears out', 'meets', 'aims', 'defines', 'founds'],
+      good: ['supports', 'answers', 'bears out', 'meets', 'aims', 'defines', 'founds', 'enables'],
       bad: ['disputes', 'refutes', 'doubts', 'doesn’t meet', 'fails'],
       warn: ['states', 'constrains', 'imposes', 'partly meets'],
-      muted: ['gathered', 'contains', 'captures', 'records', 'informs', 'says it should', 'says it shouldn’t', 'awaits', 'reading of', 'run in', 'tried in', 'voices', 'sets', 'measures', 'shows', 'raises', 'part of'],
+      muted: ['clause of', 'gathered', 'contains', 'captures', 'records', 'informs', 'says it should', 'says it shouldn’t', 'awaits', 'reading of', 'run in', 'tried in', 'voices', 'sets', 'measures', 'shows', 'raises', 'part of'],
     };
     const toneOfLink = label => Object.keys(LINK_TONES).find(tone => LINK_TONES[tone].includes(label)) ?? 'accent';
 
@@ -1786,6 +2057,7 @@ Not announced,0
         button.addEventListener('click', () => {
           shown.iteration += Number(button.dataset.step);
           drawFlow(root);
+          drawContract();
           drawPrototype();
           drawFinder();
         });
@@ -1879,6 +2151,10 @@ Not announced,0
         case 'QST': return questionCard(item, k);
         case 'GOL': return goalCard(item, k);
         case 'CON': return constraintCard(item);
+        case 'CTR': return contractCard(item, k);
+        case 'CAP': return capabilityCard(item);
+        case 'OPZ': return optimizationCard(item);
+        case 'PRN': return principleCard(item);
         case 'AGR': return agreementCard(item);
         case 'PRD': return predictionCard(item, k);
         case 'EXP': return experimentCard(item, k);
@@ -1979,12 +2255,15 @@ Not announced,0
         const refs = e.detail.ref ? [e.detail.ref] : [];
         for (const card of document.querySelectorAll('sb-discovery-card')) card.highlight = refs;
         board.highlight = refs;
+        answers.highlight = refs;
         finder.highlight = refs;
       });
     }
 
     wireCards();
     drawFlow(document.getElementById('flow'));
+    drawContract();
+    wireContract();
     wireDirection();
     wireSteps(document.getElementById('flow'));
     wirePrototype();
