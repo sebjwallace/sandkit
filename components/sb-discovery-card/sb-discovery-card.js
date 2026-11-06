@@ -1,4 +1,4 @@
-// Sandkit sb-discovery-card 0.1.6 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-discovery-card 0.1.7 · MIT Licence · https://github.com/sebjwallace/sandkit
 // One card of domain discovery: a source, a claim, a question, a decision, a run, or any other
 // kind the practice names, each with its own icon and tone. Shown compact on a board, normal with
 // its folds closed, or expanded near full screen with every fold open. The sandbox works out every status and what's "as of" when; the card
@@ -178,6 +178,11 @@
     .sb-discovery-card__paper { --sb-discovery-card-fold: 12px; --sb-discovery-card-edge: color-mix(in srgb, var(--sb-text, #1f2933) 24%, transparent); --sb-discovery-card-sheet: var(--sb-discovery-card-paper, color-mix(in srgb, var(--sb-surface, #fff) 94%, #f3e2b8)); position: relative; display: flex; min-width: 0; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.12)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12)); }
     .sb-discovery-card__paper::after { content: ''; position: absolute; top: 0; right: 0; width: var(--sb-discovery-card-fold); height: var(--sb-discovery-card-fold); border-left: 1px solid var(--sb-discovery-card-edge); border-bottom: 1px solid var(--sb-discovery-card-edge); border-bottom-left-radius: 2px; background: linear-gradient(to top right, color-mix(in srgb, var(--sb-discovery-card-sheet) 84%, var(--sb-text, #1f2933)) 50%, transparent 50%); pointer-events: none; }
     .sb-discovery-card .sb-discovery-card__paper > * { flex: 1; min-width: 0; border: 1px solid var(--sb-discovery-card-edge); border-radius: 2px; clip-path: polygon(0 0, calc(100% - var(--sb-discovery-card-fold)) 0, 100% var(--sb-discovery-card-fold), 100% 100%, 0 100%); background: linear-gradient(135deg, color-mix(in srgb, var(--sb-discovery-card-sheet) 97%, #fff), var(--sb-discovery-card-sheet) 45%, color-mix(in srgb, var(--sb-discovery-card-sheet) 93%, #000)); }
+    /* The clip puts the sheet in a layer of its own, which would paint over an outline on what holds
+       it. Set back within the holder, the sheet stays clickable and a lit part's outline shows. */
+    .sb-discovery-card .sb-discovery-card__paper > * { position: relative; z-index: -1; }
+    .sb-discovery-card:has(> .sb-discovery-card__paper) { isolation: isolate; }
+    .sb-discovery-card > .sb-discovery-card__paper { z-index: -1; }
     .sb-discovery-card__paper .sb-discovery-card__compact-head { padding-right: var(--sb-discovery-card-fold); }
     .sb-discovery-card__slip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 16px 6px 10px; color: inherit; font: inherit; text-align: left; cursor: pointer; }
     .sb-discovery-card__slip:focus-visible { outline: 2px solid ${TONE.accent}; outline-offset: -2px; }
@@ -297,6 +302,11 @@
     document.head.prepend(style); // first, so the sandbox's own stylesheet wins
   }
 
+  // What a part is about, as data-tags, for the page-wide highlighting script.
+  function carryTags(part, tags) {
+    if (Array.isArray(tags) && tags.length) part.dataset.tags = tags.join(' ');
+  }
+
   // An element with the component's classes: `el('div', 'strip strip--main', text)`. Text is only
   // ever set as text, never as markup.
   function el(tag, parts, text) {
@@ -340,7 +350,10 @@
       root.type = 'button';
       root.dataset.open = card.id;
     }
-    if (nested) root.dataset.ref = card.id;
+    if (nested) {
+      root.dataset.ref = card.id;
+      carryTags(root, card.tags);
+    }
     const head = el('span', 'compact-head');
     head.append(icon(card), el('span', 'id', card.id));
     if (card.title) head.append(el('span', 'title', card.title));
@@ -404,7 +417,7 @@
   // and lighting the paper work as they do for anything else in a fold.
   function onPaper(sheet) {
     const holder = el('div', 'paper');
-    for (const name of ['ref', 'source']) {
+    for (const name of ['ref', 'source', 'tags']) {
       if (!sheet.dataset[name]) continue;
       holder.dataset[name] = sheet.dataset[name];
       delete sheet.dataset[name];
@@ -416,10 +429,11 @@
   // A passage of source material, on its paper: whether it says yes, no or asks, the excerpt (or
   // source) it is, and the words. Clicking it asks the sandbox to open it there. It carries its source
   // too, so pointing at the source lights it.
-  function passage({ excerpt: id, source, quote, stance, note }) {
+  function passage({ excerpt: id, source, quote, stance, note, tags }) {
     const slip = el('button', 'slip');
     slip.dataset.ref = id ?? source;
     if (id && source) slip.dataset.source = source;
+    carryTags(slip, tags);
     slip.type = 'button';
     slip.dataset.open = id ?? source;
     if (quote) slip.dataset.quote = quote;
@@ -590,7 +604,7 @@
 
     // { id, kind, title, byline, status, badges: [{ text, tone, title }], text, notes, file, format,
     //   marks, strips: [{ tone, label, text }], folds: [{ label, items }],
-    //   created, by, iteration, meta: [{ label, text }] }
+    //   created, by, iteration, meta: [{ label, text }], tags }
     get card() { return this._card; }
     set card(value) {
       this._card = value;
@@ -718,9 +732,11 @@
     // The card's code, kind and status on the element, set as soon as it has a card, drawn or not,
     // so a page can find or place it before it's on the page.
     _mark() {
-      for (const name of ['ref', 'kind', 'status']) delete this.dataset[name];
+      for (const name of ['ref', 'kind', 'status', 'tags']) delete this.dataset[name];
       const card = this._card;
-      if (card) Object.assign(this.dataset, { ref: card.id, kind: card.kind }, card.status && { status: card.status });
+      if (!card) return;
+      Object.assign(this.dataset, { ref: card.id, kind: card.kind }, card.status && { status: card.status });
+      carryTags(this, card.tags);
     }
 
     // Children marked slot="…" are taken in once and placed wherever a fold names their slot.
@@ -753,13 +769,15 @@
     }
 
     // Pointing announces the page-wide sb-highlight: a passage its source, a compact card its own,
-    // anywhere else the card itself.
+    // anywhere else the card itself, with that part's own tags if it has any.
     _point(target) {
       const found = target?.closest?.('[data-ref]');
-      const ref = found && this.contains(found) ? found.dataset.ref : null;
+      const part = found && this.contains(found) ? found : null;
+      const ref = part ? part.dataset.ref : null;
       if (ref === this._pointed) return;
       this._pointed = ref;
-      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
+      const tags = part?.dataset.tags?.split(' ');
+      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: tags ? { ref, tags } : { ref } }));
     }
 
     _remember(details) {

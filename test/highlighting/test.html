@@ -272,6 +272,15 @@
 
     const hasOutline = (el) => getComputedStyle(el).outlineStyle === 'solid';
 
+    scenario('a lit part wears an outline too, which a solid sheet inside it can\'t cover', () => {
+      mount('<div id="holder" data-ref="A"><div style="background: white">a sheet</div></div>');
+      announce({ ref: 'A' });
+      assert(hasOutline(at('holder')));
+      assertEqual(getComputedStyle(at('holder')).outlineOffset, '-2px');
+      announce({ ref: null });
+      assert(!hasOutline(at('holder')), 'it goes when the light does');
+    });
+
     scenario('a fill pin tints every part with the ref, and leaves the others', () => {
       parts();
       sendPins(outliners[0], { fill: ['A'] });
@@ -412,6 +421,143 @@
       point(at('in'));
       assertEqual(heard, ['IN']);
       assert(isTinted(at('in')), 'should be lit');
+    });
+
+    // ---- Lighting by tag ----
+
+    const outlineWidth = (el) => getComputedStyle(el).outlineWidth;
+    const isFaint = (el) => hasOutline(el) && outlineWidth(el) === '1px' && !isTinted(el);
+    const isStrong = (el) => hasOutline(el) && outlineWidth(el) === '2px' && isTinted(el);
+
+    const tagged = () => mount(`<div>
+      <p id="t1" data-ref="T1" data-tags="platforms passengers">one</p>
+      <p id="t2" data-ref="T2" data-tags="platforms">two</p>
+      <p id="t3" data-ref="T3" data-tags="delays">three</p>
+      <p id="words" data-tags="passengers">some words</p>
+      <p id="plain" data-ref="P">untagged</p>
+    </div>`);
+
+    scenario('pointing at a tagged part announces its tags beside its ref', () => {
+      tagged();
+      const heard = recordEvents(document, 'sb-highlight');
+      point(at('t1'));
+      assertEqual(heard.at(-1).detail, { ref: 'T1', tags: ['platforms', 'passengers'] });
+    });
+
+    scenario('a part with no tags announces exactly what it always did', () => {
+      tagged();
+      const heard = recordEvents(document, 'sb-highlight');
+      point(at('plain'));
+      assertEqual(heard.at(-1).detail, { ref: 'P' });
+    });
+
+    scenario('data-points-at carries its tags too', () => {
+      mount('<span id="s" data-points-at="A B" data-tags="platforms">words</span>');
+      const heard = recordEvents(document, 'sb-highlight');
+      point(at('s'));
+      assertEqual(heard.at(-1).detail, { ref: 'A', refs: ['A', 'B'], tags: ['platforms'] });
+    });
+
+    scenario('tags with no ref announce a null ref with the tags, then end', () => {
+      tagged();
+      const heard = recordEvents(document, 'sb-highlight');
+      point(at('words'));
+      assertEqual(heard.at(-1).detail, { ref: null, tags: ['passengers'] });
+      assert(isFaint(at('t1')), 'what shares the tag lights');
+      point(at('t3').parentElement, { from: at('words') });
+      assertEqual(heard.at(-1).detail, { ref: null });
+      assert(!hasOutline(at('t1')), 'and goes');
+    });
+
+    scenario('an empty data-tags is no tags, and doesn\'t hide the part around it', () => {
+      mount('<div data-ref="OUTER"><span id="inner" data-tags="">x</span></div>');
+      const heard = recordEvents(document, 'sb-highlight');
+      point(at('inner'));
+      assertEqual(heard.at(-1).detail, { ref: 'OUTER' });
+    });
+
+    scenario('moving between parts with one ref and different tags announces each', () => {
+      mount('<p id="x" data-ref="R" data-tags="platforms">x</p><p id="y" data-ref="R" data-tags="delays">y</p>');
+      const heard = recordEvents(document, 'sb-highlight');
+      point(at('x'));
+      point(at('y'), { from: at('x') });
+      assertEqual(heard.map((e) => e.detail.tags), [['platforms'], ['delays']]);
+    });
+
+    scenario('the innermost part\'s tags are announced, with nothing taken from what holds it', () => {
+      mount('<div id="outer" data-ref="O" data-tags="platforms"><span id="in" data-ref="I">x</span><span id="both" data-ref="B" data-tags="delays">y</span></div>');
+      const heard = recordEvents(document, 'sb-highlight');
+      point(at('in'));
+      assertEqual(heard.at(-1).detail, { ref: 'I' });
+      point(at('both'), { from: at('in') });
+      assertEqual(heard.at(-1).detail, { ref: 'B', tags: ['delays'] });
+    });
+
+    scenario('whatever shares a tag lights faintly, and the part itself strongly', () => {
+      tagged();
+      point(at('t1'));
+      assert(isStrong(at('t1')), 'the ref is strong');
+      assert(isFaint(at('t2')), 'shares platforms');
+      assert(isFaint(at('words')), 'shares passengers');
+      assert(!hasOutline(at('t3')), 'shares nothing');
+      assert(!hasOutline(at('plain')), 'has no tags');
+    });
+
+    scenario('a part matching both ref and tag shows strong', () => {
+      tagged();
+      announce({ ref: 'T1', refs: ['T1', 'T2'], tags: ['platforms'] });
+      assert(isStrong(at('t1')) && isStrong(at('t2')));
+    });
+
+    scenario('faint lighting survives a redraw', () => {
+      tagged();
+      announce({ ref: 'T1', tags: ['platforms'] });
+      at('t2').outerHTML = '<p id="t2" data-ref="T2" data-tags="platforms">drawn again</p>';
+      assert(isFaint(at('t2')));
+    });
+
+    scenario('an SVG part takes a thin dotted stroke, never a fill, and words keep their colour', () => {
+      mount(`<svg><g data-ref="S" data-tags="platforms"><rect id="shape" class="shape" width="9" height="9"/><text id="label" class="shape">x</text></g></svg>`);
+      const before = [getComputedStyle(at('shape')).fill, getComputedStyle(at('label')).fill];
+      announce({ ref: 'OTHER', tags: ['platforms'] });
+      assert(stroke(at('shape')) !== UNLIT_STROKE, 'should be stroked');
+      assertEqual(getComputedStyle(at('shape')).strokeWidth, '2px');
+      assertEqual(getComputedStyle(at('shape')).strokeDasharray, '2px, 3px');
+      assertEqual([getComputedStyle(at('shape')).fill, getComputedStyle(at('label')).fill], before);
+    });
+
+    scenario('another announcer\'s tags light too, as a self-announcing component\'s will', () => {
+      tagged();
+      announce({ ref: 'ELSEWHERE', tags: ['delays'] });
+      assert(isFaint(at('t3')));
+      announce({ ref: null });
+      assert(!hasOutline(at('t3')));
+    });
+
+    scenario('a pinned part keeps its pin, and pins stay when the tags go', () => {
+      tagged();
+      sendPins(outliners[0], { fill: ['T2'], outline: ['T3'] });
+      announce({ ref: 'T1', tags: ['platforms', 'delays'] });
+      assert(isTinted(at('t2')) && !hasOutline(at('t2')), 'a fill stays a fill');
+      assertEqual(outlineWidth(at('t3')), '2px');
+      announce({ ref: null });
+      assert(isTinted(at('t2')), 'still pinned');
+    });
+
+    scenario('tags match whole words, and strange ones are safe', () => {
+      mount(`<p id="whole" data-tags="platforms">a</p><p id="odd" data-tags='say"what\\.x'>b</p>`);
+      announce({ ref: 'X', tags: ['platform'] });
+      assert(!hasOutline(at('whole')), 'part of a word is no match');
+      announce({ ref: 'X', tags: ['say"what\\.x'] });
+      assert(isFaint(at('odd')));
+      assert(!hasOutline(at('whole')));
+    });
+
+    scenario('tags that aren\'t a list are ignored', () => {
+      tagged();
+      announce({ ref: 'T1', tags: 'platforms' });
+      assert(isStrong(at('t1')));
+      assert(!hasOutline(at('t2')));
     });
   </script>
 </body>

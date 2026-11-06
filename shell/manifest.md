@@ -114,9 +114,10 @@ One script, no element, in the page templates: a page that doesn't include it be
 |---|---|
 | `data-ref="X"` on anything | Pointing at it or focusing it announces `sb-highlight` with `X`, and leaving announces `null`. Every part with an announced ref lights up, and stays lit through a redraw. |
 | `data-points-at="X Y Z"` on anything | Pointing at it or focusing it announces `{ ref: 'X', refs: ['X', 'Y', 'Z'] }`, lighting all three. It isn't lit itself, and isn't a place the ref appears. |
+| `data-tags="a b"` on anything | Pointing at it or focusing it adds `tags: ['a', 'b']` to what it announces, or announces `{ ref: null, tags: ['a', 'b'] }` if it has no ref. Whatever shares a tag with an announcement lights faintly, through a redraw, unless it's lit or pinned already. Only the innermost part's tags count. |
 | `sb-pins` from an `sb-outliner` | Every pinned part stays filled or outlined, and glows while any outliner has `glow` on, until the next `sb-pins`. |
 | `data-sb-announces` on an element | Nothing inside it is announced here: a component does that itself. |
-| `data-sb-lights` on a part | The part lights itself, so it isn't lit, pinned or announced here. Parts inside it still are. |
+| `data-sb-lights` on a part | The part lights itself, so it isn't lit, faintly lit, pinned or announced here. Parts inside it still are. |
 
 It stays quiet when a sandbox's own wiring announces first, so existing wiring keeps working. It has no properties or methods, and adds no global.
 

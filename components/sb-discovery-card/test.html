@@ -475,6 +475,63 @@
       assertEqual(consoleErrors, []);
     });
 
+    // ---- Tags ----
+
+    function pointAt(part) {
+      const heard = recordEvents(document, 'sb-highlight');
+      part.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      return heard.at(-1).detail;
+    }
+
+    test('a card carries its tags and announces them; with none, it announces as it always did', () => {
+      const element = mount('<sb-discovery-card></sb-discovery-card>');
+      element.card = { id: 'CLM-1', kind: 'claim', text: 'x', tags: ['otters', 'rivers'] };
+      assertEqual(element.dataset.tags, 'otters rivers');
+      assertEqual(pointAt(element.firstElementChild), { ref: 'CLM-1', tags: ['otters', 'rivers'] });
+      element.dispatchEvent(new PointerEvent('pointerleave'));
+      element.card = { id: 'CLM-2', kind: 'claim', text: 'x' };
+      assert(!('tags' in element.dataset), 'setting it again clears them');
+      assertEqual(pointAt(element.firstElementChild), { ref: 'CLM-2' });
+    });
+
+    test('a passage carries its excerpt\'s tags, on its paper, and doesn\'t take the card\'s', () => {
+      const element = mount('<sb-discovery-card variant="expanded"></sb-discovery-card>');
+      element.card = { id: 'CLM-1', kind: 'claim', tags: ['rivers'], folds: [{ label: 'Sources', items: [
+        { passage: { excerpt: 'SRC-1.1', source: 'SRC-1', quote: 'a', tags: ['otters'] } },
+        { passage: { excerpt: 'SRC-1.2', source: 'SRC-1', quote: 'b' } }] }] };
+      const [tagged, plain] = element.querySelectorAll('.sb-discovery-card__paper');
+      assertEqual(tagged.dataset.tags, 'otters');
+      assert(!('tags' in tagged.firstElementChild.dataset), 'the paper holds them, beside the ref');
+      assertEqual(pointAt(tagged.firstElementChild), { ref: 'SRC-1.1', tags: ['otters'] });
+      assertEqual(pointAt(plain.firstElementChild), { ref: 'SRC-1.2' });
+    });
+
+    test('a card in a fold carries its own tags', () => {
+      const element = mount('<sb-discovery-card variant="expanded"></sb-discovery-card>');
+      element.card = { id: 'CLM-1', kind: 'claim', folds: [{ label: 'Rests on', items: [{ card: { id: 'ASM-1', kind: 'assumption', text: 'x', tags: ['otters'] } }] }] };
+      assertEqual(element.querySelector('[data-ref="ASM-1"]').dataset.tags, 'otters');
+    });
+
+    test('working tags are never carried, and tags that aren\'t a list are ignored', () => {
+      const element = mount('<sb-discovery-card></sb-discovery-card>');
+      element.card = { id: 'CLM-1', kind: 'claim', text: 'x', working: ['workshop-3'] };
+      assert(!element.outerHTML.includes('workshop-3'), 'not anywhere');
+      element.card = { id: 'CLM-1', kind: 'claim', text: 'x', tags: 'otters' };
+      assert(!('tags' in element.dataset));
+    });
+
+    test('paper stays clickable, set back so an outline on what holds it shows', () => {
+      const element = mount('<sb-discovery-card openable></sb-discovery-card>');
+      element.card = { id: 'SRC-1', kind: 'source', title: 'A report' };
+      element.scrollIntoView();
+      const sheet = part(element, 'compact');
+      const { x, y, width, height } = sheet.getBoundingClientRect();
+      assert(sheet.contains(document.elementFromPoint(x + width / 2, y + height / 2)), 'a click lands on the sheet');
+      assertEqual(getComputedStyle(sheet).zIndex, '-1');
+      assertEqual(getComputedStyle(part(element, 'paper')).zIndex, '-1');
+      assertEqual(getComputedStyle(element).isolation, 'isolate');
+    });
+
     test('says it announces for itself, for the page-wide script', () => {
       assert(mount('<sb-discovery-card></sb-discovery-card>').hasAttribute('data-sb-announces'));
     });

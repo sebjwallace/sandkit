@@ -59,6 +59,7 @@ Use this component through the interface below. You don't need to read its sourc
 | `by` | no | Who recorded it: `Agent` or a person. |
 | `iteration` | no | The iteration it was raised in. |
 | `meta` | no | `[{ label, text }]`: anything else worth keeping about the card. |
+| `tags` | no | What the card is about, `['platforms', 'passengers']`, carried as `data-tags` and announced with it, so pointing at the card lights what shares a tag, as the [highlighting practice](../../practices/highlighting.md) describes. Only semantic tags: `working` is never read. |
 
 The practice asks every card for `created`, `by` and `iteration`; the card shows whatever it's given.
 
@@ -69,8 +70,8 @@ The practice asks every card for `created`, `by` and `iteration`; the card shows
 | Item | Shows |
 |---|---|
 | `'text'` | A line of text. |
-| `{ passage: { excerpt?, source, quote?, stance?, note? } }` | A passage of source material on paper: `stance` `+`, `-` or `?`, the excerpt's code (or the source's, without one), a short `note` such as a strength, and the words. Carries `data-ref` with the excerpt, or the source, and lights for either. |
-| `{ card: { …a card } }` | Another card, drawn compact and openable. Carries `data-ref` with its code. |
+| `{ passage: { excerpt?, source, quote?, stance?, note?, tags? } }` | A passage of source material on paper: `stance` `+`, `-` or `?`, the excerpt's code (or the source's, without one), a short `note` such as a strength, and the words. Carries `data-ref` with the excerpt, or the source, and lights for either. Its `tags` are the excerpt's own, not the card's. |
+| `{ card: { …a card } }` | Another card, drawn compact and openable. Carries `data-ref` with its code, and `data-tags` with its `tags`. |
 | `{ option: { title, pros?, cons?, chosen?, ref? } }` | An option weighed; the chosen one marked, the rest faded. |
 | `{ slot: 'name' }` | The card's children marked `slot="name"`, such as a scenario's steps. |
 
@@ -104,7 +105,7 @@ The practice asks every card for `created`, `by` and `iteration`; the card shows
 | Event | Detail | When |
 |---|---|---|
 | `sb-open` | `{ ref, quote? }` | An openable compact card, a card in a fold, or a passage (with its `quote`) is clicked. Bubbles. The sandbox decides what opening means. |
-| `sb-highlight` | `{ ref }`, `{ ref: null }` | Pointing or focus moves to a passage (its excerpt, or its source), a card in a fold, or the card itself, and away. Fired on `document`, as the [highlighting practice](../../practices/highlighting.md) describes. |
+| `sb-highlight` | `{ ref }`, `{ ref, tags }`, `{ ref: null }` | Pointing or focus moves to a passage (its excerpt, or its source), a card in a fold, or the card itself, and away. Fired on `document`, as the [highlighting practice](../../practices/highlighting.md) describes. |
 
 Setting properties never fires events. The card carries `data-sb-announces`, so the page-wide highlighting script leaves its announcing to it, and lights its parts.
 

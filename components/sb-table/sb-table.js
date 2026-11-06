@@ -1,4 +1,4 @@
-// Sandkit sb-table 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-table 0.1.5 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Rows and columns to sort, search and filter, with the cells that just changed marked, so a
 // step of the model shows what it changed rather than only how things now stand.
 //
@@ -57,6 +57,9 @@
 
   const isEmpty = (value) => value === null || value === undefined || value === '';
 
+  // What a part is about, for the page-wide highlighting script. Nothing if it has no tags.
+  const tagsAttribute = (tags) => (Array.isArray(tags) && tags.length ? ` data-tags="${esc(tags.join(' '))}"` : '');
+
   function addStyle() {
     if (document.getElementById('sb-table-style')) return;
     const style = Object.assign(document.createElement('style'), { id: 'sb-table-style', textContent: CSS });
@@ -103,6 +106,7 @@
       this._filter = null;
       this._query = '';
       this._highlight = {};
+      this._tagsOf = null;
       this.addEventListener('click', (e) => this._click(e));
       this.addEventListener('input', (e) => {
         if (!e.target.matches('.sb-table__search')) return;
@@ -139,7 +143,7 @@
       this.render();
     }
 
-    // [{ key, label, format, align }]: which fields to show. Defaults to every field of the first row.
+    // [{ key, label, format, align, tags }]: which fields to show. Defaults to every field of the first row.
     get columns() { return this._columns ?? this._defaultColumns(); }
     set columns(list) {
       this._columns = list;
@@ -171,6 +175,14 @@
     get highlight() { return this._highlight; }
     set highlight(value) {
       this._highlight = value || {};
+      this.render();
+    }
+
+    // (row) => [tag, …]: what each row is about. A property rather than a row field, because every
+    // row field is shown unless `columns` says otherwise, so a field couldn't be reserved for this.
+    get tagsOf() { return this._tagsOf; }
+    set tagsOf(fn) {
+      this._tagsOf = fn || null;
       this.render();
     }
 
@@ -209,7 +221,7 @@
     _heading(column) {
       const sorted = this._sort?.key === column.key ? ` aria-sort="${this._sort.direction}"` : '';
       const number = column.numeric ? ' class="sb-table__cell--number"' : '';
-      return `<th scope="col"${number}${sorted}><button type="button" class="sb-table__sort" data-key="${esc(column.key)}">${esc(column.label ?? column.key)}</button></th>`;
+      return `<th scope="col"${number}${sorted}${tagsAttribute(column.tags)}><button type="button" class="sb-table__sort" data-key="${esc(column.key)}">${esc(column.label ?? column.key)}</button></th>`;
     }
 
     _row(row, columns) {
@@ -217,7 +229,7 @@
       const classes = ['sb-table__row', highlighted && 'sb-table__row--highlighted'].filter(Boolean).join(' ');
       const tone = row.tone ? ` data-tone="${esc(row.tone)}"` : '';
       const ref = row.id != null ? ` data-ref="${esc(row.id)}"` : '';
-      return `<tr class="${classes}" data-index="${this._rows.indexOf(row)}"${ref}${tone}>${columns.map((c) => this._cell(row, c)).join('')}</tr>`;
+      return `<tr class="${classes}" data-index="${this._rows.indexOf(row)}"${ref}${tone}${tagsAttribute(this._tagsOf?.(row))}>${columns.map((c) => this._cell(row, c)).join('')}</tr>`;
     }
 
     _cell(row, column) {

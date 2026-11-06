@@ -68,6 +68,13 @@ components/sb-example/
 
 `sb-log` is a good model to follow. Before styling a component, or changing how one looks, read [STYLE.md](STYLE.md): it says which tokens, tones and materials to use, and which other components share a look. Components stay isolated, and the guide is what keeps them consistent: change only the component you're working on, and ask before changing any other to match. Add the component to [CATALOG.md](CATALOG.md), and its tag to the lists in `test/collisions/test.html` and `test/isolation/test.html`.
 
+**Passing tags through.** A part a component draws for a thing with [tags](practices/tagging.md) carries `data-tags="platforms passengers"` on its outermost element, beside its `data-ref`, so the page can [light what's related](practices/highlighting.md) with no wiring. Only when it's given tags; with none, nothing changes.
+
+- **Take them as a `tags` field on the part's data,** where the component reads only the fields it names, so a new one can't collide: a card, a C4 element, a graph node.
+- **Otherwise, take a property beside `highlight`,** where every field is shown or a part has no data of its own, such as `sb-table`'s `tagsOf`, `(row) => [tag, …]`. Never reserve a field that existing data may already show.
+- **Ignore anything that isn't a list, and never read `working`.**
+- **A component that announces for itself** (`data-sb-announces`) includes the tags of the part it announces: `{ ref, tags }`, and exactly `{ ref }` when it has none.
+
 ## What a mechanism needs
 
 ```

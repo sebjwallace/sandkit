@@ -118,6 +118,7 @@ Run it after a batch of tagging and at each tidy-up, where Node is available. It
 - **Searching and filtering,** such as in [`sb-search`](../components/sb-search/manifest.md) and [`sb-sources`](../components/sb-sources/manifest.md), which treat tags like any other field.
 - **Moving through the map,** by combining tags to narrow down, or swapping one to move sideways.
 - **Grouping,** to give a view or a board one topic at a time and keep it readable.
+- **Lighting what's related.** Parts on a page can carry their tags, and pointing at one lights, faintly, whatever shares a tag, as the [highlighting practice](highlighting.md) describes. Tags light what's related, never what's the same: that's what a ref is for, and it shows only where material sits, so read the content before concluding anything from it.
 - **Gathering what to read,** so an agent or a person can start on a topic with what's been tagged for it, instead of reading everything.
 - **Preparing a [workshop](workshops.md),** by gathering what a session on a topic needs. Anything picked out just for that session gets a working tag.
 - **Noticing gaps.** A tag on plenty of excerpts with no question or decision may be a topic nobody has looked at. That's only a reason to look: reading the content decides whether anything is missing.

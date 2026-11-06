@@ -23,6 +23,7 @@ That's all the wiring there is:
 - **Pins in an [`sb-outliner`](../components/sb-outliner/manifest.md) keep things lit** everywhere too: see "Keeping things lit".
 - **It takes the theme's accent,** a see-through tint and ring on HTML, and a stroke on SVG, never a fill, which could hide what's on the shape.
 - **A tap lights nothing,** since a tap acts, and pointing never fires a viewer's click.
+- **Tagged parts light what's related.** Whatever shares a tag lights faintly: see "Lighting by tag".
 - **New pages have it already.** The page templates include the line. A page made before they did behaves as it always did until the line is added.
 - **Modes carry on.** Pointing means what it always did while a mode is on, and clicks are the mode's.
 
@@ -43,6 +44,22 @@ Words or a button can light several things that the sentence means together. Nam
 
 A list can also be sent from code, as the protocol above says, for a sandbox whose model works it out.
 
+## Lighting by tag
+
+A ref says "this exact thing". A tag says "things about this". Once parts carry [tags](tagging.md), pointing at one also lights, faintly, everything on the page that shares a tag with it, so people can see how things relate just by moving the pointer. It only applies where a sandbox has opted in to tagging.
+
+```html
+<tr data-ref="SRC-3" data-tags="platforms passengers">…</tr>
+<span class="point" tabindex="0" data-tags="platform-changes">platform changes</span>
+```
+
+- **Put tags on the part, beside its `data-ref`.** Components do it for you when given tags: see each one's manifest.
+- **Faint means related, never the same.** It's a thin line with no fill, on SVG a thin dotted stroke, and words keep their colour. A part that's also named by ref, or pinned, keeps that stronger look.
+- **Tags with no ref work too,** as with the words above. They announce only tags, and light faintly themselves.
+- **A part's tags are its own.** The innermost part counts, as with refs, and it takes nothing from what holds it, so an untagged passage in a tagged card announces no tags.
+- **Only semantic tags.** Never pass `working` tags. A retired tag lights until the data moves on from it, which is the tagging practice's job.
+- **A tag on nearly everything lights nearly everything.** That's a sign to look at the map, as the tagging practice says, not to change the lighting. To leave a view out, don't pass it tags.
+
 ## The protocol
 
 One page-wide event, `sb-highlight`, fired on `document`:
@@ -56,6 +73,7 @@ document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: null } }
 - **Announce a ref** when something starts being pointed at (hover or keyboard focus), and `null` when it stops.
 - **Light up** whatever you've marked with the announced ref, and clear it on `null` or a different ref.
 - **A list can come with it.** `refs` beside `ref` names everything to light, itself included, such as a train, the rules that decided it and what the board shows for it: `{ ref: 'T3', refs: ['T3', 'E3', 'T3.board.expected'] }`. Light everything in `refs` when it's there, and `ref` alone when it isn't.
+- **Tags can come with it.** `tags` beside `ref` says what the thing pointed at is about: `{ ref: 'SRC-3', tags: ['platforms', 'passengers'] }`. A part with tags and no ref announces `{ ref: null, tags: […] }`, which listeners that only follow refs read as pointing at nothing. A component that announces for itself includes the tags of the part it's announcing.
 
 No component knows about any other. Each just announces, or listens, or both.
 
@@ -63,7 +81,7 @@ No component knows about any other. Each just announces, or listens, or both.
 
 | Part | Announces | Lights up |
 |---|---|---|
-| The script | anything with a `data-ref`, or `data-points-at`, that nothing else speaks for | everything with an announced ref |
+| The script | anything with a `data-ref`, `data-points-at` or `data-tags`, that nothing else speaks for | everything with an announced ref, and faintly everything sharing an announced tag |
 | [`sb-id`](../components/sb-id/manifest.md), [`sb-person`](../components/sb-person/manifest.md) | itself, while pointed at | itself |
 | [`sb-poll`](../components/sb-poll/manifest.md) | an option with a `ref` | those options |
 | [`sb-accordion`](../components/sb-accordion/manifest.md) | a section, while its heading is pointed at | those sections, and tints a closed one holding a named part |
@@ -171,6 +189,7 @@ Pointing lights things only while the pointer stays, and the light goes the mome
 ```
 
 - **The script keeps them lit** everywhere their refs appear, through redraws: a fill as a tint, and on SVG a thick stroke; an outline as an outline, and on SVG a dashed stroke. Pointing at something outranks its pin while it lasts.
+- **A tint can't show through solid contents,** so a fill pin on a whole discovery card or a piece of paper barely shows. Use an outline pin for those.
 - **When the model changes, set the outliner's `items` again,** or call its `refresh()`: it works the traces out afresh, so a pinned case's lit rules follow whichever rules decide it now.
 - **Components with a `highlight` property that the script can't reach** take pins the way they take pointing: the sandbox routes them.
 - **Glow.** With `glow` on, pinned highlights fade slowly down to 5% and back, so they catch the eye while people work elsewhere. The outliner animates one number, `--sb-glow`, on anything carrying the class `sb-outliner__glowing`, and everything inside inherits it. The script puts that class on the page while any outliner has `glow` on. Pointing stays at full strength.

@@ -2,6 +2,10 @@
 
 Covers `sb-shell`, `sb-theme-settings`, `sb-export` and `sb-highlighting`, which are versioned together.
 
+## 0.1.10 · 2026-11-06
+- `sb-highlighting` lights by tag: a part with `data-tags` announces `tags` beside its ref, and whatever shares a tag lights faintly, with a thin line, while its ref still lights strongly. Tags with no ref announce `{ ref: null, tags }`. With no tags, nothing changes.
+- `sb-highlighting`: a lit part also wears an outline, so a part with solid contents, such as a whole discovery card, shows it. It sits exactly on the ring, so other parts look the same.
+
 ## 0.1.9 · 2026-11-06
 - New `sb-highlighting`, a script in the page templates for page-wide pointing with no wiring: anything with a `data-ref` announces `sb-highlight` while pointed at or focused, and lights up when its ref is announced; `data-points-at` points at several things on purpose; pins from an `sb-outliner` stay lit everywhere. Existing wiring keeps working beside it. A page that doesn't include it is unchanged.
 
