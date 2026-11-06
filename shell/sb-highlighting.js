@@ -1,4 +1,4 @@
-// Sandkit sb-highlighting 0.1.10 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-highlighting 0.1.11 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Page-wide pointing and lighting with no wiring. Include it, and any element with a data-ref
 // announces sb-highlight while it's pointed at or focused, lights up when its ref is announced, and
 // stays lit while an outliner on the page pins it. See practices/highlighting.md for the events.
@@ -12,6 +12,8 @@
 // To show what's related, tag a part. Pointing at it also lights, faintly, whatever shares a tag:
 //
 //   <tr data-ref="SRC-3" data-tags="platforms passengers">…</tr>
+//
+// To keep topics lit while people work, send sb-tag-focus: { tags: [...], match: 'all' | 'any' }.
 //
 // Two attributes let a component speak for itself:
 //   data-sb-announces  nothing inside this element is announced here: the component does it
@@ -59,6 +61,13 @@
     ${htmlParts(parts)} { outline: 1px solid ${faint} !important; outline-offset: -1px !important; }
     ${svgShapes(parts)} { stroke: ${faint} !important; stroke-width: 2 !important; stroke-dasharray: 2 3 !important; }`;
 
+  // Topics someone chose to follow: a dashed line in a colour of its own, so it reads apart from
+  // lit, pinned and faint in shape as well as colour, and no fill, so it hides nothing.
+  const CHOSEN = `var(--sb-tag-focus, color-mix(in srgb, ${ACCENT} 30%, #c026d3))`;
+  const chosenRules = (parts) => `
+    ${htmlParts(parts)} { outline: 2px dashed ${CHOSEN} !important; outline-offset: -2px !important; }
+    ${svgShapes(parts)} { stroke: ${CHOSEN} !important; stroke-width: 2.5 !important; stroke-dasharray: none !important; }`;
+
   // Pins fade with --sb-glow, the one number the outliner animates (practices/highlighting.md).
   const pinned = (percent) => `color-mix(in srgb, ${ACCENT} calc(var(--sb-glow, 1) * ${percent}%), transparent)`;
 
@@ -78,7 +87,15 @@
 
   const rulesFor = (rules, refs) => (refs.length ? rules(selectorFor(refs)) : '');
 
-  const selectorForTags = (tags) => tags.map((tag) => `[data-tags~="${CSS.escape(String(tag))}"]`).join(', ');
+  const attributeForTag = (tag) => `[data-tags~="${CSS.escape(String(tag))}"]`;
+  const selectorForTags = (tags) => tags.map(attributeForTag).join(', ');
+
+  // Parts carrying every chosen tag, or any of them. The chosen tags sit in :where, so however many
+  // there are, these rules weigh the same as the others, and their order alone decides who wins.
+  function chosenSelector(tags, match) {
+    const chosen = match === 'any' ? selectorForTags(tags) : tags.map(attributeForTag).join('');
+    return `[data-tags]:where(${chosen})`;
+  }
 
   // Whatever shares a tag, unless it's already lit or pinned, which both say more.
   function relatedSheet() {
@@ -88,19 +105,28 @@
     return relatedRules(stronger.length ? `:is(${tagged}):where(:not(${selectorFor(stronger)}))` : tagged);
   }
 
-  // Rules rather than classes, so a part redrawn while lit is lit the moment it's drawn. Pointing
-  // comes last, so it outranks a pin while it lasts.
+  // Rules rather than classes, so a part redrawn while lit is lit the moment it's drawn. Strongest
+  // last: faint, then chosen, then pins, then pointing, which outranks a pin while it lasts.
   let announcedRefs = [];
   let announcedTags = [];
   let pinnedRefs = [];
   let pinnedSheet = '';
-  const draw = () => { sheet.textContent = relatedSheet() + pinnedSheet + rulesFor(litRules, announcedRefs); };
+  let chosenSheet = '';
+  const draw = () => { sheet.textContent = relatedSheet() + chosenSheet + pinnedSheet + rulesFor(litRules, announcedRefs); };
 
   function light({ ref, refs, tags }) {
     announcedRefs = ref == null ? [] : refs ?? [ref];
     announcedTags = Array.isArray(tags) ? tags : [];
     draw();
   }
+
+  // ---- Chosen tags ----
+
+  document.addEventListener('sb-tag-focus', (e) => {
+    const { tags, match } = e.detail ?? {};
+    chosenSheet = Array.isArray(tags) && tags.length ? chosenRules(chosenSelector(tags, match)) : '';
+    draw();
+  });
 
   // ---- Pins ----
 

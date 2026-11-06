@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sb-tags-mode demo</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../shell/sb-highlighting.js"></script>
+  <script src="sb-tags-mode.js"></script>
+  <script>
+    // Tags for both examples, declared once with what each means, as the tagging practice says.
+    const TAGS = [
+      { tag: 'platforms', means: 'Which platform a train leaves from, and how it changes.' },
+      { tag: 'passengers', means: 'What passengers read, miss or complain about.' },
+      { tag: 'staff', means: 'What people on the station do, and what they are told.' },
+      { tag: 'announcements', means: 'What the station says over the PA.' },
+      { tag: 'platform-moves', means: 'Trains moved to another platform.', replacedBy: ['platforms'] },
+      { tag: 'demand', means: 'How much power people want, and when.' },
+      { tag: 'frequency', means: 'How far the grid has drifted from 50 Hz.' },
+      { tag: 'reserves', means: 'Plant held back, ready to generate.' },
+      { tag: 'wind', means: 'What the wind farms are producing.' }
+    ];
+  </script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: var(--sb-page-width, 960px); margin: 0 auto; padding: 16px 16px 72px; display: grid; gap: 16px; }
+    .example, .guide { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .example h2 { margin: 0 0 2px; font-size: 15px; }
+    .example > p { margin: 0 0 12px; font-size: 13px; color: var(--sb-muted); }
+    .guide { font-size: 14px; }
+    .part { margin: 8px 0 -6px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); }
+    .guide h3 { margin: 18px 0 6px; font-size: 14px; }
+    .guide h3:first-child { margin-top: 0; }
+    .guide p, .guide ul { margin: 0 0 8px; }
+    .guide ul { padding-left: 20px; }
+    .guide li { margin-bottom: 4px; }
+    .guide pre { margin: 0 0 8px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sb-radius); background: var(--sb-surface-2); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    .guide code { font: 12px ui-monospace, Menlo, Consolas, monospace; }
+    .guide a { color: var(--sb-accent); }
+    .notes { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+    .note { padding: 10px 12px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface-2); font-size: 13px; }
+    .note b { display: block; margin-bottom: 2px; font-size: 12px; color: var(--sb-muted); }
+    .grid-map { display: block; width: 100%; max-width: 640px; height: auto; }
+    .grid-map .site { fill: var(--sb-surface-2); stroke: var(--sb-muted); stroke-width: 1.5; }
+    .grid-map .wire { fill: none; stroke: var(--sb-border); stroke-width: 2; }
+    .grid-map text { fill: var(--sb-text); font: 13px var(--sb-font); text-anchor: middle; }
+    .mention { border-bottom: 1px dashed var(--sb-accent); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="sb-tags-mode">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <sb-tags-mode slot="modes"></sb-tags-mode>
+    <p><strong>Goal:</strong> see what parts of a page are about, and keep topics lit while you work. Press <strong>G</strong> to try it.</p>
+  </sb-shell>
+
+  <main>
+    <div class="part">About</div>
+    <section class="guide">
+      <h3>Where it helps</h3>
+      <ul>
+        <li>A sandbox that has opted in to tagging, with enough on the page that a topic is hard to follow by eye.</li>
+        <li>Preparing to talk about one topic: choose it, and see where it sits among everything else.</li>
+        <li>Finding where two topics meet, by choosing both.</li>
+      </ul>
+      <h3>Where something else fits</h3>
+      <ul>
+        <li>What one thing is, or why it's there: the other modes in the <a href="../../practices/modes.md">modes practice</a>.</li>
+        <li>Everywhere one exact thing appears: its ref, through the <a href="../../practices/highlighting.md">highlighting practice</a>. Tags are about topics.</li>
+        <li>A sandbox that hasn't opted in to tagging: there's nothing to show.</li>
+      </ul>
+      <h3>Getting started</h3>
+<pre><code>&lt;script src="lib/sandkit/shell/sb-highlighting.js"&gt;&lt;/script&gt;
+&lt;script src="lib/sandkit/components/sb-tags-mode/sb-tags-mode.js"&gt;&lt;/script&gt;
+&lt;script src="tags.js"&gt;&lt;/script&gt;
+
+&lt;sb-shell&gt;
+  &lt;sb-tags-mode slot="modes"&gt;&lt;/sb-tags-mode&gt;
+&lt;/sb-shell&gt;</code></pre>
+      <h3>Making it reveal</h3>
+      <ul>
+        <li>Press <strong>G</strong>, point at a part below, and read what its tags mean.</li>
+        <li>Click a tag to keep it lit. Click a second: <strong>All tags</strong> shows where they meet, <strong>Any tag</strong> shows both.</li>
+        <li>Press the arrow keys to visit what's lit. Press Esc: it stays lit, with a bar to clear it.</li>
+      </ul>
+    </section>
+
+    <div class="part">Examples</div>
+    <section class="example">
+      <h2>A station's notes on platform changes</h2>
+      <p>Words and notes, tagged. One note still carries a retired tag, and one a tag nobody declared.</p>
+      <div class="notes">
+        <article class="note" data-ref="N-1" data-tags="platforms passengers"><b>N-1 · Complaint</b>The 14:05 moved platform and nobody told us until it had gone.</article>
+        <article class="note" data-ref="N-2" data-tags="platforms staff"><b>N-2 · Dispatcher</b>We run along the platform telling people, because the board is slow.</article>
+        <article class="note" data-ref="N-3" data-tags="announcements passengers"><b>N-3 · Survey</b>Most people say they can't make out the PA at the far end.</article>
+        <article class="note" data-ref="N-4" data-tags="announcements staff"><b>N-4 · Station team</b>Staff get seven minutes' notice, and the PA goes out at once.</article>
+        <article class="note" data-ref="N-5" data-tags="platform-moves"><b>N-5 · Old report</b>Forty trains moved in September.</article>
+        <article class="note" data-ref="N-6" data-tags="platforms signage"><b>N-6 · Walkround</b>The signs at the footbridge show only the first train.</article>
+      </div>
+    </section>
+
+    <section class="example">
+      <h2>A power grid in one evening</h2>
+      <p>A drawing and words together: chosen tags light SVG with a stroke, and never hide what's drawn.</p>
+      <svg class="grid-map" viewBox="0 0 640 170" role="img" aria-label="Sites on the grid">
+        <path class="wire" d="M100 85 H540"></path>
+        <g data-ref="G-1" data-tags="wind"><rect class="site" x="30" y="55" width="140" height="60" rx="6"></rect><text x="100" y="90">Wind farm</text></g>
+        <g data-ref="G-2" data-tags="reserves frequency"><rect class="site" x="250" y="55" width="140" height="60" rx="6"></rect><text x="320" y="90">Gas reserve</text></g>
+        <g data-ref="G-3" data-tags="demand"><rect class="site" x="470" y="55" width="140" height="60" rx="6"></rect><text x="540" y="90">City</text></g>
+      </svg>
+      <p style="margin:12px 0 0;color:var(--sb-text);font-size:14px">At dusk, <span class="mention" tabindex="0" data-tags="demand">demand climbs</span> as <span class="mention" tabindex="0" data-tags="wind">the wind drops</span>, the grid <span class="mention" tabindex="0" data-tags="frequency">sags towards 49.8 Hz</span>, and <span class="mention" tabindex="0" data-tags="reserves">the reserve starts up</span>.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -23,7 +23,7 @@ That's all the wiring there is:
 - **Pins in an [`sb-outliner`](../components/sb-outliner/manifest.md) keep things lit** everywhere too: see "Keeping things lit".
 - **It takes the theme's accent,** a see-through tint and ring on HTML, and a stroke on SVG, never a fill, which could hide what's on the shape.
 - **A tap lights nothing,** since a tap acts, and pointing never fires a viewer's click.
-- **Tagged parts light what's related.** Whatever shares a tag lights faintly: see "Lighting by tag".
+- **Tagged parts light what's related.** Whatever shares a tag lights faintly: see "Lighting by tag". People can keep topics lit: see "Keeping topics lit".
 - **New pages have it already.** The page templates include the line. A page made before they did behaves as it always did until the line is added.
 - **Modes carry on.** Pointing means what it always did while a mode is on, and clicks are the mode's.
 
@@ -59,6 +59,18 @@ A ref says "this exact thing". A tag says "things about this". Once parts carry 
 - **A part's tags are its own.** The innermost part counts, as with refs, and it takes nothing from what holds it, so an untagged passage in a tagged card announces no tags.
 - **Only semantic tags.** Never pass `working` tags. A retired tag lights until the data moves on from it, which is the tagging practice's job.
 - **A tag on nearly everything lights nearly everything.** That's a sign to look at the map, as the tagging practice says, not to change the lighting. To leave a view out, don't pass it tags.
+
+## Keeping topics lit
+
+Faint lines come and go with the pointer. [`sb-tags-mode`](../components/sb-tags-mode/manifest.md) lets people choose tags to keep lit while they work, and tells the script through one page-wide event, `sb-tag-focus`, sent from itself and bubbling to `document`:
+
+```js
+{ tags: ['platform-changes', 'passengers'], match: 'all' }   // or 'any'; no tags lights none
+```
+
+- **The script keeps them lit** through redraws, and stays as it was until the event is first sent.
+- **Chosen is a dashed line in a colour of its own,** `--sb-tag-focus`, by default a mix of the accent and magenta, and on SVG a stroke in that colour. No fill, so it hides nothing, and a shape as well as a colour, so it reads apart from everything else.
+- **Four strengths, strongest last:** faint, chosen, pinned, lit. A stronger look replaces a weaker one on the same part.
 
 ## The protocol
 

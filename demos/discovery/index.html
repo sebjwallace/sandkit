@@ -6,11 +6,13 @@
   <title>Domain Discovery Engine</title>
   <script src="../../shell/sb-theme-settings.js"></script>
   <script src="../../shell/sb-shell.js"></script>
+  <script src="../../shell/sb-highlighting.js"></script>
   <script src="../../components/sb-modal/sb-modal.js"></script>
   <script src="../../components/sb-source/sb-source.js"></script>
   <script src="../../components/sb-rule/sb-rule.js"></script>
   <script src="../../components/sb-scenario/sb-scenario.js"></script>
   <script src="../../components/sb-outliner/sb-outliner.js"></script>
+  <script src="../../components/sb-tags-mode/sb-tags-mode.js"></script>
   <script src="../../components/sb-scrubber/sb-scrubber.js"></script>
   <script src="../../components/sb-tabs/sb-tabs.js"></script>
   <script src="../../components/sb-json/sb-json.js"></script>
@@ -170,6 +172,7 @@
 <body>
   <sb-shell heading="Domain Discovery Engine">
     <sb-theme-settings slot="settings"></sb-theme-settings>
+    <sb-tags-mode slot="modes"></sb-tags-mode>
     <p><strong>Goal:</strong> learn how the departure board decides what to show, and build a model of it that meets what was learnt.</p>
   </sb-shell>
 
@@ -856,8 +859,8 @@ Not announced,0
     // asks, and the source's name with its grade, or why it isn't counted. Clicking it opens the
     // source at the excerpt.
     function passage(excerptId, { stance, counted } = {}) {
-      const { source, quote } = excerptOf(excerptId);
-      return { passage: { excerpt: excerptId, source, quote, stance, note: `${sourceById(source).name} · ${counted ?? `grade ${discovery().strength(source)}`}` } };
+      const { source, quote, tags } = excerptOf(excerptId);
+      return { passage: { excerpt: excerptId, source, quote, stance, tags, note: `${sourceById(source).name} · ${counted ?? `grade ${discovery().strength(source)}`}` } };
     }
 
     // A claim's passage as the engine weighed it, saying why when it isn't counted.
@@ -902,7 +905,7 @@ Not announced,0
     function card(head, ...parts) {
       const folds = parts.filter(part => part.items);
       return {
-        ...head, iteration: iterationOf(head.id),
+        ...head, iteration: iterationOf(head.id), tags: itemOf(head.id).tags,
         strips: parts.filter(part => part.tone), folds: folds.map(({ view, ...rest }) => rest),
         slotted: Object.fromEntries(folds.filter(f => f.view).map(f => [f.label, f.view])),
       };
@@ -1361,7 +1364,7 @@ Not announced,0
         })),
         parties: signing,
         folds: amended ? [fold('Amends', [{ card: faceOf({ id: amended.id, ...asOf(amended.id, k) }) }])] : [],
-        iteration: contract.iteration, created: contract.created, by: contract.by,
+        iteration: contract.iteration, created: contract.created, by: contract.by, tags: contract.tags,
       };
     }
 
@@ -1631,7 +1634,7 @@ Not announced,0
     // with it, so they look the same everywhere.
     function faceOf(node) {
       return {
-        id: node.id, kind: node.kind, status: node.status, text: node.text, format: node.source?.format, excerpt: node.excerpt,
+        id: node.id, kind: node.kind, status: node.status, text: node.text, format: node.source?.format, excerpt: node.excerpt, tags: itemOf(node.id)?.tags,
         marks: [node.assumed && 'assumed', node.carried && 'carried', node.kind === 'awaited' && 'awaited'].filter(Boolean),
         notes: [node.note, node.updated && 'updated: new material arrived', node.carried && `carried from iteration ${node.k}`].filter(Boolean),
       };
