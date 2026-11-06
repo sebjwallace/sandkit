@@ -37,7 +37,7 @@ const EVERY_SANDBOX = ['sb-comments']; // components the template uses
 // Components Sandkit no longer has, and what replaces each. See CHANGELOG.md for how to move.
 const RETIRED = { 'sb-discovery-board': 'sb-lineage', 'sb-source-trace': 'sb-lineage' };
 const SANDKIT_FILES = ['CATALOG.md', 'CHANGELOG.md', 'STYLE.md', 'templates/page.html', 'tools/export.mjs', 'tools/serve.mjs', 'tools/sources.mjs', 'tools/tags.mjs'];
-const SHELL_FILES = ['shell/CHANGELOG.md', 'shell/manifest.md', 'shell/sb-export.js', 'shell/sb-shell.js', 'shell/sb-theme-settings.js'];
+const SHELL_FILES = ['shell/CHANGELOG.md', 'shell/manifest.md', 'shell/sb-export.js', 'shell/sb-highlighting.js', 'shell/sb-shell.js', 'shell/sb-theme-settings.js'];
 
 function setup(folder, requested, page = 'index.html') {
   const sandbox = resolve(folder);
@@ -255,7 +255,7 @@ function addMechanismTags(sandbox, mechanisms) {
 
 // ---- Versions ----
 // A component's, engine's or mechanism's version is the top entry of its changelog, repeated in its script's first line
-// ("// Sandkit sb-log 0.1.0 · …"), so a copied script always says what it is. The shell's two
+// ("// Sandkit sb-log 0.1.0 · …"), so a copied script always says what it is. The shell's
 // scripts share one version.
 
 const packageOf = (name) => (name === 'shell'

@@ -1,6 +1,9 @@
 # Sandbox shell changelog
 
-Covers `sb-shell`, `sb-theme-settings` and `sb-export`, which are versioned together.
+Covers `sb-shell`, `sb-theme-settings`, `sb-export` and `sb-highlighting`, which are versioned together.
+
+## 0.1.9 · 2026-11-06
+- New `sb-highlighting`, a script in the page templates for page-wide pointing with no wiring: anything with a `data-ref` announces `sb-highlight` while pointed at or focused, and lights up when its ref is announced; `data-points-at` points at several things on purpose; pins from an `sb-outliner` stay lit everywhere. Existing wiring keeps working beside it. A page that doesn't include it is unchanged.
 
 ## 0.1.8 · 2026-10-22
 - Panels: a `panels` slot for things viewers keep beside the page, such as `sb-outliner`. Each gets a button in the header, by its heading, that opens and closes it; `sb-open` says so, and a panel closed from its own bar puts its button back. Any element with a `heading` and an `open` property can be one.

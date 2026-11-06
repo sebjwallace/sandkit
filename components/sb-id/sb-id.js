@@ -1,4 +1,4 @@
-// Sandkit sb-id 0.1.3 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-id 0.1.4 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A short identifying code, shown as a pill. Hover or focus shows what it refers to; clicking it
 // highlights every mention of it on the page. Hovering also announces the code page-wide, so
 // anything else marked with it can light up. Supports the identifiers and highlighting practices
@@ -74,12 +74,14 @@
       super();
       this._cardId = `sb-id-card-${++instanceCount}`;
       this._definition = null;
-      this._onHighlight = (e) => this.classList.toggle('sb-id--lit', e.detail?.ref != null && e.detail.ref === this.code);
+      this._onHighlight = (e) => this.classList.toggle('sb-id--lit', (e.detail?.ref == null ? [] : e.detail.refs ?? [e.detail.ref]).includes(this.code));
     }
 
     connectedCallback() {
       addStyle();
       this.classList.add('sb-id');
+      this.dataset.sbAnnounces = '';
+      this.dataset.sbLights = '';
       document.addEventListener('sb-highlight', this._onHighlight);
       this.render();
       whenParsed(() => this._resolveOnArrival());
@@ -129,9 +131,13 @@
       this.dataset.ref = this.code; // so the page can find every mention (practices/locating.md)
 
       const pill = this.querySelector('.sb-id__pill');
-      pill.addEventListener('mouseenter', () => this._point());
+      // Mouse events come after pointer events, so announcing on the pointer's means a pill has
+      // stopped announcing before whatever comes next starts. A tap shows the card without announcing.
+      pill.addEventListener('mouseenter', () => this._showCard());
+      pill.addEventListener('mouseleave', () => this._hideCard());
+      pill.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') announce(this.code); });
+      pill.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') announce(null); });
       pill.addEventListener('focus', () => this._point());
-      pill.addEventListener('mouseleave', () => this._leave());
       pill.addEventListener('blur', () => this._leave());
       pill.addEventListener('click', () => this._toggleHighlight());
     }

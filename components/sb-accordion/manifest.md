@@ -67,7 +67,9 @@ Follows the [highlighting practice](../../practices/highlighting.md):
 
 | Announces | Lights up |
 |---|---|
-| a section's `data-ref`, while its heading is pointed at, and `null` on leaving | a section whose `data-ref` is announced; a closed section holding a part marked with it |
+| a section's `data-ref`, while its heading is pointed at, and `null` on leaving | a section whose `data-ref` is announced or named in a list; a closed section holding a part marked with one of them |
+
+Sections carry `data-sb-lights`, so the page-wide script leaves them to it, while parts inside them point and light as usual.
 
 ## Nesting
 

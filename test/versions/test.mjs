@@ -69,7 +69,7 @@ for (const { name } of mechanisms) {
 
 test('shell: every script states its changelog\'s latest version', () => {
   const version = checkChangelog('shell/CHANGELOG.md');
-  for (const script of ['shell/sb-shell.js', 'shell/sb-theme-settings.js', 'shell/sb-export.js']) {
+  for (const script of ['shell/sb-shell.js', 'shell/sb-theme-settings.js', 'shell/sb-export.js', 'shell/sb-highlighting.js']) {
     assert(headerVersion(script) === version, `${script} says ${headerVersion(script)}, changelog says ${version}`);
   }
 });

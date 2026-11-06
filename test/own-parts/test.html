@@ -10,8 +10,8 @@
 </head>
 <body>
   <script>
-    // The sandbox's side of "Your own parts" in practices/highlighting.md: hand-built parts that point
-    // and light up like components, and are found and gone to. Copied from the practice.
+    // Hand-built parts that point and light up like components, and are found and gone to, wired by
+    // hand as sandboxes built before the highlighting script are (practices/highlighting.md).
     const announce = (ref) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref } }));
 
     function pointable(root) {
@@ -153,7 +153,7 @@
     test('a pill inside the container announces once, by itself', () => {
       const { phrase, pill, announced } = sandbox();
       move(phrase, pill);
-      pill.dispatchEvent(new MouseEvent('mouseenter'));
+      pill.dispatchEvent(new PointerEvent('pointerenter'));
       assertEqual(refs(announced), [null, 'DOC-2']);
     });
 

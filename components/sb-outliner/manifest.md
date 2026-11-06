@@ -2,7 +2,7 @@
 
 A floating panel outlining the things on a page that can be pointed at, each opening into its parts. Pointing at an entry lights everything it's connected to, wherever it is on the page. Two pins per entry, a fill and an outline, keep those traces lit while people work, follow the model as it changes, and can glow. Use it on any page where people reason about cause and effect across several views: what does this input affect, why does that output say what it says, and how do two cases compare.
 
-It lights nothing on the page itself. Pointing announces the trace through `sb-highlight`, pins are sent as `sb-pins`, and the sandbox lights its own parts, as the [highlighting practice](../../practices/highlighting.md) describes.
+It lights nothing on the page itself. Pointing announces the trace through `sb-highlight`, and pins are sent as `sb-pins`. Include the highlighting script and everything on the page lights from those with no wiring, as the [highlighting practice](../../practices/highlighting.md) describes. It carries `data-sb-announces`, and its entries `data-sb-lights`, so the script leaves it to itself.
 
 Use this component through the interface below. You don't need to read its source.
 
@@ -33,12 +33,10 @@ Use this component through the interface below. You don't need to read its sourc
     ];
   }
 
-  pointable(page, outliner.trace);   // the page's parts announce their traces and light up
-  pinnable(page, outliner);          // and stay lit while pinned
 </script>
 ```
 
-`pointable` and `pinnable` are the page helpers in the highlighting practice.
+Give it `trace` only where a thing connects to others. Without one, an entry lights only itself.
 
 ## The outline
 
@@ -87,7 +85,7 @@ A closed item takes the marks of any of its parts, so folding a train away never
 
 | Event | Detail | When |
 |---|---|---|
-| `sb-pins` | `{ fill: [refs], outline: [refs], glow }` | Pins, glow, the outline or the traces changed: every pinned trace, worked out afresh. Fired from the outliner, bubbling to `document`. Keep `is-pinned-fill` and `is-pinned-outline` on the parts whose refs are listed until the next one. |
+| `sb-pins` | `{ fill: [refs], outline: [refs], glow }` | Pins, glow, the outline or the traces changed: every pinned trace, worked out afresh. Fired from the outliner, bubbling to `document`. The highlighting script keeps the parts whose refs are listed lit until the next one; a sandbox without it keeps its own classes on them. |
 | `sb-pin` | `{ ref, kind, pinned }` | A viewer pinned or unpinned an entry, `kind` being `fill` or `outline`. Unpin all fires one for each. Bubbles. |
 | `sb-open` | `{ panel, open: false }` | A viewer closed the panel with ✕. `panel` is its heading. Bubbles, so the shell's header button follows. |
 
@@ -95,14 +93,7 @@ It also announces `sb-highlight` and listens for it, as above.
 
 ## Glow
 
-With `glow` on, the outliner animates one number, `--sb-glow`, from 1 down to 0.05 and back every 3 seconds, on itself and on anything carrying the class `sb-outliner__glowing`. Everything inside inherits the number, so one animation covers every view. The sandbox puts the class on its containers while `sb-pins` says `glow: true`, and mixes its pinned colours with the number:
-
-```css
-.is-pinned-fill { background: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 28%), transparent); }
-.is-pinned-outline { outline: 2px solid color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 100%), transparent); }
-```
-
-Pointing's `is-lit` doesn't use the number, so what's pointed at always shows at full strength.
+With `glow` on, the outliner animates one number, `--sb-glow`, from 1 down to 0.05 and back every 3 seconds, on itself and on anything carrying the class `sb-outliner__glowing`. Everything inside inherits the number, so one animation covers every view. The highlighting script puts the class on the page, and mixes pinned colours with the number, while `sb-pins` says `glow: true`. Pointing doesn't use the number, so what's pointed at always shows at full strength.
 
 ## Styling
 

@@ -235,6 +235,13 @@
       assertEqual([a.pins.fill, b.pins.fill, sentByB.length], [['t1'], [], 0]);
       assertEqual(b.querySelectorAll('.sb-outliner__entry').length, 1);
     });
+
+    test('says it announces, and its entries light themselves, for the page-wide script', () => {
+      const el = mount('<sb-outliner></sb-outliner>');
+      el.items = [{ ref: 'T3', label: 'A train' }];
+      assert(el.hasAttribute('data-sb-announces'));
+      assert(el.querySelector('.sb-outliner__entry[data-ref="T3"]').hasAttribute('data-sb-lights'));
+    });
   </script>
 </body>
 </html>

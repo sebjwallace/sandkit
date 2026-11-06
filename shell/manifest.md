@@ -1,6 +1,6 @@
 # Sandbox shell
 
-The environment around a sandbox: a header with its title, goal and pages, a mode picker, controls for full screen and hiding the header, a settings dialog with theming, and an Export button. Three elements, packaged together: `sb-shell`, `sb-theme-settings` and `sb-export`.
+The environment around a sandbox: a header with its title, goal and pages, a mode picker, controls for full screen and hiding the header, a settings dialog with theming, and an Export button. Three elements, packaged together: `sb-shell`, `sb-theme-settings` and `sb-export`. Beside them, a script with no element, `sb-highlighting`, for page-wide pointing with no wiring.
 
 Use them through this interface. You don't need to read their source.
 
@@ -12,6 +12,7 @@ Use them through this interface. You don't need to read their source.
   <script src="lib/sandkit/shell/sb-theme-settings.js"></script>
   <script src="lib/sandkit/shell/sb-shell.js"></script>
   <script src="lib/sandkit/shell/sb-export.js"></script>
+  <script src="lib/sandkit/shell/sb-highlighting.js"></script>
   <script src="sandbox.js"></script>
 </head>
 <body>
@@ -101,6 +102,24 @@ The Export button, placed with `slot="actions"`. A page opened from the computer
 | `prompt` | The prompt, as worded for the options chosen. |
 | `open()` | Open the dialog. |
 
+## sb-highlighting
+
+One script, no element, in the page templates: a page that doesn't include it behaves as it always did. It's what the [highlighting practice](../practices/highlighting.md) starts from.
+
+```html
+<script src="lib/sandkit/shell/sb-highlighting.js"></script>
+```
+
+| On the page | What it does |
+|---|---|
+| `data-ref="X"` on anything | Pointing at it or focusing it announces `sb-highlight` with `X`, and leaving announces `null`. Every part with an announced ref lights up, and stays lit through a redraw. |
+| `data-points-at="X Y Z"` on anything | Pointing at it or focusing it announces `{ ref: 'X', refs: ['X', 'Y', 'Z'] }`, lighting all three. It isn't lit itself, and isn't a place the ref appears. |
+| `sb-pins` from an `sb-outliner` | Every pinned part stays filled or outlined, and glows while any outliner has `glow` on, until the next `sb-pins`. |
+| `data-sb-announces` on an element | Nothing inside it is announced here: a component does that itself. |
+| `data-sb-lights` on a part | The part lights itself, so it isn't lit, pinned or announced here. Parts inside it still are. |
+
+It stays quiet when a sandbox's own wiring announces first, so existing wiring keeps working. It has no properties or methods, and adds no global.
+
 ## Theme tokens
 
 `--sb-bg`, `--sb-surface`, `--sb-surface-2`, `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-accent`, `--sb-accent-text`, `--sb-accent-soft`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-font`, `--sb-radius`. `--sb-page-width` is set only by the viewer's page width choice; themes don't define it.
@@ -123,6 +142,6 @@ A sandbox's own theme sets these tokens in its CSS; the settings' token editor d
 
 ## Notes
 
-- **Dependencies:** none. The three elements are packaged together; nothing else depends on them, and every component works without them.
+- **Dependencies:** none. The three elements and the script are packaged together; nothing else depends on them, and every component works without them.
 - **Export:** safe for single-file export.
 - **Storage:** the viewer's theme, presets and header state are kept in browser storage, and can be exported and imported as a file from Settings.

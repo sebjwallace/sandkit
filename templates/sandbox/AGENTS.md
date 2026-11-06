@@ -102,6 +102,7 @@ Parts of the surface this sandbox made its own, once they were needed in more th
 - **Sources are added only with the person's say-so, then screened, catalogued and cited.** Never save part of the chat, or anything else you'd bring in, as a source without asking first. Screen every source before using it, wherever it came from, and raise anything sensitive with the person. Process `sources/inbox/` when it isn't empty, cite passages from the model's `ITEMS` (or, in a discovery sandbox, from its records), and run `node lib/sandkit/tools/sources.mjs check .` after. See `lib/sandkit/practices/sources.md`.
 - **Serving:** features that read or write the sandbox's files need `node lib/sandkit/tools/serve.mjs .` (then open the address it prints). Everything else works by double-clicking.
 - **Declare everything, then start.** Page scripts declare their state and functions first, and start the sandbox in one marked section at the end.
+- **Pointing is free.** Name what a part stands for with `data-ref`, and the highlighting script in every page lights it everywhere it appears, pins included. Name several things with `data-points-at`. Don't write highlight wiring unless `lib/sandkit/practices/highlighting.md` says you need it.
 - **Codes for what people discuss.** Rules, entities, claims and sources get stable codes (see `lib/sandkit/practices/identifiers.md`), issued in the model and cited everywhere.
 - **Reveal, don't merely display.** Show why things happen, not only that they did.
 - **Keep it small and clear.** This is a sandbox, not production software.

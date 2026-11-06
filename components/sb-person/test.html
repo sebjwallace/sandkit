@@ -85,6 +85,22 @@
       assertEqual(el.querySelectorAll('b, i').length, 0);
       assertEqual(text(el, 'name'), '<b>x</b>');
     });
+
+    test('says it announces and lights itself, for the page-wide script', () => {
+      const el = mount('<sb-person ref="priya" name="Priya"></sb-person>');
+      assert(el.hasAttribute('data-sb-announces') && el.hasAttribute('data-sb-lights'));
+    });
+
+    test('lights when its ref is named in a list, and clears', () => {
+      const el = mount('<sb-person ref="priya" name="Priya"></sb-person>');
+      const say = (detail) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail }));
+      say({ ref: 'tom', refs: ['tom', 'priya'] });
+      assert(el.classList.contains('sb-person--highlighted'));
+      say({ ref: 'tom', refs: ['tom', 'dan'] });
+      assert(!el.classList.contains('sb-person--highlighted'), 'not named');
+      say({ ref: null });
+      assert(!el.classList.contains('sb-person--highlighted'));
+    });
   </script>
 </body>
 </html>

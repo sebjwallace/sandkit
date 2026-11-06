@@ -1,5 +1,8 @@
 # sb-math changelog
 
+## 0.1.2 · 2026-11-06
+- Carries `data-sb-announces`, so the page-wide `sb-highlighting` script leaves its announcing to it.
+
 ## 0.1.1 · 2026-10-25
 - Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
 

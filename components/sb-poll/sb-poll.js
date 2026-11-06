@@ -1,4 +1,4 @@
-// Sandkit sb-poll 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-poll 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A question put to a group: each person answers, every answer hidden until everyone has, then
 // all are revealed at once, grouped by option, so nobody's answer steers anyone else's. With an
 // outcome, it's a prediction: the option that held is marked, and so is who expected it.
@@ -90,7 +90,7 @@
       this._draft = {}; // the answer being written: { person, option, why }
       this._slotted = new Map(); // the sandbox's content, by slot name: option:<id> and person:<id>
       this._observer = new MutationObserver(() => this.render());
-      this._onHighlight = (e) => { this.highlight = e.detail?.ref ? [e.detail.ref] : []; };
+      this._onHighlight = (e) => { this.highlight = e.detail?.ref == null ? [] : e.detail.refs ?? [e.detail.ref]; };
       this.addEventListener('click', (e) => this._onClick(e));
       this.addEventListener('input', (e) => this._onInput(e));
       this.addEventListener('change', (e) => this._onInput(e));
@@ -102,6 +102,7 @@
     connectedCallback() {
       addStyle();
       this.classList.add('sb-poll');
+      this.dataset.sbAnnounces = '';
       document.addEventListener('sb-highlight', this._onHighlight);
       this.render();
       this._observer.observe(this, { childList: true });
@@ -208,7 +209,7 @@
     }
 
     _option(option) {
-      const ref = option.ref ? ` data-ref="${esc(option.ref)}" data-option-ref="${esc(option.ref)}"` : '';
+      const ref = option.ref ? ` data-ref="${esc(option.ref)}" data-option-ref="${esc(option.ref)}" data-sb-lights` : '';
       return `<button type="button" class="sb-poll__option" data-option="${esc(option.id)}" aria-pressed="${this._draft.option === option.id}"${ref}>
         <span data-slot="option:${esc(option.id)}"><span class="sb-poll__option-label">${esc(option.label ?? option.id)}</span></span>
       </button>`;
@@ -219,7 +220,7 @@
       const groups = this._options.map((option) => {
         const chose = this._people.filter((p) => this._answers[p.id]?.option === option.id);
         const held = this._outcome != null && option.id === this._outcome;
-        const ref = option.ref ? ` data-ref="${esc(option.ref)}" data-option-ref="${esc(option.ref)}"` : '';
+        const ref = option.ref ? ` data-ref="${esc(option.ref)}" data-option-ref="${esc(option.ref)}" data-sb-lights` : '';
         return `
           <div class="sb-poll__group${held ? ' sb-poll__group--outcome' : ''}" data-option="${esc(option.id)}"${ref}>
             <div class="sb-poll__group-head">

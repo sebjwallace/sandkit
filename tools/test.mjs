@@ -303,9 +303,17 @@ test('a name that\'s both a component and a mechanism is refused, before anythin
   assert(!existsSync(join(sandbox, 'index.html')), 'nothing copied');
 }));
 
+test('new pages have page-wide highlighting, and the sandbox\'s AGENTS.md says so', (sandbox) => {
+  setup(sandbox);
+  const tag = '<script src="lib/sandkit/shell/sb-highlighting.js"></script>';
+  assert(readFileSync(join(sandbox, 'index.html'), 'utf8').includes(tag), 'the first page');
+  assert(readFileSync(join(sandbox, 'lib/sandkit/templates/page.html'), 'utf8').includes(tag), 'the page template');
+  assert(readFileSync(join(sandbox, 'AGENTS.md'), 'utf8').includes('**Pointing is free.**'), 'AGENTS.md');
+});
+
 test('a new sandbox gets sandbox.js, the page template, the sources folder, and the export, serve and sources tools', (sandbox) => {
   setup(sandbox);
-  for (const file of ['sandbox.js', 'lib/sandkit/templates/page.html', 'lib/sandkit/tools/export.mjs', 'lib/sandkit/tools/serve.mjs', 'lib/sandkit/tools/sources.mjs', 'sources/catalogue.json', 'sources/inbox/.gitkeep', 'lib/sandkit/shell/sb-export.js']) {
+  for (const file of ['sandbox.js', 'lib/sandkit/templates/page.html', 'lib/sandkit/tools/export.mjs', 'lib/sandkit/tools/serve.mjs', 'lib/sandkit/tools/sources.mjs', 'lib/sandkit/shell/sb-highlighting.js', 'sources/catalogue.json', 'sources/inbox/.gitkeep', 'lib/sandkit/shell/sb-export.js']) {
     assert(existsSync(join(sandbox, file)), `missing ${file}`);
   }
   assert(read(sandbox, 'index.html').includes('<script src="sandbox.js"></script>'), 'index.html includes sandbox.js');
@@ -645,6 +653,16 @@ test('export puts in only what the page points to, scripts in order, and marks t
   assert(html.includes('src="data:image/svg+xml;base64,'), 'the image is inside');
   assert(html.includes(`<sb-shell exported="${new Date().toISOString().slice(0, 10)}" version="0.2.0" sandkit="${SANDKIT_VERSION}" page="second.html">`), 'shell marked');
   assert(output.includes('10 files') && !output.includes('Warnings'), `report:\n${output}`);
+});
+
+test('export carries page-wide highlighting', (folder) => {
+  const script = readFileSync(resolve(fileURLToPath(import.meta.url), '../../shell/sb-highlighting.js'), 'utf8');
+  write(folder, 'sb-highlighting.js', script);
+  write(folder, 'page.html', '<script src="sb-highlighting.js"></script>\n<p data-ref="A">A</p>');
+  const { ok, output } = exportTool(join(folder, 'page.html'));
+  const html = readFileSync(join(folder, 'export', 'page.html'), 'utf8');
+  assert(ok, output);
+  assert(html.includes('Sandkit sb-highlighting') && !html.includes('src="sb-highlighting.js"'), 'the script is inside');
 });
 
 test('export leaves images out when asked, and says so', (folder) => {

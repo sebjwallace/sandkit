@@ -58,6 +58,7 @@ Classes: `sb-id__pill`, `sb-id__card`, `sb-id__kind`, `sb-id__title`, `sb-id__de
 
 ## Notes
 
+- **Pointing:** follows the [highlighting practice](../../practices/highlighting.md). A pill announces its code while pointed at or focused, and lights when its code is announced or named in a list. It carries `data-sb-announces` and `data-sb-lights`, so the page-wide script leaves it to itself. A tap shows the card without announcing.
 - **Highlighting is page-wide.** Clicking a pill highlights every `sb-id` with the same code, including ones added later. Clicking any of them again clears it.
 - **The card is in the top layer** (the popover API), so scrolling containers never clip it.
 - **Dependencies:** none.

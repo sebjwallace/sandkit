@@ -474,6 +474,10 @@
     test('loading the same script twice is harmless and quiet', () => {
       assertEqual(consoleErrors, []);
     });
+
+    test('says it announces for itself, for the page-wide script', () => {
+      assert(mount('<sb-discovery-card></sb-discovery-card>').hasAttribute('data-sb-announces'));
+    });
   </script>
 </body>
 </html>

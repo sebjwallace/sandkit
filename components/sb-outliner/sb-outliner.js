@@ -1,4 +1,4 @@
-// Sandkit sb-outliner 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-outliner 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A floating panel outlining the things on a page that can be pointed at, each opening into its
 // parts. Pointing at an entry announces its whole trace, so everything connected lights up across
 // the page; two pins per entry, a fill and an outline, keep traces lit while people work, follow
@@ -106,6 +106,7 @@
     connectedCallback() {
       addStyle();
       this.classList.add('sb-outliner');
+      this.dataset.sbAnnounces = '';
       document.addEventListener('sb-highlight', this._onHighlight);
       if (this._built) return;
       this._built = true;
@@ -244,6 +245,7 @@
       if (entry.ref == null) return [element('div', 'sb-outliner__heading', entry.heading)];
       const row = element('div', 'sb-outliner__entry');
       row.dataset.ref = entry.ref;
+      row.dataset.sbLights = '';
       const hasParts = isItem && Array.isArray(entry.parts);
       const isOpen = hasParts && this._open.has(entry.ref);
       if (hasParts) {

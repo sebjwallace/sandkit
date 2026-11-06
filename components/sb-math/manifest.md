@@ -47,6 +47,7 @@ Classes: lit parts carry `sb-math--lit`. Marked parts show a help cursor and a f
 
 - **MathML is native to every modern browser,** so nothing needs loading, and the expression survives single-file export.
 - **Keyboard:** marked parts can be reached with Tab, and announce when focused.
+- **The page-wide script:** it carries `data-sb-announces`, so the script leaves its announcing to it. It lights its own parts for `ref` alone; the script lights them for a list.
 - **Dependencies:** none.
 - **Export:** safe for single-file export. Classic script, no fetches, no external assets.
 - **Renaming:** if another component on the page is already called `sb-math`, the console says so. Replace every `sb-math` in `sb-math.js` to give this copy a new name.

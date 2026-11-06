@@ -51,7 +51,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-store
 
 1. **Copy the template.** Copy the contents of `templates/sandbox/` into the sandbox folder. Then paste the catalog's **Find by need** section, without its heading, between the `sandkit:find-by-need` markers in the sandbox's `AGENTS.md`, and again whenever you update Sandkit.
 2. **Copy what the sandbox uses into `lib/sandkit/`, keeping Sandkit's own paths.** Links between manifests and practices then still work.
-   - Always: `CATALOG.md`, `CHANGELOG.md`, `STYLE.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `practices/mechanisms.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`, and `sb-comments` (below), which the template uses.
+   - Always: `CATALOG.md`, `CHANGELOG.md`, `STYLE.md`, `practices/building-a-sandbox.md` (this guide), `practices/journal.md`, `practices/mechanisms.md`, `shell/sb-theme-settings.js`, `shell/sb-shell.js`, `shell/sb-export.js`, `shell/sb-highlighting.js`, `shell/manifest.md`, `shell/CHANGELOG.md`, `templates/page.html`, `tools/export.mjs`, and `sb-comments` (below), which the template uses.
    - For each component used: `components/<name>/<name>.js`, `components/<name>/manifest.md` and `components/<name>/CHANGELOG.md`.
    - For each engine used, when the sandbox follows a method that has one, such as domain discovery: `engines/<name>/<name>.js`, `engines/<name>/manifest.md` and `engines/<name>/CHANGELOG.md`, with a script tag for it like a component's.
    - For each mechanism the model uses: `mechanisms/<name>/<name>.js`, `mechanisms/<name>/manifest.md` and `mechanisms/<name>/CHANGELOG.md`, with a script tag for it **before** `model.js`'s, since the model needs it when it loads.
@@ -69,7 +69,7 @@ node <sandkit>/tools/setup.mjs <sandbox-folder> sb-store
 
    ## Files
    - CATALOG.md, CHANGELOG.md, STYLE.md, practices/building-a-sandbox.md, practices/journal.md, practices/mechanisms.md, practices/identifiers.md
-   - shell/sb-theme-settings.js, shell/sb-shell.js, shell/sb-export.js, shell/manifest.md, shell/CHANGELOG.md
+   - shell/sb-theme-settings.js, shell/sb-shell.js, shell/sb-export.js, shell/sb-highlighting.js, shell/manifest.md, shell/CHANGELOG.md
    - templates/page.html, tools/export.mjs
    - components/sb-log/sb-log.js, components/sb-log/manifest.md, components/sb-log/CHANGELOG.md
    ```
@@ -80,7 +80,7 @@ my-sandbox/
   index.html  sandbox.js  model.js  style.css  AGENTS.md  CLAUDE.md  JOURNAL.md
   lib/sandkit/
     SOURCE.md  CATALOG.md  CHANGELOG.md  STYLE.md
-    shell/        sb-theme-settings.js  sb-shell.js  sb-export.js  manifest.md  CHANGELOG.md
+    shell/        sb-theme-settings.js  sb-shell.js  sb-export.js  sb-highlighting.js  manifest.md  CHANGELOG.md
     templates/    page.html
     tools/        export.mjs
     components/   sb-log/  sb-log.js  manifest.md  CHANGELOG.md
@@ -161,9 +161,10 @@ If a part built by hand seems useful beyond this subject, mark it **candidate**:
 
 - **Reveal, don't merely display.** Show why things happen: highlight the rule that fired, the stock that ran out, the cause behind the effect.
 - **Modes come with the shell.** Every sandbox has comment mode from the template, wired once in `sandbox.js`. Once the model cites its sources, add trace mode, so people can ask why anything is there; once it has labels people could misread, inspect mode. See the [modes practice](modes.md).
-- **Add an outliner once the model has traces.** When things on the page connect, such as inputs to the rules they feed and what those rules show, give the shell an [`sb-outliner`](../components/sb-outliner/manifest.md) in its `panels` slot, with the model's `traceOf`: people point to see a whole path light up, and pin it to keep it lit while they change things. See "Keeping things lit" in the [highlighting practice](highlighting.md).
+- **Let pointing connect the views.** Every page includes the highlighting script, so name what each part stands for with `data-ref`, the same name everywhere, and pointing at it lights it across every view, with no wiring. Have a sentence or button name several things with `data-points-at`. Write highlight wiring only for what the [highlighting practice](highlighting.md) says the script can't reach.
+- **Add an outliner once the model has traces.** When things on the page connect, such as inputs to the rules they feed and what those rules show, give the shell an [`sb-outliner`](../components/sb-outliner/manifest.md) in its `panels` slot, with the model's `traceOf`: people point to see a whole path light up, and pin it to keep it lit while they change things. The highlighting script lights the rest of the page for it. See "Keeping things lit" in the [highlighting practice](highlighting.md).
 - **Combine components in the page.** The practices say which components go together and how to wire them. Components never go inside one another unless a component offers a slot for exactly that.
-- **Write what nothing fits yourself** in the page or in `model.js`. Make hand-built parts point, light up and be found like components: see "Your own parts" in the [highlighting practice](highlighting.md#your-own-parts).
+- **Write what nothing fits yourself** in the page or in `model.js`. Name hand-built parts with `data-ref`, and the highlighting script makes them point and light up like components: see "Your own parts" in the [highlighting practice](highlighting.md#your-own-parts).
 - **Move reused parts out of the page.** When a piece of the surface is used by more than one chapter or page, make it one of the sandbox's own components: a function in `parts.js` or, once it has state of its own, a custom element in `components/`. See the [domain components practice](domain-components.md).
 - **Make it two-way.** Let people change things (parameters, scenarios, controls) and see the model respond.
 
