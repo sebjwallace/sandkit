@@ -37,6 +37,51 @@
       assertEqual(cell(el, 'Saturn', 2).textContent, 'gas giant');
     });
 
+    // ---- Tags ----
+
+    test('a row with a tags field and no columns shows it as a column, as it always did', () => {
+      const el = mount('<sb-table></sb-table>');
+      el.rows = [{ id: 1, city: 'Lima', tags: 'coast' }];
+      assertEqual(headings(el).map((th) => th.textContent), ['city', 'tags']);
+      assert(!el.querySelector('[data-tags]'), 'and nothing carries it');
+    });
+
+    test('tagsOf puts each row\'s tags on it, and leaves the columns alone', () => {
+      const el = mount('<sb-table></sb-table>');
+      el.rows = [{ id: 1, city: 'Lima', tags: ['coast', 'capitals'] }, { id: 2, city: 'Cusco', tags: [] }, { id: 3, city: 'Puno' }];
+      const before = headings(el).map((th) => th.textContent);
+      el.tagsOf = (row) => row.tags;
+      assertEqual(headings(el).map((th) => th.textContent), before);
+      assertEqual([...el.querySelectorAll('tbody tr')].map((tr) => tr.dataset.tags), ['coast capitals', undefined, undefined]);
+    });
+
+    test('tags reach rows with no id, and stay after sorting and setting the rows again', () => {
+      const el = mount('<sb-table></sb-table>');
+      el.tagsOf = (row) => [row.area];
+      el.rows = [{ city: 'Lima', area: 'coast' }];
+      assertEqual(el.querySelector('tbody tr').dataset.tags, 'coast');
+      el.rows = [{ city: 'Puno', area: 'lake' }, { city: 'Lima', area: 'coast' }];
+      el.sort = { key: 'city', direction: 'ascending' };
+      assertEqual([...el.querySelectorAll('tbody tr')].map((tr) => tr.dataset.tags), ['coast', 'lake']);
+    });
+
+    test('a column\'s tags go on its heading only', () => {
+      const el = mount('<sb-table></sb-table>');
+      el.columns = [{ key: 'city', tags: ['places'] }, { key: 'rain' }];
+      el.rows = [{ id: 1, city: 'Lima', rain: 6 }];
+      assertEqual(headings(el).map((th) => th.dataset.tags), ['places', undefined]);
+      assert(!el.querySelector('td[data-tags]'), 'the cells carry none');
+    });
+
+    test('tags are never rendered as markup, and tags that aren\'t a list are ignored', () => {
+      const el = mount('<sb-table></sb-table>');
+      el.tagsOf = (row) => row.t;
+      el.rows = [{ id: 1, city: 'Lima', t: ['"><b>x</b>'] }, { id: 2, city: 'Puno', t: 'coast' }];
+      assert(!el.querySelector('tbody b'), 'no markup');
+      const [first, second] = el.querySelectorAll('tbody tr');
+      assertEqual([first.dataset.tags, second.dataset.tags], ['"><b>x</b>', undefined]);
+    });
+
     test('without columns, shows every field of the first row except id and tone', () => {
       const el = mount('<sb-table></sb-table>');
       el.rows = [{ id: 1, tone: 'bad', city: 'Lima', rain: 6 }];

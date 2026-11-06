@@ -134,7 +134,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | Practice | What it covers |
 |---|---|
 | [Building a sandbox](practices/building-a-sandbox.md) | Start here. The end-to-end method: setting up the folder, copying components in, the model, chapters, checking. |
-| [Highlighting](practices/highlighting.md) | Point at one thing and see it light up everywhere, with one script and no wiring: the page-wide `sb-highlight` event, pointing at several things on purpose, wiring what the script can't reach, the sandbox's own parts, and keeping things lit with pins. Supported by `sb-highlighting`, `sb-math`, `sb-id` and `sb-outliner`. |
+| [Highlighting](practices/highlighting.md) | Point at one thing and see it light up everywhere, with one script and no wiring: the page-wide `sb-highlight` event, pointing at several things on purpose, lighting what's related by tag, wiring what the script can't reach, the sandbox's own parts, and keeping things lit with pins. Supported by `sb-highlighting`, `sb-math`, `sb-id` and `sb-outliner`. |
 | [Locating](practices/locating.md) | Find everywhere a ref appears and go to it, through closed tabs and folded branches: `data-ref` on parts, `reveal(ref)`, and the sandbox's `goTo`. Supported by `sb-tabs`, `sb-tree`, `sb-id`, `sb-table`, `sb-rules` and `sb-graph`. |
 | [Journal](practices/journal.md) | What changed in a sandbox and why, one entry per version, and where it stands now: for audit and handover. Retired codes recorded in the model. |
 | [Identifiers](practices/identifiers.md) | Short, stable codes for the things in a sandbox, and citing them everywhere. Supported by `sb-id`. |
@@ -152,7 +152,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 
 | Part | What it does |
 |---|---|
-| [Sandbox shell](shell/manifest.md) | The environment around a sandbox: header, goal, pages, full screen, settings and theming, modes with a key each, panels opened from the header, an Export button, and `sb-highlighting`, one script for page-wide pointing and lighting with no wiring giving the prompt to export the page. |
+| [Sandbox shell](shell/manifest.md) | The environment around a sandbox: header, goal, pages, full screen, settings and theming, modes with a key each, panels opened from the header, an Export button giving the prompt to export the page, and `sb-highlighting`, one script for page-wide pointing and lighting with no wiring, by ref and faintly by tag. |
 
 ## Modes
 
@@ -170,7 +170,7 @@ Components and the engine for domain discovery, which never know each other: the
 
 | Component | What it does |
 |---|---|
-| [`sb-discovery-card`](components/sb-discovery-card/manifest.md) | One card of discovery, in 43 kinds each with its icon and tone, and an optional title after its code: compact on a board, normal, expanded in a modal, or, for a contract, written out as a document to print; what it means in strips, what it rests on in folds of passages, cards, options and slots; sources and excerpts always compact, on paper, an excerpt showing its words, a region of an image or rows of data; when, by whom and in which iteration it was made. |
+| [`sb-discovery-card`](components/sb-discovery-card/manifest.md) | One card of discovery, in 43 kinds each with its icon and tone, and an optional title after its code: compact on a board, normal, expanded in a modal, or, for a contract, written out as a document to print; what it means in strips, what it rests on in folds of passages, cards, options and slots; sources and excerpts always compact, on paper, an excerpt showing its words, a region of an image or rows of data; when, by whom and in which iteration it was made. Carries tags, to light what's related. |
 
 | Engine | What it works out |
 |---|---|
@@ -236,7 +236,7 @@ Next come a driver and encounter, then allocation and conversion.
 | [`sb-stamp`](components/sb-stamp/manifest.md) | A status pressed onto the page like a rubber stamp: verified, approved, received, superseded, with an icon, when, a detail and who; set from the model and marked stale, with the reason, when the model has moved past it. |
 | [`sb-stat`](components/sb-stat/manifest.md) | Headline figures: each change since the last update, coloured as good or bad news, with targets and bars. |
 | [`sb-statechart`](components/sb-statechart/manifest.md) | States inside states, parallel regions and history: every active state marked, what can happen now and what a guard holds back, and the last step's exits, transitions and entries numbered in order. |
-| [`sb-table`](components/sb-table/manifest.md) | Rows and columns to sort, search and filter, with the cells that just changed marked. |
+| [`sb-table`](components/sb-table/manifest.md) | Rows and columns to sort, search and filter, with the cells that just changed marked, and tags on rows and headings to light what's related. |
 | [`sb-tabs`](components/sb-tabs/manifest.md) | Tabs over panels, for chapters or views: one part at a time, remembered per viewer, nestable. |
 | [`sb-timeline`](components/sb-timeline/manifest.md) | Events laid out in time: moments and spans in lanes, a line for now fading what's still to come, zoomed and panned by viewers or glided to a stretch by the sandbox. |
 | [`sb-tour`](components/sb-tour/manifest.md) | A guided tour of the page as it stands: a tooltip beside one part at a time, the rest dimmed, opening what hides each part; steps can wait for the viewer to act. |

@@ -41,6 +41,7 @@ Each row is an object of the sandbox's fields, plus two the table reads itself:
 | `label` | The column heading. Defaults to `key`. |
 | `format` | A function `(value, row) => text`, replacing the plain value. Sorting still uses the plain value; searching uses the text. |
 | `align` | `left` or `right`. Defaults to `right` for columns holding only numbers. |
+| `tags` | What the column is about, `['platforms']`. Carried by its heading as `data-tags`, and only the heading: see `tagsOf`. |
 
 ## Attributes
 
@@ -59,6 +60,7 @@ Each row is an object of the sandbox's fields, plus two the table reads itself:
 | `filter` | A function `(row) => boolean` choosing which rows to show, for filters the model or the sandbox's own controls decide. |
 | `query` | The search text. Shows rows whose shown text contains it, ignoring case. Works with or without the search box. |
 | `highlight` | `{ rows: [id, …], columns: [key, …], cells: [[id, key], …] }`: what to point at. |
+| `tagsOf` | A function `(row) => [tag, …]` saying what each row is about, usually `(row) => row.tags`. Each row carries them as `data-tags`, so pointing at it lights what shares a tag, as the [highlighting practice](../../practices/highlighting.md) describes. A `tags` field does nothing by itself: it's shown like any other field unless `columns` leaves it out. Pass only semantic tags, never `working` ones. |
 
 When a filter or search hides rows, the table says how many it shows ("3 of 12 rows"), so hidden rows never go unnoticed.
 

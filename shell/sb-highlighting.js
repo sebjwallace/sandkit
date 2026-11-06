@@ -1,4 +1,4 @@
-// Sandkit sb-highlighting 0.1.9 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-highlighting 0.1.10 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Page-wide pointing and lighting with no wiring. Include it, and any element with a data-ref
 // announces sb-highlight while it's pointed at or focused, lights up when its ref is announced, and
 // stays lit while an outliner on the page pins it. See practices/highlighting.md for the events.
@@ -8,6 +8,10 @@
 // To point at several things on purpose, name them. The words themselves aren't one of those things:
 //
 //   <span data-points-at="TRK-1 SIG-1 RUL-1">the parts that stop a train</span>
+//
+// To show what's related, tag a part. Pointing at it also lights, faintly, whatever shares a tag:
+//
+//   <tr data-ref="SRC-3" data-tags="platforms passengers">…</tr>
 //
 // Two attributes let a component speak for itself:
 //   data-sb-announces  nothing inside this element is announced here: the component does it
@@ -32,11 +36,14 @@
   // A part may sit over something people need to see, such as a picture, so tints are see-through.
   // SVG takes a stroke and never a fill: a fill can hide what's drawn over the shape, or the words
   // on it. Only a part's own shapes change, so lighting an entity leaves the fields inside it alone.
-  // A part may also be a shape, or a line of text, itself.
+  // A part may also be a shape, or a line of text, itself. The outline sits exactly on the ring, and
+  // shows where a part's own solid contents, such as a card's sheet, would cover the tint and ring.
   const litRules = (parts) => `
     ${htmlParts(parts)} {
       background-color: color-mix(in srgb, ${ACCENT} 22%, transparent) !important;
       box-shadow: inset 0 0 0 2px ${ACCENT} !important;
+      outline: 2px solid ${ACCENT} !important;
+      outline-offset: -2px !important;
     }
     ${svgShapes(parts)} {
       stroke: ${ACCENT} !important;
@@ -44,6 +51,13 @@
       filter: drop-shadow(0 0 4px ${ACCENT});
     }
     ${svgText(parts)} { fill: ${ACCENT} !important; }`;
+
+  // Related, not the same: only a thin line, so it says less than lit does and hides nothing. Words
+  // keep their colour. See-through lines let what's underneath read through them.
+  const faint = `color-mix(in srgb, ${ACCENT} 60%, transparent)`;
+  const relatedRules = (parts) => `
+    ${htmlParts(parts)} { outline: 1px solid ${faint} !important; outline-offset: -1px !important; }
+    ${svgShapes(parts)} { stroke: ${faint} !important; stroke-width: 2 !important; stroke-dasharray: 2 3 !important; }`;
 
   // Pins fade with --sb-glow, the one number the outliner animates (practices/highlighting.md).
   const pinned = (percent) => `color-mix(in srgb, ${ACCENT} calc(var(--sb-glow, 1) * ${percent}%), transparent)`;
@@ -64,14 +78,27 @@
 
   const rulesFor = (rules, refs) => (refs.length ? rules(selectorFor(refs)) : '');
 
+  const selectorForTags = (tags) => tags.map((tag) => `[data-tags~="${CSS.escape(String(tag))}"]`).join(', ');
+
+  // Whatever shares a tag, unless it's already lit or pinned, which both say more.
+  function relatedSheet() {
+    if (!announcedTags.length) return '';
+    const stronger = [...announcedRefs, ...pinnedRefs];
+    const tagged = selectorForTags(announcedTags);
+    return relatedRules(stronger.length ? `:is(${tagged}):where(:not(${selectorFor(stronger)}))` : tagged);
+  }
+
   // Rules rather than classes, so a part redrawn while lit is lit the moment it's drawn. Pointing
   // comes last, so it outranks a pin while it lasts.
-  let litSheet = '';
+  let announcedRefs = [];
+  let announcedTags = [];
+  let pinnedRefs = [];
   let pinnedSheet = '';
-  const draw = () => { sheet.textContent = pinnedSheet + litSheet; };
+  const draw = () => { sheet.textContent = relatedSheet() + pinnedSheet + rulesFor(litRules, announcedRefs); };
 
-  function light({ ref, refs }) {
-    litSheet = ref == null ? '' : rulesFor(litRules, refs ?? [ref]);
+  function light({ ref, refs, tags }) {
+    announcedRefs = ref == null ? [] : refs ?? [ref];
+    announcedTags = Array.isArray(tags) ? tags : [];
     draw();
   }
 
@@ -83,6 +110,7 @@
   document.addEventListener('sb-pins', (e) => {
     pinsByOutliner.set(e.target, e.detail);
     const every = [...pinsByOutliner.values()];
+    pinnedRefs = every.flatMap((pins) => [pins.fill ?? [], pins.outline ?? []]).flat();
     pinnedSheet = rulesFor(pinnedFillRules, every.flatMap((pins) => pins.fill))
       + rulesFor(pinnedOutlineRules, every.flatMap((pins) => pins.outline));
     document.documentElement.classList.toggle('sb-outliner__glowing', every.some((pins) => pins.glow));
@@ -97,47 +125,61 @@
   let spoken = false;        // whether anyone has announced a ref for the pointing being handled
   let touching = false;      // a tap isn't pointing: it acts, and there's no way to stop pointing after it
 
-  const identityOf = (refs) => JSON.stringify(refs);
+  // What makes one announcement different from the next. Null when it's about nothing.
+  function identityOf({ ref, refs, tags }) {
+    if (ref == null && !tags?.length) return null;
+    return JSON.stringify([refs ?? [ref], tags ?? []]);
+  }
 
-  function announce(refs) {
-    const detail = !refs ? { ref: null } : refs.length > 1 ? { ref: refs[0], refs } : { ref: refs[0] };
+  function announce(detail) {
     speaking = true;
     document.dispatchEvent(new CustomEvent('sb-highlight', { detail }));
     speaking = false;
-    ours = Boolean(refs);
+    ours = identityOf(detail) !== null;
   }
 
   document.addEventListener('sb-highlight', (e) => {
     const detail = e.detail ?? {};
     // A null only ends the last thing pointed at. It says nothing about what's being pointed at now.
-    if (detail.ref != null) spoken = true;
-    lastAnnounced = detail.ref == null ? null : identityOf(detail.refs ?? [detail.ref]);
+    lastAnnounced = identityOf(detail);
+    if (lastAnnounced !== null) spoken = true;
     if (!speaking) ours = false;
     light(detail);
   });
 
-  const namesIn = (attribute) => attribute.split(/\s+/).filter(Boolean);
+  const namesIn = (attribute = '') => attribute.split(/\s+/).filter(Boolean);
 
-  // The refs to announce for an element, from the innermost thing holding it: what a part is, or
-  // what some words point at. Null if it's in neither, or a component speaks for it.
-  function refsAt(element) {
+  // The refs and tags of the innermost thing holding an element: what a part is, what some words
+  // point at, or only what it's about. A part's tags are its own: it never takes those of what
+  // holds it. Null if it's in none of these, or a component speaks for it.
+  function partAt(element) {
     if (element.closest('[data-sb-announces]')) return null;
-    const held = element.closest('[data-ref]:not([data-ref=""]), [data-points-at]');
+    const held = element.closest('[data-ref]:not([data-ref=""]), [data-points-at], [data-tags]:not([data-tags=""])');
     if (!held || held.hasAttribute('data-sb-lights')) return null;
-    if (!held.hasAttribute('data-points-at')) return [held.dataset.ref];
-    const named = namesIn(held.dataset.pointsAt);
-    return named.length ? named : null;
+    const refs = held.hasAttribute('data-points-at') ? namesIn(held.dataset.pointsAt)
+      : held.dataset.ref ? [held.dataset.ref] : [];
+    const tags = namesIn(held.dataset.tags);
+    return refs.length || tags.length ? { refs, tags } : null;
+  }
+
+  function announcementOf({ refs, tags }) {
+    const detail = refs.length > 1 ? { ref: refs[0], refs } : { ref: refs[0] ?? null };
+    return tags.length ? { ...detail, tags } : detail;
   }
 
   function arrive(element) {
     if (spoken) return;
-    const refs = refsAt(element);
-    if (refs && identityOf(refs) !== lastAnnounced) announce(refs);
-    else if (!refs && ours) announce(null);
+    const part = partAt(element);
+    if (!part) {
+      if (ours) announce({ ref: null });
+      return;
+    }
+    const detail = announcementOf(part);
+    if (identityOf(detail) !== lastAnnounced) announce(detail);
   }
 
   function leave() {
-    if (ours) announce(null);
+    if (ours) announce({ ref: null });
   }
 
   // A move runs pointerover, pointerenter, the old part's mouseleave, then mouseover. Starting at

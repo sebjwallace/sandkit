@@ -15,6 +15,7 @@
   <script src="../../components/sb-c4/sb-c4.js"></script>
   <script src="../../components/sb-table/sb-table.js"></script>
   <script src="../../components/sb-outliner/sb-outliner.js"></script>
+  <script src="../../components/sb-discovery-card/sb-discovery-card.js"></script>
   <script src="../../shell/sb-highlighting.js"></script>
 </head>
 <body>
@@ -267,6 +268,71 @@
       assertEqual(heard.at(-1), null);
       assertEqual(heard.length, 2);
       $('phrase').removeAttribute('tabindex');
+    });
+
+    // ---- Lighting by tag, across components ----
+
+    const isFaint = (el) => getComputedStyle(el).outlineWidth === '1px' && getComputedStyle(el).outlineStyle === 'solid';
+    const isStrong = (el) => getComputedStyle(el).outlineWidth === '2px' && isTinted(el);
+
+    function taggedViews() {
+      const views = document.createElement('div');
+      views.innerHTML = '<sb-table id="tagged-table"></sb-table><sb-discovery-card id="tagged-card" variant="expanded"></sb-discovery-card><p id="tagged-words" data-tags="otters">words</p>';
+      document.body.append(views);
+      $('tagged-table').columns = [{ key: 'id' }, { key: 'text' }];
+      $('tagged-table').tagsOf = (entry) => entry.tags;
+      $('tagged-table').rows = [{ id: 'R-1', text: 'a', tags: ['otters'] }, { id: 'R-2', text: 'b', tags: ['rivers'] }, { id: 'CLM-1', text: 'c', tags: ['weirs'] }];
+      $('tagged-card').card = { id: 'CLM-1', kind: 'claim', tags: ['weirs', 'otters'], working: ['workshop-3'],
+        folds: [{ label: 'Sources', items: [{ passage: { excerpt: 'SRC-1.1', source: 'SRC-1', quote: 'x', tags: ['rivers'] } }] }] };
+      return views;
+    }
+    const tableRow = (ref) => document.querySelector(`#tagged-table [data-ref="${ref}"]`);
+    const paper = () => document.querySelector('#tagged-card .sb-discovery-card__paper');
+    const pointAt = (el) => {
+      el.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    };
+
+    scenario('pointing at a table row lights a card, a passage and words sharing its tags, with no wiring', () => {
+      const views = taggedViews();
+      pointAt(tableRow('R-1').cells[0]);
+      assert(isStrong(tableRow('R-1')), 'the row itself');
+      assert(isFaint($('tagged-card')), 'the card shares otters');
+      assert(isFaint($('tagged-words')), 'the words share otters');
+      assert(!isFaint(tableRow('R-2')) && !isFaint(paper()), 'rivers share nothing');
+      pointAt(tableRow('R-2').cells[0]);
+      assert(isFaint(paper()), 'the passage shares rivers, though its card doesn\'t');
+      assert(!isFaint($('tagged-card')));
+      views.remove();
+    });
+
+    scenario('pointing at a card, which announces for itself, lights what shares its tags', () => {
+      const views = taggedViews();
+      pointAt($('tagged-card').querySelector('.sb-discovery-card__head'));
+      assert(isStrong(tableRow('CLM-1')), 'its ref is strong, though the row shares a tag too');
+      assert(isFaint(tableRow('R-1')), 'shares otters');
+      assert(!isFaint(tableRow('R-2')));
+      $('tagged-card').dispatchEvent(new PointerEvent('pointerleave'));
+      assert(!isFaint(tableRow('R-1')), 'leaving ends it');
+      views.remove();
+    });
+
+    scenario('working tags are never lit', () => {
+      const views = taggedViews();
+      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: 'X', tags: ['workshop-3'] } }));
+      assert(!isFaint($('tagged-card')));
+      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: null } }));
+      views.remove();
+    });
+
+    scenario('faint lighting survives a table and a card drawing themselves again', () => {
+      const views = taggedViews();
+      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: 'X', tags: ['otters'] } }));
+      $('tagged-table').rows = [...$('tagged-table').rows];
+      $('tagged-card').card = { ...$('tagged-card').card };
+      assert(isFaint(tableRow('R-1')) && isFaint($('tagged-card')));
+      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: null } }));
+      views.remove();
     });
   </script>
 </body>

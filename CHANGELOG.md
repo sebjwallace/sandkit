@@ -4,6 +4,10 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries start `**Breaking:**` and say how to migrate.
 
+## 0.2.88 · 2026-11-06
+- Lighting by tag. Parts can carry `data-tags`, and pointing at one also lights, faintly, whatever on the page shares a tag, with no wiring (shell 0.1.10). `sb-table` 0.1.5 and `sb-discovery-card` 0.1.7 pass tags through, as the first pair; `CONTRIBUTING.md` gives the convention for the rest. The highlighting and tagging practices describe it. A page with no tags sees no difference.
+- Lit whole discovery cards and paper can now be seen.
+
 ## 0.2.87 · 2026-11-06
 - Page-wide highlighting with no wiring. The new script `shell/sb-highlighting.js` (shell 0.1.9), in the page templates, makes anything with a `data-ref` announce `sb-highlight` while pointed at or focused, and light up when its ref is announced, through redraws; `data-points-at` points at several things on purpose; pins from an `sb-outliner` stay lit everywhere. `tools/setup.mjs` copies it. To use it in an existing sandbox, add `<script src="lib/sandkit/shell/sb-highlighting.js"></script>` to a page after the other shell scripts. The highlighting practice, the building guide and the sandbox's `AGENTS.md` now start from it, and existing wiring keeps working beside it. The template's `style.css` no longer carries `is-lit`. See `demos/highlighting-preview`.
 - `sb-id` 0.1.4, `sb-person` 0.1.2, `sb-poll` 0.1.2, `sb-accordion` 0.1.2: light when named in a list on `sb-highlight`, even without the script, so these may now light on a page that already sends lists. `sb-id` also announces on pointer events, so moving straight from a pill no longer turns off what comes next, and a tap shows its card without announcing.

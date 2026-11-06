@@ -1,5 +1,8 @@
 # sb-table changelog
 
+## 0.1.5 · 2026-11-06
+- New `tagsOf`, `(row) => [tag, …]`, and `tags` on a column: rows and headings carry `data-tags`, so the page-wide `sb-highlighting` script can light what shares a tag. A `tags` field does nothing by itself, so existing tables show the same columns.
+
 ## 0.1.4 · 2026-10-25
 - Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
 
