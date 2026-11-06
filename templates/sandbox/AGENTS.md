@@ -10,7 +10,8 @@ This folder is a domain sandbox: a small, self-contained application that houses
 4. **`lib/sandkit/practices/building-a-sandbox.md`,** the method this sandbox follows.
 5. **Any other practice the sandbox follows,** such as `lib/sandkit/practices/domain-discovery.md` when it discovers a domain, on a page of its own (`discovery.html` by default) linked from the header.
 6. **`lib/sandkit/practices/workshops.md`,** when asked to workshop the sandbox: to review, correct or hand over its model with the people who know the subject.
-7. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers in detail; the index under Sandkit components below covers most needs. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
+7. **`lib/sandkit/practices/tagging.md`,** before tagging anything. Semantic tagging is opt-in: it costs tokens, so ask the person first, and suggest starting or stopping if the sandbox's needs change.
+8. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers in detail; the index under Sandkit components below covers most needs. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
 
 ## Where it stands
 
@@ -20,6 +21,7 @@ Where this sandbox is now, and how it is meant to grow. Rewrite it at the end of
 - **Chapters built:** {{one line each}}
 - **Chapters planned:** {{one line each, in order}}
 - **Practices followed:** {{beyond building a sandbox, each with where it lives, such as domain discovery on `discovery.html`; none yet}}
+- **Tagging:** {{yes or no, and why; not asked yet}}
 - **Chosen direction:** {{what the person asked for next, and why}}
 - **Open questions:** {{codes, one line each}}
 

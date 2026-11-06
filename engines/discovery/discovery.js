@@ -1,4 +1,4 @@
-// Sandkit discovery 0.3.5 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit discovery 0.3.6 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The engine of domain discovery: the method's rules, written once. Given the sandbox's records,
 // it works out what follows from them, the same way every time, so a record holds only what
 // someone wrote and never a conclusion. It draws nothing and knows no component.
@@ -15,7 +15,7 @@
 //   discovery.reviewReasons('DEC-1', { asOf: 2 });            // → [{ ref: 'CLM-3', now: 'contested', why: 'rests on' }]
 //   discovery.iteration(2);                                   // → { cards: [{ id, as }], links: [{ from, to }] }
 //   discovery.run('RUN-3');                                   // → { tests, met, change, … }
-//   discovery.tags();                                         // → [{ tag, means, declared, on }]
+//   discovery.tags();                                         // → [{ tag, means, declared, on, replacedBy }]
 //   discovery.answers('CTR-2', { asOf: 2 });                  // → { clauses, tests, untested, servesNothing }
 //
 // See manifest.md for the full contract.
@@ -468,8 +468,8 @@
     // ---- Tags ----
 
     // Every tag, with what it means and what carries it: those declared first, in their order, then
-    // any in use that were never declared, which say so. Tags are how sources and records are found,
-    // not what they say, so they work out nothing else.
+    // any in use that were never declared, which say so. A retired tag says what replaced it. Tags
+    // are how sources and records are found, not what they say, so they work out nothing else.
     function tagged() {
       const on = new Map();
       for (const { id, tags: carried = [] } of [...sources, ...[...recordOf.values()].map(({ record }) => record)]) {
@@ -477,7 +477,7 @@
       }
       const isDeclared = (tag) => tags.some((declared) => declared.tag === tag);
       return [
-        ...tags.map(({ tag, means }) => ({ tag, means, declared: true, on: on.get(tag) ?? [] })),
+        ...tags.map(({ tag, means, replacedBy }) => ({ tag, means, declared: true, on: on.get(tag) ?? [], replacedBy })),
         ...[...on.keys()].filter((tag) => !isDeclared(tag)).map((tag) => ({ tag, means: null, declared: false, on: on.get(tag) })),
       ];
     }

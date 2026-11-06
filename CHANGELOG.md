@@ -4,6 +4,11 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries start `**Breaking:**` and say how to migrate.
 
+## 0.2.85 · 2026-11-06
+- A new **Tagging** practice with two kinds of tag: semantic tags, a lasting map of the domain where an item's combination of tags says where it sits, and working tags, which group things for a situation in a `working` field and are then cleared. Semantic tagging is opt-in, discovery included. It costs tokens, so the agent asks, with the benefits, the costs and its recommendation, records the answer in the sandbox's `AGENTS.md`, and suggests starting or stopping as needs change. The practice also covers tags as pointers to content that nothing is reasoned from, the map not being the model, what and when to tag, choosing them by balancing aggregating and differentiating, keeping the set small, declaring them, retiring one, and what they're for. It says tags that relate to each other could come, and asks an agent that meets the need to tell the person rather than invent a structure. Recorded in `DECISIONS.md`.
+- The domain discovery practice keeps what's particular to discovery and adds a tag tidy-up at the end of each iteration, if the sandbox tags. The sources practice tags as it catalogues, likewise. Building a sandbox asks about tagging at the start, and the sandbox template's `AGENTS.md` mentions it.
+- `discovery` 0.3.6: a retired tag names what replaced it, `replacedBy`, and `tags()` passes it on. Working tags are ignored.
+
 ## 0.2.84 · 2026-11-05
 - `sb-discovery-card` 0.1.5: two new kinds, `capability` and `contract`, the contract on a material of its own, recorded in `STYLE.md` and `DECISIONS.md`, with a `document` variant to read cold or save as a PDF through the browser's print dialog.
 - `discovery` 0.3.5: takes capabilities and contracts. A contract is `proposed` until every party has signed, then `in force`, and `review` once something it names is replaced. `contractAt(k)` gives the one binding, and `answers(id)` what answers to it, from each test's `serves`.

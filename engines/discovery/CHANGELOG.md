@@ -1,5 +1,9 @@
 # discovery changelog
 
+## 0.3.6 · 2026-11-06
+- A declared tag can name what replaced it, `replacedBy: [...]`, and `tags()` passes it on, so a retired tag explains itself.
+- Working tags, in a record's `working` field, are ignored, and a test holds it so.
+
 ## 0.3.5 · 2026-11-05
 - Takes `capabilities` and `contracts`. A contract names its `definitions`, `goals`, `optimizations`, `constraints`, `capabilities` and `principles`, and its `parties`, each `signed: { when, iteration }` once they've signed the whole of it. It's `proposed` until every party has signed, then `in force`, and `review` once something it names has been replaced since; it replaces the contract it `supersedes` only once signed, so the old one binds until then. `reviewReasons` covers contracts.
 - `contractAt(k)` gives the contract binding by an iteration. `answers(id)` gives what answers to one, from each scenario's and rule's `serves`: each clause and what serves it, the clauses nothing serves, and the tests serving nothing in it. `serves` makes no link, since it isn't what a test rests on.

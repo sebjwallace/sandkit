@@ -1,6 +1,6 @@
 // Tags: every tag the cards carry, declared once with what it means, so one word means one thing.
-// Tags say how a card is found, not what it says, so they can be added to earlier cards later.
-// Read by the page and the discovery engine. See the domain discovery practice.
+// Tags say how a card is found, not what it says, so they can change later.
+// Read by the page and the discovery engine. See the tagging practice.
 const TAGS = [
   { tag: 'departed-trains', means: 'When a train leaves the board once it has gone.' },
   { tag: 'delays', means: 'How a late train is shown: an expected time, On time, or Delayed, and what counts as a major delay.' },

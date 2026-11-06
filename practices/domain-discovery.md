@@ -18,7 +18,7 @@ The kinds of card, the records and the rules that work things out from them are 
 
 Everything discovery records is a card with a code, whose prefix names its kind (see [identifiers](identifiers.md)).
 
-- **Cards are never edited.** A later card supersedes or tests an earlier one. Whatever follows from the cards (a claim's standing, a decision under review, a test met) is worked out by the sandbox for each iteration, never written by hand, so the iterations stay an audit trail.
+- **Cards are never edited,** except for their tags (see Tags). A later card supersedes or tests an earlier one. Whatever follows from the cards (a claim's standing, a decision under review, a test met) is worked out by the sandbox for each iteration, never written by hand, so the iterations stay an audit trail.
 - **Source material versus cards: outside and inside.** Source material comes from outside the sandbox, brought in by people or the agent: documents, articles, web pages, data, images, even the part of a chat where someone says how things work. Nothing goes in without the person's say-so: propose what you'd bring in, above all from the chat, and add it only once they agree. It's kept and screened as the [sources practice](sources.md) describes. Cards are written inside the sandbox, by the agent or a person, from that material: an observation or a claim resting on a source's passages, never a source itself.
 - **Screen before deriving.** Never write a card from material that hasn't been screened, and never quote into a card what screening cleared out.
 - **Every card records its own making** (in its record; see Records): `created` (when), `by` (`Agent` or the person) and `iteration` (the one it was raised in). Add whatever else is worth keeping as `meta`: the rows an observation was read from, the model a run tried, the version a piece of feedback was made on. Source material carries its own details in the catalogue; cards carry theirs.
@@ -59,18 +59,14 @@ records/   what was written inside, from it: one script per kind
 - **A record holds only what someone wrote:** the claim and the passages for and against it, the options a decision weighed and what it rests on, a scenario's steps and code. Never a standing, a status or anything else that follows: those are worked out (see "Weighing claims" and the statuses in "The kinds").
 - **Every record carries its making:** `created` (`yyyy-mm-ddThh:mm`), `by` (`Agent` or the person) and `iteration`, and anything else worth keeping in `meta`. These names are reserved: a kind's own fields use others (a prediction's deadline is `due`, an investigation's investigator `who`).
 - **One script per kind,** each setting its list, as the [pages practice](pages.md) keeps data, so a page opened from disk reads them; a page includes the kinds it shows.
-- **Records are never edited.** A record that's wrong or out of date is superseded by a new one, which names it (`supersedes: 'SCN-3'`). The engine marks the old one superseded from then on and links the two, so a scenario can be followed through every version of itself. An excerpt that's wrong, such as one quoting the wrong source, is corrected the same way: a new excerpt superseding it. Leave the records citing it as they are; the engine weighs them on the correction from then on.
+- **Records are never edited,** except for their tags (see Tags). A record that's wrong or out of date is superseded by a new one, which names it (`supersedes: 'SCN-3'`). The engine marks the old one superseded from then on and links the two, so a scenario can be followed through every version of itself. An excerpt that's wrong, such as one quoting the wrong source, is corrected the same way: a new excerpt superseding it. Leave the records citing it as they are; the engine weighs them on the correction from then on.
 
 ## Tags
 
-Sources, excerpts and records carry tags, so people can find them: search, filter, sort and group the cards, such as in [`sb-search`](../components/sb-search/manifest.md). A tag can be about anything that cuts across the kinds: a feature, a topic, a place, a party.
+Sources, excerpts and records can carry tags, so people can find them. Tagging is opt-in here as everywhere, so ask as you set up. Discovery often gains from it, since it soon holds many cards across many kinds, but the person decides. The [tagging practice](tagging.md) says how to ask, how to choose, declare and change tags, and when to tag. If the sandbox tags:
 
-- **Declare every tag once, with what it means,** in `records/tags.js`: `const TAGS = [{ tag: 'platform-changes', means: 'How the board shows a train moved to another platform.' }]`. A tag without a meaning drifts, and two words end up meaning one thing.
-- **Reuse before you add.** Check `discovery.tags()` first: it lists every tag, what it means and what carries it, and names any in use but never declared. Declare a new tag before using it.
-- **Tag what the fields don't say.** Kind, iteration, status, author and what a record rests on are already there to filter on; a tag repeating them is noise.
-- **Lowercase words joined by hyphens,** plural for a thing (`platforms`), as it reads for a topic (`platform-changes`).
-- **A tag earns its place by grouping.** One on a single card finds nothing that card's code wouldn't; one on nearly every card separates nothing. Merge, split or drop it.
-- **Tags can be added to later,** unlike the rest of a record. They say how a record is found, not what it says, and nothing is worked out from them, so tagging earlier cards when a new tag arrives keeps the audit trail whole. Change a tag's meaning only by declaring a new tag.
+- **Declare them in `records/tags.js`,** as `const TAGS = [{ tag, means }]`, and check `discovery.tags()` before adding one: it lists every tag, what it means and what carries it, and names any in use but never declared.
+- **Tags are the one part of a record that can change later.** Nothing is worked out from them: no status or weighing ever rests on a tag, so changing them keeps the audit trail whole. The same goes for working tags, which the engine ignores.
 
 ## The kinds
 
@@ -191,6 +187,7 @@ To show its pages on screen, put the document in a box the size of a page with i
 - **A card that changes appears again** in the iteration that brought new material for it, as its updated self: "updated: new material arrived".
 - **Cards an iteration's cards rest on are carried in** as they last stood: "carried from iteration 1".
 - **Every card is shown as of the iteration on screen.** A claim is weighed only on the sources that had arrived by then.
+- **If the sandbox tags, tidy them at the end of each iteration,** as the [tagging practice](tagging.md) describes.
 - **End each iteration with a handover** offering a few directions, as [building a sandbox](building-a-sandbox.md) describes.
 
 ## Weighing claims

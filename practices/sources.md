@@ -106,7 +106,7 @@ sources/
 | Field | Meaning |
 |---|---|
 | `id` | A code with the prefix `SRC`, never reused (see [identifiers](identifiers.md)). |
-| `title`, `path`, `summary`, `tags` | What it is and where it lives. `path` is from the sandbox's folder. In a discovery sandbox, use the declared tags (see [domain discovery](domain-discovery.md)). |
+| `title`, `path`, `summary`, `tags` | What it is and where it lives. `path` is from the sandbox's folder. If the sandbox tags, use the declared tags (see [tagging](tagging.md)). |
 | `format` | What kind of material, which says how to read it: `document`, `transcript`, `notes`, `data`, `image`, `pdf`, `code`, `web`, `annotations`, `digest` and so on. |
 | `author` | Who wrote or said it: a person, an organisation, or an agent outside the sandbox. |
 | `authored`, `captured` | When it was written, and when it was added. They often differ. |
@@ -132,7 +132,7 @@ When asked to process the inbox, or at the start of a session when `sources/inbo
 
 1. **Read each file.** For a large one, map its structure and read what matters, rather than all of it.
 2. **Screen it** (see "Screening"): raise anything sensitive with the person, and go on with that file only once they've decided.
-3. **Catalogue it:** give it the next `SRC-` code and write its entry, with `status: "catalogued"`. Fill in only what you know; leave the rest out rather than guess.
+3. **Catalogue it:** give it the next `SRC-` code and write its entry, with `status: "catalogued"`. Fill in only what you know; leave the rest out rather than guess. If the sandbox uses tags, tag it as the [tagging practice](tagging.md) says.
 4. **Move it** into the folder that suits it, and set `path`.
 5. **Record the batch** in a journal entry: "Catalogued SRC-14 to SRC-17" (see the [journal practice](journal.md)).
 
