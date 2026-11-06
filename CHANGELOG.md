@@ -4,6 +4,11 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries start `**Breaking:**` and say how to migrate.
 
+## 0.2.89 · 2026-11-06
+- Sixty components: added `sb-tags-mode`, Tags in the shell's mode picker. Point at a tagged part to see its tags and what they mean, see the page's tags with counts, and click a tag to keep it lit across the page, by all or any, after the mode ends too, until it's cleared. The arrow keys visit what's lit.
+- Keeping topics lit: `sb-tag-focus` tells the highlighting script what's chosen (shell 0.1.11). The highlighting, tagging, modes and locating practices say how, and the sandbox template adds the mode on a tagging yes.
+- The discovery demo carries its tags on its cards and passages, includes the highlighting script and offers Tags mode.
+
 ## 0.2.88 · 2026-11-06
 - Lighting by tag. Parts can carry `data-tags`, and pointing at one also lights, faintly, whatever on the page shares a tag, with no wiring (shell 0.1.10). `sb-table` 0.1.5 and `sb-discovery-card` 0.1.7 pass tags through, as the first pair; `CONTRIBUTING.md` gives the convention for the rest. The highlighting and tagging practices describe it. A page with no tags sees no difference.
 - Lit whole discovery cards and paper can now be seen.

@@ -17,13 +17,14 @@ Modes go in the shell's `modes` slot. The shell offers them in a mode picker in 
 </sb-shell>
 ```
 
-Then wire what a pick does, as each mode's manifest says. Every sandbox has comment mode; trace mode comes once the model cites its sources (see the [sources practice](sources.md)); inspect mode once the sandbox has labels people could misread.
+Then wire what a pick does, as each mode's manifest says. Every sandbox has comment mode; trace mode comes once the model cites its sources (see the [sources practice](sources.md)); inspect mode once the sandbox has labels people could misread; tags mode once it has opted in to [tagging](tagging.md).
 
 | Mode | In the picker | A pick |
 |---|---|---|
 | [`sb-comments`](../components/sb-comments/manifest.md) | Comment | opens a box to comment on the part |
 | [`sb-trace-mode`](../components/sb-trace-mode/manifest.md) | Trace | asks the sandbox to show why the part is there |
 | [`sb-inspect-mode`](../components/sb-inspect-mode/manifest.md) | Inspect | holds the card saying what the part is, shown already by pointing |
+| [`sb-tags-mode`](../components/sb-tags-mode/manifest.md) | Tags | holds the card showing the part's tags; a click on a tag keeps it lit |
 
 To act when a mode starts, such as closing a tour, listen on `document`:
 
@@ -33,14 +34,14 @@ document.addEventListener('sb-mode', (e) => { if (e.detail.active) tour.close();
 
 ## What every mode has
 
-- **A way in:** the shell's mode picker, or the mode's key, the first letter of its name. A mode has no button of its own.
+- **A way in:** the shell's mode picker, or the mode's key, the first letter of its name unless it asks for another, as Tags does, since T is Trace's. A mode has no button of its own.
 - **A sign it's on:** the picker turns amber, and the mode draws an amber frame round the page and a banner at the bottom saying what clicking does. Amber for every mode: it says "not exploring", never blending with the sandbox.
 - **Picking instead of acting:** pointing shows what can be picked; a click picks it and never reaches the page.
 - **What it lets through:** its own parts, and anything marked `data-modes`, such as the mode picker, so another mode is always a choice away.
-- **A way out:** the banner's buttons, or choosing another mode or Explore. Leaving never loses work: comment mode opens its comments to send.
+- **A way out:** the banner's buttons, or choosing another mode or Explore. Leaving never loses work: comment mode opens its comments to send, and tags mode keeps its chosen tags lit.
 - **One at a time:** the shell turns the others off.
 
-What a pick does is each mode's own business. A mode never searches the page: it looks only at `data-ref`, or reports where the viewer clicked for the sandbox to answer with the refs there (`refsAt` in the [locating practice](locating.md)).
+What a pick does is each mode's own business. A mode never searches the page: it looks only at `data-ref`, or reports where the viewer clicked for the sandbox to answer with the refs there (`refsAt` in the [locating practice](locating.md)). Tags mode also reads `data-tags` across the page to count and step through what's tagged: one attribute parts publish for the whole page, never their content.
 
 ## The protocol
 

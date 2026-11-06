@@ -1,4 +1,4 @@
-// Sandkit sb-shell 0.1.10 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-shell 0.1.11 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The sandbox shell: the header and the settings dialog around a sandbox.
 //
 //   <sb-shell heading="My sandbox" controls="fullscreen settings collapse">
@@ -115,12 +115,12 @@
   // Where a key press is someone typing, not a shortcut.
   const typing = (el) => el.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"])');
 
-  // Each mode's key: its own `key` attribute, or the first letter of its name. The first mode to
-  // claim a letter keeps it; a later one has no key.
+  // Each mode's key: its own `key` attribute or property, or the first letter of its name. The first
+  // mode to claim a letter keeps it; a later one has no key.
   function modeKeys(modes, nameOf) {
     const keys = new Map();
     for (const mode of modes) {
-      const key = (mode.getAttribute('key') || nameOf(mode)[0] || '').toLowerCase();
+      const key = (mode.getAttribute('key') || mode.key || nameOf(mode)[0] || '').toLowerCase();
       if (key && !keys.has(key)) keys.set(key, mode);
     }
     return keys;

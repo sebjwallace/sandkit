@@ -559,6 +559,93 @@
       assert(isStrong(at('t1')));
       assert(!hasOutline(at('t2')));
     });
+
+    // ---- Chosen tags ----
+
+    const focusOn = (tags, match) => document.dispatchEvent(new CustomEvent('sb-tag-focus', { detail: { tags, match } }));
+    const isChosen = (el) => getComputedStyle(el).outlineStyle === 'dashed' && outlineWidth(el) === '2px' && !isTinted(el);
+    const chosenParts = () => mount(`<div>
+      <p id="both" data-ref="BOTH" data-tags="platforms passengers">both</p>
+      <p id="one" data-ref="ONE" data-tags="platforms">one</p>
+      <p id="other" data-tags="delays">other</p>
+      <svg><g data-tags="platforms"><rect id="shape" class="shape" width="9" height="9"></rect></g></svg>
+    </div>`);
+    const chosenScenario = (name, fn) => scenario(name, async () => {
+      cleanups.push(() => focusOn([]));
+      await fn();
+    });
+
+    chosenScenario('chosen tags light with all of them by default', () => {
+      chosenParts();
+      focusOn(['platforms', 'passengers']);
+      assert(isChosen(at('both')));
+      assert(!isChosen(at('one')));
+    });
+
+    chosenScenario('any lights whatever carries one of them', () => {
+      chosenParts();
+      focusOn(['passengers', 'delays'], 'any');
+      assert(isChosen(at('both')));
+      assert(isChosen(at('other')));
+      assert(!isChosen(at('one')));
+    });
+
+    chosenScenario('chosen tags light SVG with a stroke of their own, never a fill', () => {
+      chosenParts();
+      const before = getComputedStyle(at('shape')).fill;
+      focusOn(['platforms']);
+      assert(stroke(at('shape')) !== UNLIT_STROKE);
+      assert(stroke(at('shape')) !== ACCENT);
+      assertEqual(getComputedStyle(at('shape')).fill, before);
+    });
+
+    chosenScenario('chosen tags stay lit through a redraw, and until cleared', () => {
+      chosenParts();
+      focusOn(['delays']);
+      at('other').outerHTML = '<p id="other" data-tags="delays">redrawn</p>';
+      assert(isChosen(at('other')));
+      announce({ ref: 'ONE' });
+      announce({ ref: null });
+      assert(isChosen(at('other')), 'pointing comes and goes over them');
+      focusOn([]);
+      assert(!isChosen(at('other')));
+    });
+
+    chosenScenario('pointing outranks chosen, chosen outranks faint, a pin outranks chosen', () => {
+      chosenParts();
+      focusOn(['platforms', 'passengers']);
+      announce({ ref: 'BOTH' });
+      assert(isStrong(at('both')), 'lit');
+      announce({ ref: 'X', tags: ['platforms'] });
+      assert(isChosen(at('both')), 'not faint');
+      assert(isFaint(at('one')), 'faint where not chosen');
+      announce({ ref: null });
+      sendPins(outliners[0], { outline: ['BOTH'] });
+      assertEqual(getComputedStyle(at('both')).outlineStyle, 'solid', 'pinned');
+    });
+
+    chosenScenario('however many tags are chosen, pointing still wins', () => {
+      mount('<p id="many" data-ref="MANY" data-tags="a b c d e f">x</p>');
+      focusOn(['a', 'b', 'c', 'd', 'e', 'f']);
+      assert(isChosen(at('many')));
+      announce({ ref: 'MANY' });
+      assert(isStrong(at('many')));
+    });
+
+    chosenScenario('strange tags are safe, and what isn\'t a list lights nothing', () => {
+      mount(`<p id="odd" data-tags='say"what\\.x'>b</p>`);
+      focusOn(['say"what\\.x']);
+      assert(isChosen(at('odd')));
+      focusOn('say"what\\.x');
+      assert(!isChosen(at('odd')));
+    });
+
+    scenario('with no sb-tag-focus sent, chosen lighting adds nothing to the page', () => {
+      chosenParts();
+      announce({ ref: 'ONE', tags: ['delays'] });
+      assert(!document.querySelector('style[data-sb-highlighting]').textContent.includes('dashed solid'));
+      assert(!document.querySelector('style[data-sb-highlighting]').textContent.includes('2px dashed'));
+    });
   </script>
 </body>
 </html>

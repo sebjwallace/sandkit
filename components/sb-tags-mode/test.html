@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sb-tags-mode tests</title>
+  <script src="../../test/harness.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="sb-tags-mode.js"></script>
+</head>
+<body>
+  <script>
+    const DECLARED = [
+      { tag: 'platforms', means: 'Which platform a train leaves from.' },
+      { tag: 'passengers', means: 'What passengers read.' },
+      { tag: 'unused', means: 'Declared, on nothing here.' },
+      { tag: 'platform-moves', means: 'Trains moved.', replacedBy: ['platforms', 'passengers'] },
+      { tag: 'misc', means: 'Anything else.', replacedBy: [] }
+    ];
+
+    let presses = 0; // clicks that reached the page's own buttons
+
+    function setup({ attrs = '', declarations = DECLARED } = {}) {
+      sessionStorage.clear();
+      const area = mount(`<div>
+        <sb-tags-mode ${attrs}></sb-tags-mode>
+        <section data-ref="CARD-1" data-tags="platforms passengers">
+          <button class="inner" data-ref="ROW-1" data-tags="passengers">Row</button>
+          <button class="untagged" data-ref="ROW-2">Untagged row</button>
+        </section>
+        <p class="words" data-tags="platforms">Words with no ref</p>
+        <p class="old" data-ref="OLD-1" data-tags="platform-moves misc stray" data-working="workshop-3">Old</p>
+        <p class="hidden-part" hidden data-tags="platforms">Hidden</p>
+        <p class="nothing">Nothing</p>
+      </div>`);
+      area.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => presses++));
+      const el = area.querySelector('sb-tags-mode');
+      el.declarations = declarations;
+      return { el, area, part: (name) => area.querySelector(`.${name}`), card: area.querySelector('section[data-ref]') };
+    }
+
+    const on = (options) => { const made = setup(options); made.el.active = true; return made; };
+    const q = (el, name) => el.querySelector(`.sb-tags-mode__${name}`);
+    const point = (node) => node.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+    const click = (node) => node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    const press = (key) => document.body.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    const chip = (el, tag, area = q(el, 'page')) => area.querySelector(`[data-tag="${tag}"]`);
+    const pageTags = (el) => [...q(el, 'page').querySelectorAll('[data-tag]')].map((c) => c.dataset.tag);
+    const partText = (el) => q(el, 'part').textContent;
+    const shows = (el, words) => waitFor(() => partText(el).includes(words), { message: `never showed ${words}` });
+
+    // Every sb-tag-focus until it's stopped listening.
+    function listen() {
+      const heard = [];
+      const hear = (e) => heard.push(e.detail);
+      document.addEventListener('sb-tag-focus', hear);
+      heard.stop = () => document.removeEventListener('sb-tag-focus', hear);
+      return heard;
+    }
+
+    // ---- The mode ----
+
+    test('is a mode named Tags, or by its heading, with its own key', () => {
+      assertEqual(setup().el.heading, 'Tags');
+      assertEqual(setup().el.key, 'g');
+      assertEqual(setup({ attrs: 'heading="Topics"' }).el.heading, 'Topics');
+    });
+
+    test('in the shell, listed first, it leaves T to Trace', async () => {
+      sessionStorage.clear();
+      const shell = mount(`<sb-shell heading="Test">
+        <sb-tags-mode slot="modes"></sb-tags-mode>
+        <div slot="modes" heading="Trace"></div>
+      </sb-shell>`);
+      await waitFor(() => shell.querySelectorAll('option').length === 3);
+      assertEqual([...shell.querySelectorAll('option')].map((o) => o.textContent), ['Explore', 'Tags · G', 'Trace · T']);
+    });
+
+    test('active shows the frame, the card and a banner saying what clicking does, and fires nothing', () => {
+      const { el } = setup();
+      const modes = recordEvents(document, 'sb-mode');
+      el.active = true;
+      for (const name of ['frame', 'card', 'banner']) assert(q(el, name).matches(':popover-open'), name);
+      assert(q(el, 'banner').textContent.includes('click'));
+      assertEqual(modes.length, 0);
+    });
+
+    test('Stop and Escape end it with sb-mode, and only then', () => {
+      for (const end of [(el) => click(q(el, 'button')), () => press('Escape')]) {
+        const { el } = on();
+        const modes = recordEvents(el, 'sb-mode');
+        end(el);
+        assertEqual(el.active, false);
+        assertEqual(modes[0].detail, { mode: 'Tags', active: false });
+        assert(!q(el, 'card').matches(':popover-open'));
+      }
+    });
+
+    // ---- Pointing and holding ----
+
+    test('pointing shows a part\'s tags with what each means', async () => {
+      const { el, card } = on();
+      point(card);
+      await shows(el, 'CARD-1');
+      assert(partText(el).includes('Which platform a train leaves from.'));
+      assert(partText(el).includes('What passengers read.'));
+      assert(q(el, 'outline').matches(':popover-open'));
+    });
+
+    test('the innermost tagged part counts; one with no tags shows what holds it', async () => {
+      const { el, part } = on();
+      point(part('inner'));
+      await shows(el, 'ROW-1');
+      assert(!partText(el).includes('Which platform'), 'a part takes nothing from what holds it');
+      point(part('untagged'));
+      await shows(el, 'CARD-1');
+    });
+
+    test('tags with no ref still show', async () => {
+      const { el, part } = on();
+      point(part('words'));
+      await shows(el, 'Which platform');
+    });
+
+    test('pointing elsewhere keeps what\'s shown, so the pointer can reach the card', async () => {
+      const { el, card, part } = on();
+      point(card);
+      await shows(el, 'CARD-1');
+      point(part('nothing'));
+      await new Promise((done) => setTimeout(done, 160));
+      assert(partText(el).includes('CARD-1'));
+    });
+
+    test('a click holds and never reaches the page; again, or anywhere else, lets go', async () => {
+      const { el, part } = on();
+      presses = 0;
+      click(part('inner'));
+      assertEqual(presses, 0);
+      assert(el.classList.contains('sb-tags-mode--held'));
+      assert(q(el, 'banner').textContent.includes('Held'));
+      point(part('words'));
+      await new Promise((done) => setTimeout(done, 160));
+      assert(partText(el).includes('ROW-1'), 'held stays put');
+      click(part('inner'));
+      assert(!el.classList.contains('sb-tags-mode--held'));
+      click(part('words'));
+      click(part('nothing'));
+      assert(!el.classList.contains('sb-tags-mode--held'));
+      assert(!partText(el).includes('This part'));
+    });
+
+    test('off, clicks act as ever', () => {
+      const { part } = setup();
+      presses = 0;
+      click(part('inner'));
+      assertEqual(presses, 1);
+    });
+
+    test('a part redrawn while held loses its outline and keeps the card', async () => {
+      const { el, part } = on();
+      click(part('inner'));
+      part('inner').remove();
+      dispatchEvent(new Event('resize'));
+      assert(!q(el, 'outline').matches(':popover-open'));
+      assert(partText(el).includes('ROW-1'));
+    });
+
+    // ---- Choosing ----
+
+    test('clicking a tag chooses it, on every chip for it, and tells the page', () => {
+      const { el, card } = on();
+      const heard = listen();
+      click(card);
+      click(chip(el, 'platforms'));
+      heard.stop();
+      assertEqual(el.chosen, ['platforms']);
+      assertEqual(heard.at(-1), { tags: ['platforms'], match: 'all' });
+      assertEqual(chip(el, 'platforms').getAttribute('aria-pressed'), 'true');
+      assertEqual(chip(el, 'platforms', q(el, 'part')).getAttribute('aria-pressed'), 'true');
+    });
+
+    test('clicking it again removes it', () => {
+      const { el } = on();
+      click(chip(el, 'platforms'));
+      click(chip(el, 'platforms'));
+      assertEqual(el.chosen, []);
+      assertEqual(chip(el, 'platforms').getAttribute('aria-pressed'), 'false');
+    });
+
+    test('all is the default, and the switch shows from two tags, counting what matches', () => {
+      const { el } = on();
+      click(chip(el, 'platforms'));
+      assert(!q(el, 'switch'), 'no switch for one tag');
+      assert(q(el, 'chosen').textContent.includes('2 parts'), 'CARD-1 and the words; not the hidden one');
+      click(chip(el, 'passengers'));
+      assertEqual(el.match, 'all');
+      assert(q(el, 'chosen').textContent.includes('1 part'), 'only CARD-1 has both');
+      const heard = listen();
+      click(q(el, 'switch').querySelector('[data-match="any"]'));
+      heard.stop();
+      assertEqual(heard.at(-1), { tags: ['platforms', 'passengers'], match: 'any' });
+      assert(q(el, 'chosen').textContent.includes('3 parts'));
+    });
+
+    test('Clear empties the choice and tells the page', () => {
+      const { el } = on();
+      click(chip(el, 'platforms'));
+      const heard = listen();
+      click(q(el, 'chosen').querySelector('[data-clear]'));
+      heard.stop();
+      assertEqual(el.chosen, []);
+      assertEqual(heard.at(-1).tags, []);
+    });
+
+    test('leaving keeps them lit, with a quiet bar to change or clear them', () => {
+      const { el } = on();
+      click(chip(el, 'platforms'));
+      assert(!q(el, 'quiet').matches(':popover-open'), 'not while the mode is on');
+      const heard = listen();
+      press('Escape');
+      assertEqual(heard.length, 0, 'leaving changes nothing lit');
+      heard.stop();
+      assertEqual(el.chosen, ['platforms']);
+      assert(q(el, 'quiet').matches(':popover-open'));
+      click(q(el, 'quiet').querySelector('[data-clear]'));
+      assertEqual(el.chosen, []);
+      assert(!q(el, 'quiet').matches(':popover-open'));
+    });
+
+    test('with no tags chosen there is no quiet bar', () => {
+      const { el } = setup();
+      assert(!q(el, 'quiet').matches(':popover-open'));
+    });
+
+    test('the bar\'s clicks work in Explore, where the mode stops nothing', () => {
+      const { el } = on();
+      click(chip(el, 'platforms'));
+      click(chip(el, 'passengers'));
+      press('Escape');
+      click(chip(el, 'platforms', q(el, 'quiet')));
+      assertEqual(el.chosen, ['passengers']);
+    });
+
+    // ---- The page's tags ----
+
+    test('lists current tags, with how many visible parts carry each, most first', () => {
+      const { el } = on();
+      assertEqual(pageTags(el), ['passengers', 'platforms', 'stray', 'unused']);
+      assertEqual(chip(el, 'platforms').querySelector('.sb-tags-mode__count').textContent, '2', 'not the hidden part');
+      assertEqual(chip(el, 'passengers').querySelector('.sb-tags-mode__count').textContent, '2');
+      assertEqual(chip(el, 'unused').querySelector('.sb-tags-mode__count').textContent, '0');
+    });
+
+    test('retired tags are never offered, and shown on a part with what replaced them', async () => {
+      const { el, part } = on();
+      assert(!pageTags(el).includes('platform-moves'));
+      assert(!pageTags(el).includes('misc'));
+      point(part('old'));
+      await shows(el, 'OLD-1');
+      assert(partText(el).includes('replaced by platforms, passengers'));
+      assert(partText(el).includes('dropped'));
+      assert(!q(el, 'part').querySelector('[data-tag="platform-moves"]'), 'not a choice');
+    });
+
+    test('undeclared tags are marked, and only once there are declarations', async () => {
+      const { el, part } = on();
+      assert(chip(el, 'stray').textContent.includes('undeclared'));
+      point(part('old'));
+      await shows(el, 'OLD-1');
+      assert(partText(el).includes('Undeclared'));
+      const bare = on({ declarations: [] }).el;
+      assert(!chip(bare, 'stray').textContent.includes('undeclared'));
+    });
+
+    test('working tags are ignored', () => {
+      const { el } = on();
+      assert(!pageTags(el).includes('workshop-3'));
+    });
+
+    test('reads the page\'s TAGS when not handed declarations, and ignores anything unusable', () => {
+      const { el } = on({ declarations: null });
+      assertEqual(pageTags(el).length, 5, 'all as found on the page: no TAGS here');
+      el.declarations = ['platforms', null, 7];
+      el.active = false;
+      el.active = true;
+      assert(!chip(el, 'stray').textContent.includes('undeclared'));
+    });
+
+    test('a page with no tags says so', () => {
+      sessionStorage.clear();
+      const el = mount('<sb-tags-mode></sb-tags-mode>');
+      el.declarations = [];
+      for (const stray of document.querySelectorAll('[data-tags]')) stray.remove();
+      el.active = true;
+      assert(q(el, 'page').textContent.includes('Nothing here carries a tag'));
+    });
+
+    // ---- The keyboard ----
+
+    test('arrow keys step through what\'s tagged, holding each', () => {
+      const { el, card, part } = on();
+      press('ArrowDown');
+      assert(partText(el).includes('CARD-1'));
+      press('ArrowDown');
+      assert(partText(el).includes('ROW-1'));
+      press('ArrowUp');
+      assert(partText(el).includes('CARD-1'));
+      assert(el.classList.contains('sb-tags-mode--held'));
+    });
+
+    test('with tags chosen, arrow keys step through only what\'s lit', () => {
+      const { el } = on();
+      click(chip(el, 'platforms'));
+      press('ArrowDown');
+      assert(partText(el).includes('CARD-1'));
+      press('ArrowDown');
+      assert(partText(el).includes('Which platform') && !partText(el).includes('CARD-1'), 'the words, skipping ROW-1');
+      press('ArrowDown');
+      assert(partText(el).includes('CARD-1'), 'round again');
+    });
+
+    test('arrow keys leave a field alone', () => {
+      const { el, area } = on();
+      area.append(Object.assign(document.createElement('input'), { className: 'field' }));
+      area.querySelector('.field').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+      assert(!partText(el).includes('This part'));
+    });
+
+    test('a tagged part taking keyboard focus shows, and Enter on it holds', () => {
+      const { el, part } = on();
+      const inner = part('inner');
+      const realMatches = inner.matches;
+      inner.matches = (selector) => selector === ':focus-visible' || realMatches.call(inner, selector);
+      inner.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      assert(partText(el).includes('ROW-1'));
+      click(inner); // what Enter on a button sends
+      assert(el.classList.contains('sb-tags-mode--held'));
+    });
+
+    test('focus stays on a chip when choosing redraws the card', () => {
+      const { el } = on();
+      chip(el, 'platforms').focus();
+      click(chip(el, 'platforms'));
+      assertEqual(document.activeElement, chip(el, 'platforms'));
+    });
+
+    // ---- Memory ----
+
+    test('remembers the choice for the tab', () => {
+      const { el } = on();
+      click(chip(el, 'platforms'));
+      click(chip(el, 'passengers'));
+      click(q(el, 'switch').querySelector('[data-match="any"]'));
+      const again = document.createElement('sb-tags-mode');
+      const heard = listen();
+      document.body.append(again);
+      heard.stop();
+      assertEqual(again.chosen, ['platforms', 'passengers']);
+      assertEqual(again.match, 'any');
+      assertEqual(heard.at(-1), { tags: ['platforms', 'passengers'], match: 'any' }, 'lit again on load');
+      again.remove();
+      sessionStorage.clear();
+    });
+
+    test('works when storage is missing, throws or holds nonsense', () => {
+      const { getItem, setItem } = Storage.prototype;
+      const boom = () => { throw new Error('no storage'); };
+      try {
+        Storage.prototype.getItem = boom;
+        Storage.prototype.setItem = boom;
+        const made = document.createElement('sb-tags-mode');
+        document.body.append(made);
+        made.active = true;
+        made.chosen = ['platforms'];
+        assertEqual(made.chosen, ['platforms']);
+        made.remove();
+      } finally {
+        Object.assign(Storage.prototype, { getItem, setItem });
+      }
+      sessionStorage.setItem('sb-tags-mode', '{not json');
+      const made = document.createElement('sb-tags-mode');
+      document.body.append(made);
+      assertEqual(made.chosen, []);
+      made.remove();
+      sessionStorage.clear();
+    });
+
+    // ---- The contract ----
+
+    test('text is never rendered as markup', async () => {
+      const nasty = '<img-src-x>';
+      const { el, part } = on({ declarations: [{ tag: 'platforms', means: '<b>bold</b>' }, { tag: 'old', means: 'x', replacedBy: ['<i>new</i>'] }] });
+      part('words').dataset.tags = `platforms ${nasty} old`;
+      el.active = false;
+      el.active = true;
+      point(part('words'));
+      await shows(el, '<b>bold</b>');
+      assert(partText(el).includes(nasty));
+      assert(partText(el).includes('<i>new</i>'));
+      assert(!el.querySelector('b, i, img-src-x'));
+    });
+
+    test('two instances keep to their own cards', async () => {
+      sessionStorage.clear();
+      const area = mount('<div><sb-tags-mode class="a"></sb-tags-mode><sb-tags-mode class="b"></sb-tags-mode><p data-tags="x">x</p></div>');
+      const [a, b] = area.querySelectorAll('sb-tags-mode');
+      a.active = true;
+      assert(q(a, 'card').matches(':popover-open'));
+      assert(!q(b, 'card').matches(':popover-open'));
+      assertEqual(chip(a, 'x').dataset.tag, 'x');
+      click(chip(a, 'x'));
+      assertEqual(a.chosen, ['x']);
+      assertEqual(b.chosen, []);
+      a.active = false;
+      sessionStorage.clear();
+    });
+  </script>
+</body>
+</html>

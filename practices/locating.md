@@ -63,7 +63,7 @@ More components join as sandboxes need them. A component's manifest says what it
 
 ## Finding and going
 
-The sandbox does the finding, so no component ever searches the page. Write these once, in the page script:
+The sandbox does the finding, so no component ever searches the page for a ref. (Tags mode reads `data-tags` across the page, an attribute parts publish for that purpose, never their content: see the [modes practice](modes.md).) Write these once, in the page script:
 
 ```js
 // Announces a ref, and with it, when there is one, a list to light (see the highlighting practice).

@@ -85,6 +85,7 @@ The same catalog from the subject's side: find the need, then read the manifest 
 - Everything on the page that can be pointed at, as an outline → `sb-outliner`
 - What something is, when people point at it → `sb-inspect-mode`
 - Why something is there, traced back on a click → `sb-trace-mode`
+- What parts are about, and topics kept lit across the page → `sb-tags-mode`
 - A screen or clickable flow of an interface → `sb-wireframe`
 
 ### Laying out the page
@@ -163,6 +164,7 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 | [`sb-comments`](components/sb-comments/manifest.md) | Comments from the people exploring a sandbox: choose Comment, click any part and say what you think; each comment cites its refs, view, version and state, and all are copied as one prompt or downloaded. |
 | [`sb-inspect-mode`](components/sb-inspect-mode/manifest.md) | What something is: choose Inspect, point at any part and a card at the side says what it is and how it stands now, in whatever way the sandbox explains it best; a click holds it. |
 | [`sb-trace-mode`](components/sb-trace-mode/manifest.md) | Why something is there: choose Trace, and pointing outlines every part the model can trace; a click asks the sandbox to show its trace instead of acting. |
+| [`sb-tags-mode`](components/sb-tags-mode/manifest.md) | What parts are about: choose Tags, point at any tagged part to see its tags and what they mean, and click a tag to keep everything carrying it lit, by all or any, until it's cleared, with no wiring. For sandboxes that have opted in to tagging. |
 
 ## Discovery
 

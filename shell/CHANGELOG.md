@@ -2,6 +2,10 @@
 
 Covers `sb-shell`, `sb-theme-settings`, `sb-export` and `sb-highlighting`, which are versioned together.
 
+## 0.1.11 · 2026-11-06
+- `sb-highlighting` keeps chosen tags lit: `sb-tag-focus` with `{ tags, match }` lights whatever carries them, by all or any, through redraws, stronger than faint and weaker than pinned or lit. Nothing changes until it's sent.
+- `sb-shell` takes a mode's key from a `key` property too, so a mode can ask for its own key whichever way the page was built.
+
 ## 0.1.10 · 2026-11-06
 - `sb-highlighting` lights by tag: a part with `data-tags` announces `tags` beside its ref, and whatever shares a tag lights faintly, with a thin line, while its ref still lights strongly. Tags with no ref announce `{ ref: null, tags }`. With no tags, nothing changes.
 - `sb-highlighting`: a lit part also wears an outline, so a part with solid contents, such as a whole discovery card, shows it. It sits exactly on the ring, so other parts look the same.
