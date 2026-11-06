@@ -177,6 +177,7 @@ A sandbox aims to be built with as little testing as possible. Testing is overhe
 
 - **If the model has tests** (step 4), run them after changing it.
 - **If the sandbox has sources,** check them after cataloguing or citing, where Node is available: `node lib/sandkit/tools/sources.mjs check .` (see the [sources practice](sources.md)).
+- **If the sandbox tags,** check the map after a batch of tagging, where Node is available: `node lib/sandkit/tools/tags.mjs report .` (see the [tagging practice](tagging.md)).
 - **Don't write automated tests for the interface.** Driving the page in a browser is expensive, and depends on tools the agent may not have. Add such tests only if the person asks, or if something truly can't be trusted without them, and say why.
 - **Check the interface by hand only when it's really needed,** for example after a risky change. Many iterations need no checking at all.
 - **Make no assumptions about the environment.** You may have no browser, no automation and no Node, or different ones from what Sandkit uses. If you can't check something, say so in the handover, and ask the person to try it.

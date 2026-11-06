@@ -100,6 +100,19 @@ Because tags say nothing about the domain and nothing rests on them, they can ch
 - **Show only the current tags** where people choose one, such as in a filter.
 - **Tags say how things are found today.** They aren't history, so looking back at an earlier iteration shows the current tags.
 
+## Checking the map
+
+Tagging one thing at a time, you can't see the whole map. A script can, without reading the material:
+
+```sh
+node lib/sandkit/tools/tags.mjs report .
+```
+
+Run it after a batch of tagging and at each tidy-up, where Node is available. It says how many items tags reach and how well they narrow, then lists only what's worth a look: untagged items, tags that may be too broad or too narrow, places where many items share exactly the same tags, tags that overlap, and a few items to spot-check.
+
+- **Treat it as an indication, never a score.** There's no pass mark, since a skewed map can be right: a sandbox about platform changes will have many cards on them. Read the content before changing anything, and never change tags just to improve the numbers.
+- **It can't tell whether a tag fits.** A wrongly tagged card looks healthy in the numbers. That's what the spot-checks are for, so read those, not everything.
+
 ## What tags are for
 
 - **Searching and filtering,** such as in [`sb-search`](../components/sb-search/manifest.md) and [`sb-sources`](../components/sb-sources/manifest.md), which treat tags like any other field.
@@ -113,6 +126,6 @@ Because tags say nothing about the domain and nothing rests on them, they can ch
 
 Tags are plain words for now, on purpose, and they say nothing about each other. A later version of Sandkit could let them relate, more like a knowledge graph: `signals` *contains* `platform-changes`, or a `diesel-unit` *is a* `train`. No sandbox has needed that yet.
 
-Stay with plain tags, and don't invent a structure in a sandbox. If plain tags keep getting in the way, for instance a person keeps wanting everything under a broader topic and listing the narrower tags won't do, say so to the person, and suggest they raise it with Sandkit's author, with the example that showed the need.
+Stay with plain tags, and don't invent a structure in a sandbox. If plain tags keep getting in the way, for instance a person keeps wanting everything under a broader topic and listing the narrower tags won't do, or the report keeps showing one tag sitting inside another, say so to the person, and suggest they raise it with Sandkit's author, with the example that showed the need.
 
 Even then, such links would be for finding and moving around. What something truly is or has in the domain is content, and belongs in cards and the model.

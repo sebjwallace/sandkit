@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries start `**Breaking:**` and say how to migrate.
 
+## 0.2.86 · 2026-11-06
+- New `tools/tags.mjs report`, copied into sandboxes: how far a sandbox's tags reach and how well they narrow, then only what's worth a look, with items to spot-check. It has no pass mark. The tagging practice gains **Checking the map**, and building a sandbox runs it after a batch of tagging. Recorded in `DECISIONS.md`.
+
 ## 0.2.85 · 2026-11-06
 - A new **Tagging** practice with two kinds of tag: semantic tags, a lasting map of the domain where an item's combination of tags says where it sits, and working tags, which group things for a situation in a `working` field and are then cleared. Semantic tagging is opt-in, discovery included. It costs tokens, so the agent asks, with the benefits, the costs and its recommendation, records the answer in the sandbox's `AGENTS.md`, and suggests starting or stopping as needs change. The practice also covers tags as pointers to content that nothing is reasoned from, the map not being the model, what and when to tag, choosing them by balancing aggregating and differentiating, keeping the set small, declaring them, retiring one, and what they're for. It says tags that relate to each other could come, and asks an agent that meets the need to tell the person rather than invent a structure. Recorded in `DECISIONS.md`.
 - The domain discovery practice keeps what's particular to discovery and adds a tag tidy-up at the end of each iteration, if the sandbox tags. The sources practice tags as it catalogues, likewise. Building a sandbox asks about tagging at the start, and the sandbox template's `AGENTS.md` mentions it.

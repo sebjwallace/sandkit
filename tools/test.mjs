@@ -914,3 +914,94 @@ test('sources check explains a missing catalogue, and a model without items', (f
   assert(!ok && output.includes('There\'s no sources/catalogue.json.'), output);
   assert(output.includes('model.js exports no ITEMS'), output);
 });
+
+// ---- tags.mjs ----
+
+const TAGS_TOOL = resolve(fileURLToPath(import.meta.url), '../tags.mjs');
+
+function tagReport(...args) {
+  try {
+    return { ok: true, output: execFileSync('node', [TAGS_TOOL, ...args], { encoding: 'utf8', stdio: 'pipe' }) };
+  } catch (err) {
+    return { ok: false, output: err.stdout + err.stderr };
+  }
+}
+
+// A small discovery sandbox, its claims given as lists of tags in order: CLM-1, CLM-2, …
+function taggedSandbox(folder, claimTags, declared) {
+  mkdirSync(join(folder, 'records'));
+  write(folder, 'records/tags.js', `const TAGS = ${JSON.stringify(declared)};`);
+  const claims = claimTags.map((tags, index) => ({ id: `CLM-${index + 1}`, tags }));
+  write(folder, 'records/claims.js', `const CLAIMS = ${JSON.stringify(claims)};`);
+}
+
+test('tags report says how far tags reach and how well they narrow', (folder) => {
+  taggedSandbox(folder, [['tides'], ['tides', 'ferries'], ['tides', 'ferries'], []], [{ tag: 'tides', means: 'x' }, { tag: 'ferries', means: 'x' }]);
+  const { ok, output } = tagReport('report', folder);
+  assert(ok, output);
+  assert(output.includes('4 items, 2 tags in use, 2 places'), output);
+  assert(output.includes('Tagged: 3 of 4 (75%).'), output);
+  assert(output.includes('Narrowing: an item\'s most selective tag leaves 2.3 results on average, and its exact combination 1.7.'), output);
+  assert(output.includes('Untagged (1): CLM-4.'), output);
+});
+
+test('tags report flags tags that are too broad, crowded places and overlaps, with items to spot-check', (folder) => {
+  const crowded = Array.from({ length: 8 }, () => ['tides', 'ferries']);
+  const rest = Array.from({ length: 4 }, () => ['weather']);
+  taggedSandbox(folder, [...crowded, ...rest], ['tides', 'ferries', 'weather'].map((tag) => ({ tag, means: 'x' })));
+  const { ok, output } = tagReport('report', folder);
+  assert(ok, output);
+  assert(output.includes('On many items: tides is on 8 of 12 (67%)'), output);
+  assert(output.includes('Crowded place: 8 items carry exactly ferries + tides.'), output);
+  assert(output.includes('Overlap: 8 of the 8 items on tides also carry ferries.'), output);
+  assert(output.includes('· tides: CLM-1, CLM-3, CLM-6'), output);
+});
+
+test('tags report names tags undeclared, unused, retired yet carried, or on one item', (folder) => {
+  taggedSandbox(folder, [['tides', 'mink'], ['tides', 'old-word']], [
+    { tag: 'tides', means: 'x' }, { tag: 'unused', means: 'x' },
+    { tag: 'old-word', means: 'x', replacedBy: ['tides'] }, { tag: 'gone', means: 'x', replacedBy: [] },
+  ]);
+  const { output } = tagReport('report', folder);
+  assert(output.includes('In use but never declared (1): mink.'), output);
+  assert(output.includes('Retired but still carried (1): old-word.'), output);
+  assert(output.includes('Declared but unused (1): unused.'), output);
+  assert(output.includes('On one item, so it finds nothing its code wouldn\'t (2): mink, old-word.'), output);
+});
+
+test('tags report leaves out working tags and whatever is superseded', (folder) => {
+  mkdirSync(join(folder, 'records'));
+  write(folder, 'records/tags.js', `const TAGS = [{ tag: 'tides', means: 'x' }];`);
+  write(folder, 'records/claims.js', `const CLAIMS = ${JSON.stringify([
+    { id: 'CLM-1' }, { id: 'CLM-2', supersedes: 'CLM-1', tags: ['tides'], working: ['survey-week'] }, { id: 'CLM-3', tags: ['tides'] },
+  ])};`);
+  const { output } = tagReport('report', folder);
+  assert(output.includes('2 items, 1 tag in use, 1 place '), output);
+  assert(output.includes('Nothing stands out.'), output);
+});
+
+test('tags report reads the catalogue and the model\'s items, with tags.js beside the model', (folder) => {
+  mkdirSync(join(folder, 'sources'));
+  write(folder, 'tags.js', `const TAGS = [{ tag: 'tides', means: 'x' }];`);
+  write(folder, 'sources/catalogue.json', JSON.stringify({ sources: [{ id: 'SRC-1', tags: ['tides'] }, { id: 'SRC-2', status: 'superseded' }] }));
+  write(folder, 'model.js', `const ITEMS = [{ id: 'RUL-1', tags: ['tides'] }, { id: 'RUL-2' }];\nmodule.exports = { ITEMS };`);
+  const { ok, output } = tagReport('report', folder);
+  assert(ok, output);
+  assert(output.includes('3 items, 1 tag in use'), output);
+  assert(output.includes('Untagged (1): RUL-2.'), output);
+});
+
+test('tags report has no pass mark: findings still exit cleanly, and only a bad call fails', (folder) => {
+  taggedSandbox(folder, [[]], []);
+  assert(tagReport('report', folder).output.includes('No tags here. Tagging is opt-in'), 'should say tagging is opt-in');
+  mkdirSync(join(folder, 'x'));
+  taggedSandbox(join(folder, 'x'), [[], []], [{ tag: 'unused', means: 'x' }]);
+  assert(tagReport('report', join(folder, 'x')).ok, 'findings should exit cleanly');
+  assert(!tagReport('report').ok, 'a missing folder argument should fail');
+  assert(!tagReport('report', join(folder, 'nowhere')).ok, 'a folder that does not exist should fail');
+});
+
+test('a new sandbox gets the tags tool', (sandbox) => {
+  setup(sandbox);
+  assert(existsSync(join(sandbox, 'lib/sandkit/tools/tags.mjs')), 'missing tools/tags.mjs');
+});

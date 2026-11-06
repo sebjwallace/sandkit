@@ -12,7 +12,7 @@
 //   <!-- sandkit:components --> and <!-- sandkit:mechanisms --> markers, with the catalog's Find by need index inside the first.
 //   Only what's between them is replaced. An older sandbox without them has those sections found by their headings and replaced,
 //   or added in the template's position, with the old text saved to lib/sandkit/AGENTS-replaced.md first. Nothing else changes.
-// - Copies the shell, the catalog, the style guide, the practices, the page template, the export, serve and sources tools, sb-comments
+// - Copies the shell, the catalog, the style guide, the practices, the page template, the export, serve, sources and tags tools, sb-comments
 //   (the template's comment mode), and each named component, engine or mechanism (plus any the sandbox already has) into lib/sandkit/,
 //   keeping Sandkit's paths, with their manifests and changelogs.
 // - Adds a script tag to index.html, or the page named, for each component or engine named that doesn't have one yet,
@@ -36,7 +36,7 @@ const REPOSITORY = 'https://github.com/sebjwallace/sandkit';
 const EVERY_SANDBOX = ['sb-comments']; // components the template uses
 // Components Sandkit no longer has, and what replaces each. See CHANGELOG.md for how to move.
 const RETIRED = { 'sb-discovery-board': 'sb-lineage', 'sb-source-trace': 'sb-lineage' };
-const SANDKIT_FILES = ['CATALOG.md', 'CHANGELOG.md', 'STYLE.md', 'templates/page.html', 'tools/export.mjs', 'tools/serve.mjs', 'tools/sources.mjs'];
+const SANDKIT_FILES = ['CATALOG.md', 'CHANGELOG.md', 'STYLE.md', 'templates/page.html', 'tools/export.mjs', 'tools/serve.mjs', 'tools/sources.mjs', 'tools/tags.mjs'];
 const SHELL_FILES = ['shell/CHANGELOG.md', 'shell/manifest.md', 'shell/sb-export.js', 'shell/sb-shell.js', 'shell/sb-theme-settings.js'];
 
 function setup(folder, requested, page = 'index.html') {
