@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Highlighting together tests</title>
+  <style>
+    :root { --sb-accent: rgb(1, 2, 3); --sb-accent-soft: rgb(4, 5, 6); }
+    .is-lit { background: var(--sb-accent-soft); color: var(--sb-accent); }
+    .is-pinned-fill { background: rgb(7, 7, 7); }
+    .is-pinned-outline { outline: 2px solid rgb(7, 7, 7); }
+    svg .is-lit .line { stroke: var(--sb-accent); }
+  </style>
+  <script src="../harness.js"></script>
+  <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="../../components/sb-c4/sb-c4.js"></script>
+  <script src="../../components/sb-table/sb-table.js"></script>
+  <script src="../../components/sb-outliner/sb-outliner.js"></script>
+  <script src="../../shell/sb-highlighting.js"></script>
+</head>
+<body>
+  <main id="page">
+    <p><span id="phrase" data-ref="DOC-2">the dock</span> and <sb-id id="pill" code="RUL-1"></sb-id></p>
+    <svg id="map"><g id="route" data-ref="RTE-1"><path class="line" d="M0 0 L9 9" stroke="rgb(9, 9, 9)"></path></g></svg>
+    <p id="nothing">nothing to point at</p>
+  </main>
+  <p id="elsewhere" data-ref="ELS-1">a part outside anything wired</p>
+  <sb-c4 id="diagram" root-label="Yard"></sb-c4>
+  <sb-table id="register"></sb-table>
+  <sb-outliner id="outline"></sb-outliner>
+
+  <script>
+    // A sandbox wired by hand, with the helpers the highlighting practice used to give, that then
+    // includes the script. Sandboxes keep their copies, so this fails if the two stop getting along.
+    const announce = (ref, refs) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: refs ? { ref, refs } : { ref } }));
+
+    function pointable(root, traceOf = (ref) => [ref]) {
+      const partAt = (el) => {
+        const part = el?.closest('[data-ref]');
+        if (!part || !root.contains(part)) return null;
+        for (let at = part; at !== root; at = at.parentElement) if (at.localName.startsWith('sb-')) return null;
+        return part;
+      };
+      const arrive = (e) => {
+        const part = partAt(e.target);
+        if (part && part !== partAt(e.relatedTarget)) announce(part.dataset.ref, traceOf(part.dataset.ref));
+      };
+      const leave = (e) => { if (partAt(e.target) && !partAt(e.relatedTarget)) announce(null); };
+      root.addEventListener('pointerover', arrive);
+      root.addEventListener('focusin', arrive);
+      root.addEventListener('pointerout', leave);
+      root.addEventListener('focusout', leave);
+
+      document.addEventListener('sb-highlight', (e) => {
+        const lit = new Set(e.detail.refs ?? [e.detail.ref]);
+        for (const part of root.querySelectorAll('[data-ref]')) {
+          if (partAt(part) === part) part.classList.toggle('is-lit', lit.has(part.dataset.ref));
+        }
+      });
+    }
+
+    function pinnable(root, outliner) {
+      outliner.addEventListener('sb-pins', (e) => {
+        const fill = new Set(e.detail.fill), outline = new Set(e.detail.outline);
+        root.classList.toggle('sb-outliner__glowing', e.detail.glow);
+        for (const part of root.querySelectorAll('[data-ref]')) {
+          part.classList.toggle('is-pinned-fill', fill.has(part.dataset.ref));
+          part.classList.toggle('is-pinned-outline', outline.has(part.dataset.ref));
+        }
+      });
+    }
+
+    const $ = (id) => document.getElementById(id);
+    const TRACES = { 'DOC-2': ['DOC-2', 'RTE-1'] };
+    const traceOf = (ref) => TRACES[ref] ?? [ref];
+
+    pointable($('page'), traceOf);
+    pinnable($('page'), $('outline'));
+
+    $('diagram').model = {
+      elements: [{ id: 'DOC-2', name: 'Dock' }, { id: 'RTE-1', name: 'Route' }],
+      relationships: [{ id: 'SERVES', from: 'RTE-1', to: 'DOC-2', label: 'Serves' }]
+    };
+    $('register').columns = [{ key: 'id', label: 'Code' }];
+    $('register').rows = [{ id: 'DOC-2' }, { id: 'RTE-1' }, { id: 'YRD-9' }];
+    $('outline').trace = traceOf;
+    $('outline').items = [{ ref: 'DOC-2', label: 'The dock' }];
+
+    // The routing table: a ref to each component's own highlight.
+    document.addEventListener('sb-highlight', (e) => {
+      const lit = e.detail.ref == null ? [] : e.detail.refs ?? [e.detail.ref];
+      $('diagram').highlight = { elements: lit };
+      $('register').highlight = { rows: lit };
+    });
+
+    // The two lines that announce for a component.
+    $('diagram').addEventListener('pointerover', (e) => announce(e.target.closest('[data-ref]')?.dataset.ref ?? null));
+    $('diagram').addEventListener('pointerleave', () => announce(null));
+
+    // ---- Moving the pointer, in the browser's order ----
+
+    const fire = (el, Type, type, bubbles, relatedTarget) => el?.dispatchEvent(new Type(type, { bubbles, relatedTarget }));
+
+    function move(from, to) {
+      fire(from, PointerEvent, 'pointerout', true, to);
+      leaveHost(from, to, PointerEvent, 'pointerleave');
+      fire(from, PointerEvent, 'pointerleave', false, to);
+      fire(to, PointerEvent, 'pointerover', true, from);
+      fire(to, PointerEvent, 'pointerenter', false, from);
+      fire(from, MouseEvent, 'mouseout', true, to);
+      fire(from, MouseEvent, 'mouseleave', false, to);
+      fire(to, MouseEvent, 'mouseover', true, from);
+      fire(to, MouseEvent, 'mouseenter', false, from);
+    }
+
+    // Leaving a whole component, for wiring that listens on the component itself.
+    function leaveHost(from, to, Type, type) {
+      const host = from?.closest('sb-c4');
+      if (host && !host.contains(to)) fire(host, Type, type, false, to);
+    }
+
+    let heard = [];
+    document.addEventListener('sb-highlight', (e) => heard.push(e.detail.refs ? [e.detail.ref, e.detail.refs] : e.detail.ref));
+
+    // Each test starts with the pointer on nothing, and everything clear.
+    function scenario(name, fn) {
+      test(name, async () => {
+        announce(null);
+        heard = [];
+        await fn();
+      });
+    }
+
+    const row = (ref) => document.querySelector(`#register [data-ref="${ref}"]`);
+    const box = (ref) => document.querySelector(`#diagram [data-ref="${ref}"]`);
+    const background = (el) => getComputedStyle(el).backgroundColor;
+    const isTinted = (el) => background(el).includes('srgb');
+
+    // ---- pointable ----
+
+    scenario('pointable: a part announces once, with its trace, and leaving announces null once', () => {
+      move($('nothing'), $('phrase'));
+      assertEqual(heard, [['DOC-2', ['DOC-2', 'RTE-1']]]);
+      move($('phrase'), $('nothing'));
+      assertEqual(heard, [['DOC-2', ['DOC-2', 'RTE-1']], null]);
+    });
+
+    scenario('pointable: moving straight between parts has no null between', () => {
+      move($('nothing'), $('phrase'));
+      move($('phrase'), $('route'));
+      assertEqual(heard, [['DOC-2', ['DOC-2', 'RTE-1']], ['RTE-1', ['RTE-1']]]);
+    });
+
+    scenario('pointable: is-lit still goes on and off, and the look is the script\'s, one look not two', () => {
+      move($('nothing'), $('phrase'));
+      assert($('phrase').classList.contains('is-lit'));
+      assert(isTinted($('phrase')), 'the script\'s tint is what shows');
+      assert($('route').classList.contains('is-lit'), 'the trace reaches an SVG part');
+      assertEqual(getComputedStyle($('route').querySelector('path')).stroke, 'rgb(1, 2, 3)');
+      move($('phrase'), $('nothing'));
+      assert(!$('phrase').classList.contains('is-lit'));
+      assert(!isTinted($('phrase')));
+    });
+
+    // ---- The two lines of wiring, and the routing table ----
+
+    scenario('wired component: a box announces once, and leaving announces null once', () => {
+      move($('nothing'), box('DOC-2'));
+      assertEqual(heard, ['DOC-2']);
+      move(box('DOC-2'), $('nothing'));
+      assertEqual(heard, ['DOC-2', null]);
+    });
+
+    scenario('routing still reaches each component\'s own highlight', () => {
+      move($('nothing'), box('DOC-2'));
+      assert(box('DOC-2').classList.contains('sb-c4__element--highlighted'), 'the diagram was routed to');
+      assert(row('DOC-2').classList.contains('sb-table__row--highlighted'), 'the table was routed to');
+      assert(!row('YRD-9').classList.contains('sb-table__row--highlighted'));
+    });
+
+    scenario('routed and lit at once, a part shows one colour: the theme\'s accent', () => {
+      move($('nothing'), box('RTE-1'));
+      const shape = box('RTE-1').querySelector('.sb-c4__shape');
+      assert(box('RTE-1').classList.contains('sb-c4__element--highlighted'));
+      assertEqual(getComputedStyle(shape).stroke, 'rgb(1, 2, 3)');
+      assert(isTinted(row('RTE-1')), 'the routed table row takes the same tint');
+    });
+
+    // ---- What nobody wired ----
+
+    scenario('a component nobody wired to announce now announces, once', () => {
+      move($('nothing'), row('YRD-9'));
+      assertEqual(heard, ['YRD-9']);
+      move(row('YRD-9'), $('nothing'));
+      assertEqual(heard, ['YRD-9', null]);
+    });
+
+    // ---- Components that speak for themselves ----
+
+    scenario('sb-id: a pill announces once, and leaving announces null once', () => {
+      const pill = $('pill').querySelector('button');
+      move($('nothing'), pill);
+      assertEqual(heard, ['RUL-1']);
+      move(pill, $('nothing'));
+      assertEqual(heard, ['RUL-1', null]);
+    });
+
+    scenario('moving straight from a pill to a part ends lit on the part', () => {
+      const pill = $('pill').querySelector('button');
+      move($('nothing'), pill);
+      move(pill, $('elsewhere'));
+      assertEqual(heard, ['RUL-1', null, 'ELS-1']);
+      assert(isTinted($('elsewhere')));
+    });
+
+    scenario('moving straight from a pill to a wired part stays lit on the part', () => {
+      const pill = $('pill').querySelector('button');
+      move($('nothing'), pill);
+      move(pill, box('DOC-2'));
+      assertEqual(heard, ['RUL-1', null, 'DOC-2']);
+      assert(box('DOC-2').classList.contains('sb-c4__element--highlighted'));
+    });
+
+    scenario('sb-outliner: an entry announces its trace once, lights the page, and keeps its own look', () => {
+      const entry = document.querySelector('.sb-outliner__entry');
+      move($('nothing'), entry);
+      assertEqual(heard, [['DOC-2', ['DOC-2', 'RTE-1']]]);
+      assert(isTinted(row('RTE-1')), 'the trace lights the page');
+      assert(entry.classList.contains('sb-outliner__entry--pointed'), 'the entry marks itself');
+      assert(!isTinted(entry), 'and takes none of the script\'s tint');
+      move(entry, $('nothing'));
+      assertEqual(heard.at(-1), null);
+      assertEqual(heard.length, 2);
+    });
+
+    // ---- Pins, from a real outliner ----
+
+    scenario('a pin in the outliner lights what nobody wired to pins, and hand wiring carries on', () => {
+      $('outline').pins = { fill: ['DOC-2'], outline: [] };
+      assert(isTinted(row('RTE-1')), 'the table, through the script');
+      assert(getComputedStyle(box('DOC-2').querySelector('.sb-c4__shape')).strokeWidth === '4px', 'the diagram, through the script');
+      assert($('phrase').classList.contains('is-pinned-fill'), 'the page\'s own parts, through pinnable');
+      $('outline').pins = { fill: [], outline: [] };
+      assert(!isTinted(row('RTE-1')));
+    });
+
+    // ---- pinnable ----
+
+    scenario('pinnable: pins go on, stay through pointing, and come off', () => {
+      $('outline').pins = { fill: ['DOC-2'], outline: [] };
+      assert($('phrase').classList.contains('is-pinned-fill'));
+      assert($('route').classList.contains('is-pinned-fill'), 'the pin follows the trace');
+      move($('nothing'), row('YRD-9'));
+      assert($('phrase').classList.contains('is-pinned-fill'), 'pointing elsewhere leaves it');
+      move(row('YRD-9'), $('nothing'));
+      assert($('phrase').classList.contains('is-pinned-fill'), 'and so does the light going out');
+      $('outline').pins = { fill: [], outline: [] };
+      assert(!$('phrase').classList.contains('is-pinned-fill'));
+    });
+
+    // ---- Keyboard ----
+
+    scenario('keyboard: pointable announces a focused part once', () => {
+      $('phrase').tabIndex = 0;
+      $('phrase').focus();
+      assertEqual(heard, [['DOC-2', ['DOC-2', 'RTE-1']]]);
+      $('phrase').blur();
+      assertEqual(heard.at(-1), null);
+      assertEqual(heard.length, 2);
+      $('phrase').removeAttribute('tabindex');
+    });
+  </script>
+</body>
+</html>

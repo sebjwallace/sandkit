@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Highlighting tests</title>
+  <style>
+    :root { --sb-accent: rgb(1, 2, 3); }
+    .shape { stroke: rgb(9, 9, 9); fill: rgb(8, 8, 8); }
+  </style>
+  <script src="../harness.js"></script>
+  <script src="../../shell/sb-highlighting.js"></script>
+</head>
+<body>
+  <script>
+    const ACCENT = 'rgb(1, 2, 3)';
+    const UNLIT_STROKE = 'rgb(9, 9, 9)';
+
+    const announce = (detail) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail }));
+
+    // One pointer move, in the browser's order: the mouse events come after the pointer events.
+    function point(to, { from = null, pointerType = 'mouse' } = {}) {
+      to.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, relatedTarget: from, pointerType }));
+      to.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: from }));
+    }
+
+    const leaveWindow = (from) => from.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: null }));
+
+    // Every sb-highlight until the test ends, as [ref, refs] pairs.
+    function listen() {
+      const heard = [];
+      const note = (e) => heard.push(e.detail.refs ? [e.detail.ref, e.detail.refs] : e.detail.ref);
+      document.addEventListener('sb-highlight', note);
+      cleanups.push(() => document.removeEventListener('sb-highlight', note));
+      return heard;
+    }
+
+    const cleanups = [];
+    function scenario(name, fn) {
+      test(name, async () => {
+        document.activeElement?.blur?.();
+        announce({ ref: null });
+        clearPins();
+        try { await fn(); } finally { cleanups.splice(0).forEach((clean) => clean()); }
+      });
+    }
+
+    // Stand-ins for two outliners: each sends all its own pins, from itself, bubbling to the document.
+    const outliners = [document.createElement('div'), document.createElement('div')];
+    outliners.forEach((outliner) => document.body.append(outliner));
+    const sendPins = (outliner, { fill = [], outline = [], glow = false }) =>
+      outliner.dispatchEvent(new CustomEvent('sb-pins', { bubbles: true, detail: { fill, outline, glow } }));
+    function clearPins() { outliners.forEach((outliner) => sendPins(outliner, {})); }
+
+    const background = (el) => getComputedStyle(el).backgroundColor;
+    const isTinted = (el) => background(el).includes('srgb');   // see-through, so it's a mix of the accent
+    const hasRing = (el) => getComputedStyle(el).boxShadow !== 'none';
+    const stroke = (el) => getComputedStyle(el).stroke;
+
+    const parts = () => mount(`<div>
+      <p id="a" data-ref="A">A <em id="a-inner">inner</em></p>
+      <p id="a2" data-ref="A">A again</p>
+      <p id="b" data-ref="B">B</p>
+      <p id="none">nothing</p>
+    </div>`);
+    const at = (id) => document.getElementById(id);
+
+    // ---- Announcing ----
+
+    scenario('pointing at a part announces its ref, in the event as it always was', () => {
+      parts();
+      const heard = recordEvents(document, 'sb-highlight');
+      point(at('a'));
+      assertEqual(heard.at(-1).detail, { ref: 'A' });
+    });
+
+    scenario('pointing at nothing after a part announces null', () => {
+      parts();
+      const heard = listen();
+      point(at('a'));
+      point(at('none'), { from: at('a') });
+      assertEqual(heard, ['A', null]);
+    });
+
+    scenario('moving straight to another part announces it with no null between', () => {
+      parts();
+      const heard = listen();
+      point(at('a'));
+      point(at('b'), { from: at('a') });
+      assertEqual(heard, ['A', 'B']);
+    });
+
+    scenario('moving around inside a part announces once', () => {
+      parts();
+      const heard = listen();
+      point(at('a'));
+      point(at('a-inner'), { from: at('a') });
+      point(at('a'), { from: at('a-inner') });
+      assertEqual(heard, ['A']);
+    });
+
+    scenario('with parts nested, the innermost announces', () => {
+      mount('<div data-ref="OUTER"><span id="inner" data-ref="INNER">x</span><span id="edge">y</span></div>');
+      const heard = listen();
+      point(at('inner'));
+      point(at('edge'), { from: at('inner') });
+      assertEqual(heard, ['INNER', 'OUTER']);
+    });
+
+    scenario('leaving the window ends what was announced', () => {
+      parts();
+      const heard = listen();
+      point(at('a'));
+      leaveWindow(at('a'));
+      assertEqual(heard, ['A', null]);
+    });
+
+    scenario('an empty ref is no ref', () => {
+      mount('<p id="empty" data-ref="">x</p>');
+      const heard = listen();
+      point(at('empty'));
+      assertEqual(heard, []);
+    });
+
+    scenario('a tap announces nothing, so tapping something that acts doesn\'t light it', () => {
+      parts();
+      const heard = listen();
+      point(at('a'), { pointerType: 'touch' });
+      assertEqual(heard, []);
+    });
+
+    scenario('keyboard focus announces, and moving focus away ends it', () => {
+      mount('<div><button id="key" data-ref="KEY">x</button></div>');
+      const heard = listen();
+      at('key').focus();
+      assert(at('key').matches(':focus-visible'), 'the button should show keyboard focus');
+      assertEqual(heard, ['KEY']);
+      at('key').blur();
+      assertEqual(heard, ['KEY', null]);
+    });
+
+    // ---- Lighting ----
+
+    scenario('every part with the ref lights up, and others stay as they were', () => {
+      parts();
+      const before = background(at('b'));
+      announce({ ref: 'A' });
+      assert(isTinted(at('a')), 'should be lit');
+      assert(isTinted(at('a2')), 'should be lit');
+      assert(hasRing(at('a')), 'a lit part has a ring');
+      assertEqual(background(at('b')), before);
+    });
+
+    scenario('null clears it', () => {
+      parts();
+      const before = background(at('a'));
+      announce({ ref: 'A' });
+      announce({ ref: null });
+      assertEqual(background(at('a')), before);
+      assert(!hasRing(at('a')));
+    });
+
+    scenario('a part drawn while lit is lit, as a redraw needs', () => {
+      const root = parts();
+      announce({ ref: 'A' });
+      root.innerHTML = '<p id="redrawn" data-ref="A">drawn again</p>';
+      assert(isTinted(at('redrawn')), 'should be lit');
+    });
+
+    scenario('a list sent by code lights everything in it, all alike', () => {
+      parts();
+      announce({ ref: 'A', refs: ['A', 'B'] });
+      assert(isTinted(at('a')) && isTinted(at('b')), 'both should be lit');
+      assertEqual(background(at('a')), background(at('b')));
+      assertEqual(getComputedStyle(at('a')).boxShadow, getComputedStyle(at('b')).boxShadow);
+    });
+
+    scenario('an SVG part takes a stroke on its own shapes, and never a fill', () => {
+      mount(`<svg>
+        <g data-ref="E"><rect id="own" class="shape" width="9" height="9"></rect>
+          <g data-ref="E.f"><rect id="nested" class="shape" width="9" height="9"></rect></g>
+        </g>
+      </svg>`);
+      announce({ ref: 'E' });
+      assertEqual(stroke(at('own')), ACCENT);
+      assertEqual(getComputedStyle(at('own')).fill, 'rgb(8, 8, 8)');
+      assertEqual(stroke(at('nested')), UNLIT_STROKE);
+    });
+
+    scenario('an SVG part can be a shape, or a line of text, itself', () => {
+      mount(`<svg>
+        <rect id="shape" class="shape" data-ref="S" width="9" height="9"></rect>
+        <text><tspan id="line" data-ref="S">a line</tspan></text>
+      </svg>`);
+      announce({ ref: 'S' });
+      assertEqual(stroke(at('shape')), ACCENT);
+      assertEqual(getComputedStyle(at('line')).fill, ACCENT);
+    });
+
+    scenario('a ref needing escaping lights, and stays plain text', () => {
+      const ref = 'a"] b { color: red } </style><img src=x>';
+      const part = mount('<p>x</p>');
+      part.dataset.ref = ref;
+      announce({ ref });
+      assert(isTinted(part), 'should be lit');
+      assert(!document.querySelector('img'), 'nothing was rendered as markup');
+    });
+
+    // ---- Pointing at several things on purpose ----
+
+    const namedParts = () => mount(`<div>
+      <span id="words" data-points-at="A  B">these two <em id="words-inner">words</em></span>
+      <span id="other-words" data-points-at="A C">those two</span>
+      <span id="one" data-points-at="A">just one</span>
+      <span id="nameless" data-points-at="  ">nothing named</span>
+      <p id="a" data-ref="A">A</p><p id="b" data-ref="B">B</p><p id="c" data-ref="C">C</p>
+    </div>`);
+
+    scenario('words naming several things announce them all, and light them all', () => {
+      namedParts();
+      const heard = recordEvents(document, 'sb-highlight');
+      point(at('words'));
+      assertEqual(heard.at(-1).detail, { ref: 'A', refs: ['A', 'B'] });
+      assert(isTinted(at('a')) && isTinted(at('b')), 'both should be lit');
+      assert(!isTinted(at('c')), 'what isn\'t named stays as it was');
+    });
+
+    scenario('the words themselves aren\'t lit: they aren\'t one of the things', () => {
+      namedParts();
+      point(at('words'));
+      assert(!isTinted(at('words')));
+    });
+
+    scenario('words naming one thing announce it as a part would', () => {
+      namedParts();
+      const heard = recordEvents(document, 'sb-highlight');
+      point(at('one'));
+      assertEqual(heard.at(-1).detail, { ref: 'A' });
+    });
+
+    scenario('words naming nothing announce nothing', () => {
+      namedParts();
+      const heard = listen();
+      point(at('nameless'));
+      assertEqual(heard, []);
+    });
+
+    scenario('moving around inside the words announces once, and leaving ends it', () => {
+      namedParts();
+      const heard = listen();
+      point(at('words'));
+      point(at('words-inner'), { from: at('words') });
+      leaveWindow(at('words-inner'));
+      assertEqual(heard, [['A', ['A', 'B']], null]);
+    });
+
+    scenario('two lists starting with the same thing are different lists', () => {
+      namedParts();
+      const heard = listen();
+      point(at('words'));
+      point(at('other-words'), { from: at('words') });
+      assertEqual(heard, [['A', ['A', 'B']], ['A', ['A', 'C']]]);
+    });
+
+    scenario('keyboard focus on the words works as pointing does', () => {
+      mount('<div><button id="named" data-points-at="A B">x</button></div>');
+      const heard = listen();
+      at('named').focus();
+      assertEqual(heard, [['A', ['A', 'B']]]);
+    });
+
+    // ---- Pins ----
+
+    const hasOutline = (el) => getComputedStyle(el).outlineStyle === 'solid';
+
+    scenario('a fill pin tints every part with the ref, and leaves the others', () => {
+      parts();
+      sendPins(outliners[0], { fill: ['A'] });
+      assert(isTinted(at('a')) && isTinted(at('a2')), 'both should be pinned');
+      assert(!isTinted(at('b')));
+      assert(!hasOutline(at('a')), 'a fill isn\'t an outline');
+    });
+
+    scenario('an outline pin outlines, and doesn\'t tint', () => {
+      parts();
+      sendPins(outliners[0], { outline: ['A'] });
+      assert(hasOutline(at('a')));
+      assert(!isTinted(at('a')));
+    });
+
+    scenario('pins come off when no longer sent', () => {
+      parts();
+      sendPins(outliners[0], { fill: ['A'], outline: ['B'] });
+      sendPins(outliners[0], {});
+      assert(!isTinted(at('a')) && !hasOutline(at('b')));
+    });
+
+    scenario('a pin stays through a redraw', () => {
+      const root = parts();
+      sendPins(outliners[0], { fill: ['A'] });
+      root.innerHTML = '<p id="redrawn" data-ref="A">drawn again</p>';
+      assert(isTinted(at('redrawn')));
+    });
+
+    scenario('a pin stays through pointing elsewhere, and pointing at it outranks it while it lasts', () => {
+      parts();
+      sendPins(outliners[0], { fill: ['A'] });
+      const asPinned = background(at('a'));
+      point(at('b'));
+      assertEqual(background(at('a')), asPinned, 'unchanged by pointing elsewhere');
+      point(at('a'), { from: at('b') });
+      assert(hasRing(at('a')) && background(at('a')) !== asPinned, 'lit while pointed at');
+      point(at('none'), { from: at('a') });
+      assertEqual(background(at('a')), asPinned, 'pinned again');
+      assert(!hasRing(at('a')));
+    });
+
+    scenario('an SVG part shows a fill pin and an outline pin as different strokes, never a fill', () => {
+      mount(`<svg>
+        <g data-ref="F"><rect id="filled" class="shape" width="9" height="9"></rect></g>
+        <g data-ref="O"><rect id="outlined" class="shape" width="9" height="9"></rect></g>
+      </svg>`);
+      sendPins(outliners[0], { fill: ['F'], outline: ['O'] });
+      assert(stroke(at('filled')) !== UNLIT_STROKE && stroke(at('outlined')) !== UNLIT_STROKE);
+      assertEqual(getComputedStyle(at('filled')).fill, 'rgb(8, 8, 8)');
+      assertEqual(getComputedStyle(at('filled')).strokeDasharray, 'none');
+      assert(getComputedStyle(at('outlined')).strokeDasharray !== 'none', 'an outline pin is dashed');
+    });
+
+    scenario('two outliners\' pins add together', () => {
+      parts();
+      sendPins(outliners[0], { fill: ['A'] });
+      sendPins(outliners[1], { fill: ['B'] });
+      assert(isTinted(at('a')) && isTinted(at('b')));
+      sendPins(outliners[1], {});
+      assert(isTinted(at('a')) && !isTinted(at('b')), 'each only takes back its own');
+    });
+
+    scenario('glow goes on while any outliner asks for it, and off again', () => {
+      const glowing = () => document.documentElement.classList.contains('sb-outliner__glowing');
+      sendPins(outliners[0], { fill: ['A'], glow: true });
+      sendPins(outliners[1], {});
+      assert(glowing());
+      sendPins(outliners[0], { fill: ['A'] });
+      assert(!glowing());
+    });
+
+    scenario('a pinned part that lights itself is left to it', () => {
+      mount('<p id="own" data-ref="OWN" data-sb-lights>x</p>');
+      sendPins(outliners[0], { fill: ['OWN'], outline: ['OWN'] });
+      assert(!isTinted(at('own')) && !hasOutline(at('own')));
+    });
+
+    // ---- Speaking for itself, and existing wiring ----
+
+    scenario('wiring that announces first is left to it, and announces once', () => {
+      const root = parts();
+      root.addEventListener('pointerover', (e) => {
+        const ref = e.target.closest('[data-ref]')?.dataset.ref;
+        if (ref) announce({ ref });
+      });
+      const heard = listen();
+      point(at('a'));
+      assertEqual(heard, ['A']);
+    });
+
+    scenario('what wiring chooses to announce stands, even when the part says otherwise', () => {
+      const root = parts();
+      root.addEventListener('pointerover', () => announce({ ref: 'CHOSEN' }));
+      const heard = listen();
+      point(at('a'));
+      assertEqual(heard, ['CHOSEN']);
+    });
+
+    scenario('an end of pointing arriving late doesn\'t stop the next part announcing', () => {
+      parts();
+      const heard = listen();
+      announce({ ref: 'A' });
+      at('b').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+      announce({ ref: null });   // as sb-id's mouseleave does, between the pointer and mouse events
+      at('b').dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      assertEqual(heard, ['A', null, 'B']);
+      assert(isTinted(at('b')), 'should be lit');
+    });
+
+    scenario('what someone else announced is theirs to end', () => {
+      parts();
+      const heard = listen();
+      announce({ ref: 'A' });
+      point(at('none'));
+      assertEqual(heard, ['A']);
+    });
+
+    scenario('inside data-sb-announces nothing is announced, but it still lights', () => {
+      mount('<div data-sb-announces><span id="own" data-ref="OWN">x</span></div>');
+      const heard = listen();
+      point(at('own'));
+      assertEqual(heard, []);
+      announce({ ref: 'OWN' });
+      assert(isTinted(at('own')), 'should be lit');
+    });
+
+    scenario('a data-sb-lights part isn\'t lit or announced, but a part inside it is both', () => {
+      mount('<section id="host" data-ref="HOST" data-sb-lights><span id="in" data-ref="IN">x</span><span id="edge">y</span></section>');
+      const before = background(at('host'));
+      const heard = listen();
+      point(at('edge'));
+      assertEqual(heard, []);
+      announce({ ref: 'HOST' });
+      assertEqual(background(at('host')), before);
+      announce({ ref: null });
+      heard.length = 0;
+      point(at('in'));
+      assertEqual(heard, ['IN']);
+      assert(isTinted(at('in')), 'should be lit');
+    });
+  </script>
+</body>
+</html>

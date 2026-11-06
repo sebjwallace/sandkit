@@ -1,4 +1,4 @@
-// Sandkit sb-accordion 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-accordion 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Sections that open and close: one on its own, or a group. Each section is a <details> child,
 // headed by its <summary>. A closed section still tells you something: a short note beside its
 // heading, a mark when what's inside has changed, and a mark when something highlighted is inside.
@@ -67,10 +67,10 @@
     return text;
   }
 
-  // Whether a part marked with the ref sits inside a section's content, below its heading.
-  function holdsRef(section, ref) {
+  // Whether a part marked with one of the refs sits inside a section's content, below its heading.
+  function holdsAny(section, refs) {
     const summary = section.querySelector(':scope > summary');
-    return [...section.querySelectorAll('[data-ref]')].some((el) => el.dataset.ref === ref && !summary?.contains(el));
+    return [...section.querySelectorAll('[data-ref]')].some((el) => refs.includes(el.dataset.ref) && !summary?.contains(el));
   }
 
   class SbAccordion extends HTMLElement {
@@ -80,9 +80,9 @@
     constructor() {
       super();
       this._seen = new WeakMap(); // each section's content as the viewer last saw it
-      this._lit = null; // the ref highlighted on the page
+      this._lit = []; // the refs highlighted on the page
       this._observer = new MutationObserver(() => this._update());
-      this._onHighlight = (e) => { this._lit = e.detail?.ref ?? null; this._showLit(); };
+      this._onHighlight = (e) => { this._lit = e.detail?.ref == null ? [] : e.detail.refs ?? [e.detail.ref]; this._showLit(); };
     }
 
     connectedCallback() {
@@ -127,7 +127,7 @@
     reveal(ref, place) {
       const holds = place
         ? (section) => section.contains(place)
-        : (section) => section.dataset.ref === String(ref) || holdsRef(section, String(ref));
+        : (section) => section.dataset.ref === String(ref) || holdsAny(section, [String(ref)]);
       const section = this.sections.find(holds);
       if (!section) return false;
       this._open(section, true);
@@ -185,6 +185,7 @@
       changed.setAttribute('role', 'img');
       changed.setAttribute('aria-label', 'changed');
       summary.append(changed, Object.assign(document.createElement('span'), { className: 'sb-accordion__note' }));
+      section.dataset.sbLights = ''; // the section lights itself, and its heading announces it
       // Pointing at a heading announces the section's ref, read when pointed at so it can change.
       summary.addEventListener('pointerenter', () => { if (section.dataset.ref) announce(section.dataset.ref); });
       summary.addEventListener('pointerleave', () => { if (section.dataset.ref) announce(null); });
@@ -206,10 +207,9 @@
     }
 
     _showLit() {
-      const ref = this._lit;
       for (const section of this.sections) {
-        section.classList.toggle('sb-accordion__section--highlighted', Boolean(ref) && section.dataset.ref === ref);
-        section.classList.toggle('sb-accordion__section--lit-inside', Boolean(ref) && holdsRef(section, ref));
+        section.classList.toggle('sb-accordion__section--highlighted', this._lit.includes(section.dataset.ref));
+        section.classList.toggle('sb-accordion__section--lit-inside', holdsAny(section, this._lit));
       }
     }
 

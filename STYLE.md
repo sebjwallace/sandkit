@@ -69,7 +69,7 @@ Colours, the font and corners come from the theme's tokens, defined in `shell/sb
 Pointing is the [highlighting practice](practices/highlighting.md); this is only how it looks.
 
 - **Lit is the accent.** An `--sb-accent-soft` fill for rows and boxes, an `--sb-accent` outline or ring for something that must stand out, a thicker `--sb-accent` stroke for lines in SVG.
-- **The class is `sb-name__part--highlighted`.** The sandbox's own parts use `is-lit`.
+- **The class is `sb-name__part--highlighted`,** for what a component lights itself. Everything else with a `data-ref` is lit by the highlighting script, in a see-through accent tint with a ring, or a stroke on SVG, never a fill.
 - **Hover looks like lit,** so pointing feels the same from either end.
 
 ## Shapes and type

@@ -2,11 +2,46 @@
 
 How to let people point at one thing and see it light up everywhere it appears: in the prose, in an equation, in a diagram, in a table. Hover a reference to "the first column" in a sentence, and the first column of the matrix, the matching term of the equation and the arrow it becomes all light up together.
 
-Read this before using [`sb-math`](../components/sb-math/manifest.md) or the pointing behaviour of [`sb-id`](../components/sb-id/manifest.md).
+Read this before putting pointing in a sandbox, or using [`sb-math`](../components/sb-math/manifest.md) or the pointing behaviour of [`sb-id`](../components/sb-id/manifest.md).
 
 ## Why it matters
 
 Explanations refer to things: this term, that arrow, the second rule. Readers have to hold the connection in their heads, matching words to symbols to pictures. Lighting up every appearance of the thing being pointed at makes the connection visible, and lets people check their understanding just by moving the pointer.
+
+## Getting it with one line
+
+Every page started from the template includes one script. Name things with `data-ref`, which most components already do:
+
+```html
+<script src="lib/sandkit/shell/sb-highlighting.js"></script>
+```
+
+That's all the wiring there is:
+
+- **Pointing at anything with a `data-ref`,** in a component or the sandbox's own, or focusing it with the keyboard, announces it. The innermost part wins, and moving straight to another part has no `null` between.
+- **Everything with that ref lights up,** including inside components, and stays lit through a redraw.
+- **Pins in an [`sb-outliner`](../components/sb-outliner/manifest.md) keep things lit** everywhere too: see "Keeping things lit".
+- **It takes the theme's accent,** a see-through tint and ring on HTML, and a stroke on SVG, never a fill, which could hide what's on the shape.
+- **A tap lights nothing,** since a tap acts, and pointing never fires a viewer's click.
+- **New pages have it already.** The page templates include the line. A page made before they did behaves as it always did until the line is added.
+- **Modes carry on.** Pointing means what it always did while a mode is on, and clicks are the mode's.
+
+Name the thing, not what holds it. A `data-ref` on a whole panel lights the whole panel whenever the pointer is anywhere inside it.
+
+## Pointing at several things on purpose
+
+Words or a button can light several things that the sentence means together. Name them with `data-points-at`:
+
+```html
+<span class="point" data-points-at="TRK-1 SIG-1 RUL-1" tabindex="0">the parts that stop a train</span>
+```
+
+- **The words aren't one of those things,** so they aren't lit, and `placesOf` doesn't find them.
+- **Everything named lights alike.** Saying "these three" is what gives the lighting its meaning, so choose them for what the sentence says.
+- **Give it `tabindex="0"`, or make it a button,** so the keyboard reaches it.
+- **It can preview a click:** `<button data-go="CMP-3" data-points-at="CMP-3">` lights what the click will go to.
+
+A list can also be sent from code, as the protocol above says, for a sandbox whose model works it out.
 
 ## The protocol
 
@@ -20,7 +55,7 @@ document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: null } }
 - **A ref is a short name for a thing,** such as `i-hat`, `col-1` or `RUL-003`. Use the thing's code where it has one (see the [identifiers practice](identifiers.md)).
 - **Announce a ref** when something starts being pointed at (hover or keyboard focus), and `null` when it stops.
 - **Light up** whatever you've marked with the announced ref, and clear it on `null` or a different ref.
-- **A trace can come with it.** `refs` beside `ref` lists everything the thing is connected to, itself included, such as a train, the rules that decided it and what the board shows for it: `{ ref: 'T3', refs: ['T3', 'E3', 'T3.board.expected'] }`. Light everything in `refs` when it's there, and `ref` alone when it isn't. The model works the trace out, once, so every view lights the same things.
+- **A list can come with it.** `refs` beside `ref` names everything to light, itself included, such as a train, the rules that decided it and what the board shows for it: `{ ref: 'T3', refs: ['T3', 'E3', 'T3.board.expected'] }`. Light everything in `refs` when it's there, and `ref` alone when it isn't.
 
 No component knows about any other. Each just announces, or listens, or both.
 
@@ -28,15 +63,29 @@ No component knows about any other. Each just announces, or listens, or both.
 
 | Part | Announces | Lights up |
 |---|---|---|
-| [`sb-id`](../components/sb-id/manifest.md) | its code, while hovered or focused | itself, when its code is announced |
-| [`sb-math`](../components/sb-math/manifest.md) | the `data-ref` of the part hovered or focused | every part marked with the announced ref |
+| The script | anything with a `data-ref`, or `data-points-at`, that nothing else speaks for | everything with an announced ref |
+| [`sb-id`](../components/sb-id/manifest.md), [`sb-person`](../components/sb-person/manifest.md) | itself, while pointed at | itself |
+| [`sb-poll`](../components/sb-poll/manifest.md) | an option with a `ref` | those options |
+| [`sb-accordion`](../components/sb-accordion/manifest.md) | a section, while its heading is pointed at | those sections, and tints a closed one holding a named part |
+| [`sb-math`](../components/sb-math/manifest.md) | the `data-ref` of the part hovered or focused | every part marked with the ref |
+| [`sb-discovery-card`](../components/sb-discovery-card/manifest.md) | a passage's source, a card in a fold, or itself | through the script |
 | [`sb-xref`](../components/sb-xref/manifest.md) | the ref of the place or link hovered or focused | — |
-| [`sb-outliner`](../components/sb-outliner/manifest.md) | the ref of the entry pointed at, with its trace in `refs` | its entries: the ref strongly, the rest of `refs` faintly. Also keeps traces lit: see "Keeping things lit" |
-| Other components | — | through the sandbox, below |
+| [`sb-outliner`](../components/sb-outliner/manifest.md) | the ref of the entry pointed at, with its trace in `refs` | its entries: the ref strongly, the rest of `refs` faintly |
 
-## Wiring the rest
+**A component says when it speaks for itself,** with two attributes that the script reads, so it never needs a component's name:
 
-Components such as `sb-plane`, `sb-matrix` and `sb-graph` have their own highlight properties but don't listen for the event themselves. The sandbox routes refs to them with one listener:
+- `data-sb-announces` on an element: nothing inside it is announced by the script.
+- `data-sb-lights` on a part: the part lights itself, so the script neither lights nor announces it. Parts inside it still count. It doesn't show pins either, until a component takes them itself.
+
+## Wiring what the script can't
+
+The script lights parts by name. Reach for wiring only for what that leaves out:
+
+- **Things with no `data-ref`,** such as a column of [`sb-matrix`](../components/sb-matrix/manifest.md) or an arrow on [`sb-plane`](../components/sb-plane/manifest.md).
+- **What only a component's own `highlight` can do,** such as `sb-tree` marking the closed branch that holds a node, or `sb-c4` lighting a line that carries several relationships.
+- **Meaning the model knows,** such as a line lighting the messages travelling along it, or a part lighting everything connected to it whenever it's pointed at.
+
+A listener routes refs to those components' `highlight` properties, which each take their own shape, and sits happily beside the script:
 
 ```js
 const HIGHLIGHTS = {
@@ -51,18 +100,26 @@ document.addEventListener('sb-highlight', (e) => {
 });
 ```
 
-Most of these components don't announce either: pointing at an `sb-c4` box lights its neighbours inside the diagram, and nothing else. Their parts carry `data-ref` (see the [locating practice](locating.md)), so the sandbox announces for them with two lines on the component itself:
+To announce for something the script can't name, do it from a listener of your own. The script hears that and stays out of the way, for that pointing, whatever you chose to announce:
 
 ```js
-diagram.addEventListener('pointerover', (e) => announce(e.target.closest('[data-ref]')?.dataset.ref ?? null));
-diagram.addEventListener('pointerleave', () => announce(null));
+const announce = (ref, refs) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: refs ? { ref, refs } : { ref } }));
+
+matrix.addEventListener('pointerover', (e) => announce(columnRefAt(e.target) ?? null));
+matrix.addEventListener('pointerleave', () => announce(null));
 ```
 
-For the sandbox's own elements, see "Your own parts" below.
+Do the same, with a list, for a part that should always light what the model connects it to: `announce(ref, model.traceOf(ref))`.
+
+### Sandboxes wired before the script
+
+`pointable`, `pinnable`, `is-lit`, routing tables and the two announcing lines all keep working with the script on the page, and nothing fires twice. When you next touch such a page, you can delete `pointable`, `pinnable`, their `is-lit` and `is-pinned` CSS, and any announcing that only repeats a part's `data-ref`, along with any routing that only lights parts by that ref.
+
+While a part is lit by the script, it shows the script's look, even when a routed `highlight` would have coloured it differently.
 
 ## Your own parts
 
-Components can't cover everything. A diagram drawn in SVG, a phrase in the prose, a card the sandbox lays out itself: these should point, light up and be found like everything else.
+Components can't cover everything. A diagram drawn in SVG, a phrase in the prose, a card the sandbox lays out itself: these point, light up and are found like everything else, once they're named.
 
 ### Name what a part is
 
@@ -70,64 +127,14 @@ Give every part that stands for a thing in the model `data-ref` with that thing'
 
 - **On the part's outermost element:** the `<g>` in SVG, the `<span>` around a phrase, the card's root.
 - **Never inside a component.** Add nothing to what a component draws: it redraws whenever it likes. Route to its `highlight` instead, as above.
-
-### Point and light up with one helper
-
-Write this once in the page script, beside `announce`, and call it for each container of the sandbox's own parts:
-
-```js
-// Pointing at the sandbox's own parts in `root`: announces a part while it's pointed at or focused,
-// with its trace, and lights every part in the announced trace. Components inside root point and
-// light up themselves. traceOf is the model's; without one, a part lights only its own ref.
-function pointable(root, traceOf = (ref) => [ref]) {
-  // The sandbox's own part an element is in, or null if it's in none, or inside a component.
-  const partAt = (el) => {
-    const part = el?.closest('[data-ref]');
-    if (!part || !root.contains(part)) return null;
-    for (let at = part; at !== root; at = at.parentElement) if (at.localName.startsWith('sb-')) return null;
-    return part;
-  };
-  // Arriving at a part announces it; leaving ends the highlight, unless it went straight to another part.
-  const arrive = (e) => {
-    const part = partAt(e.target);
-    if (part && part !== partAt(e.relatedTarget)) announce(part.dataset.ref, traceOf(part.dataset.ref));
-  };
-  const leave = (e) => { if (partAt(e.target) && !partAt(e.relatedTarget)) announce(null); };
-  root.addEventListener('pointerover', arrive);
-  root.addEventListener('focusin', arrive);
-  root.addEventListener('pointerout', leave);
-  root.addEventListener('focusout', leave);
-
-  document.addEventListener('sb-highlight', (e) => {
-    const lit = new Set(e.detail.refs ?? [e.detail.ref]);
-    for (const part of root.querySelectorAll('[data-ref]')) {
-      if (partAt(part) === part) part.classList.toggle('is-lit', lit.has(part.dataset.ref));
-    }
-  });
-}
-
-pointable(document.querySelector('#warehouse-map'));
-pointable(document.querySelector('main'));   // phrases in the prose
-```
-
-- **Components inside are left alone,** so an `sb-id` pill or an `sb-math` term in the prose keeps announcing itself, once.
-- **Moving between parts** announces the next one with no `null` between, so nothing flickers.
-- **`is-lit` is the sandbox's own class,** styled in `style.css` (below). `sb-` belongs to Sandkit.
-- **A part that goes somewhere is a link,** as in the locating practice: keep its target in `data-go`, call `goTo` on click, and point with `announce`. Make it a button, or in SVG give it `role="button"` and `tabindex="0"`, so the keyboard reaches it.
+- **A part that goes somewhere is a link,** as in the locating practice: keep its target in `data-go`, call `goTo` on click, and let `data-points-at` preview it. Make it a button, or in SVG give it `role="button"` and `tabindex="0"`, so the keyboard reaches it.
 
 ### Look like the components
 
-Light parts with the theme's accent, never fixed colours, as `sb-math` and `sb-wireframe` do:
+The script lights your parts for you. Two things are yours:
 
-```css
-.is-lit { background: var(--sb-accent-soft); color: var(--sb-accent); border-radius: 3px; }
-svg .is-lit .shape { fill: var(--sb-accent-soft); stroke: var(--sb-accent); stroke-width: 3; }
-svg .is-lit .line { stroke: var(--sb-accent); stroke-width: 3; }
-.hit { fill: none; stroke: transparent; stroke-width: 12; }
-```
-
-- **Colour through classes, not attributes.** A shape drawn with `fill="#c33"` can't be lit; `class="shape"` with its colour in `style.css` can.
-- **Lit outranks tone.** A lit part shows as lit even when it also carries a warning colour.
+- **Draw shapes so a stroke shows.** On SVG, the script strokes a part's own shapes, the direct children of its `<g>`, or the shape itself if that's what carries the `data-ref`. A shape filled in the accent shows it less, so leave room around it, or give it another colour.
+- **Colour through classes, not attributes.** A class in `style.css` is easy to change; `fill="#c33"` is not.
 
 ### In SVG
 
@@ -163,33 +170,10 @@ Pointing lights things only while the pointer stays, and the light goes the mome
 { fill: ['T3', 'E3', 'T3.board.expected'], outline: ['T5'], glow: false }
 ```
 
-- **Keep `is-pinned-fill` and `is-pinned-outline`** on every part whose ref is in each list, until the next `sb-pins`. They're the sandbox's own classes, like `is-lit`.
+- **The script keeps them lit** everywhere their refs appear, through redraws: a fill as a tint, and on SVG a thick stroke; an outline as an outline, and on SVG a dashed stroke. Pointing at something outranks its pin while it lasts.
 - **When the model changes, set the outliner's `items` again,** or call its `refresh()`: it works the traces out afresh, so a pinned case's lit rules follow whichever rules decide it now.
-- **Components with a `highlight` property** take pins the way they take pointing: the sandbox routes them.
-- **Glow.** With `glow` on, pinned highlights fade slowly down to 5% and back, so they catch the eye while people work elsewhere. The outliner animates one number, `--sb-glow`, on anything carrying the class `sb-outliner__glowing`, and everything inside inherits it. Put that class on the container while `glow` is true, and mix pinned colours with the number; pointing's `is-lit` stays at full strength.
-
-Add this beside `pointable`, for each container:
-
-```js
-// Keeps the sandbox's own parts in root filled or outlined while the outliner's pins trace to them, glowing with them.
-function pinnable(root, outliner) {
-  outliner.addEventListener('sb-pins', (e) => {
-    const fill = new Set(e.detail.fill), outline = new Set(e.detail.outline);
-    root.classList.toggle('sb-outliner__glowing', e.detail.glow);
-    for (const part of root.querySelectorAll('[data-ref]')) {
-      part.classList.toggle('is-pinned-fill', fill.has(part.dataset.ref));
-      part.classList.toggle('is-pinned-outline', outline.has(part.dataset.ref));
-    }
-  });
-}
-```
-
-```css
-.is-pinned-fill { background: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 28%), transparent); }
-.is-pinned-outline { outline: 2px solid color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 100%), transparent); }
-```
-
-A part redrawn after `sb-pins` has lost its classes: keep the last lists and mark again after drawing, or draw before setting `items`, as the outliner then sends them afresh.
+- **Components with a `highlight` property that the script can't reach** take pins the way they take pointing: the sandbox routes them.
+- **Glow.** With `glow` on, pinned highlights fade slowly down to 5% and back, so they catch the eye while people work elsewhere. The outliner animates one number, `--sb-glow`, on anything carrying the class `sb-outliner__glowing`, and everything inside inherits it. The script puts that class on the page while any outliner has `glow` on. Pointing stays at full strength.
 
 ## Pointing shows, clicking acts
 

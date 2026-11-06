@@ -1,5 +1,8 @@
 # sb-discovery-card changelog
 
+## 0.1.6 · 2026-11-06
+- Carries `data-sb-announces`, so the page-wide `sb-highlighting` script leaves its announcing to it.
+
 ## 0.1.5 · 2026-11-05
 - Two new kinds: `capability`, a constraint's opposite, and `contract`, what people agree shapes a domain.
 - A contract wears its own material, in every variant but compact a sheet in a double rule, with a serif title, its `scope`, numbered `articles` of clauses that open and light what they name, and the `parties`' signature lines. Compact, it keeps the double rule.

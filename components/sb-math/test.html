@@ -83,6 +83,10 @@
       assertEqual(lit(el), []);
       highlight(null);
     });
+
+    test('says it announces for itself, for the page-wide script', () => {
+      assert(mount('<sb-math></sb-math>').hasAttribute('data-sb-announces'));
+    });
   </script>
 </body>
 </html>

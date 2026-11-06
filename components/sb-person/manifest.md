@@ -41,7 +41,9 @@ Follows the [highlighting practice](../../practices/highlighting.md):
 
 | Announces | Lights up |
 |---|---|
-| its `ref`, while pointed at, and `null` on leaving | itself, when its `ref` is announced |
+| its `ref`, while pointed at, and `null` on leaving | itself, when its `ref` is announced or named in a list |
+
+It carries `data-sb-announces` and `data-sb-lights`, so the page-wide script leaves it to itself.
 
 ## Styling
 

@@ -1,5 +1,9 @@
 # sb-id changelog
 
+## 0.1.4 · 2026-11-06
+- A pill lights when its code is named in a list on `sb-highlight` (`refs`), not only as the lone `ref`. Carries `data-sb-announces` and `data-sb-lights`, so the page-wide `sb-highlighting` script leaves it to itself.
+- Fixed: moving straight from a pill to something else that announces could turn its light off, because the pill said it had stopped pointing too late. A pill now announces on pointer events, and a tap shows its card without announcing.
+
 ## 0.1.3 · 2026-10-25
 - Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
 

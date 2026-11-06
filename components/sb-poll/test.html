@@ -191,6 +191,22 @@
       el.revealed = true;
       assertEqual(el.querySelectorAll('b, i').length, 0);
     });
+
+    test('says it announces, and its options light themselves, for the page-wide script', () => {
+      const el = poll();
+      assert(el.hasAttribute('data-sb-announces'));
+      assert(el.querySelector('[data-option-ref="OUT-2"]').hasAttribute('data-sb-lights'));
+    });
+
+    test('lights an option whose ref is named in a list, and clears', () => {
+      const el = poll();
+      const option = () => el.querySelector('[data-option-ref="OUT-2"]');
+      const say = (detail) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail }));
+      say({ ref: 'OTHER', refs: ['OTHER', 'OUT-2'] });
+      assert(option().classList.contains('sb-poll__option--highlighted'));
+      say({ ref: null });
+      assert(!option().classList.contains('sb-poll__option--highlighted'));
+    });
   </script>
 </body>
 </html>

@@ -78,6 +78,8 @@ Setting properties and calling methods never fires the events below; they are fo
 | `sb-back` | `{ ref }` | Back or a crumb is clicked. The component has already gone back to that subject; set its `places` and `links` again, since they may have changed. Bubbles. |
 | `sb-highlight` | `{ ref }` | Fired on `document` while a place (its subject's ref) or a link (its ref) is pointed at or focused, and `{ ref: null }` after, as in the [highlighting practice](../../practices/highlighting.md). |
 
+It carries `data-sb-announces`, so the page-wide highlighting script leaves its announcing to it.
+
 ## Styling
 
 Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-radius`.

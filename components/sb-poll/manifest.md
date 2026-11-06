@@ -90,7 +90,9 @@ Follows the [highlighting practice](../../practices/highlighting.md):
 
 | Announces | Lights up |
 |---|---|
-| an option's `ref`, while pointed at | the options whose `ref` is announced |
+| an option's `ref`, while pointed at | the options whose `ref` is announced or named in a list |
+
+The poll carries `data-sb-announces`, and its options `data-sb-lights`, so the page-wide script leaves them to it.
 
 ## Styling
 

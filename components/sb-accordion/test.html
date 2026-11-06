@@ -186,6 +186,28 @@
       assertEqual(el.querySelectorAll('.sb-accordion__note b').length, 0);
       assertEqual(el.querySelector('.sb-accordion__note').textContent, '<b>x</b>');
     });
+
+    test('its sections say they light themselves, for the page-wide script', () => {
+      const el = mount('<sb-accordion><details data-ref="S1"><summary>One</summary><p>x</p></details></sb-accordion>');
+      assert(el.querySelector('details').hasAttribute('data-sb-lights'));
+    });
+
+    test('lights a section named in a list, and tints one holding a part named in it', () => {
+      const el = mount(`<sb-accordion>
+        <details data-ref="S1"><summary>One</summary><p>x</p></details>
+        <details><summary>Two</summary><p data-ref="P1">y</p></details>
+        <details data-ref="S3"><summary>Three</summary><p>z</p></details>
+      </sb-accordion>`);
+      const [one, two, three] = el.querySelectorAll('details');
+      const say = (detail) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail }));
+      say({ ref: 'S1', refs: ['S1', 'P1'] });
+      assert(one.classList.contains('sb-accordion__section--highlighted'));
+      assert(two.classList.contains('sb-accordion__section--lit-inside'));
+      assert(!three.classList.contains('sb-accordion__section--highlighted'), 'not named');
+      say({ ref: null });
+      assert(!one.classList.contains('sb-accordion__section--highlighted'));
+      assert(!two.classList.contains('sb-accordion__section--lit-inside'));
+    });
   </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// Sandkit sb-discovery-card 0.1.5 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-discovery-card 0.1.6 · MIT Licence · https://github.com/sebjwallace/sandkit
 // One card of domain discovery: a source, a claim, a question, a decision, a run, or any other
 // kind the practice names, each with its own icon and tone. Shown compact on a board, normal with
 // its folds closed, or expanded near full screen with every fold open. The sandbox works out every status and what's "as of" when; the card
@@ -578,6 +578,7 @@
     connectedCallback() {
       addStyle();
       this.classList.add('sb-discovery-card');
+      this.dataset.sbAnnounces = '';
       this.render();
     }
 

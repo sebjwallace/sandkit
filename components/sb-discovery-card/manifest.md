@@ -106,7 +106,7 @@ The practice asks every card for `created`, `by` and `iteration`; the card shows
 | `sb-open` | `{ ref, quote? }` | An openable compact card, a card in a fold, or a passage (with its `quote`) is clicked. Bubbles. The sandbox decides what opening means. |
 | `sb-highlight` | `{ ref }`, `{ ref: null }` | Pointing or focus moves to a passage (its excerpt, or its source), a card in a fold, or the card itself, and away. Fired on `document`, as the [highlighting practice](../../practices/highlighting.md) describes. |
 
-Setting properties never fires events.
+Setting properties never fires events. The card carries `data-sb-announces`, so the page-wide highlighting script leaves its announcing to it, and lights its parts.
 
 ## Styling
 

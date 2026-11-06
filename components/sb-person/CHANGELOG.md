@@ -1,5 +1,8 @@
 # sb-person changelog
 
+## 0.1.2 · 2026-11-06
+- A badge lights when its ref is named in a list on `sb-highlight` (`refs`), not only as the lone `ref`. Carries `data-sb-announces` and `data-sb-lights`, so the page-wide `sb-highlighting` script leaves it to itself.
+
 ## 0.1.1 · 2026-10-25
 - Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.
 

@@ -223,7 +223,7 @@ People who know the domain try the prototype or a run and say what they think. T
 - **Lead with the main strip,** so a card reads in one line; supporting facts after; what it rests on in folds.
 - **Sources and excerpts are only ever compact cards.** Opened, a source is the material itself: answer `sb-open` on a source by showing it in [`sb-source`](../components/sb-source/manifest.md) or a view of your own, with only its excerpts that aren't superseded as passages, and on an excerpt, or a passage naming one, by showing its source there. An excerpt carried on a board in place of its whole source shows its words, its region of an image or its rows.
 - **Open other cards expanded,** in [`sb-modal`](../components/sb-modal/manifest.md).
-- **Route pointing both ways.** Cards announce `sb-highlight` for what's pointed at; route it to every card's `highlight`, so a source, and its excerpts, light up wherever they're cited (see [highlighting](highlighting.md)).
+- **Let pointing work both ways.** Cards announce `sb-highlight` for what's pointed at, and the highlighting script lights every part with that ref. Route it to a card's `highlight` where a card should mark more than that, so a source, and its excerpts, light up wherever they're cited (see [highlighting](highlighting.md)).
 
 ## Boards
 

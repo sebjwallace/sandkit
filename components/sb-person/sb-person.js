@@ -1,4 +1,4 @@
-// Sandkit sb-person 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-person 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A person as a badge: an icon in a circle, their name and their role, so whoever took part is
 // recognisable wherever they appear. An agent's circle is dashed. Given a ref, pointing at a
 // badge announces it page-wide, and every badge with that ref lights up together.
@@ -47,7 +47,7 @@
 
     constructor() {
       super();
-      this._onHighlight = (e) => this.classList.toggle('sb-person--highlighted', Boolean(this.ref) && e.detail?.ref === this.ref);
+      this._onHighlight = (e) => this.classList.toggle('sb-person--highlighted', Boolean(this.ref) && (e.detail?.ref == null ? [] : e.detail.refs ?? [e.detail.ref]).includes(this.ref));
       this.addEventListener('pointerenter', () => { if (this.ref) announce(this.ref); });
       this.addEventListener('pointerleave', () => { if (this.ref) announce(null); });
     }
@@ -55,6 +55,8 @@
     connectedCallback() {
       addStyle();
       this.classList.add('sb-person');
+      this.dataset.sbAnnounces = '';
+      this.dataset.sbLights = '';
       document.addEventListener('sb-highlight', this._onHighlight);
       this.render();
     }

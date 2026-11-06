@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Highlighting compatibility</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-table/sb-table.js"></script>
+  <script src="../../components/sb-c4/sb-c4.js"></script>
+  <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="../../components/sb-outliner/sb-outliner.js"></script>
+
+  <!-- An older page, wired by hand below, that has just added this one line. -->
+  <script src="../../shell/sb-highlighting.js"></script>
+
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 1240px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .view { min-width: 0; background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .view h2 { margin: 0 0 10px; font-size: 15px; }
+    .views { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 16px; align-items: start; }
+    .prose { margin: 0; font-size: 15px; }
+    .point { border-bottom: 1px dashed var(--sb-accent); cursor: default; }
+    #map .line { stroke: var(--sb-muted); stroke-width: 3; fill: none; }
+    #map .hit { stroke: transparent; stroke-width: 12; fill: none; }
+    #map text { fill: var(--sb-text); font-size: 12px; }
+
+    .bench { position: sticky; top: 56px; z-index: 5; background: var(--sb-surface-2); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 8px 14px; font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); overflow-wrap: anywhere; }
+
+    /* The practice's own classes, unchanged. */
+    .is-lit { background: var(--sb-accent-soft); color: var(--sb-accent); border-radius: 3px; }
+    #map .is-lit .line { stroke: var(--sb-accent); stroke-width: 3; }
+    .is-pinned-fill { background: color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 28%), transparent); }
+    .is-pinned-outline { outline: 2px solid color-mix(in srgb, var(--sb-accent) calc(var(--sb-glow, 1) * 100%), transparent); }
+    #map .is-pinned-fill .line, #map .is-pinned-outline .line { stroke: var(--sb-accent); stroke-width: 5; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="Highlighting compatibility">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <sb-outliner slot="panels" id="outline" heading="Outline"></sb-outliner>
+    <p>An older page wired by hand with pointable, pinnable and a routing table, plus the new script. It should behave as it did.</p>
+  </sb-shell>
+
+  <main>
+    <output class="bench" id="heard">Point at something: every announcement is numbered here, so a double would show.</output>
+
+    <section class="view" id="own">
+      <p class="prose">
+        Barges leave <span class="point" data-ref="DOC-2" tabindex="0">the north dock</span> along
+        <span class="point" data-ref="RTE-1" tabindex="0">the canal route</span>, which <sb-id code="RUL-1"></sb-id> keeps clear at night.
+      </p>
+      <svg id="map" width="320" height="60" role="img" aria-label="The canal route">
+        <g data-ref="RTE-1">
+          <title>The canal route</title>
+          <path class="hit" d="M10 40 C 90 0, 220 70, 310 25"></path>
+          <path class="line" d="M10 40 C 90 0, 220 70, 310 25"></path>
+        </g>
+        <text x="10" y="56">A drawing of the sandbox's own</text>
+      </svg>
+    </section>
+
+    <div class="views">
+      <section class="view"><h2>Routed and wired: a C4 diagram</h2><sb-c4 id="diagram" root-label="Yard"></sb-c4></section>
+      <section class="view"><h2>Routed only: a table</h2><sb-table id="register"></sb-table></section>
+    </div>
+  </main>
+
+  <script>
+    // ---- The hand wiring, from practices/highlighting.md ----
+
+    const announce = (ref, refs) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: refs ? { ref, refs } : { ref } }));
+
+    function pointable(root, traceOf = (ref) => [ref]) {
+      const partAt = (el) => {
+        const part = el?.closest('[data-ref]');
+        if (!part || !root.contains(part)) return null;
+        for (let at = part; at !== root; at = at.parentElement) if (at.localName.startsWith('sb-')) return null;
+        return part;
+      };
+      const arrive = (e) => {
+        const part = partAt(e.target);
+        if (part && part !== partAt(e.relatedTarget)) announce(part.dataset.ref, traceOf(part.dataset.ref));
+      };
+      const leave = (e) => { if (partAt(e.target) && !partAt(e.relatedTarget)) announce(null); };
+      root.addEventListener('pointerover', arrive);
+      root.addEventListener('focusin', arrive);
+      root.addEventListener('pointerout', leave);
+      root.addEventListener('focusout', leave);
+
+      document.addEventListener('sb-highlight', (e) => {
+        const lit = new Set(e.detail.refs ?? [e.detail.ref]);
+        for (const part of root.querySelectorAll('[data-ref]')) {
+          if (partAt(part) === part) part.classList.toggle('is-lit', lit.has(part.dataset.ref));
+        }
+      });
+    }
+
+    function pinnable(root, outliner) {
+      outliner.addEventListener('sb-pins', (e) => {
+        const fill = new Set(e.detail.fill), outline = new Set(e.detail.outline);
+        root.classList.toggle('sb-outliner__glowing', e.detail.glow);
+        for (const part of root.querySelectorAll('[data-ref]')) {
+          part.classList.toggle('is-pinned-fill', fill.has(part.dataset.ref));
+          part.classList.toggle('is-pinned-outline', outline.has(part.dataset.ref));
+        }
+      });
+    }
+
+    const $ = (id) => document.getElementById(id);
+    const TRACES = { 'DOC-2': ['DOC-2', 'RTE-1'], 'RUL-1': ['RUL-1', 'RTE-1'] };
+    const traceOf = (ref) => TRACES[ref] ?? [ref];
+
+    document.addEventListener('sb-resolve', (e) => {
+      if (e.detail.code === 'RUL-1') e.detail.definition = { kind: 'Rule', title: 'RUL-1', description: 'The canal stays clear at night.' };
+    });
+
+    $('diagram').model = {
+      elements: [{ id: 'DOC-2', name: 'North dock', kind: 'container' }, { id: 'RTE-1', name: 'Canal route', kind: 'container' }, { id: 'YRD-9', name: 'Yard', kind: 'system' }],
+      relationships: [{ from: 'RTE-1', to: 'DOC-2', label: 'Serves' }, { from: 'DOC-2', to: 'YRD-9', label: 'Reports to' }]
+    };
+    $('register').columns = [{ key: 'id', label: 'Code' }, { key: 'what', label: 'What it is' }];
+    $('register').rows = [
+      { id: 'DOC-2', what: 'The north dock' },
+      { id: 'RTE-1', what: 'The canal route' },
+      { id: 'YRD-9', what: 'The yard: nothing wires this row to announce' },
+      { id: 'RUL-1', what: 'The canal stays clear at night' }
+    ];
+
+    $('outline').trace = traceOf;
+    $('outline').items = [{ heading: 'Things' }, { ref: 'DOC-2', label: 'The north dock' }, { ref: 'RTE-1', label: 'The canal route' }, { ref: 'RUL-1', label: 'The night rule' }];
+
+    pointable($('own'), traceOf);
+    pinnable($('own'), $('outline'));
+
+    // The routing table: a ref to each component's own highlight.
+    document.addEventListener('sb-highlight', (e) => {
+      const lit = e.detail.ref == null ? [] : e.detail.refs ?? [e.detail.ref];
+      $('diagram').highlight = { elements: lit };
+      $('register').highlight = { rows: lit };
+    });
+
+    // The two lines that announce for a component.
+    $('diagram').addEventListener('pointerover', (e) => announce(e.target.closest('[data-ref]')?.dataset.ref ?? null));
+    $('diagram').addEventListener('pointerleave', () => announce(null));
+
+    // ---- Only for this page: the numbered line at the top. ----
+
+    let count = 0;
+    document.addEventListener('sb-highlight', (e) => {
+      count += 1;
+      const { ref, refs } = e.detail;
+      $('heard').textContent = `#${count} sb-highlight: ${ref ?? 'null'}${refs ? ` + ${refs.length - 1} more` : ''}`;
+    });
+  </script>
+</body>
+</html>

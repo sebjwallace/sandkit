@@ -66,7 +66,7 @@ More components join as sandboxes need them. A component's manifest says what it
 The sandbox does the finding, so no component ever searches the page. Write these once, in the page script:
 
 ```js
-// Announces a ref, and with it, when there is one, its trace (see the highlighting practice).
+// Announces a ref, and with it, when there is one, a list to light (see the highlighting practice).
 const announce = (ref, refs) => document.dispatchEvent(new CustomEvent('sb-highlight', { detail: refs ? { ref, refs } : { ref } }));
 
 // Every place on the page a ref appears, in page order.
@@ -95,11 +95,11 @@ function revealAround(place, ref) {
 }
 ```
 
-- **Lighting up reuses `sb-highlight`,** so whatever already lights up for a ref, through the highlighting practice's wiring, lights up on arrival. Nothing new to style.
+- **Lighting up reuses `sb-highlight`,** so whatever already lights up for a ref, through the highlighting script or the sandbox's wiring, lights up on arrival. Nothing new to style.
 - **Calling `reveal` is wiring, not coupling.** It's a documented method, called by the sandbox; no component knows `goTo` exists.
 - **When you know which view you mean, call its `reveal` directly.** A sentence about the diagram goes to the diagram: `diagram.reveal('CMP-3')` walks in and shows the part, even when it isn't drawn yet. `goTo` is for when you don't know where a thing is, as in a list of every place it appears.
 - **A word that goes somewhere is a link, not a place.** Don't mark it with `data-ref`, or it's the first place found; keep its target in an attribute of your own, such as `data-go`.
-- **Going is a click, not a point.** Call `goTo` on a click (see "Pointing shows, clicking acts" in the highlighting practice), and let pointing at the same word preview it with `announce`.
+- **Going is a click, not a point.** Call `goTo` on a click (see "Pointing shows, clicking acts" in the highlighting practice), and let pointing at the same word preview it with `data-points-at` (see the highlighting practice).
 
 ## Listing where a ref appears
 

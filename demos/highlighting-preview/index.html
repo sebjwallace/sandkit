@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Highlighting preview</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../components/sb-table/sb-table.js"></script>
+  <script src="../../components/sb-statechart/sb-statechart.js"></script>
+  <script src="../../components/sb-c4/sb-c4.js"></script>
+  <script src="../../components/sb-discovery-card/sb-discovery-card.js"></script>
+  <script src="../../components/sb-id/sb-id.js"></script>
+  <script src="../../components/sb-person/sb-person.js"></script>
+  <script src="../../components/sb-poll/sb-poll.js"></script>
+  <script src="../../components/sb-accordion/sb-accordion.js"></script>
+  <script src="../../components/sb-math/sb-math.js"></script>
+  <script src="../../components/sb-outliner/sb-outliner.js"></script>
+  <script src="../../components/sb-xref/sb-xref.js"></script>
+
+  <!-- The one line a sandbox would add. -->
+  <script src="../../shell/sb-highlighting.js"></script>
+
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { max-width: 1240px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+    .view { min-width: 0; background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 14px 18px; }
+    .view h2 { margin: 0 0 10px; font-size: 15px; }
+    .views { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 16px; align-items: start; }
+    .prose { margin: 0; font-size: 15px; }
+    .prose + .prose { margin-top: 10px; }
+    .preview-button { padding: 2px 10px; font: inherit; font-size: 13px; color: var(--sb-text); background: var(--sb-surface-2); border: 1px solid var(--sb-border); border-radius: 4px; }
+    .preview-button:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+    .point { border-bottom: 1px dashed var(--sb-accent); border-radius: 3px; cursor: default; }
+
+    .bench { position: sticky; top: 56px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; background: var(--sb-surface-2); border: 1px solid var(--sb-border); border-radius: var(--sb-radius); padding: 8px 14px; font-size: 13px; }
+    .bench label { display: flex; align-items: center; gap: 6px; }
+    .bench button { padding: 3px 10px; font: inherit; color: var(--sb-text); background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: 4px; cursor: pointer; }
+    .bench button:hover { border-color: var(--sb-accent); }
+    .bench output { flex: 1 1 280px; min-width: 0; font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--sb-muted); text-align: right; overflow-wrap: anywhere; }
+    .bench button:focus-visible, .point:focus-visible { outline: 2px solid var(--sb-accent); outline-offset: 1px; }
+  </style>
+</head>
+<body>
+  <sb-shell heading="Highlighting preview">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <sb-outliner slot="panels" id="outline" heading="Outline"></sb-outliner>
+    <p>Point at anything in any view, or pin something in the Outline to keep it lit. Nothing on this page routes highlights: it includes one script, and the views share names.</p>
+  </sb-shell>
+
+  <main>
+    <div class="bench">
+      <button type="button" id="redraw">Redraw every view in 2 seconds</button>
+      <output id="heard" aria-live="off">Point at something…</output>
+    </div>
+
+    <section class="view">
+      <p class="prose">
+        A train on the line trips the <span class="point" data-ref="TRK-1" tabindex="0">track circuit</span>, and the
+        <span class="point" data-ref="INT-1" tabindex="0">interlocking</span> holds the
+        <span class="point" data-ref="SIG-1" tabindex="0">signal</span> at red (<sb-id code="RUL-1"></sb-id>). The
+        <span class="point" data-ref="PTS-1" tabindex="0">points</span> can't move while a route is set (<sb-id code="RUL-2"></sb-id>).
+      </p>
+      <p class="prose">
+        Sentences can point at several things on purpose:
+        <span class="point" data-points-at="TRK-1 SIG-1 RUL-1" tabindex="0">the parts that stop a train</span>, or
+        <span class="point" data-points-at="PTS-1 INT-1 RUL-2 ST-SET" tabindex="0">everything that holds a route in place</span>.
+        So can a button: <button type="button" class="preview-button" data-points-at="ST-CLEAR ST-SET ST-HELD">Show every state</button>.
+        Lists reach everything that lights itself too:
+        <span class="point" data-points-at="RUL-1 RUL-2 TRK-1 OP-1" tabindex="0">the rules, the track circuit and who's on duty</span>.
+      </p>
+    </section>
+
+    <div class="views">
+      <section class="view"><h2>A table: everything named here</h2><sb-table id="register"></sb-table></section>
+      <section class="view"><h2>A C4 diagram: the equipment</h2><sb-c4 id="equipment" root-label="Junction"></sb-c4></section>
+      <section class="view"><h2>A statechart: the junction</h2><sb-statechart id="junction"></sb-statechart></section>
+      <section class="view"><h2>A discovery card: what must hold</h2><sb-discovery-card id="contract"></sb-discovery-card></section>
+      <section class="view"><h2>A person, and an equation</h2>
+        <p class="prose"><sb-person ref="OP-1" name="Asha Rao" role="Signaller"></sb-person></p>
+        <sb-math><math display="block"><mi data-ref="SIG-1">signal</mi><mo>=</mo><mi data-ref="TRK-1">track</mi><mo>+</mo><mi data-ref="INT-1">interlocking</mi></math></sb-math>
+      </section>
+      <section class="view"><h2>An accordion</h2>
+        <sb-accordion>
+          <details data-ref="RUL-1" open><summary>The signal rule</summary><p>Stays red while the <span class="point" data-ref="TRK-1" tabindex="0">track circuit</span> reports a train.</p></details>
+          <details data-ref="RUL-2"><summary>The points rule</summary><p>Locked by the <span class="point" data-ref="INT-1" tabindex="0">interlocking</span> while a route is set.</p></details>
+        </sb-accordion>
+      </section>
+      <section class="view"><h2>A poll</h2><sb-poll id="vote" question="Which matters most at this junction?"></sb-poll></section>
+      <section class="view"><h2>A cross-reference: where RUL-1 appears</h2><sb-xref id="where"></sb-xref></section>
+    </div>
+  </main>
+
+  <script>
+    // ---- The sandbox's data. No highlighting code here: each view is only given what it shows. ----
+
+    const REGISTER = [
+      { id: 'TRK-1', code: 'TRK-1', kind: 'Equipment', what: 'Track circuit: knows when a train is on the line' },
+      { id: 'SIG-1', code: 'SIG-1', kind: 'Equipment', what: 'Signal at the junction' },
+      { id: 'PTS-1', code: 'PTS-1', kind: 'Equipment', what: 'Points that set the route' },
+      { id: 'INT-1', code: 'INT-1', kind: 'Equipment', what: 'Interlocking: keeps them all consistent' },
+      { id: 'RUL-1', code: 'RUL-1', kind: 'Rule', what: 'The signal stays red while the line is occupied' },
+      { id: 'RUL-2', code: 'RUL-2', kind: 'Rule', what: 'Points can\'t move while a route is set' },
+      { id: 'ST-CLEAR', code: 'ST-CLEAR', kind: 'State', what: 'Nothing on the line, no route set' },
+      { id: 'ST-SET', code: 'ST-SET', kind: 'State', what: 'A route is set and the signal cleared' },
+      { id: 'ST-HELD', code: 'ST-HELD', kind: 'State', what: 'A train is on the line' }
+    ];
+
+    const EQUIPMENT = {
+      elements: [
+        { id: 'TRK-1', name: 'Track circuit', kind: 'container', description: 'Detects a train' },
+        { id: 'INT-1', name: 'Interlocking', kind: 'system', description: 'Decides what may happen' },
+        { id: 'SIG-1', name: 'Signal', kind: 'container', description: 'Tells the driver' },
+        { id: 'PTS-1', name: 'Points', kind: 'container', description: 'Set the route' }
+      ],
+      relationships: [
+        { from: 'TRK-1', to: 'INT-1', label: 'Reports occupied' },
+        { from: 'INT-1', to: 'SIG-1', label: 'Sets aspect' },
+        { from: 'INT-1', to: 'PTS-1', label: 'Locks' }
+      ]
+    };
+
+    const JUNCTION = {
+      initial: 'ST-CLEAR',
+      states: {
+        'ST-CLEAR': { label: 'Line clear', on: { 'SET ROUTE': 'ST-SET' } },
+        'ST-SET': { label: 'Route set', on: { 'TRAIN ENTERS': 'ST-HELD', CANCEL: 'ST-CLEAR' } },
+        'ST-HELD': { label: 'Train on line', on: { 'TRAIN LEAVES': 'ST-CLEAR' } }
+      }
+    };
+
+    const CONTRACT = {
+      id: 'CTR-1', kind: 'contract', status: 'in force', title: 'Keeping trains apart at the junction',
+      articles: [
+        { title: 'Rules', clauses: [
+          { ref: 'RUL-1', text: 'The signal stays red while the line is occupied.' },
+          { ref: 'RUL-2', text: 'Points can\'t move while a route is set.' }] },
+        { title: 'What answers to it', clauses: [
+          { ref: 'TRK-1', text: 'The track circuit reports every train.' },
+          { ref: 'INT-1', text: 'The interlocking enforces both rules.' }] }
+      ]
+    };
+
+    // What the pills say when pointed at, which is sb-id's own business rather than highlighting.
+    const definitionOf = (code) => REGISTER.find((thing) => thing.id === code);
+    document.addEventListener('sb-resolve', (e) => {
+      const thing = definitionOf(e.detail.code);
+      if (thing) e.detail.definition = { kind: thing.kind, title: thing.code, description: thing.what };
+    });
+
+    const $ = (id) => document.getElementById(id);
+
+    function drawViews() {
+      $('register').columns = [{ key: 'code', label: 'Code' }, { key: 'kind', label: 'Kind' }, { key: 'what', label: 'What it is' }];
+      $('register').rows = REGISTER.map((row) => ({ ...row }));
+      $('equipment').model = structuredClone(EQUIPMENT);
+      $('junction').machine = structuredClone(JUNCTION);
+      $('junction').state = $('junction').initial();
+      $('contract').card = structuredClone(CONTRACT);
+    }
+    drawViews();
+
+    $('vote').options = [{ id: 'detect', label: 'Knowing a train is there', ref: 'TRK-1' }, { id: 'decide', label: 'Deciding what may happen', ref: 'INT-1' }];
+    $('vote').people = [{ id: 'asha', name: 'Asha Rao' }];
+
+    $('outline').items = [{ heading: 'Equipment' }, { ref: 'TRK-1', label: 'Track circuit' }, { ref: 'SIG-1', label: 'Signal' }, { heading: 'Rules' }, { ref: 'RUL-1', label: 'The signal rule' }];
+
+    const placesOf = (ref) => [...document.querySelectorAll(`[data-ref="${CSS.escape(ref)}"]`)];
+    $('where').subject = { ref: 'RUL-1', title: 'The signal stays red while the line is occupied', kind: 'Rule' };
+    $('where').places = placesOf('RUL-1').map((place) => ({ view: place.closest('.view')?.querySelector('h2')?.textContent ?? 'Page', context: place.textContent.trim().slice(0, 60) }));
+    $('where').addEventListener('sb-go', (e) => placesOf('RUL-1')[e.detail.index]?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+
+    // ---- Only for this preview: the bar of controls at the top. ----
+
+    // Redraws while you hold the pointer still, so you can watch lighting survive it.
+    $('redraw').addEventListener('click', (e) => {
+      e.target.textContent = 'Point at something now…';
+      setTimeout(() => { drawViews(); e.target.textContent = 'Redrawn. Again in 2 seconds?'; }, 2000);
+    });
+
+    // Every announcement, numbered, so a double fire would show.
+    let count = 0;
+    document.addEventListener('sb-highlight', (e) => {
+      count += 1;
+      const { ref, refs } = e.detail;
+      $('heard').textContent = `#${count} sb-highlight: ${ref ?? 'null'}${refs ? ` + ${refs.length - 1} more` : ''}`;
+    });
+  </script>
+</body>
+</html>

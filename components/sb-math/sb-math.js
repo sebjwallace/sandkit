@@ -1,4 +1,4 @@
-// Sandkit sb-math 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-math 0.1.2 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Mathematics people can point into. Wraps ordinary MathML, which browsers draw natively; any part
 // marked data-ref="…" announces a highlight when hovered or focused, and lights up when anything
 // else on the page announces the same ref. Follows the highlighting practice
@@ -53,6 +53,7 @@
     connectedCallback() {
       addStyle();
       this.classList.add('sb-math');
+      this.dataset.sbAnnounces = '';
       document.addEventListener('sb-highlight', this._onHighlight);
       this._observer.observe(this, { childList: true, subtree: true });
       this._makeFocusable();

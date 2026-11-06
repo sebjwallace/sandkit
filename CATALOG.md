@@ -134,7 +134,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | Practice | What it covers |
 |---|---|
 | [Building a sandbox](practices/building-a-sandbox.md) | Start here. The end-to-end method: setting up the folder, copying components in, the model, chapters, checking. |
-| [Highlighting](practices/highlighting.md) | Point at one thing and see it light up everywhere: the page-wide `sb-highlight` event, with a trace of everything connected, wiring components in, making the sandbox's own parts point, light up and be found like them, and keeping things lit with pins. Supported by `sb-math`, `sb-id` and `sb-outliner`. |
+| [Highlighting](practices/highlighting.md) | Point at one thing and see it light up everywhere, with one script and no wiring: the page-wide `sb-highlight` event, pointing at several things on purpose, wiring what the script can't reach, the sandbox's own parts, and keeping things lit with pins. Supported by `sb-highlighting`, `sb-math`, `sb-id` and `sb-outliner`. |
 | [Locating](practices/locating.md) | Find everywhere a ref appears and go to it, through closed tabs and folded branches: `data-ref` on parts, `reveal(ref)`, and the sandbox's `goTo`. Supported by `sb-tabs`, `sb-tree`, `sb-id`, `sb-table`, `sb-rules` and `sb-graph`. |
 | [Journal](practices/journal.md) | What changed in a sandbox and why, one entry per version, and where it stands now: for audit and handover. Retired codes recorded in the model. |
 | [Identifiers](practices/identifiers.md) | Short, stable codes for the things in a sandbox, and citing them everywhere. Supported by `sb-id`. |
@@ -152,7 +152,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 
 | Part | What it does |
 |---|---|
-| [Sandbox shell](shell/manifest.md) | The environment around a sandbox: header, goal, pages, full screen, settings and theming, modes with a key each, panels opened from the header, and an Export button giving the prompt to export the page. |
+| [Sandbox shell](shell/manifest.md) | The environment around a sandbox: header, goal, pages, full screen, settings and theming, modes with a key each, panels opened from the header, an Export button, and `sb-highlighting`, one script for page-wide pointing and lighting with no wiring giving the prompt to export the page. |
 
 ## Modes
 
