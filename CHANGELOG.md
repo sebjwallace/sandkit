@@ -4,6 +4,9 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries start `**Breaking:**` and say how to migrate.
 
+## 0.2.90 · 2026-11-07
+- The tagging practice is split so an agent reads only what it needs: `tagging.md` holds what always applies and points to `tagging-applying.md`, `tagging-tidying.md` and `tagging-presets.md`.
+
 ## 0.2.89 · 2026-11-06
 - Sixty components: added `sb-tags-mode`, Tags in the shell's mode picker. Point at a tagged part to see its tags and what they mean, see the page's tags with counts, and click a tag to keep it lit across the page, by all or any, after the mode ends too, until it's cleared. The arrow keys visit what's lit.
 - Keeping topics lit: `sb-tag-focus` tells the highlighting script what's chosen (shell 0.1.11). The highlighting, tagging, modes and locating practices say how, and the sandbox template adds the mode on a tagging yes.
