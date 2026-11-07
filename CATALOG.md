@@ -86,6 +86,7 @@ The same catalog from the subject's side: find the need, then read the manifest 
 - What something is, when people point at it → `sb-inspect-mode`
 - Why something is there, traced back on a click → `sb-trace-mode`
 - What parts are about, and topics kept lit across the page → `sb-tags-mode`
+- Searching by tags, scored, for people in Tags mode and for the agent, and pulling results onto the page → `sb-tags-mode`, `tags`
 - A screen or clickable flow of an interface → `sb-wireframe`
 
 ### Laying out the page
@@ -125,7 +126,7 @@ Run from a Sandkit clone with Node. Not copied into sandboxes.
 | `tools/export.mjs` | Exports one page of a sandbox as a single HTML file that still runs, listing every file that went in. Copied into sandboxes, for the agent to run when someone presses Export. |
 | `tools/serve.mjs` | Serves a sandbox on this computer, so the features that read and write its files work: lists a folder's files and saves into `sources/inbox/`. Copied into sandboxes; opening pages by double-clicking still works for everything else. |
 | `tools/sources.mjs` | Checks a sandbox's sources against its catalogue, its model and its excerpts: missing and uncatalogued files, unknown sources, quotes that aren't there. Copied into sandboxes. |
-| `tools/tags.mjs` | Reports how well a sandbox's tags work as a map: how far they reach and how well they narrow, then gaps, tags too broad or too narrow, crowded places, overlaps and items to spot-check. Copied into sandboxes. |
+| `tools/tags.mjs` | `report` says how well a sandbox's tags work as a map: how far they reach and how well they narrow, then gaps, tags too broad or too narrow, crowded places, overlaps and items to spot-check. `search` lists what carries some tags, or what's like some items, one scored line each, a page at a time, with ways to narrow or widen, so the agent reads only what's worth reading. Runs on the tags engine; both are copied into every sandbox. |
 | `tools/analyse.mjs` | Runs a component's analysis on data files, without a page: `profile` and `dependencies`. `list` shows them all. |
 
 ## Practices
@@ -142,7 +143,7 @@ How to do something well in a sandbox. Plain instructions, for people and agents
 | [Pages](practices/pages.md) | Splitting a sandbox into pages that share one model, `sandbox.js` listing them once, data as scripts, and exporting any page as one file that runs anywhere. Supported by the shell and `tools/export.mjs`. |
 | [Domain components](practices/domain-components.md) | A sandbox's own components, for things in its subject that appear in more than one place: when to make one, composing them from Sandkit components, a function in `parts.js` before a custom element, driven by the model, and listed in `AGENTS.md`. |
 | [Sources](practices/sources.md) | The material a sandbox was built from: `sources/` with one catalogue, an inbox to process, citations of passages from the model's `ITEMS`, and checking them. Supported by `tools/sources.mjs` and `tools/serve.mjs`. |
-| [Tagging](practices/tagging.md) | Labelling sources, excerpts, cards and items so they can be found, grouped and moved around, for a sandbox that opts in: semantic tags as a map of the domain and short-lived working tags, asking the person, with benefits, costs and a recommendation, tags as pointers never reasoned from, what and when to tag, balancing specific and general, keeping the set small, declaring what each means, retiring one, and what they're for. Checking the map with a report. Supported by `tools/tags.mjs`, `sb-search`, `sb-sources` and the `discovery` engine. |
+| [Tagging](practices/tagging.md) | Labelling sources, excerpts, cards and items so they can be found, grouped and moved around, for a sandbox that opts in: semantic tags as a map of the domain and short-lived working tags, asking the person, with benefits, costs and a recommendation, tags as pointers never reasoned from, what and when to tag, balancing specific and general, keeping the set small, declaring what each means, retiring one, and what they're for. Checking the map with a report, and tag search for people and the agent. Supported by `tools/tags.mjs`, the `tags` engine, `sb-tags-mode`, `sb-search` and `sb-sources`. |
 | [Modes](practices/modes.md) | Other ways of using a sandbox for a while, such as commenting or tracing: one shape for every mode, and one at a time through the page-wide `sb-mode` event. Supported by the modes below. |
 | [Workshops](practices/workshops.md) | Working through a sandbox's model with the people who know the subject, until they understand it, have corrected it and own it: principles, roles, preparing, the workshop page, activities (predict and reveal, confidence checks, forks, checking sources, questions, decisions), the round trip with the agent, and closing. Supported by `sb-notebook`, `sb-person`, `sb-poll`, `sb-handoff` and `sb-choice`. |
 | [Domain discovery](practices/domain-discovery.md) | Discovering a domain on purpose, an iteration at a time: a record of cards that are never edited, each kind and what it's for, weighing claims, growing and trying the model, feedback from people who know the domain, the domain contract the parties agree and how to save it as a PDF, and showing the cards on three boards per iteration. Supported by `sb-discovery-card` and `sb-lineage`. |
@@ -164,7 +165,15 @@ Part of the environment around a sandbox, like the shell, rather than views of i
 | [`sb-comments`](components/sb-comments/manifest.md) | Comments from the people exploring a sandbox: choose Comment, click any part and say what you think; each comment cites its refs, view, version and state, and all are copied as one prompt or downloaded. |
 | [`sb-inspect-mode`](components/sb-inspect-mode/manifest.md) | What something is: choose Inspect, point at any part and a card at the side says what it is and how it stands now, in whatever way the sandbox explains it best; a click holds it. |
 | [`sb-trace-mode`](components/sb-trace-mode/manifest.md) | Why something is there: choose Trace, and pointing outlines every part the model can trace; a click asks the sandbox to show its trace instead of acting. |
-| [`sb-tags-mode`](components/sb-tags-mode/manifest.md) | What parts are about: choose Tags, point at any tagged part to see its tags and what they mean, and pin tags to keep everything carrying them lit, combined by intersection or union, with + and − and presets, until cleared, with no wiring. For sandboxes that have opted in to tagging. |
+| [`sb-tags-mode`](components/sb-tags-mode/manifest.md) | What parts are about: choose Tags, point at any tagged part to see its tags and what they mean, and pin tags to keep everything carrying them lit, combined by intersection or union, with + and − and presets, until cleared, with no wiring. Given a way to search, a Search tab finds tags by name and what carries them, scored, in the card or full screen, and can pull results onto the page. For sandboxes that have opted in to tagging. |
+
+## Tagging
+
+The engine of tagging, for any sandbox that opts in, discovery or not. The [tag search practice](practices/tagging-search.md) says how a page and the agent use it.
+
+| Engine | What it works out |
+|---|---|
+| [`tags`](engines/tags/manifest.md) | Finding your way around the tag map, with tagging's rules written once (nothing superseded, working tags ignored, retired tags followed): what carries a selection of tags, what's like some items, each with a score from 0 to 1 where rarer tags weigh more, the ways to narrow or widen, and every tag with what carries it. The same results for a page and for the agent. |
 
 ## Discovery
 
@@ -176,7 +185,7 @@ Components and the engine for domain discovery, which never know each other: the
 
 | Engine | What it works out |
 |---|---|
-| [`discovery`](engines/discovery/manifest.md) | The method's rules, from the sandbox's records: weighing claims on the excerpts they cite, every status as of any iteration, what rests on what and what each link means, what each iteration shows or has standing, what replaces what, every excerpt a record rests on, every tag and what it means, what answers to a domain contract and whether it's signed, and the model's runs and compression signal. |
+| [`discovery`](engines/discovery/manifest.md) | The method's rules, from the sandbox's records: weighing claims on the excerpts they cite, every status as of any iteration, what rests on what and what each link means, what each iteration shows or has standing, what replaces what, every excerpt a record rests on, what answers to a domain contract and whether it's signed, and the model's runs and compression signal. |
 
 ## Mechanisms
 
