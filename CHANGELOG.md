@@ -5,10 +5,13 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries start `**Breaking:**` and say how to migrate.
 
 ## 0.2.90 · 2026-11-07
+- **Breaking:** `sb-tags-mode` 0.2.0 drops the quiet bar outside the mode; reopen the mode to see what's chosen. It also gains a tag list with pins, + and − per tag, intersection or union, presets, a colour per tag, and a card that never shifts.
 - The shell's highlighting script takes `colors` and `without` in `sb-tag-focus`, and leaves chosen tags inside `data-sb-shows-chosen` to the element.
+- The tagging practice says a tag's declaration can give its colour, and the highlighting practice says how each chosen tag lights in its own.
 - Token economy is written down as a goal: `AGENTS.md`, `CONTRIBUTING.md` and `DECISIONS.md` for those working on Sandkit, and the sandbox template and building guide for agents using it, economical by default unless the person asks otherwise. The highlighting practice says when it needn't be read.
 - The tagging practice is split so an agent reads only what it needs: `tagging.md` holds what always applies and points to `tagging-applying.md`, `tagging-tidying.md` and `tagging-presets.md`.
 - The highlighting practice is split the same way: `highlighting.md` holds the one line and the rules for everyone, and points to `highlighting-own-parts.md`, `highlighting-wiring.md`, `highlighting-tags.md` and `highlighting-pins.md`.
+- The tagging practice says how to offer presets, saved selections of tags, and `tools/tags.mjs` flags a preset naming a tag that's no longer current.
 
 ## 0.2.89 · 2026-11-06
 - Sixty components: added `sb-tags-mode`, Tags in the shell's mode picker. Point at a tagged part to see its tags and what they mean, see the page's tags with counts, and click a tag to keep it lit across the page, by all or any, after the mode ends too, until it's cleared. The arrow keys visit what's lit.
