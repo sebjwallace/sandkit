@@ -6,6 +6,7 @@ Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking
 
 ## 0.2.90 · 2026-11-07
 - The tagging practice is split so an agent reads only what it needs: `tagging.md` holds what always applies and points to `tagging-applying.md`, `tagging-tidying.md` and `tagging-presets.md`.
+- The highlighting practice is split the same way: `highlighting.md` holds the one line and the rules for everyone, and points to `highlighting-own-parts.md`, `highlighting-wiring.md`, `highlighting-tags.md` and `highlighting-pins.md`.
 
 ## 0.2.89 · 2026-11-06
 - Sixty components: added `sb-tags-mode`, Tags in the shell's mode picker. Point at a tagged part to see its tags and what they mean, see the page's tags with counts, and click a tag to keep it lit across the page, by all or any, after the mode ends too, until it's cleared. The arrow keys visit what's lit.
