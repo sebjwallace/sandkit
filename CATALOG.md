@@ -94,7 +94,7 @@ The same catalog from the subject's side: find the need, then read the manifest 
 - Sections that open and close, saying what changed inside → `sb-accordion`
 - A view people can pop out, move and dock back → `sb-panel`
 - The one thing that needs attention now, over the page → `sb-modal`
-- Notes, sources and diagrams together on a board to pan and zoom → `sb-board`
+- Gathering what bears on one question side by side, laid out from rough places, with no coordinates or screenshots → `sb-board`
 
 ### Working with people
 
@@ -195,7 +195,7 @@ Next come a driver and encounter, then allocation and conversion.
 | [`sb-accordion`](components/sb-accordion/manifest.md) | Sections that open and close, one or a group: a closed section shows a note from the model, a dot when what's inside changed since last seen, and a tint when something highlighted is inside; Expand all and Collapse all, or one open at a time; nests. |
 | [`sb-annotate`](components/sb-annotate/manifest.md) | Text with the parts that matter marked: pointing shows each mark's note just above it, clicking pins it, and kinds are counted in a legend. |
 | [`sb-bars`](components/sb-bars/manifest.md) | Things compared on one measure: bars on one scale, sorted or not, with reference lines and each bar's change since the last update. |
-| [`sb-board`](components/sb-board/manifest.md) | A board to pan and zoom, holding the sandbox's own notes, sources, images and diagrams where they belong together: labelled frames group them, pen marks anchored to refs point out what matters, and what viewers move comes back in words for the agent. |
+| [`sb-board`](components/sb-board/manifest.md) | A board that lays itself out, gathering the sandbox's own excerpts, pictures, cards, tables and diagrams around one question: the agent gives rough places and groups, and the board measures, aligns, frames and links them, saying any problem in words. While tags are chosen, what doesn't carry them goes dark. |
 | [`sb-c4`](components/sb-c4/manifest.md) | A C4 software architecture walked into level by level, with a path back out; relationships deep inside roll up to every view. |
 | [`sb-callout`](components/sb-callout/manifest.md) | A stand-out block for definitions, notes, tips, questions, answers and warnings; optionally collapsible. |
 | [`sb-chart`](components/sb-chart/manifest.md) | Values over time as lines, with reference lines, the latest values marked, and a legend. |
