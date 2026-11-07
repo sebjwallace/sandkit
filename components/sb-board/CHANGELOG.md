@@ -1,4 +1,13 @@
-# sb-board changelog
+# Changelog
+
+## 0.2.0 · 2026-11-07
+- **Breaking:** rebuilt as a board that lays itself out. Nothing used the old one, so there's nothing to migrate: `layout` is now `{ items: [{ ref, x, y, group?, size? }], links: [{ from, to, label?, tone? }] }`, with `x` and `y` a rough place from 0 to 100, and the board does the measuring, aligning, framing and routing. Frames, pen marks, exact positions, `movable`, `changes`, `revert` and `sb-moves` are gone.
+- Added line styles: `lines` is `curved` (the default), `straight` or `square`, and viewers can change it with a button.
+- While tags are chosen on the page, everything on the board that doesn't carry them sits behind a dark veil. An item carrying any has a coloured dot for each above it.
+- A group can be written once, `{ label, x, y, items }`, with its items stacking in order. A component's ref can be on the top element it draws.
+- Problems also go to the console, so nothing needs wiring to see them.
+- Added `placed` and `problems`, so an agent can check a board without a screenshot, `arrange()`, and full screen.
+- A scroll asked of the board, such as stepping through what's lit or a tour, now moves the camera.
 
 ## 0.1.1 · 2026-10-25
 - Manifest: names no other component, not even as a suggestion. Which components go together is for the practices.

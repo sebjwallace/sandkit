@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Collation board</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../shell/sb-highlighting.js"></script>
+  <script src="../../components/sb-tags-mode/sb-tags-mode.js"></script>
+  <script src="../../components/sb-inspect-mode/sb-inspect-mode.js"></script>
+  <script src="../../components/sb-outliner/sb-outliner.js"></script>
+  <script src="../../components/sb-discovery-card/sb-discovery-card.js"></script>
+  <script src="../../components/sb-image/sb-image.js"></script>
+  <script src="../../components/sb-table/sb-table.js"></script>
+  <script src="../../components/sb-statechart/sb-statechart.js"></script>
+  <script src="../../components/sb-board/sb-board.js"></script>
+  <script src="../discovery/records/tags.js"></script>
+  <script>
+    // In a real sandbox these sit beside its TAGS, as the tagging practice says.
+    const TAG_PRESETS = [
+      { name: 'Platform changes passengers raised', asks: 'What did passengers say about platform changes?', tags: ['platform-changes', 'passengers'], match: 'all' },
+      { name: 'Platform changes, no message-line tag', asks: 'Which parts on platform changes never come to the message line?', tags: ['platform-changes'], without: ['message-line'] },
+      { name: 'Passengers or announcements', asks: 'What reaches passengers, either way?', tags: ['passengers', 'announcements'], match: 'any' }
+    ];
+  </script>
+  <script src="../discovery/records/excerpts.js"></script>
+  <script src="../discovery/records/claims.js"></script>
+  <script src="../discovery/records/opinions.js"></script>
+  <script src="../discovery/records/risks.js"></script>
+  <script src="../discovery/records/constraints.js"></script>
+  <script src="../discovery/records/decisions.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font); color: var(--sb-text); background: var(--sb-bg); line-height: 1.5; }
+    main { margin: 0 auto; padding: 12px 16px 64px; display: grid; gap: 10px; }
+    h1 { margin: 0; font-size: 18px; }
+    main > p { margin: 0; font-size: 13px; color: var(--sb-muted); }
+    #board { --sb-board-height: calc(100vh - 220px); min-height: 420px; }
+    .sample { margin: 0; font-size: 11px; color: var(--sb-muted); }
+    .model { padding: 8px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius); background: var(--sb-surface); }
+  </style>
+</head>
+<body>
+  <sb-shell heading="Collation board">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+    <sb-tags-mode slot="modes"></sb-tags-mode>
+    <sb-inspect-mode slot="modes"></sb-inspect-mode>
+    <sb-outliner slot="panels" id="collation-outline" heading="Outline"></sb-outliner>
+  </sb-shell>
+
+  <main>
+    <h1>Why do passengers miss platform changes?</h1>
+    <p>Real records from the discovery demo, gathered around one question, with a short rough layout and no exact positions. The picture, table and statechart are samples drawn for this page. Drag the background to pan.</p>
+    <sb-board id="board"></sb-board>
+  </main>
+
+  <script>
+    const excerpt = (id) => EXCERPTS.find((e) => e.id === id);
+    const record = (records, id) => records.find((r) => r.id === id);
+
+    // A record as a compact card. Status is left out: it's worked out by the discovery engine, and
+    // this page shows only what the records say.
+    function cardOf(view) {
+      const card = document.createElement('sb-discovery-card');
+      card.setAttribute('variant', 'compact');
+      card.card = view;
+      return card;
+    }
+    const excerptCard = (id) => {
+      const { source, quote, tags } = excerpt(id);
+      return cardOf({ id, kind: 'excerpt', tags, excerpt: { source, quote } });
+    };
+    const recordCard = (records, id, kind) => {
+      const { text, title, tags } = record(records, id);
+      return cardOf({ id, kind, tags, text: text ?? title });
+    };
+
+    // A sample picture, in the page itself so it opens from disk, standing in for a still of the board.
+    const still = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 180"><rect width="400" height="180" fill="#14202b"/><g font-family="monospace" font-size="15" fill="#f2c14e"><text x="14" y="32">14:32 Gatwick Airport    9</text><text x="14" y="64">14:40 Brighton          4</text><text x="14" y="96">14:47 Hastings          7</text></g><text x="14" y="146" font-family="sans-serif" font-size="12" fill="#8fa3b3">Sample drawn for this page</text></svg>`;
+    function picture() {
+      const image = document.createElement('sb-image');
+      image.setAttribute('src', `data:image/svg+xml,${encodeURIComponent(still)}`);
+      image.setAttribute('alt', 'A departure board showing the Gatwick Airport train on platform 9, with no message');
+      image.setAttribute('caption', 'Sample: the platform says 9, and nothing else says it changed.');
+      image.dataset.ref = 'IMG-1';
+      image.dataset.tags = 'platform-changes';
+      return image;
+    }
+
+    function table() {
+      const wrapper = Object.assign(document.createElement('div'), { className: 'model' });
+      wrapper.dataset.ref = 'TBL-1';
+      const rows = document.createElement('sb-table');
+      wrapper.append(rows);
+      rows.tagsOf = (row) => row.tags;
+      rows.columns = [{ key: 'train', label: 'Train' }, { key: 'platform', label: 'Platform' }, { key: 'message', label: 'Message' }];
+      rows.rows = [
+        { id: 'T-1', train: '14:32 Gatwick', platform: '3 → 9', message: 'Platform changed to 9', tags: ['platform-changes', 'message-line'] },
+        { id: 'T-2', train: '14:40 Brighton', platform: '4', message: '', tags: ['platforms'] }
+      ];
+      return wrapper;
+    }
+
+    function statechart() {
+      const wrapper = Object.assign(document.createElement('div'), { className: 'model' });
+      wrapper.dataset.ref = 'STATE-1';
+      wrapper.dataset.tags = 'platform-changes';
+      const chart = document.createElement('sb-statechart');
+      wrapper.append(chart);
+      chart.machine = { initial: 'planned', states: { planned: { on: { MOVED: 'changed' } }, changed: { on: { TOLD: 'told' } }, told: {} } };
+      chart.state = chart.initial();
+      return wrapper;
+    }
+
+    const board = document.getElementById('board');
+    board.append(
+      excerptCard('SRC-3.3'), excerptCard('SRC-6.3'), excerptCard('SRC-7.1'), picture(),
+      recordCard(CLAIMS, 'CLM-5', 'claim'), recordCard(OPINIONS, 'OPN-1', 'opinion'), recordCard(RISKS, 'RSK-1', 'risk'),
+      recordCard(DECISIONS, 'DEC-1', 'decision'), recordCard(CONSTRAINTS, 'CON-2', 'constraint'),
+      table(), statechart()
+    );
+
+    // This is all the agent writes for the picture on the page.
+    board.layout = {
+      groups: [
+        { label: 'What the sources say', x: 10, y: 10, items: ['SRC-3.3', 'SRC-6.3', 'SRC-7.1', 'IMG-1'] },
+        { label: 'What we make of it', x: 50, y: 10, items: ['CLM-5', 'OPN-1', 'RSK-1'] },
+        { label: 'What we decided', x: 50, y: 80, items: ['DEC-1', 'CON-2'] },
+        { label: 'What the model does', x: 90, y: 10, items: [{ ref: 'TBL-1', size: 'large' }, 'STATE-1'] }
+      ],
+      links: [
+        { from: 'SRC-6.3', to: 'CLM-5', label: 'shows' },
+        { from: 'CLM-5', to: 'TBL-1', label: 'does the model agree?', tone: 'warn' },
+        { from: 'DEC-1', to: 'STATE-1', label: 'became' }
+      ]
+    };
+
+    // The outline follows the board's groups, so pinning there lights the same things here.
+    const RECORD_WORDS = [...EXCERPTS, ...CLAIMS, ...OPINIONS, ...RISKS, ...DECISIONS, ...CONSTRAINTS];
+    const SAMPLE_WORDS = { 'IMG-1': 'Still of the board (sample)', 'TBL-1': 'What the board shows (sample)', 'STATE-1': 'A platform, as the model sees it (sample)' };
+    const wordsFor = (ref) => {
+      const record = RECORD_WORDS.find((r) => r.id === ref);
+      return record ? `${ref} · ${record.quote ?? record.text ?? record.title}` : `${ref} · ${SAMPLE_WORDS[ref]}`;
+    };
+    const parts = { 'TBL-1': [{ ref: 'T-1', label: '14:32 Gatwick' }, { ref: 'T-2', label: '14:40 Brighton' }] };
+    document.querySelector('sb-outliner').items = board.layout.groups.flatMap(({ label, items }) => [
+      { heading: label },
+      ...items.map((item) => item.ref ?? item).map((ref) => ({ ref, label: wordsFor(ref), parts: parts[ref] }))
+    ]);
+  </script>
+</body>
+</html>

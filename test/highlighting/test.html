@@ -599,6 +599,87 @@
       assertEqual(getComputedStyle(at('shape')).fill, before);
     });
 
+    const focusInColour = (tags, match, colors) => document.dispatchEvent(new CustomEvent('sb-tag-focus', { detail: { tags, match, colors } }));
+    const outlineColor = (el) => getComputedStyle(el).outlineColor;
+    const RED = 'rgb(255, 0, 0)', GREEN = 'rgb(0, 128, 0)';
+    const colouredParts = () => mount(`<div>
+      <div id="outer" data-tags="delays"><p id="inner" data-tags="platforms">inner</p></div>
+      <p id="both" data-tags="platforms delays">both</p>
+      <p id="plain">plain</p>
+      <svg><g data-tags="delays"><rect id="shape" class="shape" width="9" height="9"></rect></g></svg>
+    </div>`);
+
+    chosenScenario('each chosen tag lights in its own colour, keeping the dashed line', () => {
+      colouredParts();
+      focusInColour(['platforms', 'delays'], 'any', { platforms: 'red', delays: 'green' });
+      assertEqual(outlineColor(at('inner')), RED);
+      assertEqual(outlineColor(at('outer')), GREEN);
+      assert(isChosen(at('inner')), 'still dashed, with no fill');
+      assertEqual(getComputedStyle(at('shape')).stroke, GREEN);
+      assert(!hasOutline(at('plain')));
+    });
+
+    chosenScenario('a part carrying two takes the first chosen one\'s colour', () => {
+      colouredParts();
+      focusInColour(['platforms', 'delays'], 'any', { platforms: 'red', delays: 'green' });
+      assertEqual(outlineColor(at('both')), RED);
+      focusInColour(['delays', 'platforms'], 'any', { platforms: 'red', delays: 'green' });
+      assertEqual(outlineColor(at('both')), GREEN);
+    });
+
+    const focusWithout = (tags, match, without) => document.dispatchEvent(new CustomEvent('sb-tag-focus', { detail: { tags, match, without } }));
+
+    chosenScenario('without leaves out whatever carries those tags', () => {
+      colouredParts();
+      focusWithout(['platforms'], 'any', ['delays']);
+      assert(isChosen(at('inner')), 'platforms alone stays');
+      assert(!hasOutline(at('both')), 'platforms and delays is taken away');
+    });
+
+    chosenScenario('with only without, it takes away from everything tagged', () => {
+      colouredParts();
+      focusWithout([], 'all', ['delays']);
+      assert(isChosen(at('inner')), 'tagged, and not with delays');
+      assert(!hasOutline(at('both')), 'carries delays');
+      assert(!hasOutline(at('outer')), 'carries delays');
+      assert(!hasOutline(at('plain')), 'tagged with nothing, so not part of it');
+    });
+
+    chosenScenario('what shows chosen tags itself is left alone, and pointing there still lights', () => {
+      mount('<div data-sb-shows-chosen><p id="held" data-ref="HELD" data-tags="platforms">held</p></div><p id="free" data-tags="platforms">free</p>');
+      focusOn(['platforms'], 'any');
+      assert(!hasOutline(at('held')), 'not lit as chosen');
+      assert(isChosen(at('free')), 'what is outside still is');
+      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: 'HELD' } }));
+      assert(hasOutline(at('held')), 'pointing lights it');
+      document.dispatchEvent(new CustomEvent('sb-highlight', { detail: { ref: null } }));
+    });
+
+    chosenScenario('with all, a part carrying every tag shows every colour', () => {
+      colouredParts();
+      focusInColour(['platforms', 'delays'], 'all', { platforms: 'red', delays: 'green' });
+      assert(isChosen(at('both')), 'lit');
+      assert(!hasOutline(at('inner')), 'one tag is not enough');
+      assertEqual(outlineColor(at('both')), RED);
+    });
+
+    chosenScenario('a colour that isn\'t one is ignored, and can\'t add rules of its own', () => {
+      colouredParts();
+      focusInColour(['platforms'], 'any', { platforms: 'red; } body { display: none; } p {' });
+      assert(isChosen(at('inner')), 'lit in the usual colour');
+      assert(getComputedStyle(document.body).display !== 'none');
+    });
+
+    chosenScenario('without colours it looks as it always did, and colours don\'t linger', () => {
+      colouredParts();
+      focusOn(['platforms'], 'any');
+      const usual = outlineColor(at('inner'));
+      focusInColour(['platforms'], 'any', { platforms: 'red' });
+      assertEqual(outlineColor(at('inner')), RED);
+      focusOn(['platforms'], 'any');
+      assertEqual(outlineColor(at('inner')), usual);
+    });
+
     chosenScenario('chosen tags stay lit through a redraw, and until cleared', () => {
       chosenParts();
       focusOn(['delays']);

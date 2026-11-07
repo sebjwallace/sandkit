@@ -45,7 +45,7 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | [`sb-wireframe`](../components/sb-wireframe/manifest.md) | the parts the sandbox marks in its screens | goes to the screen holding the place, or else the ref |
 | [`sb-panel`](../components/sb-panel/manifest.md) | — | expands the panel if it holds the place or the ref, and brings it to the front |
 | [`sb-image`](../components/sb-image/manifest.md) | each mark | glides to the mark |
-| [`sb-board`](../components/sb-board/manifest.md) | each frame and each mark given a `ref`; items are the sandbox's own | glides to the item, frame or mark holding the place, or else the ref |
+| [`sb-board`](../components/sb-board/manifest.md) | items are the sandbox's own; it looks for refs only among them | glides to the item holding the place, or else the ref, or the group labelled with it |
 | [`sb-source`](../components/sb-source/manifest.md) | the source, with its code, and each passage with the id of what cites it | — |
 | [`sb-lineage`](../components/sb-lineage/manifest.md) | items are the sandbox's own | unfolds the column holding the ref, if the lineage shows it |
 | [`sb-sources`](../components/sb-sources/manifest.md) | each source's card, with its code (not cards a viewer's search or filters hide) | — |
@@ -54,7 +54,7 @@ So "where does it appear?" is a single query, and "take me there" is calling `re
 | [`sb-ontology`](../components/sb-ontology/manifest.md) | each class or individual drawn, each link as `from.relation.to`, and each row of its details as `owner.property` | switches to the level where the thing is drawn |
 | [`sb-c4`](../components/sb-c4/manifest.md) | each box in the current view, and each line carrying one relationship with an `id` | goes to the view where an element can be seen |
 | [`sb-math`](../components/sb-math/manifest.md), [`sb-annotate`](../components/sb-annotate/manifest.md), [`sb-walkthrough`](../components/sb-walkthrough/manifest.md) | the parts the sandbox marks in their content | — |
-| [The sandbox's own elements](highlighting.md#your-own-parts) | whatever it marks | whatever it gives `reveal`, such as a `<details>` |
+| [The sandbox's own elements](highlighting-own-parts.md) | whatever it marks | whatever it gives `reveal`, such as a `<details>` |
 | [`sb-xref`](../components/sb-xref/manifest.md) | nothing: it lists places, below | — |
 | [`sb-tour`](../components/sb-tour/manifest.md) | nothing: its steps name what they point at with `data-at` | — |
 | [`sb-comments`](../components/sb-comments/manifest.md) | nothing: it asks what's at a point, below | — |

@@ -2,6 +2,9 @@
 
 Covers `sb-shell`, `sb-theme-settings`, `sb-export` and `sb-highlighting`, which are versioned together.
 
+## 0.1.12 · 2026-11-07
+- `sb-highlighting`: `sb-tag-focus` can also carry `colors`, each chosen tag's colour by name, and a part's dashed line takes the first it carries. Without `colors`, it looks as it did. It can also carry `without`, tags whose carriers aren't lit; with no `tags`, that takes away from everything tagged. An element with `data-sb-shows-chosen` shows chosen tags inside it itself, so they aren't lit here; pointing still is.
+
 ## 0.1.11 · 2026-11-06
 - `sb-highlighting` keeps chosen tags lit: `sb-tag-focus` with `{ tags, match }` lights whatever carries them, by all or any, through redraws, stronger than faint and weaker than pinned or lit. Nothing changes until it's sent.
 - `sb-shell` takes a mode's key from a `key` property too, so a mode can ask for its own key whichever way the page was built.

@@ -963,6 +963,19 @@ test('tags report says how far tags reach and how well they narrow', (folder) =>
   assert(output.includes('Untagged (1): CLM-4.'), output);
 });
 
+test('tags report flags a preset naming a tag that is retired or was never declared, and only then', (folder) => {
+  taggedSandbox(folder, [['tides'], ['tides', 'ferries']], [{ tag: 'tides', means: 'x' }, { tag: 'ferries', means: 'x' }, { tag: 'old', means: 'x', replacedBy: ['tides'] }]);
+  const presets = [
+    { name: 'Fine', tags: ['tides'], without: ['ferries'] },
+    { name: 'Left behind', tags: ['old'], without: ['gone'] }
+  ];
+  write(folder, 'records/presets.js', `const TAG_PRESETS = ${JSON.stringify(presets)};`);
+  const { ok, output } = tagReport('report', folder);
+  assert(ok, output);
+  assert(output.includes('Preset "Left behind" names old, gone, which aren\'t current tags.'), output);
+  assert(!output.includes('Preset "Fine"'), output);
+});
+
 test('tags report flags tags that are too broad, crowded places and overlaps, with items to spot-check', (folder) => {
   const crowded = Array.from({ length: 8 }, () => ['tides', 'ferries']);
   const rest = Array.from({ length: 4 }, () => ['weather']);

@@ -95,6 +95,7 @@ Parts of the surface this sandbox made its own, once they were needed in more th
 
 ## Conventions
 
+- **Be economical with tokens, unless the person asks otherwise.** Read only what you need, trust components to do their work, and let the person's feedback do the checking rather than screenshots and repeated looking. Never at the cost of what they asked for.
 - **Work in iterations.** One chapter or change at a time, handed over before the next. See `lib/sandkit/practices/building-a-sandbox.md`.
 - **Journal every change.** After any meaningful change, add an entry to `JOURNAL.md`, update Where it stands, and commit if the folder uses Git (tagging a breaking version). See `lib/sandkit/practices/journal.md`.
 - **A page per part worth sharing on its own,** once the sandbox grows: each listed in `sandbox.js`, sharing `model.js`, and including only what it uses, so it can be exported alone. See `lib/sandkit/practices/pages.md`.

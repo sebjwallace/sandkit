@@ -29,6 +29,7 @@ Every component, and every change to one, should hold to these. [DECISIONS.md](D
 - **Independent.** Components never reference one another, not even optionally. Sandboxes combine them, using slots where a component accepts the sandbox's content, as the practices describe; a manifest never names another component.
 - **Extend before adding.** Before proposing a new component, check whether an existing one could do the job by growing its own capabilities, and say which you chose. A new component is for a job with its own needs, however similar it looks.
 - **Contained.** A custom element without Shadow DOM, prefixed `sb-`, with no globals beyond its tag, prefixed and documented CSS classes, and colours from the theme tokens.
+- **Cheap for agents.** Look for what could cost an agent less to read, write and check: no wiring where none is needed, short data, a short manifest, and problems reported in words. Worthwhile only where nothing gets worse for people or for clarity.
 - **Small and clear.** Plain JavaScript, no build step, no installs. Code that reads almost like an explanation of itself, without growing bigger for the sake of it.
 - **Safe to package.** A classic script with no fetches or external assets, so it survives single-file export.
 

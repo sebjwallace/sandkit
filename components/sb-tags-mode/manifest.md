@@ -1,10 +1,8 @@
 # sb-tags-mode
 
-Tags mode: see what any part of a sandbox is about, and choose topics to keep lit while you work. While it's on, pointing at a tagged part shows its tags in a card at the side, with what each one means, and the card lists every tag on the page with how many parts carry it. Clicking a tag keeps everything carrying it lit, across the page and after the mode ends, until it's cleared. Use it in any sandbox that has opted in to [tagging](../../practices/tagging.md).
+Tags mode: see what any part of a sandbox is about, and choose topics to keep lit while working. Use it in any sandbox that has opted in to [tagging](../../practices/tagging.md). It lives in the shell's `modes` slot and only chooses; the highlighting script does the lighting.
 
-It's a mode, part of the environment around a sandbox rather than a view of its subject: it lives in the shell's `modes` slot and follows the [modes practice](../../practices/modes.md). It only chooses: the [highlighting script](../../practices/highlighting.md) does the lighting.
-
-Use this component through the interface below. You don't need to read its source.
+Use this component through the interface below. You don't need to read its source, or the highlighting practice.
 
 ## Usage
 
@@ -18,68 +16,51 @@ Use this component through the interface below. You don't need to read its sourc
 </sb-shell>
 ```
 
-That's all the wiring there is. It reads `data-tags` from the page, which components put there when given tags, and what each tag means from `TAGS`, the tagging practice's declarations, when that script is on the page.
+That's all the wiring there is. It reads `data-tags` from the page, which components put there when given tags, and from `tags.js` what each tag means (`TAGS`) and any presets (`TAG_PRESETS`), as the [tagging practice](../../practices/tagging.md) declares them. Most sandboxes need nothing below.
 
-## The flow
+## What people can do
 
-1. **Tags**, chosen in the shell's mode picker or with the key **G**, starts it: an amber frame round the page, a banner at the bottom saying what clicking does, with **Stop**, and the card at the right.
-2. **Pointing** at a tagged part, after a short pause, outlines it and shows its tags in the card, with what each means. The innermost tagged part counts; a part with no tags of its own shows those of what holds it, and the outline says which part they belong to. Pointing at anything else keeps what's shown, so the pointer can travel to the card. Pointing lights things as it does in Explore.
-3. **A click** on a tagged part holds the card on it. Clicking it again, or anywhere else, lets go. Clicks never act on the page in the mode. Clicks on what every mode lets through (`data-modes`, such as the mode picker), inside open dialogs and in the card act as usual.
-4. **Clicking a tag** in the card chooses it, or removes it. Whatever carries it stays lit: a dashed line in a colour of its own, with no fill. Chosen tags show a tick as well as the colour.
-5. **With two or more chosen,** a switch offers **All tags**, the default, to find where topics meet, or **Any tag**. The card counts the parts that match.
-6. **The arrow keys** step through what's kept lit, or through everything tagged when nothing is, scrolling to each and holding it. So lit parts can be found on a long page, and the keyboard reaches parts that can't take focus.
-7. **Stop**, Escape, or choosing another mode ends it. Chosen tags stay lit, and a quiet bar at the bottom left lists them, with the switch and **Clear**. It's there in Explore, and its clicks act as usual.
+Started from the shell's mode picker or with **G**, it shows an amber frame, a banner and a card. The card's ✕, Stop or Escape ends it. Clicks don't act on the page while it's on, except on what's marked `data-modes`, in open dialogs and in the card.
 
-## On this page
+- **Point** at a part to see its tags and what they mean. **Click** a part to hold them there.
+- **Click a line** in the card to pin a tag: whatever carries it stays lit, after the mode ends too. Open the mode again to see what's pinned, change it or clear it.
+- **+ and −** on a line: a tag always comes on as +. − takes away whatever carries it, and with no + tags, takes away from everything tagged.
+- **Intersection or Union** combines the + tags: parts carrying every one, the default, or at least one.
+- **Presets** set the lines, signs and switch in one click, and show as chosen only while the selection is exactly theirs.
+- **Arrow keys** step through what's lit, or everything tagged when nothing is.
 
-The card lists every current tag, most used first, as found on `data-tags` and declared in `TAGS`.
-
-- **Counts are parts someone can see without opening anything,** so they agree with what lights up. A tag only on hidden parts, or only declared, counts 0.
-- **Retired tags are never offered.** A part still carrying one shows it struck through, with what replaced it.
-- **Undeclared tags are marked,** once the page has any declarations.
-- **Working tags never appear:** they aren't carried on `data-tags`.
-
-## Attributes
-
-| Attribute | Meaning |
-|---|---|
-| `slot` | `modes`, to be offered in the shell's mode picker. |
-| `heading` | The mode's name in the picker. Default `Tags`. |
-| `key` | The mode's key in the shell, instead of **G**. |
+The list shows tags people can see here, with counts, most used first. A tag with nothing to see isn't listed unless it's pinned, retired tags are never offered, and undeclared ones are marked. Nothing in the list moves while it's in use. Working tags never appear: they aren't carried on `data-tags`.
 
 ## Properties
 
 | Member | Meaning |
 |---|---|
 | `active` | Whether the mode is on, set by the shell's mode picker. Setting it fires no `sb-mode`. |
-| `heading` | The mode's name in the picker. |
-| `key` | Read-only. The key it asks the shell for, `g`, since T usually belongs to another mode. |
-| `chosen` | The tags kept lit, as a list. Setting it lights them. |
-| `match` | `all` or `any`: whether a part needs every chosen tag or one of them. Default `all`. |
-| `declarations` | What each tag means, as the tagging practice declares it: `[{ tag, means, replacedBy }]`. Leave it unset to use the page's `TAGS`. |
+| `chosen` | The tags on, as a list. Setting it lights them. |
+| `without` | The chosen tags taking away. Only a tag in `chosen` can be one. Setting it lights the result. |
+| `match` | `all` (intersection, the default) or `any` (union). |
+| `presets` | `[{ name, asks, tags, without, match }]`. Leave it unset to use the page's `TAG_PRESETS`. |
+| `declarations` | `[{ tag, means, replacedBy, color }]`. Leave it unset to use the page's `TAGS`. |
+| `heading`, `key` | Its name in the picker (default `Tags`), and its key (`g`). Set as attributes too, along with `slot`. |
 
 ## Events
 
 | Event | Detail | When |
 |---|---|---|
-| `sb-tag-focus` | `{ tags, match }` | The chosen tags or the match changed, and on load when there's a choice to restore. Bubbles to `document`, where the highlighting script hears it. |
-| `sb-mode` | `{ mode, active: false }` | The viewer ended the mode, with Stop or Escape. `mode` is the heading. Bubbles, so the shell's picker follows. |
+| `sb-tag-focus` | `{ tags, match, colors, without }`: `tags` the ones adding, `without` the ones taking away, `colors` each one's colour by name | The choice changed, and on load when there's one to restore. Bubbles to `document`. |
+| `sb-mode` | `{ mode, active: false }` | The viewer ended the mode, with Stop or Escape. Bubbles, so the shell's picker follows. |
 
 ## Styling
 
-Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-font`, `--sb-radius`, and `--sb-warn`, the amber every mode wears. `--sb-tag-focus` sets the chosen colour, here and in the highlighting script; by default it's a mix of the accent and magenta. Its own custom properties, to set on the element: `--sb-tags-mode-tone` (the amber) and `--sb-tags-mode-chosen`.
-
-Classes: `sb-tags-mode__frame`, `sb-tags-mode__banner`, `sb-tags-mode__words`, `sb-tags-mode__button`, `sb-tags-mode__outline`, `sb-tags-mode__card`, `sb-tags-mode__bar`, `sb-tags-mode__grip`, `sb-tags-mode__body`, `sb-tags-mode__part`, `sb-tags-mode__chosen`, `sb-tags-mode__page`, `sb-tags-mode__title`, `sb-tags-mode__hint`, `sb-tags-mode__meaning`, `sb-tags-mode__means`, `sb-tags-mode__mark`, `sb-tags-mode__chips`, `sb-tags-mode__chip`, `sb-tags-mode__chip--retired`, `sb-tags-mode__count`, `sb-tags-mode__lit`, `sb-tags-mode__switch`, `sb-tags-mode__clear`, `sb-tags-mode__quiet`. The element carries `sb-tags-mode--held` while a part is held.
+Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-font`, `--sb-radius`, `--sb-warn`. A tag's colour is the `color` in its declaration; without one it gets a fallback for now, usually the same each time, and never one another chosen tag is wearing until the seven run out. Its own custom properties: `--sb-tags-mode-tone` and `--sb-tags-mode-chosen`. Classes start `sb-tags-mode__`, such as `card`, `banner`, `list`, `entry`, `sign`, `pin`, `preset`.
 
 ## Notes
 
-- **Reads one attribute across the page:** `data-tags`, never content, to count and step through what's tagged (see the [modes practice](../../practices/modes.md)).
-- **Remembers the choice for the tab,** across reloads and pages, in `sessionStorage`. Where storage is missing or refuses, it works just the same until the page closes.
-- **Needs the highlighting script** on the page to light anything, loaded before the mode's element, as the page templates do.
-- **Open dialogs:** a modal blocks everything outside it, so the card can't be used while one is open, as with every mode. Chosen tags still light inside it.
-- **A part redrawn while held** loses its outline, since it's a new element; the card stays.
-- **Top layer:** the frame, outline, card, banner and quiet bar use the browser's popover API, above everything, floating panels included.
-- **Not yet:** touch (no pointing: a tap could show), remembering where each viewer put the card.
-- **Dependencies:** none. It says what's chosen; it knows nothing of what lights it.
+- **Reads one attribute across the page:** `data-tags`, never content (see the [modes practice](../../practices/modes.md)).
+- **Remembers the choice for the tab,** in `sessionStorage`. Where storage refuses, it works until the page closes.
+- **Open dialogs:** a modal blocks the card while it's open. Chosen tags still light inside it.
+- **Top layer:** its frame, outline, card and banner use the browser's popover API.
+- **Not yet:** touch, remembering where each viewer put the card.
+- **Dependencies:** none, though it needs the highlighting script on the page, loaded first, to light anything.
 - **Export:** safe for single-file export. Classic script, no fetches, no external assets.
 - **Renaming:** if another component on the page is already called `sb-tags-mode`, the console says so. Replace every `sb-tags-mode` in `sb-tags-mode.js` to give this copy a new name.

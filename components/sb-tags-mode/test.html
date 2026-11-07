@@ -9,6 +9,7 @@
 </head>
 <body>
   <script>
+    const choiceIn = ({ tags, match }) => ({ tags, match }); // what was chosen, leaving its colours aside
     const DECLARED = [
       { tag: 'platforms', means: 'Which platform a train leaves from.' },
       { tag: 'passengers', means: 'What passengers read.' },
@@ -82,6 +83,16 @@
       for (const name of ['frame', 'card', 'banner']) assert(q(el, name).matches(':popover-open'), name);
       assert(q(el, 'banner').textContent.includes('click'));
       assertEqual(modes.length, 0);
+    });
+
+    test('the card\'s close button ends the mode, as Stop does, and its bar is named for the mode', () => {
+      const { el } = on({ attrs: 'heading="Topics"' });
+      const heard = recordEvents(el, 'sb-mode');
+      assertEqual(q(el, 'name').textContent, 'Topics');
+      click(q(el, 'close'));
+      assertEqual(el.active, false);
+      assertEqual(heard.length, 1);
+      assertEqual(heard[0].detail, { mode: 'Topics', active: false });
     });
 
     test('Stop and Escape end it with sb-mode, and only then', () => {
@@ -173,9 +184,67 @@
       click(chip(el, 'platforms'));
       heard.stop();
       assertEqual(el.chosen, ['platforms']);
-      assertEqual(heard.at(-1), { tags: ['platforms'], match: 'all' });
+      assertEqual(heard.at(-1).tags, ['platforms']);
+      assertEqual(heard.at(-1).match, 'all');
       assertEqual(chip(el, 'platforms').getAttribute('aria-pressed'), 'true');
       assertEqual(chip(el, 'platforms', q(el, 'part')).getAttribute('aria-pressed'), 'true');
+    });
+
+    test('a tag declaring a colour is sent with it, and its chip wears it', () => {
+      const { el } = on();
+      el.declarations = [{ tag: 'platforms', means: 'x', color: '#123456' }];
+      const heard = listen();
+      el.chosen = ['platforms'];
+      heard.stop();
+      assertEqual(heard.at(-1).colors, { platforms: '#123456' });
+      el.chosen = [];
+      el.chosen = ['platforms'];
+      assertEqual(chip(el, 'platforms').style.getPropertyValue('--sb-tags-mode-chosen'), '#123456');
+    });
+
+    test('tags without one get a colour of their own, the same each time, in any order', () => {
+      const { el } = on();
+      el.declarations = [{ tag: 'platforms', means: 'x' }, { tag: 'passengers', means: 'y' }];
+      const heard = listen();
+      el.chosen = ['platforms', 'passengers'];
+      const first = heard.at(-1).colors;
+      el.chosen = ['passengers'];
+      el.chosen = ['passengers', 'platforms'];
+      heard.stop();
+      assert(first.platforms !== first.passengers, 'different colours');
+      assertEqual(heard.at(-1).colors.platforms, first.platforms);
+      assertEqual(heard.at(-1).colors.passengers, first.passengers);
+    });
+
+    test('chosen tags never share a fallback colour, even when their places in the list would', () => {
+      const { el } = on();
+      el.declarations = Array.from({ length: 15 }, (_, i) => ({ tag: i === 0 ? 'platforms' : i === 14 ? 'passengers' : `t${i}`, means: 'x' }));
+      const heard = listen();
+      el.chosen = ['platforms', 'passengers'];
+      const { platforms, passengers } = heard.at(-1).colors;
+      assert(platforms !== passengers, `both are ${platforms}`);
+      el.chosen = ['platforms'];
+      heard.stop();
+      assertEqual(heard.at(-1).colors.platforms, platforms, 'the first keeps its colour');
+    });
+
+    test('a tag without a colour steers clear of one a chosen tag declares', () => {
+      const { el } = on();
+      el.declarations = [{ tag: 'platforms', means: 'x' }, { tag: 'passengers', means: 'y', color: '#d946ef' }];
+      const heard = listen();
+      el.chosen = ['platforms', 'passengers'];
+      heard.stop();
+      assertEqual(heard.at(-1).colors.passengers, '#d946ef');
+      assert(heard.at(-1).colors.platforms !== '#d946ef', 'it takes another');
+    });
+
+    test('a tag no declaration mentions still gets a colour', () => {
+      const { el } = on();
+      el.declarations = [];
+      const heard = listen();
+      el.chosen = ['platforms'];
+      heard.stop();
+      assert(heard.at(-1).colors.platforms, 'it has one');
     });
 
     test('clicking it again removes it', () => {
@@ -189,7 +258,7 @@
     test('all is the default, and the switch shows from two tags, counting what matches', () => {
       const { el } = on();
       click(chip(el, 'platforms'));
-      assert(!q(el, 'switch'), 'no switch for one tag');
+      assert(q(el, 'switch').querySelector('button').disabled, 'nothing to switch with one tag');
       assert(q(el, 'chosen').textContent.includes('2 parts'), 'CARD-1 and the words; not the hidden one');
       click(chip(el, 'passengers'));
       assertEqual(el.match, 'all');
@@ -197,7 +266,7 @@
       const heard = listen();
       click(q(el, 'switch').querySelector('[data-match="any"]'));
       heard.stop();
-      assertEqual(heard.at(-1), { tags: ['platforms', 'passengers'], match: 'any' });
+      assertEqual(choiceIn(heard.at(-1)), { tags: ['platforms', 'passengers'], match: 'any' });
       assert(q(el, 'chosen').textContent.includes('3 parts'));
     });
 
@@ -211,43 +280,226 @@
       assertEqual(heard.at(-1).tags, []);
     });
 
-    test('leaving keeps them lit, with a quiet bar to change or clear them', () => {
+    test('leaving keeps them lit, and opening it again shows them, to change or clear', () => {
       const { el } = on();
       click(chip(el, 'platforms'));
-      assert(!q(el, 'quiet').matches(':popover-open'), 'not while the mode is on');
       const heard = listen();
       press('Escape');
       assertEqual(heard.length, 0, 'leaving changes nothing lit');
       heard.stop();
       assertEqual(el.chosen, ['platforms']);
-      assert(q(el, 'quiet').matches(':popover-open'));
-      click(q(el, 'quiet').querySelector('[data-clear]'));
+      assertEqual(el.querySelectorAll('.sb-tags-mode__quiet').length, 0, 'nothing else on the page shows them');
+      el.active = true;
+      assertEqual(chip(el, 'platforms').getAttribute('aria-pressed'), 'true');
+      click(q(el, 'clear'));
       assertEqual(el.chosen, []);
-      assert(!q(el, 'quiet').matches(':popover-open'));
-    });
-
-    test('with no tags chosen there is no quiet bar', () => {
-      const { el } = setup();
-      assert(!q(el, 'quiet').matches(':popover-open'));
-    });
-
-    test('the bar\'s clicks work in Explore, where the mode stops nothing', () => {
-      const { el } = on();
-      click(chip(el, 'platforms'));
-      click(chip(el, 'passengers'));
-      press('Escape');
-      click(chip(el, 'platforms', q(el, 'quiet')));
-      assertEqual(el.chosen, ['passengers']);
     });
 
     // ---- The page's tags ----
 
     test('lists current tags, with how many visible parts carry each, most first', () => {
       const { el } = on();
-      assertEqual(pageTags(el), ['passengers', 'platforms', 'stray', 'unused']);
+      assertEqual(pageTags(el), ['passengers', 'platforms', 'stray']);
       assertEqual(chip(el, 'platforms').querySelector('.sb-tags-mode__count').textContent, '2', 'not the hidden part');
       assertEqual(chip(el, 'passengers').querySelector('.sb-tags-mode__count').textContent, '2');
+    });
+
+    test('a tag with nothing here to see isn\'t listed, unless it\'s pinned, so the pin can come off', () => {
+      const { el } = on();
+      assertEqual(chip(el, 'unused'), null);
+      el.chosen = ['unused'];
       assertEqual(chip(el, 'unused').querySelector('.sb-tags-mode__count').textContent, '0');
+      click(chip(el, 'unused'));
+      assertEqual(el.chosen, []);
+      assert(chip(el, 'unused'), 'it stays while the panel is open, so nothing moves');
+      el.active = false;
+      el.active = true;
+      assertEqual(chip(el, 'unused'), null, 'and goes the next time');
+    });
+
+    const placesInPanel = (el) => [...q(el, 'page').querySelectorAll('.sb-tags-mode__entry')].map((line) => {
+      const { left, top, width, height } = line.getBoundingClientRect();
+      return [line.dataset.tag, left, top, width, height];
+    });
+
+    test('the list never moves: not when tags are pinned or unpinned, nor the switch used, nor Clear', () => {
+      const { el } = on();
+      const start = placesInPanel(el);
+      const unmoved = (when) => assertEqual(placesInPanel(el), start, when);
+      click(chip(el, 'platforms'));
+      unmoved('pinning one');
+      click(chip(el, 'passengers'));
+      unmoved('pinning another');
+      click(q(el, 'switch').querySelector('[data-match="any"]'));
+      unmoved('switching');
+      click(chip(el, 'platforms'));
+      unmoved('unpinning');
+      click(q(el, 'clear'));
+      unmoved('clearing');
+    });
+
+    test('the list never moves when pointing shows a part\'s tags, and neither do the controls', async () => {
+      const { el, card } = on();
+      const start = placesInPanel(el), controls = q(el, 'chosen').getBoundingClientRect().top;
+      el._show(card);
+      assert(q(el, 'part').textContent.includes('platforms'), 'the part is shown');
+      assertEqual(placesInPanel(el), start);
+      assertEqual(q(el, 'chosen').getBoundingClientRect().top, controls);
+    });
+
+    test('the controls are always there, off until they\'re of use', () => {
+      const { el } = on();
+      const height = q(el, 'chosen').getBoundingClientRect().height;
+      assert(q(el, 'clear').disabled, 'nothing to clear');
+      click(chip(el, 'platforms'));
+      assert(!q(el, 'clear').disabled, 'something to clear');
+      click(chip(el, 'passengers'));
+      assert(!q(el, 'switch').querySelector('button').disabled, 'two to combine');
+      assertEqual(q(el, 'chosen').getBoundingClientRect().height, height, 'the same height throughout');
+    });
+
+    test('tags are listed as lines, each with a pin that fills in its colour when pinned', () => {
+      const { el } = on();
+      el.declarations = [{ tag: 'platforms', means: 'x', color: '#123456' }];
+      el.chosen = [];
+      const line = chip(el, 'platforms');
+      assert(line.closest('.sb-tags-mode__list'), 'in a list');
+      const pin = () => chip(el, 'platforms').querySelector('.sb-tags-mode__pin');
+      assertEqual(getComputedStyle(pin()).backgroundColor, 'rgba(0, 0, 0, 0)', 'hollow to start with');
+      click(line);
+      assertEqual(getComputedStyle(pin()).backgroundColor, 'rgb(18, 52, 86)', 'filled once pinned');
+    });
+
+    const sign = (el, tag, which) => q(el, 'page').querySelector(`[data-sign-for="${tag}"][data-sign="${which}"]`);
+    const pressed = (button) => button.getAttribute('aria-pressed') === 'true';
+
+    test('a line comes on adding, and each has a plus and a minus, neither pressed while it is off', () => {
+      const { el } = on();
+      assert(!pressed(sign(el, 'platforms', 'plus')) && !pressed(sign(el, 'platforms', 'minus')), 'off');
+      click(chip(el, 'platforms'));
+      assert(pressed(sign(el, 'platforms', 'plus')), 'on, adding');
+      assert(!pressed(sign(el, 'platforms', 'minus')));
+      assertEqual(el.without, []);
+    });
+
+    test('minus takes away: the page is told, and the count follows', () => {
+      const { el } = on();
+      const heard = listen();
+      click(chip(el, 'platforms'));
+      assert(q(el, 'chosen').textContent.includes('2 parts'));
+      click(sign(el, 'passengers', 'minus'));
+      heard.stop();
+      assertEqual(heard.at(-1).tags, ['platforms']);
+      assertEqual(heard.at(-1).without, ['passengers']);
+      assertEqual(el.chosen, ['platforms', 'passengers']);
+      assert(q(el, 'chosen').textContent.includes('1 part'), 'only the words, not CARD-1');
+    });
+
+    test('a sign on a line that is off turns it on, and plus switches it back', () => {
+      const { el } = on();
+      click(sign(el, 'platforms', 'minus'));
+      assertEqual(el.chosen, ['platforms']);
+      assertEqual(el.without, ['platforms']);
+      click(sign(el, 'platforms', 'plus'));
+      assertEqual(el.chosen, ['platforms']);
+      assertEqual(el.without, []);
+    });
+
+    test('turning a line off forgets its sign, so it comes back adding', () => {
+      const { el } = on();
+      click(sign(el, 'platforms', 'minus'));
+      click(chip(el, 'platforms'));
+      assertEqual(el.chosen, []);
+      assertEqual(el.without, []);
+      click(chip(el, 'platforms'));
+      assertEqual(el.without, []);
+      assert(pressed(sign(el, 'platforms', 'plus')));
+    });
+
+    test('with only minus, it takes away from everything tagged, and the switch stays off until two add', () => {
+      const { el } = on();
+      click(sign(el, 'passengers', 'minus'));
+      assert(q(el, 'chosen').textContent.includes('2 parts'), 'the words and OLD-1');
+      click(chip(el, 'platforms'));
+      assert(q(el, 'switch').querySelector('button').disabled, 'only one adding, so nothing to combine');
+    });
+
+    test('signs move nothing, keep focus, and are remembered for the tab', () => {
+      const { el } = on();
+      const start = placesInPanel(el);
+      sign(el, 'platforms', 'minus').focus();
+      click(sign(el, 'platforms', 'minus'));
+      assertEqual(placesInPanel(el), start);
+      assertEqual(document.activeElement, sign(el, 'platforms', 'minus'));
+      const saved = JSON.parse(sessionStorage.getItem('sb-tags-mode'));
+      assertEqual(saved.without, ['platforms']);
+    });
+
+    const PRESETS = [
+      { name: 'Where they meet', asks: 'Which parts carry both?', tags: ['platforms', 'passengers'], match: 'all' },
+      { name: 'Platforms, less passengers', tags: ['platforms'], without: ['passengers'] }
+    ];
+    const withPresets = () => { const made = on(); made.el.presets = PRESETS; made.el.active = false; made.el.active = true; return made; };
+    const preset = (el, index) => q(el, 'presets').querySelector(`[data-preset="${index}"]`);
+
+    test('with no presets, the panel shows none and takes no room', () => {
+      const { el } = on();
+      assertEqual(q(el, 'presets').children.length, 0);
+      assertEqual(getComputedStyle(q(el, 'presets')).display, 'none');
+    });
+
+    test('a preset shows its name as text and what it asks as a tooltip', () => {
+      const { el } = on();
+      el.presets = [{ name: '<b>x</b>', asks: 'why?', tags: [] }];
+      el.active = false;
+      el.active = true;
+      assertEqual(preset(el, 0).textContent, '<b>x</b>');
+      assertEqual(preset(el, 0).querySelector('b'), null);
+      assertEqual(preset(el, 0).title, 'why?');
+    });
+
+    test('choosing a preset sets the lines, signs and combining, and tells the page once', () => {
+      const { el } = withPresets();
+      click(chip(el, 'stray'));
+      const heard = listen();
+      click(preset(el, 1));
+      heard.stop();
+      assertEqual(heard.length, 1);
+      assertEqual(choiceIn(heard[0]), { tags: ['platforms'], match: 'all' });
+      assertEqual(heard[0].without, ['passengers']);
+      assertEqual(el.chosen, ['platforms', 'passengers']);
+      assert(pressed(sign(el, 'passengers', 'minus')), 'the signs follow');
+    });
+
+    test('a preset shows as chosen only while the selection is exactly it, however it got there', () => {
+      const { el } = withPresets();
+      click(preset(el, 0));
+      assert(pressed(preset(el, 0)), 'chosen');
+      click(chip(el, 'stray'));
+      assert(!pressed(preset(el, 0)), 'changed by hand');
+      click(chip(el, 'stray'));
+      assert(pressed(preset(el, 0)), 'back to the same selection by hand');
+      click(q(el, 'switch').querySelector('[data-match="any"]'));
+      assert(!pressed(preset(el, 0)), 'union is a different selection');
+    });
+
+    test('clicking a chosen preset clears it, and another replaces it', () => {
+      const { el } = withPresets();
+      click(preset(el, 0));
+      click(preset(el, 1));
+      assert(!pressed(preset(el, 0)) && pressed(preset(el, 1)));
+      click(preset(el, 1));
+      assertEqual(el.chosen, []);
+      assertEqual(el.without, []);
+    });
+
+    test('choosing a preset moves none of the lines already listed, and keeps focus', () => {
+      const { el } = withPresets();
+      const start = placesInPanel(el);
+      preset(el, 1).focus();
+      click(preset(el, 1));
+      assertEqual(placesInPanel(el), start);
+      assertEqual(document.activeElement, preset(el, 1));
     });
 
     test('retired tags are never offered, and shown on a part with what replaced them', async () => {
@@ -356,7 +608,7 @@
       heard.stop();
       assertEqual(again.chosen, ['platforms', 'passengers']);
       assertEqual(again.match, 'any');
-      assertEqual(heard.at(-1), { tags: ['platforms', 'passengers'], match: 'any' }, 'lit again on load');
+      assertEqual(choiceIn(heard.at(-1)), { tags: ['platforms', 'passengers'], match: 'any' }, 'lit again on load');
       again.remove();
       sessionStorage.clear();
     });

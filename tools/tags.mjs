@@ -33,7 +33,8 @@ function report(folder) {
   const tagged = items.filter((item) => item.tags.length);
   if (!declared.length && !tagged.length) return [...notes, 'No tags here. Tagging is opt-in: see the tagging practice.'];
 
-  const map = { items, tagged, declared, carriers: carriersOf(tagged), places: placesOf(tagged) };
+  const presets = readPresets(sandbox, records, notes);
+  const map = { items, tagged, declared, presets, carriers: carriersOf(tagged), places: placesOf(tagged) };
   return [...notes, ...headlines(map), '', ...findings(map)];
 }
 
@@ -56,6 +57,20 @@ function readScript(sandbox, script, notes) {
     notes.push(`${script} couldn't be read (${err.message}), so it's left out.`);
     return {};
   }
+}
+
+function readPresets(sandbox, records, notes) {
+  if (records.TAG_PRESETS) return records.TAG_PRESETS;
+  return existsSync(join(sandbox, 'tags.js')) ? readScript(sandbox, 'tags.js', notes).TAG_PRESETS ?? [] : [];
+}
+
+// A preset names tags, so one can be left behind when a tag is retired or renamed.
+function stalePresets(presets, declared) {
+  const current = new Set(declared.filter(({ replacedBy }) => !replacedBy).map(({ tag }) => tag));
+  return presets.flatMap(({ name, tags = [], without = [] }) => {
+    const stale = [...tags, ...without].filter((tag) => !current.has(tag));
+    return stale.length ? [`Preset "${name}" names ${stale.join(', ')}, which ${stale.length === 1 ? "isn't a current tag" : "aren't current tags"}.`] : [];
+  });
 }
 
 function readDeclared(sandbox, records, notes) {
@@ -153,7 +168,7 @@ function headlines({ items, tagged, carriers, places }) {
 }
 
 function findings(map) {
-  const { items, tagged, declared, carriers, places } = map;
+  const { items, tagged, declared, presets, carriers, places } = map;
   const inUse = (tag) => carriers.has(tag);
   const names = new Set(declared.map(({ tag }) => tag));
   const retired = declared.filter(({ replacedBy }) => replacedBy);
@@ -164,6 +179,7 @@ function findings(map) {
   const found = [
     ...listed('Untagged', items.filter(({ tags }) => !tags.length).map(({ id }) => id)),
     ...listed('In use but never declared', [...carriers.keys()].filter((tag) => !names.has(tag))),
+    ...stalePresets(presets, declared),
     ...listed('Retired but still carried', retired.filter(({ tag }) => inUse(tag)).map(({ tag }) => tag)),
     ...listed('Declared but unused', declared.filter(({ tag, replacedBy }) => !replacedBy && !inUse(tag)).map(({ tag }) => tag)),
     ...listed('On one item, so it finds nothing its code wouldn\'t', [...carriers].filter(([, ids]) => ids.length === 1).map(([tag]) => tag)),

@@ -4,6 +4,10 @@ The guide for an agent asked to build a domain sandbox with Sandkit. Read this f
 
 A domain sandbox is a small, self-contained application that houses an interactive, executable model of a subject, along with everything needed to explore it. It is plain HTML, CSS and JavaScript that opens in any browser, with nothing to install and no build step.
 
+## Be economical
+
+Spend tokens carefully by default, unless the person asks otherwise: read only what you need, trust components to do their work, and let the person's feedback do the checking. Never at the cost of what they asked for.
+
 ## Work in iterations
 
 A sandbox grows in small iterations, steered by the person exploring it. **Never build the whole sandbox at once.** Until the person has tried something, you don't know what they want from it, and everything built beyond their first look is a guess that may be thrown away.
@@ -162,9 +166,9 @@ If a part built by hand seems useful beyond this subject, mark it **candidate**:
 - **Reveal, don't merely display.** Show why things happen: highlight the rule that fired, the stock that ran out, the cause behind the effect.
 - **Modes come with the shell.** Every sandbox has comment mode from the template, wired once in `sandbox.js`. Once the model cites its sources, add trace mode, so people can ask why anything is there; once it has labels people could misread, inspect mode. See the [modes practice](modes.md).
 - **Let pointing connect the views.** Every page includes the highlighting script, so name what each part stands for with `data-ref`, the same name everywhere, and pointing at it lights it across every view, with no wiring. Have a sentence or button name several things with `data-points-at`. Write highlight wiring only for what the [highlighting practice](highlighting.md) says the script can't reach.
-- **Add an outliner once the model has traces.** When things on the page connect, such as inputs to the rules they feed and what those rules show, give the shell an [`sb-outliner`](../components/sb-outliner/manifest.md) in its `panels` slot, with the model's `traceOf`: people point to see a whole path light up, and pin it to keep it lit while they change things. The highlighting script lights the rest of the page for it. See "Keeping things lit" in the [highlighting practice](highlighting.md).
+- **Add an outliner once the model has traces.** When things on the page connect, such as inputs to the rules they feed and what those rules show, give the shell an [`sb-outliner`](../components/sb-outliner/manifest.md) in its `panels` slot, with the model's `traceOf`: people point to see a whole path light up, and pin it to keep it lit while they change things. The highlighting script lights the rest of the page for it. See [Pins](highlighting-pins.md) in the highlighting practice.
 - **Combine components in the page.** The practices say which components go together and how to wire them. Components never go inside one another unless a component offers a slot for exactly that.
-- **Write what nothing fits yourself** in the page or in `model.js`. Name hand-built parts with `data-ref`, and the highlighting script makes them point and light up like components: see "Your own parts" in the [highlighting practice](highlighting.md#your-own-parts).
+- **Write what nothing fits yourself** in the page or in `model.js`. Name hand-built parts with `data-ref`, and the highlighting script makes them point and light up like components: see "Your own parts" in the [highlighting practice](highlighting-own-parts.md).
 - **Move reused parts out of the page.** When a piece of the surface is used by more than one chapter or page, make it one of the sandbox's own components: a function in `parts.js` or, once it has state of its own, a custom element in `components/`. See the [domain components practice](domain-components.md).
 - **Make it two-way.** Let people change things (parameters, scenarios, controls) and see the model respond.
 

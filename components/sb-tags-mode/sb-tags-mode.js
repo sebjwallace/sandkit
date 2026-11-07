@@ -1,4 +1,4 @@
-// Sandkit sb-tags-mode 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-tags-mode 0.2.0 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Tags mode: see what any part of the page is about, and choose topics to keep lit. Pointing at a
 // tagged part shows its tags in a card at the side, with what each means; a click holds it. Clicking
 // a tag keeps everything carrying it lit, after the mode ends too, until it's cleared. A mode, chosen
@@ -34,34 +34,64 @@
     .sb-tags-mode__card { position: fixed; inset: 72px 16px auto auto; box-sizing: border-box; width: min(340px, calc(100vw - 32px)); max-height: calc(100vh - 150px); margin: 0; padding: 0; flex-direction: column; overflow: hidden; border: 2px solid var(--sb-tags-mode-tone); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: 13px/1.45 var(--sb-font, system-ui, sans-serif); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28); }
     .sb-tags-mode__card:popover-open { display: flex; }
     .sb-tags-mode__card:focus { outline: none; }
-    .sb-tags-mode__bar { display: flex; flex: none; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--sb-border, #d5d9e0); background: var(--sb-surface-2, #eef0f3); cursor: move; touch-action: none; user-select: none; }
+    .sb-tags-mode__bar { display: flex; flex: none; align-items: center; gap: 6px; padding: 5px 8px 5px 10px; border-bottom: 1px solid var(--sb-border, #d5d9e0); background: var(--sb-surface-2, #eef0f3); cursor: move; touch-action: none; user-select: none; }
     .sb-tags-mode__grip { flex: none; width: 10px; height: 14px; color: var(--sb-muted, #616e7c); background: radial-gradient(circle, currentColor 1.3px, transparent 1.6px) 0 0 / 5px 5px; }
     .sb-tags-mode__body { display: grid; gap: 12px; padding: 10px 12px 12px; overflow-y: auto; }
+    .sb-tags-mode__name { flex: 1; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .sb-tags-mode__close { padding: 2px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 4px; background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: 12px var(--sb-font, system-ui, sans-serif); cursor: pointer; }
     .sb-tags-mode__title { margin: 0 0 6px; color: var(--sb-muted, #616e7c); font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
     .sb-tags-mode__hint { margin: 0; color: var(--sb-muted, #616e7c); }
     .sb-tags-mode__meaning { display: grid; gap: 2px; margin-bottom: 8px; }
     .sb-tags-mode__meaning:last-child { margin-bottom: 0; }
     .sb-tags-mode__meaning > .sb-tags-mode__chip { justify-self: start; }
     .sb-tags-mode__means { margin: 0; color: var(--sb-muted, #616e7c); }
-    .sb-tags-mode__chips { display: flex; flex-wrap: wrap; gap: 5px; }
     .sb-tags-mode__chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 999px; background: var(--sb-surface-2, #eef0f3); color: var(--sb-text, #1f2933); font: 12px var(--sb-font, system-ui, sans-serif); cursor: pointer; }
-    .sb-tags-mode__chip:hover { border-color: var(--sb-tags-mode-chosen); }
-    .sb-tags-mode__chip[aria-pressed="true"] { border: 2px dashed var(--sb-tags-mode-chosen); padding: 1px 8px; font-weight: 700; }
-    .sb-tags-mode__chip[aria-pressed="true"]::before { content: '✓'; }
     .sb-tags-mode__chip--retired { border-style: dotted; background: transparent; color: var(--sb-muted, #616e7c); cursor: default; text-decoration: line-through; }
+    .sb-tags-mode__list { display: grid; gap: 1px; }
+    .sb-tags-mode__presets:empty { display: none; }
+    .sb-tags-mode__preset { display: block; box-sizing: border-box; width: 100%; overflow: hidden; padding: 3px 6px; border: 1px solid transparent; border-radius: 4px; background: none; color: var(--sb-text, #1f2933); font: 13px var(--sb-font, system-ui, sans-serif); text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+    .sb-tags-mode__preset:hover { border-color: var(--sb-border, #d5d9e0); }
+    .sb-tags-mode__preset[aria-pressed="true"] { border-color: var(--sb-accent, #2563eb); background: var(--sb-accent-soft, color-mix(in srgb, var(--sb-accent, #2563eb) 18%, transparent)); font-weight: 600; }
+    .sb-tags-mode__line { display: flex; align-items: center; gap: 4px; }
+    .sb-tags-mode__signs { display: inline-flex; flex: none; gap: 1px; }
+    .sb-tags-mode__sign { box-sizing: border-box; width: 20px; height: 20px; padding: 0; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 4px; background: none; color: var(--sb-muted, #616e7c); font: 700 13px/1 var(--sb-font, system-ui, sans-serif); cursor: pointer; }
+    .sb-tags-mode__sign:hover { border-color: var(--sb-tags-mode-chosen); color: var(--sb-text, #1f2933); }
+    .sb-tags-mode__sign[aria-pressed="true"] { border-color: var(--sb-tags-mode-chosen); background: var(--sb-tags-mode-chosen); color: #fff; }
+    .sb-tags-mode__entry { display: flex; flex: 1; min-width: 0; align-items: center; gap: 6px; box-sizing: border-box; padding: 3px 6px; border: 1px solid transparent; border-radius: 4px; background: none; color: var(--sb-text, #1f2933); font: 13px var(--sb-font, system-ui, sans-serif); text-align: left; cursor: pointer; }
+    .sb-tags-mode__entry:hover { border-color: color-mix(in srgb, var(--sb-tags-mode-chosen) 60%, transparent); }
+    .sb-tags-mode__entry[aria-pressed="true"] { background: color-mix(in srgb, var(--sb-tags-mode-chosen) 24%, transparent); font-weight: 600; }
+    .sb-tags-mode__entry[data-minus] .sb-tags-mode__label { text-decoration: line-through; }
+    .sb-tags-mode__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sb-tags-mode__pin { flex: none; box-sizing: border-box; width: 14px; height: 14px; border: 2px solid var(--sb-tags-mode-chosen); border-radius: 3px; opacity: 0.5; }
+    .sb-tags-mode__entry:hover .sb-tags-mode__pin { opacity: 0.8; }
+    .sb-tags-mode__entry[aria-pressed="true"] .sb-tags-mode__pin { background: var(--sb-tags-mode-chosen); opacity: 1; }
     .sb-tags-mode__count { color: var(--sb-muted, #616e7c); font-size: 11px; }
     .sb-tags-mode__mark { margin: 0; color: var(--sb-muted, #616e7c); font-size: 11px; font-style: italic; }
     .sb-tags-mode__lit { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+    .sb-tags-mode__said { margin: 6px 0 0; color: var(--sb-muted, #616e7c); font-size: 11px; white-space: nowrap; }
+    .sb-tags-mode__lit button:disabled { opacity: 0.45; cursor: default; }
     .sb-tags-mode__switch { display: inline-flex; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); overflow: hidden; }
     .sb-tags-mode__switch button { padding: 2px 8px; border: 0; background: transparent; color: var(--sb-text, #1f2933); font: 12px var(--sb-font, system-ui, sans-serif); cursor: pointer; }
     .sb-tags-mode__switch button[aria-pressed="true"] { background: var(--sb-tags-mode-chosen); color: #fff; font-weight: 700; }
     .sb-tags-mode__clear { padding: 2px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: transparent; color: var(--sb-text, #1f2933); font: 12px var(--sb-font, system-ui, sans-serif); cursor: pointer; }
-    .sb-tags-mode__quiet { position: fixed; inset: auto auto 16px 16px; box-sizing: border-box; max-width: calc(100vw - 32px); margin: 0; display: none; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 10px; border: 1px solid var(--sb-tags-mode-chosen); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: 12px var(--sb-font, system-ui, sans-serif); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); }
-    .sb-tags-mode__quiet:popover-open { display: flex; }
     .sb-tags-mode button:focus-visible { outline: 2px solid var(--sb-tags-mode-tone); outline-offset: 1px; }`;
 
   // Viewers' clicks and presses, stopped in the mode so they hold instead of act.
   const STOPPED = ['click', 'dblclick', 'pointerdown', 'pointerup', 'mousedown', 'mouseup'];
+
+  // TEMPORARY: colours for tags that don't declare their own. A tag's colour belongs in its
+  // declaration, `{ tag, means, color }`, which is what `_colorOf` reads first. Once tags are given
+  // colours where they're managed, this list and `fallbackColor` can go, and nothing else changes.
+  const FALLBACK_COLORS = ['#d946ef', '#14b8a6', '#f97316', '#8b5cf6', '#65a30d', '#e11d48', '#a0693b'];
+
+  // The same colour for a tag every time: by its place in the declarations, or its name if it has
+  // none. If another chosen tag already wears it, the next free one, so what's lit stays apart.
+  function fallbackColor(tag, declaredTags, taken) {
+    const place = declaredTags.indexOf(tag);
+    const start = place >= 0 ? place : [...tag].reduce((sum, letter) => sum + letter.charCodeAt(0), 0);
+    const inTurn = FALLBACK_COLORS.map((_, i) => FALLBACK_COLORS[(start + i) % FALLBACK_COLORS.length]);
+    return inTurn.find((color) => !taken.includes(color)) ?? inTurn[0];
+  }
 
   // What every mode lets through (data-modes, such as the shell's mode picker), and open dialogs.
   const LET_THROUGH = '[data-modes], dialog[open]';
@@ -90,15 +120,16 @@
   // Memory lasts as long as the tab, and may be missing or refuse, as in a private window.
   function recall() {
     try {
-      const { tags, match } = JSON.parse(sessionStorage.getItem(MEMORY));
-      return { tags: tags.filter((tag) => typeof tag === 'string'), match: match === 'any' ? 'any' : 'all' };
+      const { tags, match, without } = JSON.parse(sessionStorage.getItem(MEMORY));
+      const chosen = tags.filter((tag) => typeof tag === 'string');
+      return { tags: chosen, match: match === 'any' ? 'any' : 'all', without: (without ?? []).filter((tag) => chosen.includes(tag)) };
     } catch {
-      return { tags: [], match: 'all' };
+      return { tags: [], match: 'all', without: [] };
     }
   }
 
-  function remember(tags, match) {
-    try { sessionStorage.setItem(MEMORY, JSON.stringify({ tags, match })); } catch { /* kept in memory only */ }
+  function remember(tags, match, without) {
+    try { sessionStorage.setItem(MEMORY, JSON.stringify({ tags, match, without })); } catch { /* kept in memory only */ }
   }
 
   class SbTagsMode extends HTMLElement {
@@ -108,6 +139,9 @@
       super();
       this._active = false;
       this._chosen = [];
+      this._without = []; // the chosen tags that take away from what's lit, rather than add to it
+      this.presets = null; // named selections; the page's TAG_PRESETS when left unset
+      this._stayListed = new Set(); // tags with nothing to see that were pinned: listed until the mode next starts
       this._match = 'all';
       this._shown = null;  // the part whose tags are in the card, or null
       this._held = false;
@@ -126,9 +160,10 @@
       if (!this._built) {
         this._built = true;
         this._render();
-        const { tags, match } = recall();
+        const { tags, match, without } = recall();
         this._chosen = tags;
         this._match = match;
+        this._without = without;
       }
       // Moving an element closes its popovers, and the shell moves its modes.
       this.active = this._active;
@@ -154,6 +189,7 @@
     set active(on) {
       const starting = Boolean(on) && !this._active;
       this._active = Boolean(on);
+      if (starting) this._stayListed.clear();
       if (!this._built || !this.isConnected) return;
       this._listen(this._active);
       this._frame.togglePopover(this._active);
@@ -169,6 +205,13 @@
     get chosen() { return [...this._chosen]; }
     set chosen(tags) { this._setChosen(Array.isArray(tags) ? tags.filter((tag) => typeof tag === 'string') : []); }
 
+    // The chosen tags that take away: whatever carries one isn't lit. Only a chosen tag can be one.
+    get without() { return [...this._without]; }
+    set without(tags) {
+      this._without = this._chosen.filter((tag) => Array.isArray(tags) && tags.includes(tag));
+      this._choiceChanged();
+    }
+
     // Whether a part needs every chosen tag, or any of them.
     get match() { return this._match; }
     set match(value) {
@@ -183,20 +226,25 @@
         Object.assign(el('div', 'frame'), { popover: 'manual' }),
         Object.assign(el('div', 'outline'), { popover: 'manual' }),
         Object.assign(el('section', 'card'), { popover: 'manual', tabIndex: -1, ariaLabel: 'Tags' }),
-        Object.assign(el('div', 'banner'), { popover: 'manual' }),
-        Object.assign(el('section', 'quiet'), { popover: 'manual', ariaLabel: 'Topics kept lit' })
+        Object.assign(el('div', 'banner'), { popover: 'manual' })
       );
       const part = (name) => this.querySelector(`.sb-tags-mode__${name}`);
-      [this._frame, this._outlineBox, this._card, this._banner, this._quiet] = ['frame', 'outline', 'card', 'banner', 'quiet'].map(part);
+      [this._frame, this._outlineBox, this._card, this._banner] = ['frame', 'outline', 'card', 'banner'].map(part);
 
       const bar = el('div', 'bar');
       bar.title = 'Drag to move';
-      bar.append(el('span', 'grip'), el('span', 'title', 'Tags'));
+      const close = el('button', 'close', '✕');
+      Object.assign(close, { type: 'button', title: 'Close: end Tags mode' });
+      close.setAttribute('aria-label', 'Close');
+      close.addEventListener('click', () => this._end());
+      bar.append(el('span', 'grip'), el('span', 'name', this.heading), close);
       this._partArea = el('div', 'part');
       this._litArea = el('div', 'chosen');
+      this._presetArea = el('div', 'presets');
       this._pageArea = el('div', 'page');
       const body = el('div', 'body');
-      body.append(this._partArea, this._litArea, this._pageArea);
+      // The list comes first, with nothing above it that changes, so a line stays under the pointer.
+      body.append(this._presetArea, this._pageArea, this._litArea, this._partArea);
       this._card.append(bar, body);
       this._draggable(bar);
 
@@ -206,13 +254,14 @@
       stop.addEventListener('click', () => this._end());
       this._banner.append(this._words, stop);
 
-      for (const area of [this._card, this._quiet]) area.addEventListener('click', (e) => this._control(e));
+      this._card.addEventListener('click', (e) => this._control(e));
       this._drawPart();
     }
 
     // The card moves by its bar, so it never has to cover a part someone wants to see.
     _draggable(bar) {
       bar.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button')) return; // its buttons are for pressing, not dragging
         const box = this._card.getBoundingClientRect();
         const offset = { x: e.clientX - box.left, y: e.clientY - box.top };
         const move = (m) => {
@@ -251,6 +300,22 @@
       return new Map(usable.map((entry) => [entry.tag, entry]));
     }
 
+    // Each chosen tag's colour: what its declaration says, or else a fallback for now, in the order
+    // they were chosen, so a tag keeps its colour while it stays chosen.
+    _chosenColors() {
+      const declared = this._declared(), colors = {};
+      const own = this._chosen.map((tag) => declared.get(tag)?.color).filter(Boolean);
+      for (const tag of this._chosen) {
+        colors[tag] = declared.get(tag)?.color ?? fallbackColor(tag, [...declared.keys()], [...own, ...Object.values(colors)]);
+      }
+      return colors;
+    }
+
+    _colorOf(tag) {
+      const declared = this._declared();
+      return this._chosenColors()[tag] ?? declared.get(tag)?.color ?? fallbackColor(tag, [...declared.keys()], []);
+    }
+
     // Everything tagged. Only the data-tags attribute is read, never the page's content.
     _tagged() {
       return [...document.querySelectorAll('[data-tags]:not([data-tags=""])')];
@@ -274,7 +339,10 @@
     _carriesChosen(part) {
       const tags = tagsOf(part);
       const has = (tag) => tags.includes(tag);
-      return this._match === 'any' ? this._chosen.some(has) : this._chosen.every(has);
+      if (this._without.some(has)) return false;
+      const adding = this._adding();
+      if (!adding.length) return tags.length > 0; // only taking away: from everything tagged
+      return this._match === 'any' ? adding.some(has) : adding.every(has);
     }
 
     // ---- Pointing and holding ----
@@ -368,7 +436,9 @@
     _control(e) {
       const control = e.target.closest('button');
       if (!control) return;
-      if (control.dataset.tag) this._toggle(control.dataset.tag);
+      if (control.dataset.preset) this._togglePreset(this._presetList()[control.dataset.preset]);
+      else if (control.dataset.signFor) this._setSign(control.dataset.signFor, control.dataset.sign);
+      else if (control.dataset.tag) this._toggle(control.dataset.tag);
       else if (control.dataset.match) this.match = control.dataset.match;
       else if (control.dataset.clear != null) this._setChosen([]);
     }
@@ -377,13 +447,60 @@
       this._setChosen(this._chosen.includes(tag) ? this._chosen.filter((t) => t !== tag) : [...this._chosen, tag]);
     }
 
+    // Turning a tag off forgets its sign, so it always comes back adding.
     _setChosen(tags) {
       this._chosen = [...new Set(tags)];
+      this._without = this._without.filter((tag) => this._chosen.includes(tag));
       this._choiceChanged();
     }
 
+    // Plus or minus on a tag, which turns it on if it isn't.
+    _setSign(tag, sign) {
+      if (!this._chosen.includes(tag)) this._chosen = [...this._chosen, tag];
+      this._without = this._without.filter((t) => t !== tag);
+      if (sign === 'minus') this._without.push(tag);
+      this._choiceChanged();
+    }
+
+    // ---- Presets ----
+    // A preset is a saved selection, nothing more: choosing one sets the lines and signs, and whether
+    // it's chosen is only ever worked out from them, so there's no second state to keep in step.
+
+    _presetList() {
+      const list = this.presets ?? (typeof TAG_PRESETS === 'undefined' ? [] : TAG_PRESETS);
+      return Array.isArray(list) ? list.filter((preset) => typeof preset?.name === 'string') : [];
+    }
+
+    _isChosen({ tags = [], without = [], match = 'all' }) {
+      const same = (a, b) => a.length === b.length && a.every((tag) => b.includes(tag));
+      return same(this._adding(), tags) && same(this._without, without) && (tags.length < 2 || this._match === match);
+    }
+
+    _togglePreset(preset) {
+      const { tags = [], without = [], match = 'all' } = this._isChosen(preset) ? {} : preset;
+      this._chosen = [...new Set([...tags, ...without])];
+      this._without = [...without];
+      this._match = match === 'any' ? 'any' : 'all';
+      this._choiceChanged();
+    }
+
+    _drawPresets() {
+      const presets = this._presetList();
+      if (!presets.length) return this._presetArea.replaceChildren();
+      const list = el('div', 'list');
+      presets.forEach((preset, index) => {
+        const button = this._button('preset', preset.name, `preset:${index}`, { preset: String(index) });
+        button.setAttribute('aria-pressed', String(this._isChosen(preset)));
+        if (preset.asks) button.title = preset.asks;
+        list.append(button);
+      });
+      this._presetArea.replaceChildren(el('p', 'title', 'Presets'), list);
+    }
+
+    _adding() { return this._chosen.filter((tag) => !this._without.includes(tag)); }
+
     _choiceChanged() {
-      remember(this._chosen, this._match);
+      remember(this._chosen, this._match, this._without);
       this._lightChosen();
       if (this._built) this._keepingFocus(() => {
         this._drawPart();
@@ -394,7 +511,7 @@
 
     // Lighting is the highlighting script's job: this only says what's chosen.
     _lightChosen() {
-      this.dispatchEvent(new CustomEvent('sb-tag-focus', { bubbles: true, detail: { tags: this.chosen, match: this._match } }));
+      this.dispatchEvent(new CustomEvent('sb-tag-focus', { bubbles: true, detail: { tags: this._adding(), match: this._match, colors: this._chosenColors(), without: this.without } }));
     }
 
     // ---- Drawing ----
@@ -404,7 +521,7 @@
       const key = this.contains(document.activeElement) ? document.activeElement.dataset.key : null;
       draw();
       if (!key) return;
-      const control = [...this.querySelectorAll('[data-key]')].find((node) => node.dataset.key === key);
+      const control = [...this.querySelectorAll('[data-key]')].find((node) => node.dataset.key === key && !node.disabled);
       if (control) control.focus();
       else if (this._active) this._card.focus({ preventScroll: true });
     }
@@ -417,12 +534,35 @@
       return button;
     }
 
-    _chip(tag, area, count) {
-      const chosen = this._chosen.includes(tag);
-      const chip = this._button('chip', tag, `${area}:${tag}`, { tag });
-      chip.setAttribute('aria-pressed', String(chosen));
-      if (count != null) chip.append(el('span', 'count', String(count)));
-      return chip;
+    // A tag as a line in a list: its name, how many carry it if that's known, and a pin in its colour.
+    _entry(tag, area, count) {
+      const entry = this._button('entry', '', `${area}:${tag}`, { tag });
+      entry.setAttribute('aria-pressed', String(this._chosen.includes(tag)));
+      entry.style.setProperty('--sb-tags-mode-chosen', this._colorOf(tag));
+      entry.append(el('span', 'label', tag));
+      if (count != null) entry.append(el('span', 'count', String(count)));
+      entry.append(el('span', 'pin'));
+      if (this._without.includes(tag)) entry.dataset.minus = '';
+      const line = el('div', 'line');
+      line.style.setProperty('--sb-tags-mode-chosen', this._colorOf(tag));
+      line.append(entry, this._signs(tag, area));
+      return line;
+    }
+
+    // Plus adds to what's lit, and minus takes away. Neither shows as chosen while the tag is off.
+    _signs(tag, area) {
+      const signs = el('span', 'signs');
+      signs.setAttribute('role', 'group');
+      signs.setAttribute('aria-label', `What ${tag} does`);
+      const on = this._chosen.includes(tag), minus = this._without.includes(tag);
+      for (const [sign, symbol, words, chosen] of [['plus', '+', `Add ${tag}`, on && !minus], ['minus', '−', `Take away ${tag}`, on && minus]]) {
+        const button = this._button('sign', symbol, `${area}:${tag}:${sign}`, { signFor: tag, sign });
+        button.title = words;
+        button.setAttribute('aria-label', words);
+        button.setAttribute('aria-pressed', String(chosen));
+        signs.append(button);
+      }
+      return signs;
     }
 
     // What's pointed at or held: each of its tags, with what it means.
@@ -446,76 +586,66 @@
         row.append(el('span', 'chip chip--retired', tag));
         row.append(el('p', 'mark', entry.replacedBy.length ? `Retired: replaced by ${entry.replacedBy.join(', ')}` : 'Retired: dropped, with nothing in its place'));
       } else {
-        row.append(this._chip(tag, 'part'));
+        row.append(this._entry(tag, 'part'));
         if (!entry && declared.size) row.append(el('p', 'mark', 'Undeclared: nothing says what it means yet'));
       }
       if (entry?.means) row.append(el('p', 'means', entry.means));
       return row;
     }
 
-    // The chosen tags in the card, or outside the mode the quiet bar, with the switch and Clear.
+    // The controls for what's kept lit, always all there in the card, so the card never changes shape.
     _drawChosen() {
-      const controls = () => {
-        const lit = el('div', 'lit');
-        if (this._chosen.length > 1) lit.append(this._switch());
-        return lit;
+      const clear = (off) => {
+        const button = this._button('clear', 'Clear', 'clear', { clear: '' });
+        button.disabled = off;
+        return button;
       };
-      const clear = () => this._button('clear', 'Clear', 'clear', { clear: '' });
+      const none = !this._chosen.length;
 
-      if (this._chosen.length) {
-        const count = this._visibleParts().filter((part) => this._carriesChosen(part)).length;
-        const lit = controls();
-        lit.append(el('span', 'count', `${plural(count, 'part')}${count ? ' · ↑ ↓ to visit' : ''}`), clear());
-        this._litArea.replaceChildren(el('p', 'title', 'Kept lit'), lit);
-      } else {
-        this._litArea.replaceChildren();
-      }
-
-      const showQuiet = this._chosen.length > 0 && !this._active;
-      if (showQuiet) {
-        const chips = el('div', 'chips');
-        chips.append(...this._chosen.map((tag) => this._chip(tag, 'quiet')));
-        const lit = controls();
-        lit.append(clear());
-        this._quiet.replaceChildren(el('span', 'title', 'Kept lit'), chips, lit);
-      }
-      this._quiet.togglePopover(showQuiet);
+      const count = none ? 0 : this._visibleParts().filter((part) => this._carriesChosen(part)).length;
+      const controls = el('div', 'lit');
+      controls.append(this._switch(this._adding().length < 2), clear(none));
+      const said = none ? 'Nothing kept lit yet' : `${plural(count, 'part')}${count ? ' · ↑ ↓ to visit' : ''}`;
+      this._litArea.replaceChildren(el('p', 'title', 'Kept lit'), controls, el('p', 'said', said));
     }
 
-    _switch() {
+    _switch(off) {
       const group = el('span', 'switch');
       group.setAttribute('role', 'group');
-      group.setAttribute('aria-label', 'Light parts with');
-      for (const [match, words] of [['all', 'All tags'], ['any', 'Any tag']]) {
+      group.setAttribute('aria-label', 'Combine tags by');
+      for (const [match, words, title] of [['all', 'Intersection', 'Parts carrying every one of these tags'], ['any', 'Union', 'Parts carrying at least one of these tags']]) {
         const button = document.createElement('button');
-        Object.assign(button, { type: 'button', textContent: words });
+        Object.assign(button, { type: 'button', textContent: words, title });
         button.dataset.key = `match:${match}`;
         button.dataset.match = match;
         button.setAttribute('aria-pressed', String(this._match === match));
+        button.disabled = off;
         group.append(button);
       }
       return group;
     }
 
-    // Every current tag: those found on the page and those declared, most used first. Retired tags
-    // are never offered, and a tag no declaration mentions is marked, once there are declarations.
+    // The tags here to see, most used first, and any pinned, so a pin can always be taken off. Retired
+    // tags are never offered, and a tag no declaration mentions is marked, once there are declarations.
     _drawPage() {
       if (!this._active) return;
+      this._drawPresets();
       const declared = this._declared();
       const counts = new Map([...declared.keys()].map((tag) => [tag, 0]));
       for (const part of this._tagged()) for (const tag of tagsOf(part)) if (!counts.has(tag)) counts.set(tag, 0);
       for (const part of this._visibleParts()) for (const tag of new Set(tagsOf(part))) counts.set(tag, counts.get(tag) + 1);
 
-      const current = [...counts].filter(([tag]) => !Array.isArray(declared.get(tag)?.replacedBy));
+      this._chosen.forEach((tag) => this._stayListed.add(tag));
+      const current = [...counts].filter(([tag, count]) => !Array.isArray(declared.get(tag)?.replacedBy) && (count > 0 || this._stayListed.has(tag)));
       current.sort(([a, x], [b, y]) => y - x || a.localeCompare(b));
-      const chips = el('div', 'chips');
+      const list = el('div', 'list');
       for (const [tag, count] of current) {
-        const chip = this._chip(tag, 'page', count);
-        if (declared.get(tag)?.means) chip.title = declared.get(tag).means;
-        if (declared.size && !declared.has(tag)) chip.append(el('span', 'mark', 'undeclared'));
-        chips.append(chip);
+        const entry = this._entry(tag, 'page', count);
+        if (declared.get(tag)?.means) entry.title = declared.get(tag).means;
+        if (declared.size && !declared.has(tag)) entry.querySelector('.sb-tags-mode__count').before(el('span', 'mark', 'undeclared'));
+        list.append(entry);
       }
-      this._pageArea.replaceChildren(el('p', 'title', 'On this page'), current.length ? chips : el('p', 'hint', 'Nothing here carries a tag yet.'));
+      this._pageArea.replaceChildren(el('p', 'title', 'On this page'), current.length ? list : el('p', 'hint', 'Nothing here carries a tag yet.'));
     }
   }
 

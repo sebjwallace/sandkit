@@ -1,8 +1,8 @@
 # sb-discovery-card
 
-One card of domain discovery: a source gathered, a claim made from it, a question still open, a problem and its solution, the options and trade-offs behind a decision, a part of the model, a test, a run. Each kind has its own icon and tone, so many cards read at a glance. Read the [domain discovery practice](../../practices/domain-discovery.md) first: it says what each kind is for and how the cards fit together.
+One card of domain discovery: a source, a claim made from it, a question still open, a decision and its options, a part of the model, a test, a run. Each kind has its own icon and tone, so many cards read at a glance. Read the [domain discovery practice](../../practices/domain-discovery.md) first: it says what each kind is for.
 
-The card knows the kinds of discovery, which belong to the method rather than to any subject, and nothing else. It works nothing out: the sandbox decides every status, score and link, as of whichever iteration it shows, and the card draws what it's given.
+The card knows the kinds of discovery and nothing else. It works nothing out: the sandbox decides every status, score and link, and the card draws what it's given.
 
 Use this component through the interface below. You don't need to read its source.
 
@@ -16,17 +16,13 @@ Use this component through the interface below. You don't need to read its sourc
 <script>
   const card = document.querySelector('sb-discovery-card');
   card.card = {
-    id: 'CLM-1',
-    kind: 'claim',
-    status: 'contested',
+    id: 'CLM-1', kind: 'claim', status: 'contested',
     byline: 'Raised by the river trust',
     badges: [{ text: 'observed', title: 'Basis' }, { text: '+3', tone: 'warn', title: 'Score' }],
     text: 'Otters have left the upper Teme.',
     strips: [{ tone: 'main', label: 'Claim', text: 'Otters have left the upper Teme.' }],
     folds: [{ label: 'Sources', items: [{ passage: { source: 'SRC-1', stance: '+', quote: 'spraint at 4 of 18 sites' } }] }],
-    created: '2026-03-05T14:20',
-    by: 'Agent',
-    iteration: 1,
+    created: '2026-03-05T14:20', by: 'Agent', iteration: 1
   };
   card.addEventListener('sb-open', (e) => open(e.detail.ref, e.detail.quote));
 </script>
@@ -34,94 +30,90 @@ Use this component through the interface below. You don't need to read its sourc
 
 ## Card
 
-| Field | Required | Meaning |
-|---|---|---|
-| `id` | yes | The card's code, such as `CLM-1`. Shown, and carried as `data-ref`. |
-| `kind` | yes | One of the kinds below. Sets the icon and tone; an unknown kind gets a plain icon. |
-| `title` | no | A few words after the code in the header, compact or full: a name for the card, or its kind spelt out. |
-| `status` | no | The status word the sandbox worked out, such as `corroborated`. Its tone comes from the word (below). |
-| `byline` | no | Where it came from in the world: "Raised by…", "Decided by…". |
-| `badges` | no | `[{ text, tone?, title? }]` beside the status: a basis, a score, a stance. Without a tone, a quiet italic pill. |
-| `text` | no | The few words a compact card shows, clamped to three lines. |
-| `notes` | no | Short lines a compact card shows below its words: "carried from iteration 1". |
-| `file` | no | The card's file in the sandbox, such as `claims/CLM-1.md`. |
-| `format` | no | For a source: `document`, `notes`, `data`, `image`, `web` or `analysis`, marked on its page icon. |
-| `excerpt` | no | For an excerpt, a piece of a source: `{ source, quote?, page?, image?, region?, rows?, columns? }`. Shows the words (with the page, for a PDF), the `region` of the `image` at that address (`[x, y, width, height]` as fractions of it), or the `rows` of data under their `columns`. The card never fetches: an image loads from its address as any image does. |
-| `marks` | no | For a compact card: `assumed` (a dashed warning edge), `carried` (no fill), `awaited` (dashed and quiet). |
-| `strips` | no | `[{ tone, label, text }]`: what the card means, in order. |
-| `folds` | no | `[{ label, items }]`: what it rests on or holds, after the strips. |
-| `scope` | no | For a contract: `[{ label, text }]`, what it covers and leaves out, under its title. |
-| `articles` | no | For a contract: `[{ title, note?, clauses: [{ ref?, text, note? }] }]`, numbered as they're given, so an order of priority is the order you give. A clause with a `ref` opens it (`sb-open`), and points at it and lights as a passage does. As a document, a clause also writes out its `details` (`[{ label, text }]`) and the words it rests on (`cited`, `[{ quote, from }]`). |
-| `definitions` | no | For a contract: `[{ ref?, term, meaning }]`, what its words mean, above its articles for someone reading it cold, with the definition's code as `ref`. Shown expanded and as a document. Expanded, one with a `ref` opens and lights as a clause does. |
-| `schedules` | no | For a contract as a document: `[{ title, note?, clauses }]`, lettered and following the signatures, clauses as in `articles`, for what backs it up. |
-| `parties` | no | For a contract: `[{ name, signed? }]`, a signature line each. `signed` is the words on the line, such as "Signed 12 Nov 2026"; without it the line reads "awaiting signature". |
-| `created` | no | When the card was made, `yyyy-mm-ddThh:mm`, shown as "5 Mar 2026, 14:20"; any other form is shown as given. |
-| `by` | no | Who recorded it: `Agent` or a person. |
-| `iteration` | no | The iteration it was raised in. |
-| `meta` | no | `[{ label, text }]`: anything else worth keeping about the card. |
-| `tags` | no | What the card is about, `['platforms', 'passengers']`, carried as `data-tags` and announced with it, so pointing at the card lights what shares a tag, as the [highlighting practice](../../practices/highlighting.md) describes. Only semantic tags: `working` is never read. |
+`id` and `kind` are required; the rest is optional. The practice asks every card for `created`, `by` and `iteration`.
 
-The practice asks every card for `created`, `by` and `iteration`; the card shows whatever it's given.
+| Field | Meaning |
+|---|---|
+| `id` | The card's code, such as `CLM-1`. Shown, and carried as `data-ref` on the element. |
+| `kind` | One of the kinds below: its icon and tone. An unknown kind gets a plain icon. |
+| `title` | A few words after the code: a name for the card, or its kind spelt out. |
+| `status` | The status word the sandbox worked out, such as `corroborated`, toned by the word (below). |
+| `byline` | Where it came from: "Raised by…", "Decided by…". |
+| `badges` | `[{ text, tone?, title? }]` beside the status: a basis, a score, a stance. |
+| `text` | The few words a compact card shows, clamped to three lines. |
+| `notes` | Short lines under a compact card's words: "carried from iteration 1". |
+| `file` | The card's file in the sandbox, such as `claims/CLM-1.md`. |
+| `format` | For a source: `document`, `notes`, `data`, `image`, `web` or `analysis`. |
+| `excerpt` | For an excerpt: `{ source, quote?, page?, image?, region?, rows?, columns? }`. Shows the words (with the page, for a PDF), the `region` of the `image` (`[x, y, width, height]` as fractions), or the `rows` of data under their `columns`. It never fetches: an image loads as any image does. |
+| `marks` | For a compact card: `assumed` (a dashed warning edge), `carried` (no fill), `awaited` (dashed and quiet). |
+| `strips` | `[{ tone, label, text }]`: what the card means, in order. |
+| `folds` | `[{ label, items }]`: what it rests on or holds, after the strips. |
+| `created`, `by`, `iteration` | When (`yyyy-mm-ddThh:mm`, shown as "5 Mar 2026, 14:20"), who (`Agent` or a person), and in which iteration. |
+| `meta` | `[{ label, text }]`: anything else worth keeping. |
+| `tags` | What the card is about, carried as `data-tags`, so the page lights what shares a tag. Only semantic tags: `working` is never read. |
+| `scope`, `definitions`, `articles`, `schedules`, `parties` | For a contract: see "Contracts", below. |
 
-**Strip tones:** `main` (the headline: the claim, the question, the name), `note` (supporting facts), `answer` (what resolves or holds), `warn` (what's wrong or against), `expect` (what's expected or compared, dashed), `unresolved` (what's still missing, dashed and quiet).
+**Strip tones:** `main` (the headline), `note` (supporting facts), `answer` (what resolves or holds), `warn` (what's wrong or against), `expect` (what's expected, dashed), `unresolved` (what's still missing, dashed and quiet).
 
-**Fold items**, any mix of:
+**Fold items,** any mix of:
 
 | Item | Shows |
 |---|---|
 | `'text'` | A line of text. |
-| `{ passage: { excerpt?, source, quote?, stance?, note?, tags? } }` | A passage of source material on paper: `stance` `+`, `-` or `?`, the excerpt's code (or the source's, without one), a short `note` such as a strength, and the words. Carries `data-ref` with the excerpt, or the source, and lights for either. Its `tags` are the excerpt's own, not the card's. |
-| `{ card: { …a card } }` | Another card, drawn compact and openable. Carries `data-ref` with its code, and `data-tags` with its `tags`. |
+| `{ passage: { excerpt?, source, quote?, stance?, note?, tags? } }` | Source material on paper: `stance` `+`, `-` or `?`, the excerpt's code (or the source's), a short `note`, and the words. Carries `data-ref` with the excerpt, or the source, and lights for either. Its `tags` are the excerpt's own. |
+| `{ card: { …a card } }` | Another card, compact and openable, with its `data-ref` and `data-tags`. |
 | `{ option: { title, pros?, cons?, chosen?, ref? } }` | An option weighed; the chosen one marked, the rest faded. |
 | `{ slot: 'name' }` | The card's children marked `slot="name"`, such as a scenario's steps. |
 
 **Kinds.** What we know: `source`, `excerpt`, `investigation`, `observation`, `metric`, `claim`, `definition`, `opinion`, `inference`, `assumption`, `hypothesis`, `problem`, `incident`, `question`, `feedback`, `awaited`. Where we're going: `outcome`, `goal`, `strategy`, `prediction`, `agreement`, `dispute`, `requirement`, `constraint`, `capability`, `contract`, `principle`, `pattern`, `antipattern`, `optimization`, `solution`, `option`, `tradeoff`, `recommendation`, `decision`, `experiment`, `action`, `risk`. What we're building: `entity`, `primitive`, `scenario`, `rule`, `run`.
 
-**Status tones.** Good: corroborated, answered, confirmed, met, integrated, done, borne out, supported, sound, in force, worked, accepted, on track, earns its place, arrived, chosen, improving, followed, applied, solved, resolved, settled, removed, available. Warn: contested, unresolved, trying, in doubt, untested, shaken, partly, review, not yet, open. Bad: refuted, broken, not met, rejected, not borne out, failed, off track, worsening, present. Accent: single source, proposed, under way, planned, to do. Any other word is muted: held, holds, pending, awaited, superseded, unbacked, declined, steady, set aside.
+**Status tones.** Good: corroborated, answered, confirmed, met, integrated, done, borne out, supported, sound, in force, worked, accepted, on track, earns its place, arrived, chosen, improving, followed, applied, solved, resolved, settled, removed, available. Warn: contested, unresolved, trying, in doubt, untested, shaken, partly, review, not yet, open. Bad: refuted, broken, not met, rejected, not borne out, failed, off track, worsening, present. Accent: single source, proposed, under way, planned, to do. Any other word is muted.
 
-## Attributes
+## Variants
 
-| Attribute | Default | Meaning |
-|---|---|---|
-| `variant` | `normal` | `compact` on a board: icon, code, status and words. `normal`: the whole card, folds closed. `expanded`, in a modal or near full screen: every fold open, beside the strips. `document`, for a contract only: written out in full, to be read cold or printed. Any other card draws as `normal`. |
-| `openable` | off | A compact card becomes a button that fires `sb-open`. Cards inside folds are always openable. |
+| `variant` | Draws |
+|---|---|
+| `compact` | For a board: icon, code, status and words. |
+| `normal` (the default) | The whole card, folds closed. |
+| `expanded` | In a modal or near full screen: every fold open, beside the strips. |
+| `document` | A contract only, written out in full to read cold or print. |
 
-**Source material is always compact,** a source or an excerpt, whatever the variant. In full it's the material itself, which the sandbox shows in its own view; the practice says how.
+`openable` makes a compact card a button that fires `sb-open`; cards in folds always are. **Source material is always compact,** whatever the variant: in full it's the material itself, which the sandbox shows in its own view.
 
-**A contract is its own sheet,** normal or expanded: its title and byline, `scope`, `definitions` when expanded, `articles`, `parties`, then any `folds` and its record. It draws no strips or badges. Compact, it's a compact card in a double rule.
+## Contracts
 
-**A contract as a document** is the one card that can leave the sandbox. Everything is written out and nothing opens or folds: `notes` under its title, then `scope`, `definitions`, `articles` with their details and citations, `parties` and `schedules`. It's black on white whatever the theme, and flowed into pages, on paper or on screen, it keeps clauses, definitions and signatures whole and starts each schedule on a new page. To save it as a PDF, the sandbox shows only that card when printing and calls `window.print()`: the browser's own dialog does the rest, with nothing to install and no server. The [practice](../../practices/domain-discovery.md) says how, and how to show its pages on screen.
+A contract is its own sheet, with no strips or badges, and compact it sits in a double rule.
 
-## Properties
+- **`scope`:** `[{ label, text }]`, what it covers and leaves out.
+- **`definitions`:** `[{ ref?, term, meaning }]`, shown expanded and as a document.
+- **`articles`:** `[{ title, note?, clauses: [{ ref?, text, note?, details?, cited? }] }]`, numbered in the order given, so order is priority. A clause with a `ref` opens and lights as a passage does. As a document, it also writes out `details` (`[{ label, text }]`) and `cited` (`[{ quote, from }]`).
+- **`schedules`:** `[{ title, note?, clauses }]`, lettered, after the signatures, as a document.
+- **`parties`:** `[{ name, signed? }]`, a signature line each, reading "awaiting signature" until `signed` gives its words.
+
+As a document it's black on white whatever the theme, keeps clauses, definitions and signatures whole across pages, and starts each schedule on a new page. To save it as a PDF, the sandbox shows only that card when printing and calls `window.print()`; the [practice](../../practices/domain-discovery.md) says how.
+
+## Properties and events
 
 | Member | Meaning |
 |---|---|
 | `card` | Get or set the card. Setting it again redraws, keeping the folds the viewer opened. |
 | `variant`, `openable` | Mirror the attributes. |
-| `highlight` | Refs to light: the card's own code lights the card; another lights the passages, cards and options in its folds that carry it. An excerpt, as a card or a passage, lights for its source's code too. Never redraws. |
+| `highlight` | Refs to light: the card's code lights the card; another lights the passages, cards and options in its folds carrying it. An excerpt also lights for its source's code. Never redraws. |
+| `sb-open` event | `{ ref, quote? }`: an openable card, a card in a fold, or a passage was clicked. Bubbles. The sandbox decides what opening means. |
+| `sb-highlight` event | `{ ref }`, `{ ref, tags }` or `{ ref: null }`, on `document`: pointing or focus moved to a passage, a card in a fold or the card, or away. The card announces for itself (`data-sb-announces`), and the page-wide script lights its parts. |
 
-## Events
-
-| Event | Detail | When |
-|---|---|---|
-| `sb-open` | `{ ref, quote? }` | An openable compact card, a card in a fold, or a passage (with its `quote`) is clicked. Bubbles. The sandbox decides what opening means. |
-| `sb-highlight` | `{ ref }`, `{ ref, tags }`, `{ ref: null }` | Pointing or focus moves to a passage (its excerpt, or its source), a card in a fold, or the card itself, and away. Fired on `document`, as the [highlighting practice](../../practices/highlighting.md) describes. |
-
-Setting properties never fires events. The card carries `data-sb-announces`, so the page-wide highlighting script leaves its announcing to it, and lights its parts.
+Setting properties never fires events.
 
 ## Styling
 
-Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-accent-text`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-radius`. Its own: `--sb-discovery-card-band` (the header and footer bands, from `--sb-surface-2`), `--sb-discovery-card-paper` (the paper's sheet), `--sb-discovery-card-tone` (a kind's tone, set per `[data-kind]`), `--sb-discovery-card-status` (a status's tone, set per `[data-status]`).
+Theme tokens: `--sb-text`, `--sb-muted`, `--sb-border`, `--sb-surface`, `--sb-surface-2`, `--sb-accent`, `--sb-accent-soft`, `--sb-accent-text`, `--sb-good`, `--sb-warn`, `--sb-bad`, `--sb-radius`. Its own: `--sb-discovery-card-band`, `--sb-discovery-card-paper`, `--sb-discovery-card-tone` (per `[data-kind]`) and `--sb-discovery-card-status` (per `[data-status]`). Materials, as [STYLE.md](../../STYLE.md) describes: a card with a header band, paper for sources and passages, and a ruled sheet for a contract.
 
-Materials, as [STYLE.md](../../STYLE.md) describes: a card with a header band, a record; paper for sources and passages, with a 12px fold; and a ruled sheet for a contract.
+Classes start `sb-discovery-card__`, such as `card`, `head`, `strip` (`--main`, `--note`, …), `fold`, `paper`, `option`, `compact` (`--assumed`, `--carried`, `--awaited`), `compact-head`, `icon`, `id` and `contract`. The element carries `data-ref`, `data-kind` and `data-status` as soon as it has a card.
 
-Classes: `sb-discovery-card` (`--expanded`, `--document`, `--highlighted`), `sb-discovery-card__card`, `__head`, `__icon`, `__id`, `__title`, `__byline`, `__badges`, `__badge`, `__status`, `__format`, `__body` (`--split`), `__column`, `__strip` (`--main`, `--note`, `--answer`, `--warn`, `--expect`, `--unresolved`), `__label`, `__text`, `__fold`, `__items`, `__item`, `__paper`, `__slip`, `__stance`, `__source`, `__passage-note`, `__quote`, `__excerpt`, `__page`, `__crop`, `__rows`, `__cell` (`--head`), `__option` (`--chosen`), `__option-head`, `__option-title`, `__chosen`, `__points`, `__point` (`--pro`, `--con`), `__compact` (`--assumed`, `--carried`, `--awaited`), `__compact-head`, `__compact-text`, `__note`, `__file`, `__contract` (`--document`), `__contract-head`, `__contract-heading`, `__contract-title`, `__scope`, `__article` (`--schedule`), `__article-title`, `__article-note`, `__clauses`, `__clause`, `__clause-number`, `__clause-text`, `__clause-ref`, `__clause-note`, `__clause-details`, `__cited`, `__cited-from`, `__definitions-section`, `__definitions-title`, `__definitions`, `__definition`, `__definition-term`, `__definition-meaning`, `__notices`, `__notice`, `__signatures`, `__signature`, `__signed` (`--awaiting`), `__party`, `__foot`, `__meta`, `__meta-label`, `__meta-text`, `__part--highlighted`. The element carries `data-ref`, `data-kind` and `data-status` as soon as it has a card, even before it's on the page; compact cards and full cards carry `data-kind` for their tone.
-
-A board that folds a column down can hide everything in a compact card but its icon and code: `.sb-discovery-card__compact > :not(.sb-discovery-card__compact-head), .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }`.
+To shrink a compact card to its icon and code, as in a folded column: `.sb-discovery-card__compact > :not(.sb-discovery-card__compact-head), .sb-discovery-card__compact-head > :not(.sb-discovery-card__icon, .sb-discovery-card__id) { display: none; }`.
 
 ## Notes
 
-- **Dependencies:** none.
-- **Export:** safe for single-file export. Classic script, no fetches, no external assets.
+- **Dependencies:** none. **Export:** safe for single-file export. Classic script, no fetches, no external assets.
 - **Accessibility:** openable cards and passages are buttons; folds are `<details>`, opened from the keyboard.
-- **Renaming:** if another component on the page is already called `sb-discovery-card`, the console says so. Replace every `sb-discovery-card` in `sb-discovery-card.js` (tag, classes and style id all use it) to give this copy a new name.
+- **Renaming:** if another component on the page is already called `sb-discovery-card`, the console says so. Replace every `sb-discovery-card` in `sb-discovery-card.js` to give this copy a new name.
