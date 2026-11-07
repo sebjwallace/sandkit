@@ -76,11 +76,12 @@
       assertEqual([...shell.querySelectorAll('option')].map((o) => o.textContent), ['Explore', 'Tags · G', 'Trace · T']);
     });
 
-    test('active shows the frame, the card and a banner saying what clicking does, and fires nothing', () => {
+    test('active shows the card and a banner saying what clicking does, no frame round the page, and fires nothing', () => {
       const { el } = setup();
       const modes = recordEvents(document, 'sb-mode');
       el.active = true;
-      for (const name of ['frame', 'card', 'banner']) assert(q(el, name).matches(':popover-open'), name);
+      for (const name of ['card', 'banner']) assert(q(el, name).matches(':popover-open'), name);
+      assert(!q(el, 'frame'), 'a frame round the page');
       assert(q(el, 'banner').textContent.includes('click'));
       assertEqual(modes.length, 0);
     });
@@ -634,6 +635,190 @@
       assertEqual(made.chosen, []);
       made.remove();
       sessionStorage.clear();
+    });
+
+    // ---- Searching ----
+
+    // A page's search that notes each call and gives back what it's told to.
+    function searching(el, results = [{ ref: 'CLM-1', score: 0.5, kind: 'claim', label: 'Passengers miss the change' }]) {
+      const calls = [];
+      el.search = (selection, onPage) => { calls.push({ selection, onPage }); return results; };
+      return calls;
+    }
+    const tab = (el, name) => q(el, 'tabs').querySelector(`[data-tab="${name}"]`);
+    const type = (el, words) => { q(el, 'filter').value = words; q(el, 'filter').dispatchEvent(new Event('input')); };
+    const offered = (el) => [...q(el, 'matches').querySelectorAll('.sb-tags-mode__entry')].map((entry) => entry.dataset.tag);
+
+    test('without a search, there are no tabs, and the card is as it always was', () => {
+      const { el } = on();
+      assert(q(el, 'tabs').hidden, 'tabs showing');
+      assert(!q(el, 'page').closest('.sb-tags-mode__body').hidden, 'Display hidden');
+    });
+
+    test('with one, Search asks with nothing chosen and the refs people can see, and shows what it gives', () => {
+      const { el } = on();
+      const calls = searching(el);
+      assert(!q(el, 'tabs').hidden, 'no tabs');
+      assertEqual(calls.length, 0, 'searched before Search was shown');
+      click(tab(el, 'search'));
+      assertEqual(tab(el, 'search').getAttribute('aria-selected'), 'true');
+      assert(q(el, 'page').closest('.sb-tags-mode__body').hidden, 'Display still showing');
+      assertEqual(calls.at(-1), { selection: null, onPage: ['CARD-1', 'ROW-1', 'OLD-1'] });
+      const found = q(el, 'found').textContent;
+      assert(found.includes('Related to this page') && found.includes('0.50') && found.includes('CLM-1') && found.includes('claim') && found.includes('Passengers miss the change'), found);
+    });
+
+    test('choosing tags searches again with them, and it says when it shows only some', () => {
+      const { el } = on();
+      const many = Array.from({ length: 11 }, (_, i) => ({ ref: `CLM-${i + 1}`, score: 1 }));
+      const calls = searching(el, many);
+      click(tab(el, 'search'));
+      el.chosen = ['platforms', 'passengers'];
+      el.without = ['passengers'];
+      assertEqual(calls.at(-1).selection, { tags: ['platforms'], match: 'all', without: ['passengers'] });
+      assert(q(el, 'found').textContent.startsWith('Found · 8 of 11'), q(el, 'found').textContent);
+      assertEqual(q(el, 'found').querySelectorAll('.sb-tags-mode__result').length, 8);
+    });
+
+    test('typing a name offers the tags it fits, best first, never retired ones', () => {
+      const { el } = on();
+      searching(el);
+      click(tab(el, 'search'));
+      type(el, 'plat');
+      assertEqual(offered(el), ['platforms']);
+      type(el, 'ps');
+      assertEqual(offered(el), ['passengers', 'platforms']);
+      type(el, 'pass');
+      assertEqual(offered(el), ['passengers']);
+      type(el, 'zz');
+      assertEqual(offered(el), []);
+      assert(q(el, 'matches').textContent.includes('No tag fits that name.'));
+    });
+
+    test('choosing a tag offered clears the typing, shows it among those chosen, and lights the page', () => {
+      const { el } = on();
+      const calls = searching(el);
+      click(tab(el, 'search'));
+      const heard = listen();
+      type(el, 'pass');
+      click(chip(el, 'passengers', q(el, 'matches')));
+      heard.stop();
+      assertEqual(el.chosen, ['passengers']);
+      assertEqual(heard.at(-1).tags, ['passengers']);
+      assertEqual(q(el, 'filter').value, '');
+      assertEqual(offered(el), ['passengers']);
+      assertEqual(calls.at(-1).selection.tags, ['passengers']);
+    });
+
+    test('Enter chooses the best fit, and minus on one offered chooses it taking away', () => {
+      const { el } = on();
+      searching(el);
+      click(tab(el, 'search'));
+      type(el, 'plat');
+      q(el, 'filter').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      assertEqual(el.chosen, ['platforms']);
+      type(el, 'pass');
+      click(q(el, 'matches').querySelector('[data-sign-for="passengers"][data-sign="minus"]'));
+      assertEqual(el.without, ['passengers']);
+    });
+
+    test('Full screen is offered on Search only, shows every result, and Smaller goes back', () => {
+      const { el } = on();
+      searching(el, Array.from({ length: 11 }, (_, i) => ({ ref: `CLM-${i + 1}`, score: 1 })));
+      assert(q(el, 'size').hidden, 'offered on Display');
+      click(tab(el, 'search'));
+      assert(!q(el, 'size').hidden && q(el, 'size').textContent === 'Full screen');
+      click(q(el, 'size'));
+      assert(el.classList.contains('sb-tags-mode--full'), 'not full');
+      const box = q(el, 'card').getBoundingClientRect();
+      assertEqual([box.top, innerWidth - box.right, innerHeight - box.bottom].map(Math.round), [24, 24, 24], 'the same margin all round');
+      assertEqual(q(el, 'found').querySelectorAll('.sb-tags-mode__result').length, 11);
+      assertEqual(offered(el), ['platforms', 'passengers', 'unused'], 'every current tag, with nothing typed');
+      assertEqual(q(el, 'size').textContent, 'Smaller');
+      click(q(el, 'size'));
+      assert(!el.classList.contains('sb-tags-mode--full'));
+      assertEqual(q(el, 'found').querySelectorAll('.sb-tags-mode__result').length, 8);
+    });
+
+    test('Escape leaves full screen before it ends the mode, and the card goes back where it was dragged', () => {
+      const { el } = on();
+      searching(el);
+      click(tab(el, 'search'));
+      q(el, 'card').style.left = '40px';
+      click(q(el, 'size'));
+      assertEqual(q(el, 'card').style.left, '', 'kept its dragged place while full');
+      press('Escape');
+      assert(el.active && !el.classList.contains('sb-tags-mode--full'), 'Escape ended the mode');
+      assertEqual(q(el, 'card').style.left, '40px');
+      press('Escape');
+      assert(!el.active);
+    });
+
+    test('Display, or the mode ending, leaves full screen', () => {
+      const { el } = on();
+      searching(el);
+      click(tab(el, 'search'));
+      click(q(el, 'size'));
+      click(tab(el, 'display'));
+      assert(!el.classList.contains('sb-tags-mode--full'), 'still full on Display');
+      click(tab(el, 'search'));
+      click(q(el, 'size'));
+      el.active = false;
+      assert(!el.classList.contains('sb-tags-mode--full'), 'still full after the mode');
+    });
+
+    test('with two tags chosen, Search offers intersection or union too', () => {
+      const { el } = on();
+      const calls = searching(el);
+      click(tab(el, 'search'));
+      el.chosen = ['platforms'];
+      assert(!q(el, 'matches').querySelector('[data-match]'), 'a switch for one tag');
+      el.chosen = ['platforms', 'passengers'];
+      click(q(el, 'matches').querySelector('[data-match="any"]'));
+      assertEqual(el.match, 'any');
+      assertEqual(calls.at(-1).selection.match, 'any');
+    });
+
+    test('Pull in is offered only where the page takes results, and never for what is already here', () => {
+      const { el } = on();
+      searching(el, [{ ref: 'CLM-1', score: 1 }, { ref: 'CARD-1', score: 0.5 }]);
+      click(tab(el, 'search'));
+      assert(!q(el, 'found').querySelector('[data-pull]'), 'offered without pull-in');
+      el.setAttribute('pull-in', '');
+      el.chosen = ['platforms'];
+      const rows = q(el, 'found').querySelectorAll('.sb-tags-mode__result');
+      assertEqual(rows[0].querySelector('[data-pull]').dataset.pull, 'CLM-1');
+      assert(!rows[1].querySelector('[data-pull]') && rows[1].textContent.includes('On this page'), rows[1].textContent);
+    });
+
+    test('Pull in asks the page with sb-pull, and once the page has brought it, says it is here', () => {
+      const { el, area } = on({ attrs: 'pull-in' });
+      searching(el, [{ ref: 'CLM-1', score: 1 }]);
+      click(tab(el, 'search'));
+      const asked = [];
+      const bring = (e) => { asked.push(e.detail); area.insertAdjacentHTML('beforeend', `<p data-ref="${e.detail.ref}" data-tags="platforms">Pulled</p>`); };
+      document.addEventListener('sb-pull', bring);
+      click(q(el, 'found').querySelector('[data-pull]'));
+      document.removeEventListener('sb-pull', bring);
+      assertEqual(asked, [{ ref: 'CLM-1' }]);
+      assert(q(el, 'found').textContent.includes('On this page') && !q(el, 'found').querySelector('[data-pull]'), q(el, 'found').textContent);
+    });
+
+    test('taking the search away goes back to Display, without tabs', () => {
+      const { el } = on();
+      searching(el);
+      click(tab(el, 'search'));
+      el.search = null;
+      assert(q(el, 'tabs').hidden && !q(el, 'page').closest('.sb-tags-mode__body').hidden);
+    });
+
+    test('results are text, never markup, and never parts of the page', () => {
+      const { el } = on();
+      searching(el, [{ ref: '<i>R</i>', score: 1, kind: '<b>k</b>', label: '<img-src-x>' }, { nope: true }, null]);
+      click(tab(el, 'search'));
+      assert(!q(el, 'found').querySelector('b, i, img-src-x'), 'markup rendered');
+      assertEqual(q(el, 'found').querySelectorAll('.sb-tags-mode__result').length, 1);
+      assert(!q(el, 'found').querySelector('[data-ref]'), 'a result posing as a page part');
     });
 
     // ---- The contract ----

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1 · 2026-11-07
+- Manifest: lines between lit parts and a tray of related records are off "Not yet". The veil already shows what's lit together, and records are pulled onto a board from the tags search instead, so the board needs neither.
+
 ## 0.2.0 · 2026-11-07
 - **Breaking:** rebuilt as a board that lays itself out. Nothing used the old one, so there's nothing to migrate: `layout` is now `{ items: [{ ref, x, y, group?, size? }], links: [{ from, to, label?, tone? }] }`, with `x` and `y` a rough place from 0 to 100, and the board does the measuring, aligning, framing and routing. Frames, pen marks, exact positions, `movable`, `changes`, `revert` and `sb-moves` are gone.
 - Added line styles: `lines` is `curved` (the default), `straight` or `square`, and viewers can change it with a button.
