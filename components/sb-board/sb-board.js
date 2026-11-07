@@ -1,4 +1,4 @@
-// Sandkit sb-board 0.2.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-board 0.2.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // A board that lays itself out, for gathering what belongs together around one question. The agent
 // says roughly where each thing goes; the board measures, aligns, frames groups and draws links.
 //

@@ -1,5 +1,8 @@
 # discovery changelog
 
+## 0.4.0 · 2026-11-07
+- **Breaking:** `tags()` and the `tags` input are gone. Tags have one home, the tags engine, whose `list()` gives the same `[{ tag, means, declared, on }]` (leaving out what's superseded), and which searches them too. Records still carry their tags; this engine never read them for anything else.
+
 ## 0.3.6 · 2026-11-06
 - A declared tag can name what replaced it, `replacedBy: [...]`, and `tags()` passes it on, so a retired tag explains itself.
 - Working tags, in a record's `working` field, are ignored, and a test holds it so.

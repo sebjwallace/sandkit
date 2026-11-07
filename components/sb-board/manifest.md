@@ -76,7 +76,7 @@ Theme tokens: `--sb-bg`, `--sb-surface`, `--sb-text`, `--sb-muted`, `--sb-border
 
 - **Readability:** a few to a few dozen things around one question. Make another board for the next question.
 - **What's inside:** a component placing its own pieces with `position: fixed`, rather than a popover or dialog, is thrown off by the zoom. Keep those outside.
-- **Not yet:** lines between lit parts, a tray of related records, viewers' moves, a group spanning several columns.
+- **Not yet:** viewers' moves, a group spanning several columns.
 - **Accessibility:** a focusable region with labelled buttons. Items keep their own content, in order. Links are drawn only, so say what matters in the items too.
 - **Dependencies:** none. **Export:** safe for single-file export. Desktop and tablet only.
 - **Renaming:** if another component on the page is already called `sb-board`, the console says so. Replace every `sb-board` in `sb-board.js` to give this copy a new name.

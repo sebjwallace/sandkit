@@ -1,5 +1,9 @@
 # sb-tags-mode changelog
 
+## 0.3.0 · 2026-11-07
+- Added a Search tab, when the page sets `search`: type a tag's name to find it (its letters in order), see what the page finds for the chosen tags with scores, or with none what's most like the page, in the card or full screen. With `pull-in`, results offer Pull in, firing `sb-pull`.
+- **Breaking:** no amber. The frame round the page is gone, and the card and banner are plain panels; the outline round what's pointed at, the chosen tab and focus use `--sb-tags-mode-tone`, now the accent. `--sb-warn` is no longer read.
+
 ## 0.2.0 · 2026-11-07
 - **Breaking:** the quiet bar that listed chosen tags outside the mode is gone, as a weaker copy of the card. Chosen tags still stay lit after the mode ends; open it again to see, change or clear them. Nothing to migrate.
 - The card's bar matches a panel's: its name in bold, and a ✕ that ends the mode.

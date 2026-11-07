@@ -1,8 +1,8 @@
-// Sandkit sb-tags-mode 0.2.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-tags-mode 0.3.0 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Tags mode: see what any part of the page is about, and choose topics to keep lit. Pointing at a
 // tagged part shows its tags in a card at the side, with what each means; a click holds it. Clicking
-// a tag keeps everything carrying it lit, after the mode ends too, until it's cleared. A mode, chosen
-// in the shell's picker.
+// a tag keeps everything carrying it lit, after the mode ends too, until it's cleared. Given a way to
+// search, a second tab finds what carries the chosen tags. A mode, chosen in the shell's picker.
 //
 //   <sb-tags-mode slot="modes"></sb-tags-mode>
 //
@@ -24,14 +24,13 @@
   const MEMORY = 'sb-tags-mode';
 
   const CSS = `
-    .sb-tags-mode { --sb-tags-mode-tone: var(--sb-warn, #d69e2e); --sb-tags-mode-chosen: var(--sb-tag-focus, color-mix(in srgb, var(--sb-accent, #2563eb) 30%, #c026d3)); display: contents; }
-    .sb-tags-mode__frame { position: fixed; inset: 0; margin: 0; padding: 0; border: 0; width: auto; height: auto; background: transparent; box-shadow: inset 0 0 0 4px var(--sb-tags-mode-tone); pointer-events: none; }
-    .sb-tags-mode__banner { position: fixed; inset: auto auto 16px 50%; transform: translateX(-50%); margin: 0; display: none; align-items: center; gap: 10px; padding: 6px 8px 6px 14px; border: 2px solid var(--sb-tags-mode-tone); border-radius: 999px; background: color-mix(in srgb, var(--sb-tags-mode-tone) 12%, var(--sb-surface, #fff)); color: var(--sb-text, #1f2933); font: 600 13px var(--sb-font, system-ui, sans-serif); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+    .sb-tags-mode { --sb-tags-mode-tone: var(--sb-accent, #2563eb); --sb-tags-mode-chosen: var(--sb-tag-focus, color-mix(in srgb, var(--sb-accent, #2563eb) 30%, #c026d3)); display: contents; }
+    .sb-tags-mode__banner { position: fixed; inset: auto auto 16px 50%; transform: translateX(-50%); margin: 0; display: none; align-items: center; gap: 10px; padding: 6px 8px 6px 14px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 999px; background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: 600 13px var(--sb-font, system-ui, sans-serif); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
     .sb-tags-mode__banner:popover-open { display: inline-flex; }
-    .sb-tags-mode__button { padding: 5px 12px; border: 1px solid var(--sb-tags-mode-tone); border-radius: var(--sb-radius, 8px); background: color-mix(in srgb, var(--sb-tags-mode-tone) 22%, var(--sb-surface, #fff)); color: var(--sb-text, #1f2933); font: inherit; cursor: pointer; }
+    .sb-tags-mode__button { padding: 5px 12px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface-2, #eef0f3); color: var(--sb-text, #1f2933); font: inherit; cursor: pointer; }
     .sb-tags-mode__outline { position: fixed; box-sizing: border-box; margin: 0; padding: 0; border: 2px dashed var(--sb-tags-mode-tone); border-radius: 4px; background: transparent; pointer-events: none; }
     .sb-tags-mode--held .sb-tags-mode__outline { border-style: solid; }
-    .sb-tags-mode__card { position: fixed; inset: 72px 16px auto auto; box-sizing: border-box; width: min(340px, calc(100vw - 32px)); max-height: calc(100vh - 150px); margin: 0; padding: 0; flex-direction: column; overflow: hidden; border: 2px solid var(--sb-tags-mode-tone); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: 13px/1.45 var(--sb-font, system-ui, sans-serif); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28); }
+    .sb-tags-mode__card { position: fixed; inset: 72px 16px auto auto; box-sizing: border-box; width: min(340px, calc(100vw - 32px)); max-height: calc(100vh - 150px); margin: 0; padding: 0; flex-direction: column; overflow: hidden; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: 13px/1.45 var(--sb-font, system-ui, sans-serif); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28); }
     .sb-tags-mode__card:popover-open { display: flex; }
     .sb-tags-mode__card:focus { outline: none; }
     .sb-tags-mode__bar { display: flex; flex: none; align-items: center; gap: 6px; padding: 5px 8px 5px 10px; border-bottom: 1px solid var(--sb-border, #d5d9e0); background: var(--sb-surface-2, #eef0f3); cursor: move; touch-action: none; user-select: none; }
@@ -74,6 +73,28 @@
     .sb-tags-mode__switch button { padding: 2px 8px; border: 0; background: transparent; color: var(--sb-text, #1f2933); font: 12px var(--sb-font, system-ui, sans-serif); cursor: pointer; }
     .sb-tags-mode__switch button[aria-pressed="true"] { background: var(--sb-tags-mode-chosen); color: #fff; font-weight: 700; }
     .sb-tags-mode__clear { padding: 2px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: transparent; color: var(--sb-text, #1f2933); font: 12px var(--sb-font, system-ui, sans-serif); cursor: pointer; }
+    .sb-tags-mode__tabs { display: flex; flex: none; gap: 2px; padding: 0 8px; border-bottom: 1px solid var(--sb-border, #d5d9e0); }
+    .sb-tags-mode__tabs[hidden], .sb-tags-mode__body[hidden] { display: none; }
+    .sb-tags-mode__tab { margin-bottom: -1px; padding: 6px 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--sb-muted, #616e7c); font: 600 12px var(--sb-font, system-ui, sans-serif); cursor: pointer; }
+    .sb-tags-mode__tab[aria-selected="true"] { border-bottom-color: var(--sb-tags-mode-tone); color: var(--sb-text, #1f2933); }
+    .sb-tags-mode__size { margin: 3px 0 3px auto; padding: 2px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 4px; background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: 12px var(--sb-font, system-ui, sans-serif); cursor: pointer; }
+    .sb-tags-mode__size[hidden] { display: none; }
+    .sb-tags-mode__pick { display: grid; gap: 12px; align-content: start; }
+    .sb-tags-mode--full .sb-tags-mode__card { inset: 24px; width: auto; height: auto; max-height: none; }
+    .sb-tags-mode--full .sb-tags-mode__body.sb-tags-mode__search { flex: 1; min-height: 0; grid-template-columns: minmax(220px, 300px) 1fr; overflow: hidden; }
+    .sb-tags-mode--full .sb-tags-mode__pick, .sb-tags-mode--full .sb-tags-mode__found { min-height: 0; overflow-y: auto; }
+    .sb-tags-mode--full .sb-tags-mode__summary { white-space: normal; }
+    .sb-tags-mode__filter { box-sizing: border-box; width: 100%; padding: 5px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: 13px var(--sb-font, system-ui, sans-serif); }
+    .sb-tags-mode__results { display: grid; gap: 4px; }
+    .sb-tags-mode__result { display: grid; grid-template-columns: 34px 1fr; gap: 0 8px; padding: 4px 6px; border-radius: 4px; background: var(--sb-surface-2, #eef0f3); }
+    .sb-tags-mode__score { grid-row: span 2; color: var(--sb-muted, #616e7c); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .sb-tags-mode__ref { font-weight: 700; }
+    .sb-tags-mode__kind { margin-left: 6px; color: var(--sb-muted, #616e7c); font-size: 11px; }
+    .sb-tags-mode__result { position: relative; }
+    .sb-tags-mode__pull, .sb-tags-mode__here { position: absolute; top: 4px; right: 6px; }
+    .sb-tags-mode__pull { padding: 1px 8px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 4px; background: var(--sb-surface, #fff); color: var(--sb-text, #1f2933); font: 11px var(--sb-font, system-ui, sans-serif); cursor: pointer; }
+    .sb-tags-mode__here { color: var(--sb-muted, #616e7c); font-size: 11px; }
+    .sb-tags-mode__summary { overflow: hidden; color: var(--sb-text, #1f2933); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
     .sb-tags-mode button:focus-visible { outline: 2px solid var(--sb-tags-mode-tone); outline-offset: 1px; }`;
 
   // Viewers' clicks and presses, stopped in the mode so they hold instead of act.
@@ -91,6 +112,22 @@
     const start = place >= 0 ? place : [...tag].reduce((sum, letter) => sum + letter.charCodeAt(0), 0);
     const inTurn = FALLBACK_COLORS.map((_, i) => FALLBACK_COLORS[(start + i) % FALLBACK_COLORS.length]);
     return inTurn.find((color) => !taken.includes(color)) ?? inTurn[0];
+  }
+
+  // How many results the card shows, and how many tags a name typed can bring up.
+  const RESULTS_SHOWN = 8;
+  const MATCHES_SHOWN = 8;
+
+  // How well a name typed fits a tag: 0 not at all, then higher the closer. Its letters must come in
+  // order, so "plch" finds platform-changes; the start of the tag fits best, then a run of it.
+  function fit(typed, tag) {
+    const letters = typed.toLowerCase().replace(/[\s-]+/g, ''), name = tag.toLowerCase();
+    if (!letters) return 0;
+    if (name.startsWith(letters)) return 3;
+    if (name.replace(/-/g, '').includes(letters)) return 2;
+    let at = 0;
+    for (const letter of letters) if (!(at = name.indexOf(letter, at) + 1)) return 0;
+    return 1;
   }
 
   // What every mode lets through (data-modes, such as the shell's mode picker), and open dialogs.
@@ -147,6 +184,9 @@
       this._held = false;
       this._timer = null;
       this.declarations = null; // what each tag means; the page's TAGS when left unset
+      this._search = null;  // the page's way to search, which brings the Search tab
+      this._tab = 'display';
+      this._full = false;   // the Search tab filling the window
       this._stop = (e) => this._intercept(e);
       this._point = (e) => this._wait(e.target);
       this._focus = (e) => this._focused(e.target);
@@ -192,12 +232,15 @@
       if (starting) this._stayListed.clear();
       if (!this._built || !this.isConnected) return;
       this._listen(this._active);
-      this._frame.togglePopover(this._active);
       this._banner.togglePopover(this._active);
       this._card.togglePopover(this._active);
-      if (!this._active) this._letGo();
+      if (!this._active) {
+        this._letGo();
+        this._setFull(false);
+      }
       this._drawChosen();
       this._drawPage();
+      this._drawTabs();
       if (starting) this._card.focus({ preventScroll: true });
     }
 
@@ -219,17 +262,25 @@
       this._choiceChanged();
     }
 
+    // The page's way to search by tags: (selection, onPage) → [{ ref, score, kind?, label? }], best
+    // first. selection is null when nothing is chosen, and onPage lists the refs people can see.
+    get search() { return this._search; }
+    set search(fn) {
+      this._search = typeof fn === 'function' ? fn : null;
+      if (!this._search) this._tab = 'display';
+      if (this._built) this._drawTabs();
+    }
+
     // ---- Building ----
 
     _render() {
       this.append(
-        Object.assign(el('div', 'frame'), { popover: 'manual' }),
         Object.assign(el('div', 'outline'), { popover: 'manual' }),
         Object.assign(el('section', 'card'), { popover: 'manual', tabIndex: -1, ariaLabel: 'Tags' }),
         Object.assign(el('div', 'banner'), { popover: 'manual' })
       );
       const part = (name) => this.querySelector(`.sb-tags-mode__${name}`);
-      [this._frame, this._outlineBox, this._card, this._banner] = ['frame', 'outline', 'card', 'banner'].map(part);
+      [this._outlineBox, this._card, this._banner] = ['outline', 'card', 'banner'].map(part);
 
       const bar = el('div', 'bar');
       bar.title = 'Drag to move';
@@ -242,10 +293,10 @@
       this._litArea = el('div', 'chosen');
       this._presetArea = el('div', 'presets');
       this._pageArea = el('div', 'page');
-      const body = el('div', 'body');
+      this._display = el('div', 'body');
       // The list comes first, with nothing above it that changes, so a line stays under the pointer.
-      body.append(this._presetArea, this._pageArea, this._litArea, this._partArea);
-      this._card.append(bar, body);
+      this._display.append(this._presetArea, this._pageArea, this._litArea, this._partArea);
+      this._card.append(bar, this._buildTabs(), this._display, this._buildSearch());
       this._draggable(bar);
 
       this._words = el('span', 'words', POINTING);
@@ -256,6 +307,36 @@
 
       this._card.addEventListener('click', (e) => this._control(e));
       this._drawPart();
+    }
+
+    _buildTabs() {
+      this._tabs = el('div', 'tabs');
+      this._tabs.setAttribute('role', 'tablist');
+      for (const [tab, words] of [['display', 'Display'], ['search', 'Search']]) {
+        const button = this._button('tab', words, `tab:${tab}`, { tab });
+        button.setAttribute('role', 'tab');
+        this._tabs.append(button);
+      }
+      this._size = this._button('size', '', 'size', { size: '' });
+      this._tabs.append(this._size);
+      return this._tabs;
+    }
+
+    // Typing a tag's name narrows the tags to choose from; with nothing typed, the chosen ones show.
+    _buildSearch() {
+      this._searchPanel = el('div', 'body search');
+      this._filter = Object.assign(el('input', 'filter'), { type: 'search', placeholder: 'Search tags…', ariaLabel: 'Search tags' });
+      this._filter.addEventListener('input', () => this._drawSearch());
+      this._filter.addEventListener('keydown', (e) => {
+        const first = this._matchArea.querySelector('[data-tag]');
+        if (e.key === 'Enter' && first) this._chooseTyped(first.dataset.tag, 'plus');
+      });
+      this._matchArea = el('div', 'matches');
+      this._resultArea = el('div', 'found');
+      const pick = el('div', 'pick');
+      pick.append(this._filter, this._matchArea);
+      this._searchPanel.append(pick, this._resultArea);
+      return this._searchPanel;
     }
 
     // The card moves by its bar, so it never has to cover a part someone wants to see.
@@ -381,6 +462,7 @@
     // nothing is, so people can find what's lit on a long page, and the keyboard reaches parts that
     // can't take focus. Both leave a field or an open dialog alone.
     _press(e) {
+      if (e.key === 'Escape' && this._full) return this._setFull(false);
       if (e.key === 'Escape' && !document.querySelector('dialog[open]')) return this._end();
       if ((e.key !== 'ArrowDown' && e.key !== 'ArrowUp') || typing(e.target) || document.querySelector('dialog[open]')) return;
       e.preventDefault();
@@ -436,11 +518,22 @@
     _control(e) {
       const control = e.target.closest('button');
       if (!control) return;
-      if (control.dataset.preset) this._togglePreset(this._presetList()[control.dataset.preset]);
+      const typed = this._filter.value && this._matchArea.contains(control);
+      if (typed && (control.dataset.tag || control.dataset.signFor)) this._chooseTyped(control.dataset.tag ?? control.dataset.signFor, control.dataset.sign ?? 'plus');
+      else if (control.dataset.tab) this._showTab(control.dataset.tab);
+      else if (control.dataset.size != null) this._setFull(!this._full);
+      else if (control.dataset.pull) this._pull(control.dataset.pull);
+      else if (control.dataset.preset) this._togglePreset(this._presetList()[control.dataset.preset]);
       else if (control.dataset.signFor) this._setSign(control.dataset.signFor, control.dataset.sign);
       else if (control.dataset.tag) this._toggle(control.dataset.tag);
       else if (control.dataset.match) this.match = control.dataset.match;
       else if (control.dataset.clear != null) this._setChosen([]);
+    }
+
+    // A tag found by typing its name comes on, and the typing clears, so what it finds shows.
+    _chooseTyped(tag, sign) {
+      this._filter.value = '';
+      this._setSign(tag, sign);
     }
 
     _toggle(tag) {
@@ -506,6 +599,7 @@
         this._drawPart();
         this._drawChosen();
         this._drawPage();
+        this._drawSearch();
       });
     }
 
@@ -521,7 +615,7 @@
       const key = this.contains(document.activeElement) ? document.activeElement.dataset.key : null;
       draw();
       if (!key) return;
-      const control = [...this.querySelectorAll('[data-key]')].find((node) => node.dataset.key === key && !node.disabled);
+      const control = [...this.querySelectorAll('[data-key]')].find((node) => node.dataset.key === key && !node.disabled && node.checkVisibility());
       if (control) control.focus();
       else if (this._active) this._card.focus({ preventScroll: true });
     }
@@ -646,6 +740,93 @@
         list.append(entry);
       }
       this._pageArea.replaceChildren(el('p', 'title', 'On this page'), current.length ? list : el('p', 'hint', 'Nothing here carries a tag yet.'));
+    }
+
+    // ---- Searching ----
+
+    _showTab(tab) {
+      this._tab = tab;
+      if (tab !== 'search') this._setFull(false);
+      this._drawTabs();
+      if (tab === 'search') this._filter.focus();
+    }
+
+    // Full, the card fills the window, wherever it was dragged, and goes back there after.
+    _setFull(on) {
+      if (on === this._full) return;
+      this._full = on;
+      if (on) [this._placed, this._card.style.cssText] = [this._card.style.cssText, ''];
+      else this._card.style.cssText = this._placed ?? '';
+      this.classList.toggle('sb-tags-mode--full', on);
+      this._drawTabs();
+    }
+
+    // Tabs only when the page can search; without them the card is as it always was.
+    _drawTabs() {
+      this._tabs.hidden = !this._search;
+      this._size.hidden = this._tab !== 'search';
+      this._size.textContent = this._full ? 'Smaller' : 'Full screen';
+      for (const button of this._tabs.children) button.setAttribute('aria-selected', String(button.dataset.tab === this._tab));
+      this._display.hidden = this._tab !== 'display';
+      this._searchPanel.hidden = this._tab !== 'search';
+      this._drawSearch();
+    }
+
+    _drawSearch() {
+      if (!this._active || this._tab !== 'search') return;
+      this._drawMatches();
+      this._drawResults();
+    }
+
+    // Tags whose names fit what's typed, best first; or with nothing typed, every tag in full screen,
+    // and the chosen ones in the card.
+    _drawMatches() {
+      const declared = this._declared();
+      const current = [...declared.values()].filter((entry) => !Array.isArray(entry.replacedBy)).map(({ tag }) => tag);
+      const typed = this._filter.value.trim();
+      const tags = typed
+        ? current.map((tag) => ({ tag, fit: fit(typed, tag) })).filter(({ fit }) => fit).sort((a, b) => b.fit - a.fit || a.tag.localeCompare(b.tag)).slice(0, MATCHES_SHOWN).map(({ tag }) => tag)
+        : this._full ? current : this._chosen;
+      const list = el('div', 'list');
+      list.append(...tags.map((tag) => this._entry(tag, 'search')));
+      const hint = typed ? 'No tag fits that name.' : 'Type a tag\'s name to choose it.';
+      const combine = !typed && this._adding().length > 1 ? [this._switch(false)] : [];
+      this._matchArea.replaceChildren(...(tags.length ? [el('p', 'title', typed || this._full ? 'Tags' : 'Chosen'), list, ...combine] : [el('p', 'hint', hint)]));
+    }
+
+    // What the page finds for the chosen tags, or with none, what's most like what's here.
+    _drawResults() {
+      const adding = this._adding();
+      const selection = adding.length || this._without.length ? { tags: adding, match: this._match, without: this.without } : null;
+      const onPage = [...new Set(this._visibleParts().map((part) => part.dataset.ref).filter(Boolean))];
+      const found = this._search(selection, onPage);
+      const results = Array.isArray(found) ? found.filter((result) => typeof result?.ref === 'string') : [];
+      const shown = this._full ? results : results.slice(0, RESULTS_SHOWN);
+      const title = `${selection ? 'Found' : 'Related to this page'}${results.length > shown.length ? ` · ${shown.length} of ${results.length}` : ''}`;
+      const list = el('div', 'results');
+      list.append(...shown.map((result) => this._result(result, onPage.includes(result.ref))));
+      const none = selection ? 'Nothing carries these tags.' : 'Nothing found that is like what\'s here.';
+      this._resultArea.replaceChildren(el('p', 'title', title), shown.length ? list : el('p', 'hint', none));
+    }
+
+    // People can ask for a result to be brought onto the page, where the page takes them (pull-in).
+    // The page does the bringing, and once it's here, the result says so.
+    _pull(ref) {
+      this.dispatchEvent(new CustomEvent('sb-pull', { bubbles: true, detail: { ref } }));
+      this._keepingFocus(() => this._drawSearch());
+    }
+
+    _result({ ref, score, kind, label }, here) {
+      const row = el('div', 'result');
+      row.dataset.result = ref; // not data-ref: a result isn't part of this page
+      const name = document.createElement('span');
+      name.append(el('span', 'ref', ref));
+      if (kind) name.append(el('span', 'kind', String(kind)));
+      row.append(el('span', 'score', Number.isFinite(score) ? score.toFixed(2) : ''), name, el('span', 'summary', label == null ? '' : String(label)));
+      if (label) row.title = String(label);
+      if (here) row.append(el('span', 'here', 'On this page'));
+      else if (this.hasAttribute('pull-in')) row.append(Object.assign(this._button('pull', 'Pull in', `pull:${ref}`, { pull: ref }), { title: `Bring ${ref} onto this page` }));
+      return row;
     }
   }
 

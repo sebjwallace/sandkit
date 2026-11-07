@@ -678,21 +678,6 @@ test('the model answers only to tests with code that haven’t been replaced', (
   assertEqual([played.run('RUN-1').tests, played.run('RUN-2').tests], [['SCN-1'], ['SCN-2']]);
 });
 
-test('every tag, with what it means and what carries it; one in use but never declared says so', () => {
-  const tagged = createDiscovery({
-    tags: [{ tag: 'otters', means: 'Whether otters live on the river.' }, { tag: 'water-quality', means: 'What the water holds.' }],
-    sources: [{ id: 'SRC-1', tags: ['otters'] }],
-    excerpts: [{ id: 'SRC-1.1', source: 'SRC-1', quote: 'spraint at 4 of 18', tags: ['otters'] }],
-    claims: [{ id: 'CLM-1', assertions: { 'SRC-1.1': '+' }, tags: ['otters', 'mink'] }],
-  });
-  assertEqual(tagged.tags(), [
-    { tag: 'otters', means: 'Whether otters live on the river.', declared: true, on: ['SRC-1', 'SRC-1.1', 'CLM-1'] },
-    { tag: 'water-quality', means: 'What the water holds.', declared: true, on: [] },
-    { tag: 'mink', means: null, declared: false, on: ['CLM-1'] },
-  ]);
-  assertEqual(createDiscovery().tags(), [], 'none without tags');
-});
-
 // ---- Problems, choices and ways of working ----
 
 // A network team's discovery over two iterations: a feeder that trips on cold mornings, the options
@@ -864,25 +849,7 @@ test('what a test serves isn’t what it rests on: it makes no link, and brings 
   assertEqual(ferry.excerptsOf('SCN-1'), []);
 });
 
-test('working tags stay off the map: tags() neither lists them nor calls them undeclared', () => {
-  const tagged = createDiscovery({ claims: [{ id: 'CLM-1', assertions: {}, tags: ['otters'], working: ['survey-week'] }] });
-  assertEqual(tagged.tags(), [{ tag: 'otters', means: null, declared: false, on: ['CLM-1'] }]);
-});
-
-test('a retired tag stays listed, saying what replaced it', () => {
-  const tagged = createDiscovery({ tags: [
-    { tag: 'otter-signs', means: 'Signs of otters.', replacedBy: ['otters'] },
-    { tag: 'otters', means: 'Whether otters live on the river.' },
-  ] });
-  assertEqual(tagged.tags(), [
-    { tag: 'otter-signs', means: 'Signs of otters.', declared: true, on: [], replacedBy: ['otters'] },
-    { tag: 'otters', means: 'Whether otters live on the river.', declared: true, on: [] },
-  ]);
-});
-
-test('contracts and capabilities carry tags, and an iteration shows them with what they name', () => {
-  const tagged = createDiscovery({ ...FERRY(), tags: [{ tag: 'tides', means: 'x' }], contracts: [{ id: 'CTR-1', iteration: 1, tags: ['tides'], goals: ['GOL-1'], parties: [] }] });
-  assertEqual(tagged.tags()[0].on, ['CTR-1']);
+test('an iteration shows contracts and capabilities with what they name', () => {
   const shown = ferry.iteration(1).cards.map((c) => c.id);
   for (const id of ['CTR-1', 'CAP-1', 'GOL-1', 'DEF-1']) assert(shown.includes(id), `${id} is shown`);
 });

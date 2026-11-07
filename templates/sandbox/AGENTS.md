@@ -10,7 +10,7 @@ This folder is a domain sandbox: a small, self-contained application that houses
 4. **`lib/sandkit/practices/building-a-sandbox.md`,** the method this sandbox follows.
 5. **Any other practice the sandbox follows,** such as `lib/sandkit/practices/domain-discovery.md` when it discovers a domain, on a page of its own (`discovery.html` by default) linked from the header.
 6. **`lib/sandkit/practices/workshops.md`,** when asked to workshop the sandbox: to review, correct or hand over its model with the people who know the subject.
-7. **`lib/sandkit/practices/tagging.md`,** before tagging anything. Semantic tagging is opt-in: it costs tokens, so ask the person first, and suggest starting or stopping if the sandbox's needs change. On a yes, add `sb-tags-mode` to the sandbox's pages, so people can see and follow the tags.
+7. **`lib/sandkit/practices/tagging.md`,** before tagging anything. Semantic tagging is opt-in: it costs tokens, so ask the person first, and suggest starting or stopping if the sandbox's needs change. On a yes, add `sb-tags-mode` to the sandbox's pages, so people can see and follow the tags. To gather what to read on a topic, run `node lib/sandkit/tools/tags.mjs search . <tag> …` before opening records (see `tagging-search.md`).
 8. **`lib/sandkit/CATALOG.md`,** for everything Sandkit offers in detail; the index under Sandkit components below covers most needs. Links to anything not in `lib/` point to parts this sandbox doesn't use yet; fetch them from the source recorded in `lib/sandkit/SOURCE.md` if you need them.
 
 ## Where it stands

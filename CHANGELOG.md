@@ -4,6 +4,15 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries start `**Breaking:**` and say how to migrate.
 
+## 0.2.91 · 2026-11-07
+- Two engines: added `tags` 0.1.0, finding your way around a tag map for any sandbox that tags. It applies tagging's rules once (nothing superseded, working tags ignored, retired tags followed) and gives what carries a selection, what's like some items, each with a score where rarer tags weigh more, the ways to narrow or widen, and every tag with what carries it.
+- `tools/tags.mjs search`: the agent's tag search, one scored line per item and never the record, twenty at a time, saying when there are more and how to go on (`--from`), then the ways to narrow or widen. `report` now runs on the engine's rules. Setup copies the tags engine into every sandbox with the tool, and records its version.
+- **Breaking:** `discovery` 0.4.0 drops `tags()` and its `tags` input, so tags have one home: use the tags engine's `list()`, which gives the same shape.
+- **Breaking:** `sb-tags-mode` 0.3.0 wears no amber: the frame round the page is gone and the card and banner are plain. It gains a Search tab when the page sets `search`: tags found by name, results scored, full screen, and with `pull-in`, Pull in, firing `sb-pull`.
+- `sb-board` 0.2.1: lines between lit parts and a related tray are off its "Not yet".
+- New tag search practice, `practices/tagging-search.md`: when the agent searches before reading and how to read the output, and how a page wires search into Tags mode and pulls results onto a board. The sandbox template points agents to it under Tagging. The domain discovery practice checks tags with the report.
+- `demos/collation` searches by tags in Tags mode and pulls records onto the board, handing what was pulled in to the agent. New `demos/tag-search` shows the engine on the discovery demo's records, and the discovery demo lists its tags from the tags engine.
+
 ## 0.2.90 · 2026-11-07
 - **Breaking:** `sb-board` 0.2.0 is rebuilt as a board that lays itself out from rough places and groups, with three link styles, problems in words, and a veil with coloured dots while tags are chosen. Nothing used the old one, so there's nothing to migrate. The locating practice and the catalogue follow it.
 - **Breaking:** `sb-tags-mode` 0.2.0 drops the quiet bar outside the mode; reopen the mode to see what's chosen. It also gains a tag list with pins, + and − per tag, intersection or union, presets, a colour per tag, and a card that never shifts.

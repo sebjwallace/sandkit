@@ -15,6 +15,8 @@
   <script src="../../components/sb-table/sb-table.js"></script>
   <script src="../../components/sb-statechart/sb-statechart.js"></script>
   <script src="../../components/sb-board/sb-board.js"></script>
+  <script src="../../components/sb-handoff/sb-handoff.js"></script>
+  <script src="../../engines/tags/tags.js"></script>
   <script src="../discovery/records/tags.js"></script>
   <script>
     // In a real sandbox these sit beside its TAGS, as the tagging practice says.
@@ -43,7 +45,7 @@
 <body>
   <sb-shell heading="Collation board">
     <sb-theme-settings slot="settings"></sb-theme-settings>
-    <sb-tags-mode slot="modes"></sb-tags-mode>
+    <sb-tags-mode slot="modes" pull-in></sb-tags-mode>
     <sb-inspect-mode slot="modes"></sb-inspect-mode>
     <sb-outliner slot="panels" id="collation-outline" heading="Outline"></sb-outliner>
   </sb-shell>
@@ -52,6 +54,7 @@
     <h1>Why do passengers miss platform changes?</h1>
     <p>Real records from the discovery demo, gathered around one question, with a short rough layout and no exact positions. The picture, table and statechart are samples drawn for this page. Drag the background to pan.</p>
     <sb-board id="board"></sb-board>
+    <sb-handoff heading="Tell the agent what was pulled in" disabled waiting-text="Pull records in from Tags mode's Search tab first."></sb-handoff>
   </main>
 
   <script>
@@ -135,6 +138,36 @@
       ]
     };
 
+    // Tag search in Tags mode: the chosen tags, or with none, what's most like what's on the board.
+    const RECORDS = { excerpt: EXCERPTS, claim: CLAIMS, opinion: OPINIONS, risk: RISKS, constraint: CONSTRAINTS, decision: DECISIONS };
+    const tagSearch = createTags({ items: Object.entries(RECORDS).flatMap(([kind, list]) => list.map((record) => ({ ...record, kind }))), tags: TAGS });
+    document.querySelector('sb-tags-mode').search = (selection, onPage) => (selection ? tagSearch.find(selection) : tagSearch.like(onPage)).results
+      .map(({ id, kind, score, item }) => ({ ref: id, kind, score, label: item.title ?? item.text ?? item.quote }));
+
+    // Pulling in: the record lands beside what on the board it shares most tags with, and what people
+    // pulled in goes to the agent in words, to write into the layout.
+    const pulled = [];
+    const handoff = document.querySelector('sb-handoff');
+    handoff.prompt = () => ['# Collation board: pulled in', ...pulled, 'Add these to the board\'s layout where they landed, or say why not.'].join('\n\n');
+
+    document.addEventListener('sb-pull', ({ detail: { ref } }) => {
+      const kind = Object.keys(RECORDS).find((k) => RECORDS[k].some((record) => record.id === ref));
+      if (!kind) return;
+      const onBoard = new Set(board.layout.groups.flatMap(({ items }) => items.map((item) => item.ref ?? item)));
+      const beside = tagSearch.like([ref]).results.find(({ id }) => onBoard.has(id));
+      board.append(kind === 'excerpt' ? excerptCard(ref) : recordCard(RECORDS[kind], ref, kind));
+      board.layout = { ...board.layout, groups: beside ? board.layout.groups.map((group) => withAfter(group, beside.id, ref)) : [...board.layout.groups, { label: 'Pulled in', x: 90, y: 80, items: [ref] }] };
+      pulled.push(beside ? `Pulled in ${ref}, beside ${beside.id}: shares ${beside.shares.join(', ')}.` : `Pulled in ${ref}: it shares no tag with anything on the board.`);
+      handoff.disabled = false;
+      drawOutline();
+    });
+
+    // A group with one more item, just after the one named, if it holds it.
+    function withAfter(group, after, ref) {
+      const at = group.items.findIndex((item) => (item.ref ?? item) === after);
+      return at < 0 ? group : { ...group, items: [...group.items.slice(0, at + 1), ref, ...group.items.slice(at + 1)] };
+    }
+
     // The outline follows the board's groups, so pinning there lights the same things here.
     const RECORD_WORDS = [...EXCERPTS, ...CLAIMS, ...OPINIONS, ...RISKS, ...DECISIONS, ...CONSTRAINTS];
     const SAMPLE_WORDS = { 'IMG-1': 'Still of the board (sample)', 'TBL-1': 'What the board shows (sample)', 'STATE-1': 'A platform, as the model sees it (sample)' };
@@ -143,10 +176,13 @@
       return record ? `${ref} · ${record.quote ?? record.text ?? record.title}` : `${ref} · ${SAMPLE_WORDS[ref]}`;
     };
     const parts = { 'TBL-1': [{ ref: 'T-1', label: '14:32 Gatwick' }, { ref: 'T-2', label: '14:40 Brighton' }] };
-    document.querySelector('sb-outliner').items = board.layout.groups.flatMap(({ label, items }) => [
-      { heading: label },
-      ...items.map((item) => item.ref ?? item).map((ref) => ({ ref, label: wordsFor(ref), parts: parts[ref] }))
-    ]);
+    function drawOutline() {
+      document.querySelector('sb-outliner').items = board.layout.groups.flatMap(({ label, items }) => [
+        { heading: label },
+        ...items.map((item) => item.ref ?? item).map((ref) => ({ ref, label: wordsFor(ref), parts: parts[ref] }))
+      ]);
+    }
+    drawOutline();
   </script>
 </body>
 </html>
