@@ -1,5 +1,8 @@
 # sb-discovery-card changelog
 
+## 0.1.8 · 2026-11-07
+- Manifest cut to what an agent needs, with contracts and variants each in one place. Nothing else changed.
+
 ## 0.1.7 · 2026-11-06
 - Carries `tags` as `data-tags`, on the card, a card in a fold and a passage, and announces them with `sb-highlight`, so the page-wide `sb-highlighting` script can light what shares a tag. With no tags, it announces as before. `working` tags are never read.
 - Paper no longer hides an outline on what holds it, so a lit passage or source can be seen.
