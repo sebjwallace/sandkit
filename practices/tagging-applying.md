@@ -1,6 +1,6 @@
 # Applying tags
 
-How to choose, declare and apply tags, once a sandbox has opted in. The [tagging practice](tagging.md) says what always applies: above all, never reason from a tag.
+How to choose, declare and apply tags, once a sandbox has opted in. Read [tagging.md](tagging.md) first if you haven't: it says whether to tag at all, and what always applies, above all never to reason from a tag.
 
 ## What to tag
 

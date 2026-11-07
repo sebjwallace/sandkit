@@ -1,6 +1,6 @@
 # Changing and checking tags
 
-How to keep a sandbox's tags useful as it grows. The [tagging practice](tagging.md) says what always applies: above all, never reason from a tag.
+How to keep a sandbox's tags useful as it grows. Read [tagging.md](tagging.md) first if you haven't: it says what always applies, above all never to reason from a tag.
 
 ## Tidying up
 

@@ -1,6 +1,6 @@
 # Tag presets
 
-Tags pile up, and a list of them says little about where to start. A preset is a saved selection, a named region of the map: these tags, combined this way, less those. Offer a few where they'd help people find their way in, and they appear in Tags mode with no wiring. The [tagging practice](tagging.md) says what always applies: above all, never reason from a tag.
+Tags pile up, and a list of them says little about where to start. A preset is a saved selection, a named region of the map: these tags, combined this way, less those. Offer a few where they'd help people find their way in, and they appear in Tags mode with no wiring. Read [tagging.md](tagging.md) first if you haven't: it says what always applies, above all never to reason from a tag.
 
 Put them in the same script as the tags:
 
