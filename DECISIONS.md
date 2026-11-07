@@ -6,6 +6,7 @@ Settled decisions for Sandkit, newest last. One line each, with the reason.
 
 - **AI agents are the primary authors of sandbox code.** When choosing between approaches, prefer whatever agents work with most reliably.
 - **Sandkit names no particular AI.** Any agent can drive a sandbox, so practices, components, examples and tests say "the agent", and `Agent` where an author or person is named.
+- **Token economy is a goal of everything here.** Sandkit exists partly so agents spend fewer tokens, so building and refactoring both look for what can cost an agent less to read, write and check, as with lighting that needs no wiring, and a board that needs no coordinates or screenshots. It's a habit, not a constraint: never at the cost of what people get or of clarity. Agents using Sandkit are economical by default, and the person can always ask otherwise.
 - **Keep it as simple as possible.** No build tools, no installs, no framework machinery.
 - **Code reads clearly.** Minimal, elegant and close to self-explanatory, echoing the clarity sandboxes aim for, without growing bigger for the sake of it. Modern plain JavaScript (template literals, `const`/`let`), no build step.
 - **Not production.** Size, duplication and bundled dependencies are acceptable; sandboxes are shared among a handful of people, not served at scale.

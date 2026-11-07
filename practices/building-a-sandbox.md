@@ -4,6 +4,10 @@ The guide for an agent asked to build a domain sandbox with Sandkit. Read this f
 
 A domain sandbox is a small, self-contained application that houses an interactive, executable model of a subject, along with everything needed to explore it. It is plain HTML, CSS and JavaScript that opens in any browser, with nothing to install and no build step.
 
+## Be economical
+
+Spend tokens carefully by default, unless the person asks otherwise: read only what you need, trust components to do their work, and let the person's feedback do the checking. Never at the cost of what they asked for.
+
 ## Work in iterations
 
 A sandbox grows in small iterations, steered by the person exploring it. **Never build the whole sandbox at once.** Until the person has tried something, you don't know what they want from it, and everything built beyond their first look is a guess that may be thrown away.

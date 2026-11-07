@@ -9,6 +9,7 @@ Sandkit is a toolkit for domain sandboxing. Read `README.md` for what it is, `DE
 - **One small step at a time, with the author deciding.** Propose briefly, recommend, then build. Keep answers short.
 - **Simplicity first.** Push back on anything, including the author's own ideas, that adds complexity it doesn't earn.
 - **Code that reads clearly:** small named helpers, comments only where intent isn't obvious, no cleverness, no bloat.
+- **Token economy, as a habit.** Sandkit exists partly so agents spend fewer tokens, so look for the chance whenever you build or refactor: what an agent has to read, write and check, for this and everything using it. Prefer what works with no wiring, shorter data, and manifests that say only what's needed. Say when you spot a quick win. Weigh it, though: never at the cost of what people get, of clarity, or of a check that matters, and don't chase small savings or let it become a constraint.
 - **Components never reference each other.** Composition happens in sandboxes, through slots and the `sb-highlight` event, as the practices describe; a manifest never names another component. `test/isolation` enforces it. Mechanisms likewise never reference each other, components or engines; the domain model composes them.
 
 ## Adding or changing a component
@@ -50,7 +51,7 @@ Changing a committed mechanism follows the same versioning as a component, and e
   The results are the JSON in `#test-results`. Delete the temp dir afterwards. `node test/run.mjs` takes no path: given one, it still runs everything.
 - **The full suite once, before committing:** `node test/run.mjs` (headless Chrome for every `test.html`, Node for every `test.mjs`). It must pass. Running it earlier is the exception, for a change that really reaches across Sandkit (the shell, the harness, the runner), never the habit.
 - **Mutation-check new tests:** break the behaviour on purpose, confirm a test fails (on that page alone), restore.
-- **Look at it:** screenshot demos and sandboxes with headless Chrome rather than trusting the code. For example:
+- **Look at it, where the look changed:** screenshot demos and sandboxes with headless Chrome rather than trusting the code, taking few, since they're expensive. For example:
   `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --user-data-dir=<fresh temp dir> --window-size=1100,1000 --virtual-time-budget=800 --screenshot=<file> file://<page>`
   Crop tall pages with `sips -c <h> <w> --cropOffset <y> <x>`. Headless screenshots don't follow scrolling.
 - **Tests never depend on rendering frames** (resize observers, animation frames); headless virtual time may not deliver them. Use `waitFor` for things that happen at the browser's pace.
