@@ -1,4 +1,4 @@
-// Sandkit sb-highlighting 0.1.11 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit sb-highlighting 0.1.12 · MIT Licence · https://github.com/sebjwallace/sandkit
 // Page-wide pointing and lighting with no wiring. Include it, and any element with a data-ref
 // announces sb-highlight while it's pointed at or focused, lights up when its ref is announced, and
 // stays lit while an outliner on the page pins it. See practices/highlighting.md for the events.
@@ -13,11 +13,14 @@
 //
 //   <tr data-ref="SRC-3" data-tags="platforms passengers">…</tr>
 //
-// To keep topics lit while people work, send sb-tag-focus: { tags: [...], match: 'all' | 'any' }.
+// To keep topics lit while people work, send sb-tag-focus: { tags: [...], match: 'all' | 'any' },
+// and with it, if each has a colour of its own, colors: { tag: colour }, and to leave out whatever
+// carries certain tags, without: [...].
 //
 // Two attributes let a component speak for itself:
 //   data-sb-announces  nothing inside this element is announced here: the component does it
 //   data-sb-lights     this part lights itself, so it's neither lit nor announced here
+//   data-sb-shows-chosen   chosen tags inside this element are shown by it, so they aren't lit here
 (function () {
   if (document.querySelector('style[data-sb-highlighting]')) return;
 
@@ -63,10 +66,18 @@
 
   // Topics someone chose to follow: a dashed line in a colour of its own, so it reads apart from
   // lit, pinned and faint in shape as well as colour, and no fill, so it hides nothing.
-  const CHOSEN = `var(--sb-tag-focus, color-mix(in srgb, ${ACCENT} 30%, #c026d3))`;
+  const CHOSEN = `var(--sb-chosen-tag, var(--sb-tag-focus, color-mix(in srgb, ${ACCENT} 30%, #c026d3)))`;
   const chosenRules = (parts) => `
     ${htmlParts(parts)} { outline: 2px dashed ${CHOSEN} !important; outline-offset: -2px !important; }
     ${svgShapes(parts)} { stroke: ${CHOSEN} !important; stroke-width: 2.5 !important; stroke-dasharray: none !important; }`;
+
+  // Each chosen tag can have a colour of its own. A part has one line, so it takes the colour of the
+  // first chosen tag it carries: the last rule wins, so the first tag comes last.
+  function colouredRules(tags, match, colors, without) {
+    const coloured = tags.filter((tag) => CSS.supports('color', colors[tag]));
+    const lines = [...coloured].reverse().map((tag) => `${attributeForTag(tag)} { --sb-chosen-tag: ${colors[tag]}; }`);
+    return [...lines, chosenRules(chosenSelector(tags, match, without))].join('\n');
+  }
 
   // Pins fade with --sb-glow, the one number the outliner animates (practices/highlighting.md).
   const pinned = (percent) => `color-mix(in srgb, ${ACCENT} calc(var(--sb-glow, 1) * ${percent}%), transparent)`;
@@ -92,9 +103,10 @@
 
   // Parts carrying every chosen tag, or any of them. The chosen tags sit in :where, so however many
   // there are, these rules weigh the same as the others, and their order alone decides who wins.
-  function chosenSelector(tags, match) {
-    const chosen = match === 'any' ? selectorForTags(tags) : tags.map(attributeForTag).join('');
-    return `[data-tags]:where(${chosen})`;
+  function chosenSelector(tags, match, without = []) {
+    const chosen = !tags.length ? ':not([data-tags=""])' : match === 'any' ? selectorForTags(tags) : tags.map(attributeForTag).join('');
+    const leftOut = without.length ? `:where(:not(${selectorForTags(without)}))` : '';
+    return `[data-tags]:where(${chosen})${leftOut}:where(:not([data-sb-shows-chosen] *))`;
   }
 
   // Whatever shares a tag, unless it's already lit or pinned, which both say more.
@@ -123,8 +135,10 @@
   // ---- Chosen tags ----
 
   document.addEventListener('sb-tag-focus', (e) => {
-    const { tags, match } = e.detail ?? {};
-    chosenSheet = Array.isArray(tags) && tags.length ? chosenRules(chosenSelector(tags, match)) : '';
+    const { tags, match, colors, without } = e.detail ?? {};
+    const adding = Array.isArray(tags) ? tags : [], leavingOut = Array.isArray(without) ? without : [];
+    if (!adding.length && !leavingOut.length) chosenSheet = '';
+    else chosenSheet = colors ? colouredRules(adding, match, colors, leavingOut) : chosenRules(chosenSelector(adding, match, leavingOut));
     draw();
   });
 

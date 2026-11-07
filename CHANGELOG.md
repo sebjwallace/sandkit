@@ -5,6 +5,7 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries start `**Breaking:**` and say how to migrate.
 
 ## 0.2.90 · 2026-11-07
+- The shell's highlighting script takes `colors` and `without` in `sb-tag-focus`, and leaves chosen tags inside `data-sb-shows-chosen` to the element.
 - Token economy is written down as a goal: `AGENTS.md`, `CONTRIBUTING.md` and `DECISIONS.md` for those working on Sandkit, and the sandbox template and building guide for agents using it, economical by default unless the person asks otherwise. The highlighting practice says when it needn't be read.
 - The tagging practice is split so an agent reads only what it needs: `tagging.md` holds what always applies and points to `tagging-applying.md`, `tagging-tidying.md` and `tagging-presets.md`.
 - The highlighting practice is split the same way: `highlighting.md` holds the one line and the rules for everyone, and points to `highlighting-own-parts.md`, `highlighting-wiring.md`, `highlighting-tags.md` and `highlighting-pins.md`.
