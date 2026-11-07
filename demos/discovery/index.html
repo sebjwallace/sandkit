@@ -27,6 +27,7 @@
   <script src="../../components/sb-discovery-card/sb-discovery-card.js"></script>
   <script src="../../components/sb-lineage/sb-lineage.js"></script>
   <script src="../../engines/discovery/discovery.js"></script>
+  <script src="../../engines/tags/tags.js"></script>
   <script src="records/tags.js"></script>
   <script src="records/excerpts.js"></script>
   <script src="records/claims.js"></script>
@@ -803,12 +804,18 @@ Not announced,0
     const reliedOnBy = card => links().filter(([from, to]) => from === card.id && !to.startsWith('NEXT')).map(([, to]) => to);
 
     let engine = null;
-    const discovery = () => engine ??= createDiscovery({ sources: SOURCES, tags: TAGS, excerpts: EXCERPTS, claims: CLAIMS, questions: QUESTIONS, assumptions: ASSUMPTIONS,
+    const discovery = () => engine ??= createDiscovery({ sources: SOURCES, excerpts: EXCERPTS, claims: CLAIMS, questions: QUESTIONS, assumptions: ASSUMPTIONS,
       inferences: INFERENCES, observations: OBSERVATIONS, predictions: PREDICTIONS, outcomes: OUTCOMES, investigations: INVESTIGATIONS,
       experiments: EXPERIMENTS, actions: ACTIONS, decisions: DECISIONS, goals: GOALS, metrics: METRICS, definitions: DEFINITIONS,
       opinions: OPINIONS, feedback: FEEDBACK, agreements: AGREEMENTS, constraints: CONSTRAINTS, risks: RISKS, awaited: AWAITED, entities: ENTITIES,
       primitives: PRIMITIVES, scenarios: SCENARIOS, rules: RULES, capabilities: CAPABILITIES, optimizations: OPTIMIZATIONS, principles: PRINCIPLES, contracts: CONTRACTS,
       model: { versions: MODEL, candidates: CANDIDATES } });
+
+    // Every tag, with what it means and what carries it, from the tags engine.
+    let tagEngine = null;
+    const tagList = () => (tagEngine ??= createTags({ tags: TAGS, items: [SOURCES, EXCERPTS, CLAIMS, QUESTIONS, ASSUMPTIONS, INFERENCES, OBSERVATIONS,
+      PREDICTIONS, OUTCOMES, INVESTIGATIONS, EXPERIMENTS, ACTIONS, DECISIONS, GOALS, METRICS, DEFINITIONS, OPINIONS, FEEDBACK, AGREEMENTS,
+      CONSTRAINTS, RISKS, AWAITED, ENTITIES, PRIMITIVES, SCENARIOS, RULES, CAPABILITIES, OPTIMIZATIONS, PRINCIPLES, CONTRACTS].flat() })).list();
 
     // Every link, from what something rests on to what rests on it, as the engine finds them.
     const links = () => discovery().links().map(({ from, to }) => [from, to]);
@@ -2090,9 +2097,9 @@ Not announced,0
       });
     }
 
-    // Every tag with what it means, from the engine; one never declared says so.
+    // Every tag with what it means; one never declared says so.
     function drawTagKey() {
-      document.getElementById('tag-key').replaceChildren(...discovery().tags().flatMap(({ tag, means, declared }) =>
+      document.getElementById('tag-key').replaceChildren(...tagList().flatMap(({ tag, means, declared }) =>
         [el('dt', declared ? '' : 'undeclared', tag), el('dd', '', means ?? 'Never declared: say what it means in records/tags.js.')]));
     }
 
@@ -2102,7 +2109,7 @@ Not announced,0
       if (!item) return detail.replaceChildren();
       const meanings = document.createElement('dl');
       meanings.className = 'tag-meanings';
-      for (const tag of item.tags) meanings.append(el('dt', '', tag), el('dd', '', discovery().tags().find(t => t.tag === tag)?.means ?? 'never declared'));
+      for (const tag of item.tags) meanings.append(el('dt', '', tag), el('dd', '', tagList().find(t => t.tag === tag)?.means ?? 'never declared'));
       detail.replaceChildren(nodeCard({ id: item.id, ...asOf(item.id, shown.iteration) }, true), meanings);
     }
 

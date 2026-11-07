@@ -65,7 +65,7 @@ records/   what was written inside, from it: one script per kind
 
 Sources, excerpts and records can carry tags, so people can find them. Tagging is opt-in here as everywhere, so ask as you set up. Discovery often gains from it, since it soon holds many cards across many kinds, but the person decides. The [tagging practice](tagging.md) says how to ask, how to choose, declare and change tags, and when to tag. If the sandbox tags:
 
-- **Declare them in `records/tags.js`,** as `const TAGS = [{ tag, means }]`, and check `discovery.tags()` before adding one: it lists every tag, what it means and what carries it, and names any in use but never declared.
+- **Declare them in `records/tags.js`,** as `const TAGS = [{ tag, means }]`, and run the tags report (`node lib/sandkit/tools/tags.mjs report .`) before adding one: it shows the tags in use and names any never declared. In a page, the [tags engine](../engines/tags/manifest.md)'s `list()` gives every tag with what it means and what carries it.
 - **Tags are the one part of a record that can change later.** Nothing is worked out from them: no status or weighing ever rests on a tag, so changing them keeps the audit trail whole. The same goes for working tags, which the engine ignores.
 
 ## The kinds

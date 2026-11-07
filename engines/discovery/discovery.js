@@ -1,4 +1,4 @@
-// Sandkit discovery 0.3.6 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit discovery 0.4.0 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The engine of domain discovery: the method's rules, written once. Given the sandbox's records,
 // it works out what follows from them, the same way every time, so a record holds only what
 // someone wrote and never a conclusion. It draws nothing and knows no component.
@@ -15,7 +15,6 @@
 //   discovery.reviewReasons('DEC-1', { asOf: 2 });            // → [{ ref: 'CLM-3', now: 'contested', why: 'rests on' }]
 //   discovery.iteration(2);                                   // → { cards: [{ id, as }], links: [{ from, to }] }
 //   discovery.run('RUN-3');                                   // → { tests, met, change, … }
-//   discovery.tags();                                         // → [{ tag, means, declared, on, replacedBy }]
 //   discovery.answers('CTR-2', { asOf: 2 });                  // → { clauses, tests, untested, servesNothing }
 //
 // See manifest.md for the full contract.
@@ -94,7 +93,7 @@
 
   function createDiscovery({ sources = [], claims = [], questions = [], assumptions = [], inferences = [], observations = [],
     predictions = [], outcomes = [], investigations = [], experiments = [], actions = [], decisions = [], goals = [], metrics = [],
-    excerpts = [], tags = [], definitions = [], opinions = [], feedback = [], agreements = [], constraints = [], risks = [], awaited = [], entities = [], primitives = [],
+    excerpts = [], definitions = [], opinions = [], feedback = [], agreements = [], constraints = [], risks = [], awaited = [], entities = [], primitives = [],
     hypotheses = [], problems = [], incidents = [], strategies = [], disputes = [], requirements = [], principles = [], patterns = [], antipatterns = [],
     optimizations = [], solutions = [], options = [], tradeoffs = [], recommendations = [], capabilities = [], contracts = [],
     scenarios = [], rules = [], model: { versions = [], candidates = [] } = {} } = {}) {
@@ -465,23 +464,6 @@
       return found;
     }
 
-    // ---- Tags ----
-
-    // Every tag, with what it means and what carries it: those declared first, in their order, then
-    // any in use that were never declared, which say so. A retired tag says what replaced it. Tags
-    // are how sources and records are found, not what they say, so they work out nothing else.
-    function tagged() {
-      const on = new Map();
-      for (const { id, tags: carried = [] } of [...sources, ...[...recordOf.values()].map(({ record }) => record)]) {
-        for (const tag of carried) on.set(tag, [...(on.get(tag) ?? []), id]);
-      }
-      const isDeclared = (tag) => tags.some((declared) => declared.tag === tag);
-      return [
-        ...tags.map(({ tag, means, replacedBy }) => ({ tag, means, declared: true, on: on.get(tag) ?? [], replacedBy })),
-        ...[...on.keys()].filter((tag) => !isDeclared(tag)).map((tag) => ({ tag, means: null, declared: false, on: on.get(tag) })),
-      ];
-    }
-
     // ---- Iterations ----
 
     const iterationOf = (id) => (sourceOf.get(id) ?? recordOf.get(id)?.record)?.iteration ?? 1;
@@ -742,7 +724,7 @@
     }
 
     return {
-      weigh, strength, originOf, status, reviewReasons, links, inputsOf, excerptsOf, tags: tagged, appearances, iteration, standing,
+      weigh, strength, originOf, status, reviewReasons, links, inputsOf, excerptsOf, appearances, iteration, standing,
       model, runs: () => runs.map((r) => r.id), run, results, decisionsIn, partOfClass, primitivesOf, definitionOf, exercisedBy, contractAt, answers,
     };
   }
