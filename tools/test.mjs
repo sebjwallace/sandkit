@@ -3,6 +3,7 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, request } from 'node:http';
+import { createRequire } from 'node:module';
 import { networkInterfaces, tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -500,7 +501,7 @@ test('SOURCE.md lists versions and files in a fixed order, whatever order they w
   const source = read(sandbox, 'lib/sandkit/SOURCE.md');
   const list = (from, to) => source.slice(source.indexOf(from), source.indexOf(to)).split('\n').filter((line) => line.startsWith('- ')).map((line) => line.slice(2));
   const versions = list('## Versions', '## Files').map((line) => line.split(' ')[0]);
-  assertEqual(versions, ['Sandkit', 'shell', 'sb-comments', 'sb-id', 'sb-log', 'discovery', 'sb-store']);
+  assertEqual(versions, ['Sandkit', 'shell', 'sb-comments', 'sb-id', 'sb-log', 'discovery', 'tags', 'sb-store']);
   const groupOf = (file) => ['shell/', 'components/', 'engines/', 'mechanisms/'].findIndex((folder) => file.startsWith(folder));
   const groups = list('## Files', '\0').map(groupOf);
   assertEqual(groups, [...groups].sort((a, b) => a - b));
@@ -945,6 +946,9 @@ function tagReport(...args) {
   }
 }
 
+const { createTags } = createRequire(import.meta.url)('../engines/tags/tags.js');
+const declareTags = (...names) => names.map((tag) => ({ tag, means: 'x' }));
+
 // A small discovery sandbox, its claims given as lists of tags in order: CLM-1, CLM-2, …
 function taggedSandbox(folder, claimTags, declared) {
   mkdirSync(join(folder, 'records'));
@@ -1032,7 +1036,106 @@ test('tags report has no pass mark: findings still exit cleanly, and only a bad 
   assert(!tagReport('report', join(folder, 'nowhere')).ok, 'a folder that does not exist should fail');
 });
 
-test('a new sandbox gets the tags tool', (sandbox) => {
+test('tags search lists what carries every tag, one line each with its score, then ways to narrow and widen', (folder) => {
+  taggedSandbox(folder, [['tides'], ['tides', 'ferries'], ['tides', 'ferries', 'weather'], ['weather']], declareTags('tides', 'ferries', 'weather'));
+  const { ok, output } = tagReport('search', folder, 'tides', 'ferries');
+  assert(ok, output);
+  assertEqual(output.trim().split('\n'), [
+    '2 items carry tides + ferries.',
+    '1.00 CLM-2 claim',
+    '0.67 CLM-3 claim',
+    'Narrow: +weather 1',
+    'Widen: drop ferries 3 · any 3',
+  ]);
+});
+
+test('tags search takes --any, --without and --limit, saying what each lacks and how many more there are', (folder) => {
+  taggedSandbox(folder, [['tides'], ['tides', 'ferries'], ['weather'], ['ferries', 'gulls']], declareTags('tides', 'ferries', 'weather', 'gulls'));
+  const { output } = tagReport('search', folder, '--any', 'tides', 'weather', '--without', 'ferries', '--limit', '1');
+  assert(output.startsWith('2 items carry tides or weather, without ferries (showing 1–1).\n0.50 CLM-1 claim · lacks weather\n1 more: --from 2 --limit 1 for the next 1.'), output);
+});
+
+test('tags search never cuts a list short without saying so, and following its hints visits every result once', (folder) => {
+  taggedSandbox(folder, Array.from({ length: 7 }, (_, index) => (index % 2 ? ['tides'] : ['tides', 'ferries'])), declareTags('tides', 'ferries'));
+  const resultsIn = (output) => output.split('\n').filter((line) => /^\d\.\d\d /.test(line)).map((line) => line.split(' ')[1]);
+  const everything = resultsIn(tagReport('search', folder, 'tides', '--limit', '7').output);
+  assertEqual(everything.length, 7);
+  for (const limit of [1, 2, 3, 6]) {
+    const seen = [];
+    let args = ['--limit', String(limit)];
+    for (let pages = 0; args && pages < 10; pages++) {
+      const { output } = tagReport('search', folder, 'tides', ...args);
+      const [first] = output.split('\n');
+      const page = resultsIn(output);
+      seen.push(...page);
+      assert(first.includes(`(showing ${seen.length - page.length + 1}–${seen.length})`), `says what's shown: ${first}`);
+      const next = output.match(/^\d+ more: (--from \d+(?: --limit \d+)?) for the next \d+\.$/m);
+      assert(Boolean(next) === seen.length < 7, `says there are more exactly when there are:\n${output}`);
+      args = next?.[1].split(' ');
+    }
+    assertEqual(seen, everything, `pages of ${limit}`);
+  }
+  const past = tagReport('search', folder, 'tides', '--from', '9').output;
+  assert(past.startsWith('7 items carry tides (showing none: there are only 7).'), past);
+  assert(!tagReport('search', folder, 'tides', '--from', '0').ok, 'a bad --from should fail');
+});
+
+test('tags search runs a preset, follows a retired tag, and names one never declared', (folder) => {
+  taggedSandbox(folder, [['tides'], ['tides', 'ferries']], [...declareTags('tides', 'ferries'), { tag: 'sailings', means: 'x', replacedBy: ['ferries'] }]);
+  write(folder, 'records/presets.js', `const TAG_PRESETS = ${JSON.stringify([{ name: 'Old sailings', asks: 'x', tags: ['sailings', 'otters'], match: 'any' }])};`);
+  const { ok, output } = tagReport('search', folder, '--preset', 'Old sailings');
+  assert(ok && output.startsWith('1 item carries ferries or otters.'), output);
+  assert(output.includes('Followed: sailings → ferries.') && output.includes('Never declared: otters.'), output);
+  assert(!tagReport('search', folder, '--preset', 'Nope').ok, 'an unknown preset should fail');
+});
+
+test('tags search --like lists what shares tags with some items, naming the closest when given several', (folder) => {
+  taggedSandbox(folder, [['tides'], ['tides', 'ferries'], ['ferries'], ['weather']], declareTags('tides', 'ferries', 'weather'));
+  const { output } = tagReport('search', folder, '--like', 'CLM-1', 'CLM-3', 'CLM-99');
+  assertEqual(output.trim().split('\n'), [
+    '1 item shares tags with CLM-1, CLM-3, CLM-99, closest first.',
+    '0.50 CLM-2 claim · shares tides with CLM-1',
+    'Not found: CLM-99.',
+  ]);
+});
+
+test('tags search shows a short label, kind and status, never the record itself', (folder) => {
+  mkdirSync(join(folder, 'records'));
+  write(folder, 'records/tags.js', `const TAGS = [{ tag: 'tides', means: 'x' }];`);
+  write(folder, 'records/entities.js', `const ENTITIES = [{ id: 'ENT-1', tags: ['tides'], status: 'proposed', name: 'Tide table', notes: 'secret body' }];`);
+  write(folder, 'records/claims.js', `const CLAIMS = [{ id: 'CLM-1', tags: ['tides'], text: '${'Spring tides '.repeat(10)}' }];`);
+  const { output } = tagReport('search', folder, 'tides');
+  assert(output.includes('1.00 ENT-1 entity, proposed · Tide table'), output);
+  assert(!output.includes('secret body'), 'a record body leaked');
+  const long = output.split('\n').find((line) => line.includes('CLM-1'));
+  assert(long.endsWith('…') && long.length < 100, `a long text is cut short: ${long}`);
+});
+
+test('tags search gives the agent exactly what the engine gives a page, for the same records', (folder) => {
+  const claims = [['tides'], ['tides', 'ferries'], ['ferries', 'weather'], ['weather'], ['tides', 'weather'], ['ferries']];
+  taggedSandbox(folder, claims, declareTags('tides', 'ferries', 'weather'));
+  const engine = createTags({ items: claims.map((tags, index) => ({ id: `CLM-${index + 1}`, tags })), tags: declareTags('tides', 'ferries', 'weather') });
+  const fromPage = engine.find({ tags: ['tides', 'weather'], match: 'any' }).results.map(({ id, score }) => `${score.toFixed(2)} ${id}`);
+  const fromAgent = tagReport('search', folder, '--any', 'tides', 'weather').output.split('\n').filter((line) => /^\d\.\d\d /.test(line)).map((line) => line.split(' ').slice(0, 2).join(' '));
+  assertEqual(fromAgent, fromPage);
+});
+
+test('tags search fails only when it can\'t run: finding nothing is an answer', (folder) => {
+  taggedSandbox(folder, [['tides']], declareTags('tides'));
+  const nothing = tagReport('search', folder, 'otters');
+  assert(nothing.ok && nothing.output.startsWith('Nothing carries otters.'), nothing.output);
+  assert(!tagReport('search', folder).ok, 'nothing asked should fail');
+  assert(!tagReport('search', folder, '--limit', 'x', 'tides').ok, 'a bad limit should fail');
+  assert(!tagReport('search', folder, '--sideways').ok, 'an unknown option should fail');
+});
+
+test('a new sandbox gets the tags tool and the tags engine it runs on, recorded with its version', (sandbox) => {
   setup(sandbox);
-  assert(existsSync(join(sandbox, 'lib/sandkit/tools/tags.mjs')), 'missing tools/tags.mjs');
+  for (const file of ['tools/tags.mjs', 'engines/tags/tags.js', 'engines/tags/manifest.md', 'engines/tags/CHANGELOG.md']) assert(existsSync(join(sandbox, 'lib/sandkit', file)), `missing ${file}`);
+  assert(/- tags \d+\.\d+\.\d+/.test(read(sandbox, 'lib/sandkit/SOURCE.md')), 'its version recorded');
+  assert(!read(sandbox, 'index.html').includes('engines/tags'), 'no script tag unless asked for');
+  mkdirSync(join(sandbox, 'x'));
+  taggedSandbox(join(sandbox, 'x'), [['tides']], declareTags('tides'));
+  const run = execFileSync('node', [join(sandbox, 'lib/sandkit/tools/tags.mjs'), 'search', join(sandbox, 'x'), 'tides'], { encoding: 'utf8' });
+  assert(run.startsWith('1 item carries tides.'), `the copied tool runs: ${run}`);
 });

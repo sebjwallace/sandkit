@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tag search</title>
+  <script src="../../shell/sb-theme-settings.js"></script>
+  <script src="../../shell/sb-shell.js"></script>
+  <script src="../../engines/tags/tags.js"></script>
+  <script src="../discovery/records/tags.js"></script>
+  <script src="../discovery/records/actions.js"></script>
+  <script src="../discovery/records/agreements.js"></script>
+  <script src="../discovery/records/assumptions.js"></script>
+  <script src="../discovery/records/awaited.js"></script>
+  <script src="../discovery/records/capabilities.js"></script>
+  <script src="../discovery/records/claims.js"></script>
+  <script src="../discovery/records/constraints.js"></script>
+  <script src="../discovery/records/contracts.js"></script>
+  <script src="../discovery/records/decisions.js"></script>
+  <script src="../discovery/records/definitions.js"></script>
+  <script src="../discovery/records/entities.js"></script>
+  <script src="../discovery/records/excerpts.js"></script>
+  <script src="../discovery/records/experiments.js"></script>
+  <script src="../discovery/records/feedback.js"></script>
+  <script src="../discovery/records/goals.js"></script>
+  <script src="../discovery/records/inferences.js"></script>
+  <script src="../discovery/records/investigations.js"></script>
+  <script src="../discovery/records/metrics.js"></script>
+  <script src="../discovery/records/observations.js"></script>
+  <script src="../discovery/records/opinions.js"></script>
+  <script src="../discovery/records/optimizations.js"></script>
+  <script src="../discovery/records/outcomes.js"></script>
+  <script src="../discovery/records/predictions.js"></script>
+  <script src="../discovery/records/primitives.js"></script>
+  <script src="../discovery/records/principles.js"></script>
+  <script src="../discovery/records/questions.js"></script>
+  <script src="../discovery/records/risks.js"></script>
+  <script src="../discovery/records/rules.js"></script>
+  <script src="../discovery/records/scenarios.js"></script>
+  <style>
+    body { margin: 0; font-family: var(--sb-font, system-ui, sans-serif); color: var(--sb-text, #1f2933); background: var(--sb-bg, #f5f6f8); line-height: 1.5; }
+    main { max-width: 1100px; margin: 0 auto; padding: 12px 16px 64px; display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
+    header { grid-column: 1 / -1; }
+    h1 { margin: 0; font-size: 18px; }
+    h2 { margin: 0 0 6px; color: var(--sb-muted, #616e7c); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+    header p { margin: 4px 0 0; color: var(--sb-muted, #616e7c); font-size: 13px; }
+    .panel { padding: 10px 12px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); }
+    aside { display: grid; gap: 12px; }
+    button { font: 12px var(--sb-font, system-ui, sans-serif); color: var(--sb-text, #1f2933); cursor: pointer; }
+    .tag { display: flex; align-items: center; gap: 4px; padding: 2px 0; font-size: 13px; }
+    .tag span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tag small { color: var(--sb-muted, #616e7c); }
+    .sign { width: 22px; height: 22px; padding: 0; border: 1px solid var(--sb-border, #d5d9e0); border-radius: 4px; background: none; font-weight: 700; }
+    .sign[aria-pressed="true"] { border-color: var(--sb-accent, #2563eb); background: var(--sb-accent, #2563eb); color: var(--sb-accent-text, #fff); }
+    .row-of { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .quiet { padding: 3px 9px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface-2, #eef0f3); }
+    .quiet[aria-pressed="true"] { border-color: var(--sb-accent, #2563eb); background: var(--sb-accent-soft, #eaf0ff); font-weight: 600; }
+    .preset { display: block; width: 100%; margin: 0 0 4px; text-align: left; }
+    section { display: grid; gap: 10px; }
+    #summary { margin: 0; font-weight: 600; }
+    #notes { margin: 0; color: var(--sb-muted, #616e7c); font-size: 12px; }
+    #notes:empty { display: none; }
+    ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+    li { display: grid; grid-template-columns: 54px 1fr auto; gap: 4px 12px; align-items: start; padding: 8px 10px; border: 1px solid var(--sb-border, #d5d9e0); border-radius: var(--sb-radius, 8px); background: var(--sb-surface, #fff); }
+    .score { display: grid; gap: 3px; font: 600 13px var(--sb-font, system-ui, sans-serif); font-variant-numeric: tabular-nums; }
+    .bar { height: 4px; border-radius: 2px; background: var(--sb-surface-2, #eef0f3); }
+    .bar i { display: block; height: 100%; border-radius: 2px; background: var(--sb-accent, #2563eb); }
+    .what { min-width: 0; }
+    .what b { margin-right: 6px; }
+    .kind { color: var(--sb-muted, #616e7c); font-size: 12px; }
+    .label { margin: 2px 0 4px; font-size: 13px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .chip { display: inline-block; margin: 0 4px 2px 0; padding: 0 7px; border-radius: 999px; background: var(--sb-surface-2, #eef0f3); font-size: 11px; }
+    .chip.lacks { background: none; border: 1px dashed var(--sb-border, #d5d9e0); color: var(--sb-muted, #616e7c); }
+    .empty { color: var(--sb-muted, #616e7c); font-size: 13px; }
+    @media (max-width: 720px) { main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <sb-shell heading="Tag search">
+    <sb-theme-settings slot="settings"></sb-theme-settings>
+  </sb-shell>
+
+  <main>
+    <header>
+      <h1>What carries these tags?</h1>
+      <p>The tags engine at work on the discovery demo's records. Choose tags with + (must carry) and − (leave out), or start from a preset. Each result's score, from 0 to 1, is how much of the weight of its tags it shares with what you chose, and rarer tags weigh more. A score says where to look first, never what's true. An agent asking the same with <code>tags.mjs search</code> gets the same results, in the same order.</p>
+    </header>
+
+    <aside>
+      <div class="panel">
+        <h2>Presets</h2>
+        <div id="presets"></div>
+      </div>
+      <div class="panel">
+        <div class="row-of" style="justify-content: space-between; margin-bottom: 6px;">
+          <h2 style="margin: 0;">Tags</h2>
+          <span class="row-of">
+            <button class="quiet" data-match="all">All</button>
+            <button class="quiet" data-match="any">Any</button>
+            <button class="quiet" id="clear">Clear</button>
+          </span>
+        </div>
+        <div id="tags"></div>
+      </div>
+    </aside>
+
+    <section>
+      <p id="summary"></p>
+      <p id="notes"></p>
+      <div id="ways" class="panel"></div>
+      <ol id="results"></ol>
+    </section>
+  </main>
+
+  <script>
+    // Every list of records, by the kind it holds. Sources live in the discovery page itself, so
+    // they're left out here; their excerpts are in.
+    const LISTS = {
+      excerpt: EXCERPTS, claim: CLAIMS, question: QUESTIONS, assumption: ASSUMPTIONS, inference: INFERENCES, observation: OBSERVATIONS,
+      prediction: PREDICTIONS, outcome: OUTCOMES, investigation: INVESTIGATIONS, experiment: EXPERIMENTS, action: ACTIONS, decision: DECISIONS,
+      goal: GOALS, metric: METRICS, definition: DEFINITIONS, opinion: OPINIONS, feedback: FEEDBACK, agreement: AGREEMENTS, constraint: CONSTRAINTS,
+      risk: RISKS, awaited: AWAITED, entity: ENTITIES, primitive: PRIMITIVES, principle: PRINCIPLES, optimization: OPTIMIZATIONS,
+      capability: CAPABILITIES, contract: CONTRACTS, scenario: SCENARIOS, rule: RULES
+    };
+    const TAG_PRESETS = [
+      { name: 'Platform changes passengers raised', asks: 'What did passengers say about platform changes?', tags: ['platform-changes', 'passengers'], match: 'all' },
+      { name: 'Platform changes, no message-line tag', asks: 'Which parts on platform changes never come to the message line?', tags: ['platform-changes'], without: ['message-line'] },
+      { name: 'Passengers or announcements', asks: 'What reaches passengers, either way?', tags: ['passengers', 'announcements'], match: 'any' }
+    ];
+
+    const items = Object.entries(LISTS).flatMap(([kind, list]) => list.map((record) => ({ ...record, kind })));
+    const engine = createTags({ items, tags: TAGS });
+
+    // What's asked: a selection, or more like one item.
+    let selection = { tags: [], match: 'all', without: [] };
+    let likeId = null;
+
+    const el = (tag, className, text) => Object.assign(document.createElement(tag), className ? { className } : {}, text != null ? { textContent: text } : {});
+    const labelOf = ({ title, text, quote, term, name, summary }) => title ?? text ?? quote ?? term ?? name ?? summary ?? '';
+    const chips = (tags, className = '') => tags.map((tag) => el('span', `chip ${className}`, tag));
+
+    function choose(next) {
+      selection = { tags: [], match: 'all', without: [], ...next };
+      likeId = null;
+      draw();
+    }
+
+    function toggle(tag, field) {
+      const other = field === 'tags' ? 'without' : 'tags';
+      const on = selection[field].includes(tag);
+      choose({ ...selection, [field]: on ? selection[field].filter((t) => t !== tag) : [...selection[field], tag], [other]: selection[other].filter((t) => t !== tag) });
+    }
+
+    function drawTags() {
+      document.getElementById('tags').replaceChildren(...engine.list().filter(({ replacedBy }) => !replacedBy).map(({ tag, means, on }) => {
+        const row = el('div', 'tag');
+        row.title = means ?? 'never declared';
+        const sign = (text, field, label) => {
+          const button = el('button', 'sign', text);
+          button.setAttribute('aria-pressed', !likeId && selection[field].includes(tag));
+          button.setAttribute('aria-label', `${label} ${tag}`);
+          button.onclick = () => toggle(tag, field);
+          return button;
+        };
+        row.append(sign('+', 'tags', 'Must carry'), sign('−', 'without', 'Leave out'), el('span', '', tag), el('small', '', on.length));
+        return row;
+      }));
+      for (const button of document.querySelectorAll('[data-match]')) button.setAttribute('aria-pressed', !likeId && selection.match === button.dataset.match);
+    }
+
+    function wayButton(step) {
+      const words = step.add ? `+ ${step.add}` : step.drop ? `drop ${step.drop}` : `switch to ${step.match}`;
+      const button = el('button', 'quiet', `${words} · ${step.count}`);
+      button.onclick = () => choose(step.selection);
+      return button;
+    }
+
+    function drawWays() {
+      const box = document.getElementById('ways');
+      if (likeId || !selection.tags.length) { box.hidden = true; return; }
+      const { narrow, widen } = engine.ways(selection);
+      box.hidden = false;
+      box.replaceChildren(
+        ...(narrow.length ? [el('h2', '', 'Narrow'), Object.assign(el('div', 'row-of'), { style: 'margin-bottom: 8px' })] : []),
+        ...(widen.length ? [el('h2', '', 'Widen'), el('div', 'row-of')] : [])
+      );
+      const [narrowRow, widenRow] = [narrow.length ? box.children[1] : null, widen.length ? box.lastElementChild : null];
+      narrowRow?.append(...narrow.map(wayButton));
+      widenRow?.append(...widen.map(wayButton));
+      if (!narrow.length && !widen.length) box.hidden = true;
+    }
+
+    function resultRow({ id, kind, score, item }, tagLines) {
+      const row = el('li');
+      const scoreBox = el('div', 'score', score.toFixed(2));
+      const bar = el('div', 'bar');
+      bar.append(Object.assign(el('i'), { style: `width: ${score * 100}%` }));
+      scoreBox.append(bar);
+      const what = el('div', 'what');
+      what.append(el('b', '', id), el('span', 'kind', kind), el('p', 'label', labelOf(item)), ...tagLines);
+      const more = el('button', 'quiet', 'More like this');
+      more.onclick = () => { likeId = id; draw(); };
+      row.append(scoreBox, what, more);
+      return row;
+    }
+
+    function drawResults() {
+      const list = document.getElementById('results'), summary = document.getElementById('summary'), notes = document.getElementById('notes');
+      if (likeId) {
+        const { results, total } = engine.like([likeId], { limit: 30 });
+        summary.textContent = `${total} share tags with ${likeId}, closest first.`;
+        notes.textContent = '';
+        list.replaceChildren(...results.map((result) => resultRow(result, [...chips(result.shares)])));
+        return;
+      }
+      if (!selection.tags.length && !selection.without.length) {
+        summary.textContent = 'Choose a tag or a preset to begin.';
+        notes.textContent = '';
+        list.replaceChildren();
+        return;
+      }
+      const { results, total, followed, undeclared } = engine.find(selection, { limit: 30 });
+      const asked = selection.tags.join(selection.match === 'any' ? ' or ' : ' + ') || 'any tag';
+      summary.textContent = `${total} carry ${asked}${selection.without.length ? `, without ${selection.without.join(', ')}` : ''}.`;
+      notes.textContent = [
+        ...followed.map(({ from, to }) => `${from} is retired: followed to ${to.join(', ') || 'nothing'}.`),
+        ...(undeclared.length ? [`Never declared: ${undeclared.join(', ')}.`] : []),
+        ...(total > results.length ? [`Showing the first ${results.length}.`] : [])
+      ].join(' ');
+      list.replaceChildren(...(results.length
+        ? results.map((result) => resultRow(result, [...chips(result.carries), ...chips(result.lacks, 'lacks')]))
+        : [el('p', 'empty', 'Nothing carries that. Try widening.')]));
+    }
+
+    function draw() {
+      drawTags();
+      drawWays();
+      drawResults();
+    }
+
+    document.getElementById('presets').replaceChildren(...TAG_PRESETS.map((preset) => {
+      const button = el('button', 'quiet preset', preset.name);
+      button.title = preset.asks;
+      button.onclick = () => choose(preset);
+      return button;
+    }));
+    for (const button of document.querySelectorAll('[data-match]')) button.onclick = () => choose({ ...selection, match: button.dataset.match });
+    document.getElementById('clear').onclick = () => choose({});
+    choose(TAG_PRESETS[0]);
+  </script>
+</body>
+</html>

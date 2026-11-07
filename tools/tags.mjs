@@ -1,19 +1,32 @@
 #!/usr/bin/env node
-// Reports how well a sandbox's tags work as a map of its material. No dependencies: just Node.
+// Reads a sandbox's tags and what carries them, and either reports how well they work as a map, or
+// searches for what carries some of them. No dependencies: just Node, and the tags engine beside this tool.
 //
 //   node tools/tags.mjs report path/to/sandbox
+//   node tools/tags.mjs search path/to/sandbox platform-changes passengers --without announcements
+//   node tools/tags.mjs search path/to/sandbox --any delays cancellations --limit 10 --from 11
+//   node tools/tags.mjs search path/to/sandbox --preset "Platform changes passengers raised"
+//   node tools/tags.mjs search path/to/sandbox --like CLM-4 DEC-1
 //
-// - Reads the declared tags (records/tags.js or tags.js), the catalogue's sources, every list in
-//   records/ and the model's ITEMS. Working tags and anything superseded are left out.
-// - Says how far tags reach and how well they narrow, then lists only what's worth a look: gaps,
+// - Reads the declared tags and presets (records/tags.js or tags.js), the catalogue's sources, every list in
+//   records/ and the model's ITEMS. The tags engine applies tagging's rules: working tags and anything
+//   superseded are left out, and retired tags are followed.
+// - report says how far tags reach and how well they narrow, then lists only what's worth a look: gaps,
 //   tags too broad or too narrow, crowded places, tags that overlap, and items to spot-check.
+// - search lists what carries a selection, or what's like some items, one line each with its score, then
+//   the ways to narrow or widen. Never the records themselves: read the ones worth reading. A page of
+//   results at a time: when there are more, the first line says which are shown and the last how to go on.
 //
 // It reports and never judges: skew can be right for a subject, and it can't tell whether a tag fits
-// what it's on. So it has no pass mark, and exits with status 1 only if it can't run.
+// what it's on. So it has no pass mark, finding nothing is an answer, and it exits with status 1 only
+// if it can't run.
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
+
+const require = createRequire(import.meta.url);
+const { createTags } = require('../engines/tags/tags.js');
 
 const MIN_ITEMS_FOR_SHARES = 10;
 const BROAD_SHARE = 0.4;
@@ -23,22 +36,36 @@ const OVERLAP_SHARE = 0.8;
 const OVERLAP_MIN = 3;
 const MAX_LISTED = 5;
 const SPOT_CHECKS = 3;
+const FIND_LIMIT = 20;
+const LABEL_LENGTH = 70;
+const LABEL_FIELDS = ['title', 'text', 'quote', 'term', 'name', 'summary'];
 
 function report(folder) {
-  const sandbox = resolve(folder);
-  const notes = [];
-  const records = readRecords(sandbox, notes);
-  const declared = readDeclared(sandbox, records, notes);
-  const items = current([...readSources(sandbox), ...recordItems(records), ...readModelItems(sandbox, notes)]);
+  const { notes, declared, presets, all } = readSandbox(folder);
+  const items = createTags({ items: all, tags: declared }).items().map(({ id, tags }) => ({ id, tags: Array.isArray(tags) ? tags : [] }));
   const tagged = items.filter((item) => item.tags.length);
   if (!declared.length && !tagged.length) return [...notes, 'No tags here. Tagging is opt-in: see the tagging practice.'];
 
-  const presets = readPresets(sandbox, records, notes);
   const map = { items, tagged, declared, presets, carriers: carriersOf(tagged), places: placesOf(tagged) };
   return [...notes, ...headlines(map), '', ...findings(map)];
 }
 
 // ---- Reading ----
+
+// Everything both commands read: the declarations, the presets, and every item, each with its kind.
+function readSandbox(folder) {
+  const sandbox = resolve(folder);
+  const notes = [];
+  const records = readRecords(sandbox, notes);
+  return {
+    notes,
+    declared: readDeclared(sandbox, records, notes),
+    presets: readPresets(sandbox, records, notes),
+    all: [...withKind(readSources(sandbox), 'source'), ...recordItems(records), ...withKind(readModelItems(sandbox, notes), 'item')]
+  };
+}
+
+const withKind = (list, kind) => list.filter((item) => item && typeof item === 'object').map((item) => ({ kind, ...item }));
 
 // Every top-level const in each script in records/, by name.
 function readRecords(sandbox, notes) {
@@ -88,7 +115,12 @@ function readSources(sandbox) {
   }
 }
 
-const recordItems = (records) => Object.values(records).filter(Array.isArray).flat();
+// Every list in records/ but the tags' own, each item's kind named by its list: CLAIMS holds claims.
+const NOT_ITEMS = ['TAGS', 'TAG_PRESETS'];
+const kindOfList = (name) => name.toLowerCase().replace(/ies$/, 'y').replace(/([^s])s$/, '$1');
+const recordItems = (records) => Object.entries(records)
+  .filter(([name, list]) => Array.isArray(list) && !NOT_ITEMS.includes(name))
+  .flatMap(([name, list]) => withKind(list, kindOfList(name)));
 
 function readModelItems(sandbox, notes) {
   const file = join(sandbox, 'model.js');
@@ -100,16 +132,6 @@ function readModelItems(sandbox, notes) {
     notes.push(`model.js couldn't be loaded in Node (${err.message}), so its ITEMS are left out.`);
   }
   return Array.isArray(module.exports.ITEMS) ? module.exports.ITEMS : [];
-}
-
-// What a person can still be sent to: one item per id, without whatever has been superseded.
-function current(all) {
-  const items = all.filter((item) => typeof item?.id === 'string');
-  const superseded = new Set(items.map((item) => item.supersedes).filter(Boolean));
-  const unique = new Map(items.map((item) => [item.id, item]));
-  return [...unique.values()]
-    .filter((item) => !superseded.has(item.id) && item.status !== 'superseded')
-    .map(({ id, tags }) => ({ id, tags: tags ?? [] }));
 }
 
 // ---- Working it out ----
@@ -209,12 +231,106 @@ function spread(ids) {
   return Array.from({ length: SPOT_CHECKS }, (_, index) => ids[Math.floor(index * ids.length / SPOT_CHECKS)]);
 }
 
+// ---- Searching ----
+
+function search(folder, args) {
+  const { notes, declared, presets, all } = readSandbox(folder);
+  const engine = createTags({ items: all, tags: declared });
+  const asked = askedIn(args, presets);
+  if (asked.like.length) return [...notes, ...likeLines(engine, asked)];
+  const { results: ranked, total, selection, followed, undeclared } = engine.find(asked.selection);
+  const results = pageOf(ranked, asked);
+  const { narrow, widen } = engine.ways(selection);
+  const { tags, match, without } = selection;
+  const what = `${tags.join(match === 'any' ? ' or ' : ' + ') || 'any tag'}${without.length ? `, without ${without.join(', ')}` : ''}`;
+  return [
+    ...notes,
+    total ? `${counted(total, 'item')} ${total === 1 ? 'carries' : 'carry'} ${what}${showing(total, asked)}.` : `Nothing carries ${what}.`,
+    ...results.map((result) => resultLine(result, result.lacks.length && `lacks ${result.lacks.join(', ')}`)),
+    ...moreLine(total, asked),
+    ...(narrow.length ? [`Narrow: ${narrow.map(wayWords).join(' · ')}`] : []),
+    ...(widen.length ? [`Widen: ${widen.map(wayWords).join(' · ')}`] : []),
+    ...followed.map(({ from, to }) => `Followed: ${from} → ${to.join(', ') || 'nothing (retired)'}.`),
+    ...(undeclared.length ? [`Never declared: ${undeclared.join(', ')}.`] : [])
+  ];
+}
+
+function likeLines(engine, asked) {
+  const { like } = asked;
+  const { results: ranked, total, unknown } = engine.like(like);
+  const results = pageOf(ranked, asked);
+  const several = like.length - unknown.length > 1;
+  return [
+    total ? `${counted(total, 'item')} ${total === 1 ? 'shares' : 'share'} tags with ${like.join(', ')}, closest first${showing(total, asked)}.` : `Nothing shares tags with ${like.join(', ')}.`,
+    ...results.map((result) => resultLine(result, `shares ${result.shares.join(', ')}${several ? ` with ${result.closest}` : ''}`)),
+    ...moreLine(total, asked),
+    ...(unknown.length ? [`Not found: ${unknown.join(', ')}.`] : [])
+  ];
+}
+
+// What the command line asks: tags, then --any, --without, --preset, --like, --limit and --from in any order.
+function askedIn(args, presets) {
+  const selection = { tags: [], match: 'all', without: [] }, like = [];
+  let into = selection.tags, limit = FIND_LIMIT, from = 1;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--any' || arg === '--all') { selection.match = arg.slice(2); into = selection.tags; }
+    else if (arg === '--without') into = selection.without;
+    else if (arg === '--like') into = like;
+    else if (arg === '--preset') usePreset(selection, presets, args[++i]);
+    else if (arg === '--limit') limit = Number(args[++i]);
+    else if (arg === '--from') from = Number(args[++i]);
+    else if (arg.startsWith('--')) fail(`search doesn't know ${arg}.\n${USAGE}`);
+    else into.push(arg);
+  }
+  if (!Number.isInteger(limit) || limit < 1) fail(`--limit needs a whole number above 0.\n${USAGE}`);
+  if (!Number.isInteger(from) || from < 1) fail(`--from needs a whole number above 0.\n${USAGE}`);
+  if (!selection.tags.length && !selection.without.length && !like.length) fail(`search needs tags, a preset or --like.\n${USAGE}`);
+  return { selection, like, limit, from };
+}
+
+function usePreset(selection, presets, name) {
+  const preset = presets.find((p) => p.name === name);
+  if (!preset) fail(`There's no preset called "${name}".${presets.length ? ` The presets are: ${presets.map((p) => `"${p.name}"`).join(', ')}.` : ''}`);
+  selection.tags.push(...(preset.tags ?? []));
+  selection.without.push(...(preset.without ?? []));
+  if (preset.match) selection.match = preset.match;
+}
+
+// One line per result: score, id, kind (and status, where the record says it), a short label, and the tags.
+function resultLine({ score, id, kind, item }, tags) {
+  const said = LABEL_FIELDS.map((field) => item[field]).find((value) => typeof value === 'string') ?? '';
+  const label = said.replace(/\s+/g, ' ').trim();
+  const short = label.length > LABEL_LENGTH ? `${label.slice(0, LABEL_LENGTH - 1).trimEnd()}…` : label;
+  const status = typeof item.status === 'string' ? `, ${item.status}` : '';
+  return [`${score.toFixed(2)} ${id} ${kind ?? 'item'}${status}`, short, tags].filter(Boolean).join(' · ');
+}
+
+// A page of results, counted from 1. A cut-short list always says so: which are shown, and how to go on.
+const pageOf = (results, { from, limit }) => results.slice(from - 1, from - 1 + limit);
+const lastShown = (total, { from, limit }) => Math.min(total, from - 1 + limit);
+function showing(total, asked) {
+  if (asked.from > total) return ` (showing none: there are only ${total})`;
+  return asked.from > 1 || lastShown(total, asked) < total ? ` (showing ${asked.from}–${lastShown(total, asked)})` : '';
+}
+function moreLine(total, asked) {
+  const last = lastShown(total, asked), left = total - last;
+  const keep = asked.limit === FIND_LIMIT ? '' : ` --limit ${asked.limit}`;
+  return left > 0 && asked.from <= total ? [`${left} more: --from ${last + 1}${keep} for the next ${Math.min(left, asked.limit)}.`] : [];
+}
+const wayWords = ({ add, drop, match, count }) => `${add ? `+${add}` : drop ? `drop ${drop}` : match} ${count}`;
+
 function fail(message) {
   console.error(message);
   process.exit(1);
 }
 
-const [command, folder] = process.argv.slice(2);
-if (command !== 'report' || !folder) fail('Usage: node tools/tags.mjs report <sandbox-folder>');
+const USAGE = [
+  'Usage: node tools/tags.mjs report <sandbox-folder>',
+  '       node tools/tags.mjs search <sandbox-folder> [tag …] [--any] [--without tag …] [--preset "name"] [--like id …] [--limit n] [--from n]'
+].join('\n');
+
+const [command, folder, ...args] = process.argv.slice(2);
+if (!['report', 'search'].includes(command) || !folder) fail(USAGE);
 if (!existsSync(folder)) fail(`There's no folder at ${folder}.`);
-console.log(report(folder).join('\n'));
+console.log((command === 'report' ? report(folder) : search(folder, args)).join('\n'));

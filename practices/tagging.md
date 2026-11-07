@@ -8,6 +8,7 @@ How to label the things in a sandbox so people and agents can find them, group t
 | Tag sources, excerpts, cards or anything else, or declare a tag | [Applying tags](tagging-applying.md) |
 | Tidy up, merge or retire tags, or run the report | [Changing and checking tags](tagging-tidying.md) |
 | Offer people ready-made selections of tags | [Presets](tagging-presets.md) |
+| Gather what to read on a topic, or let people search by tags and pull results onto a page | [Tag search](tagging-search.md) |
 
 Showing tags takes no wiring: give a part `data-tags`, or a component its `tags`, and add [`sb-tags-mode`](../components/sb-tags-mode/manifest.md) to the sandbox's pages when it opts in.
 
