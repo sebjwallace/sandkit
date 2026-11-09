@@ -35,7 +35,7 @@ document.addEventListener('sb-mode', (e) => { if (e.detail.active) tour.close();
 ## What every mode has
 
 - **A way in:** the shell's mode picker, or the mode's key, the first letter of its name unless it asks for another, as Tags does, since T is Trace's. A mode has no button of its own.
-- **A sign it's on:** the picker turns amber, and the mode draws an amber frame round the page and a banner at the bottom saying what clicking does. Amber for every mode: it says "not exploring", never blending with the sandbox.
+- **A sign it's on:** the picker turns amber, and the mode draws a banner at the bottom saying what clicking does. A mode people visit to do one job and leave, such as Comment, Trace or Inspect, also draws an amber frame round the page: amber says "not exploring", never blending with the sandbox. A mode people keep on while they work, such as Tags, goes without, using the accent, since a frame they live in stops warning and starts getting in the way. Build a new mode with amber unless people will keep it on while working.
 - **Picking instead of acting:** pointing shows what can be picked; a click picks it and never reaches the page.
 - **What it lets through:** its own parts, and anything marked `data-modes`, such as the mode picker, so another mode is always a choice away.
 - **A way out:** the banner's buttons, or choosing another mode or Explore. Leaving never loses work: comment mode opens its comments to send, and tags mode keeps its chosen tags lit.
