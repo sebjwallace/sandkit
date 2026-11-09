@@ -1,4 +1,4 @@
-// Sandkit tags 0.1.0 · MIT Licence · https://github.com/sebjwallace/sandkit
+// Sandkit tags 0.1.1 · MIT Licence · https://github.com/sebjwallace/sandkit
 // The engine of tagging: finding your way around a sandbox's tag map, with the rules written once.
 // Given the items that carry tags and the tags' declarations, it says what carries a selection of
 // tags, what's like a set of items, and where to go from a selection. It draws nothing, reads no
@@ -8,9 +8,9 @@
 // selection share. Rarer tags weigh more, so a tag on nearly everything counts for little. A score
 // says where to look first, never what's true.
 //
-//   const tags = createTags({ items: [...SOURCES, ...CLAIMS], tags: TAGS });
-//   tags.find({ tags: ['platform-changes', 'passengers'] });  // → { results: [{ id, score, carries, lacks, item }], total, selection, followed, undeclared }
-//   tags.like(['CLM-4']);                                     // → { results: [{ id, score, shares, closest, item }], total, unknown }
+//   const tags = createTags({ lists: { SOURCES, CLAIMS }, tags: TAGS });   // CLAIMS holds claims
+//   tags.find({ tags: ['platform-changes', 'passengers'] });  // → { results: [{ id, kind, label, score, carries, lacks, item }], total, exact, selection, followed, undeclared }
+//   tags.like(['CLM-4']);                                     // → { results: [{ id, kind, label, score, shares, closest, item }], total, unknown }
 //   tags.ways({ tags: ['platform-changes'] });                // → { narrow: [{ add, count, selection }], widen: [{ drop, count, selection }] }
 //   tags.list();                                              // → [{ tag, means, declared, on }]
 //
@@ -27,6 +27,17 @@
   // Codes in order, numbers counted as numbers: CLM-2 before CLM-10.
   const byCode = (a, b) => a.localeCompare(b, 'en', { numeric: true });
 
+  // A list's name says the kind of what it holds: CLAIMS holds claims, ENTITIES entities. An item
+  // naming its own kind keeps it.
+  const kindOfList = (name) => name.toLowerCase().replace(/ies$/, 'y').replace(/([^s])s$/, '$1');
+  const fromLists = (lists) => Object.entries(lists)
+    .filter(([, list]) => Array.isArray(list))
+    .flatMap(([name, list]) => list.filter((item) => item && typeof item === 'object').map((item) => ({ kind: kindOfList(name), ...item })));
+
+  // What an item says, in one line: the first of the fields records keep their words in.
+  const LABEL_FIELDS = ['title', 'text', 'quote', 'term', 'name', 'summary', 'of'];
+  const labelOf = (item) => (LABEL_FIELDS.map((field) => item[field]).find((value) => typeof value === 'string') ?? '').replace(/\s+/g, ' ').trim();
+
   // What a person can still be sent to: one item per id (the last given), and nothing superseded.
   // Working tags live in their own field, so they never reach the map.
   function currentItems(items) {
@@ -36,9 +47,9 @@
     return [...byId.values()].filter((item) => !superseded.has(item.id) && item.status !== 'superseded');
   }
 
-  function createTags({ items = [], tags = [] } = {}) {
+  function createTags({ lists = {}, items = [], tags = [] } = {}) {
     const declared = new Map(tags.map((declaration) => [declaration.tag, declaration]));
-    const current = currentItems(items);
+    const current = currentItems([...fromLists(lists), ...items]);
     const byId = new Map(current.map((item) => [item.id, item]));
 
     const carriers = new Map();
@@ -87,12 +98,15 @@
       const results = ranked(current.filter((item) => !left.has(item.id) && fits(item, selection)).map((item) => ({
         id: item.id,
         kind: item.kind,
+        label: labelOf(item),
         score: closeness(selection.tags, tagsOf(item)),
         carries: selection.tags.filter((tag) => tagsOf(item).includes(tag)),
         lacks: selection.tags.filter((tag) => !tagsOf(item).includes(tag)),
         item
       })));
-      return { results: results.slice(0, limit), total: results.length, selection, followed, undeclared };
+      // Those carrying exactly the chosen tags all score 1, so they come in code order.
+      const exact = selection.tags.length ? results.filter(({ lacks, item }) => !lacks.length && unique(tagsOf(item)).length === selection.tags.length).length : 0;
+      return { results: results.slice(0, limit), total: results.length, exact, selection, followed, undeclared };
     }
 
     // Each item scored by the one given that it's closest to, which it names.
@@ -105,7 +119,7 @@
           .reduce((a, b) => (b.score > a.score ? b : a), { score: 0 });
         if (!best.score) return [];
         const shares = tagsOf(item).filter((tag) => tagsOf(best.other).includes(tag));
-        return [{ id: item.id, kind: item.kind, score: best.score, shares, closest: best.other.id, item }];
+        return [{ id: item.id, kind: item.kind, label: labelOf(item), score: best.score, shares, closest: best.other.id, item }];
       }));
       return { results: results.slice(0, limit), total: results.length, unknown: ids.filter((id) => !byId.has(id)) };
     }

@@ -4,6 +4,12 @@ Sandkit's own version covers the practices, the sandbox template and the tools. 
 
 Versions follow [semantic versioning](https://semver.org). Until 1.0, a breaking change raises the minor version (0.1 to 0.2) and anything else raises the patch version (0.1.0 to 0.1.1). Breaking entries start `**Breaking:**` and say how to migrate.
 
+## 0.2.92 · 2026-11-09
+- `tags` 0.1.1: `createTags` takes records as named lists, `{ CLAIMS, DECISIONS }`, and gives each its kind from its list's name, so pages no longer add `kind` by hand. Every result carries a `label` by one rule, which observations now have too, and `find` says how many carry exactly the chosen tags.
+- `tools/tags.mjs` uses the engine's kinds and labels, and when several results carry exactly the tags asked, its first line says so, so a run of 1.00 in code order reads as meant.
+- The tag search practice's snippet passes named lists and the engine's labels, and `demos/collation` and `demos/tag-search` follow it.
+- The modes practice and `DECISIONS.md` agree on amber: a mode people visit to do one job wears the amber frame, and one they keep on while working, such as Tags mode, goes without.
+
 ## 0.2.91 · 2026-11-07
 - Two engines: added `tags` 0.1.0, finding your way around a tag map for any sandbox that tags. It applies tagging's rules once (nothing superseded, working tags ignored, retired tags followed) and gives what carries a selection, what's like some items, each with a score where rarer tags weigh more, the ways to narrow or widen, and every tag with what carries it.
 - `tools/tags.mjs search`: the agent's tag search, one scored line per item and never the record, twenty at a time, saying when there are more and how to go on (`--from`), then the ways to narrow or widen. `report` now runs on the engine's rules. Setup copies the tags engine into every sandbox with the tool, and records its version.

@@ -1099,6 +1099,20 @@ test('tags search --like lists what shares tags with some items, naming the clos
   ]);
 });
 
+test('tags search says when several carry exactly the chosen tags, so a run of 1.00 in code order reads as meant', (folder) => {
+  taggedSandbox(folder, [['tides', 'ferries'], ['tides', 'ferries'], ['tides', 'ferries', 'weather']], declareTags('tides', 'ferries', 'weather'));
+  const [first] = tagReport('search', folder, 'tides', 'ferries').output.split('\n');
+  assertEqual(first, '3 items carry tides + ferries. 2 carry exactly these and no other tag, so they score 1.00, in code order.');
+  assertEqual(tagReport('search', folder, 'weather').output.split('\n')[0], '1 item carries weather.');
+});
+
+test('tags search labels an observation by what it\'s of', (folder) => {
+  mkdirSync(join(folder, 'records'));
+  write(folder, 'records/tags.js', `const TAGS = [{ tag: 'tides', means: 'x' }];`);
+  write(folder, 'records/observations.js', `const OBSERVATIONS = [{ id: 'OBS-1', tags: ['tides'], value: '3', of: 'Late ferries' }];`);
+  assert(tagReport('search', folder, 'tides').output.includes('1.00 OBS-1 observation · Late ferries'), 'labelled');
+});
+
 test('tags search shows a short label, kind and status, never the record itself', (folder) => {
   mkdirSync(join(folder, 'records'));
   write(folder, 'records/tags.js', `const TAGS = [{ tag: 'tides', means: 'x' }];`);

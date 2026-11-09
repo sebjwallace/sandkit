@@ -100,7 +100,7 @@ test('harbour: a retired tag is followed to what replaced it, and the result say
 
 test('harbour: a tag never declared is named, and finding nothing is an answer', () => {
   const found = HARBOUR.find({ tags: ['otters'] });
-  assertEqual(found, { results: [], total: 0, selection: { tags: ['otters'], match: 'all', without: [] }, followed: [], undeclared: ['otters'] });
+  assertEqual(found, { results: [], total: 0, exact: 0, selection: { tags: ['otters'], match: 'all', without: [] }, followed: [], undeclared: ['otters'] });
 });
 
 test('harbour: limit caps the results, total says how many there were, and exclude leaves ids out', () => {
@@ -125,7 +125,7 @@ test('library: rarer tags weigh more, so a rare tag shared counts for more than 
 
 test('library: like scores each item by the one given it is closest to, naming it and what they share', () => {
   const liked = LIBRARY.like(['BK-9', 'BK-7']);
-  assertEqual(liked.results[0], { id: 'BK-10', kind: 'book', score: 0.68, shares: ['poetry'], closest: 'BK-7', item: shelf(10, ['poetry']) });
+  assertEqual(liked.results[0], { id: 'BK-10', kind: 'book', label: '', score: 0.68, shares: ['poetry'], closest: 'BK-7', item: shelf(10, ['poetry']) });
   assertEqual(liked.results.find(({ id }) => id === 'BK-8').closest, 'BK-9');
   assert(!ids(liked).includes('BK-9') && !ids(liked).includes('BK-7'), 'what was given is left out');
   assert(liked.results.every(({ score }) => score > 0), 'only what shares something');
@@ -173,4 +173,36 @@ test('invariance: the same input gives the same output, for random catalogues', 
     for (const { score } of [...once.find(selection).results, ...once.like(['IT-0']).results]) assert(score >= 0 && score <= 1, `score ${score} out of 0 to 1`);
     for (const { count } of [...once.ways(selection).narrow, ...once.ways(selection).widen]) assert(count > 0, 'a way finding nothing');
   }
+});
+
+test('railway: named lists give each item its kind, and an item naming its own keeps it', () => {
+  const railway = createTags({
+    tags: declare('platforms'),
+    lists: { CLAIMS: [{ id: 'CLM-1', tags: ['platforms'] }], ENTITIES: [{ id: 'ENT-1', tags: ['platforms'] }], awaited: [{ id: 'AWT-1', tags: ['platforms'] }], NOTES: 'not a list' },
+    items: [{ id: 'SRC-1', kind: 'source', tags: ['platforms'] }, { id: 'X-1', tags: ['platforms'] }]
+  });
+  assertEqual(railway.items().map(({ id, kind }) => [id, kind ?? null]), [['CLM-1', 'claim'], ['ENT-1', 'entity'], ['AWT-1', 'awaited'], ['SRC-1', 'source'], ['X-1', null]]);
+  const own = createTags({ lists: { RECORDS: [{ id: 'R-1', kind: 'rule', tags: ['a'] }] } });
+  assertEqual(own.items()[0].kind, 'rule');
+});
+
+test('railway: every result carries a one-line label, from whichever field the record keeps its words in', () => {
+  const railway = createTags({ lists: {
+    CLAIMS: [{ id: 'CLM-1', tags: ['a'], text: 'Passengers\n  miss  the change' }],
+    OBSERVATIONS: [{ id: 'OBS-1', tags: ['a'], value: '12', of: 'Missed trains after a platform change' }],
+    EXCERPTS: [{ id: 'SRC-1.1', tags: ['a'], quote: 'Platform 9' }],
+    ENTITIES: [{ id: 'ENT-1', tags: ['a'], name: 'Departure board', text: 'wins over name' }],
+    BARE: [{ id: 'B-1', tags: ['a'] }]
+  } });
+  const labels = Object.fromEntries(railway.find({ tags: ['a'] }).results.map(({ id, label }) => [id, label]));
+  assertEqual(labels, { 'B-1': '', 'CLM-1': 'Passengers miss the change', 'ENT-1': 'wins over name', 'OBS-1': 'Missed trains after a platform change', 'SRC-1.1': 'Platform 9' });
+  assertEqual(railway.like(['CLM-1']).results.find(({ id }) => id === 'OBS-1').label, 'Missed trains after a platform change');
+});
+
+test('harbour: exact counts what carries the chosen tags and nothing else, all or any', () => {
+  assertEqual(HARBOUR.find({ tags: ['tides', 'ferries'] }).exact, 1);
+  assertEqual(HARBOUR.find({ tags: ['tides'] }).exact, 1);
+  assertEqual(HARBOUR.find({ tags: ['tides', 'weather'], match: 'any' }).exact, 0);
+  assertEqual(HARBOUR.find({ without: ['weather'] }).exact, 0);
+  assertEqual(HARBOUR.find({ tags: ['tides'] }, { limit: 0 }).exact, 1, 'over every result, not only those shown');
 });

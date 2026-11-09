@@ -18,8 +18,10 @@ It prints one line per item, never the item itself, so a topic costs a few hundr
 ## Reading what it says
 
 ```
-21 items carry platform-changes + passengers (showing 1–20).
+21 items carry platform-changes + passengers (showing 1–20). 19 carry exactly these and no other tag, so they score 1.00, in code order.
+1.00 DEF-7 definition · Missed train
 1.00 GOL-1 goal, off track · No more than two missed trains a month from platform changes, by Janu…
+…
 0.64 RSK-1 risk, open · Passengers don’t read the message line, so a changed platform still g…
 1 more: --from 21 for the next 1.
 Narrow: +message-line 1 · +announcements 1
@@ -27,7 +29,7 @@ Widen: drop platform-changes 33 · drop passengers 59 · any 71
 ```
 
 - **Each line:** score, code, kind and any status the record states, a short label, and with `--any` the tags it lacks, or with `--like` what it shares.
-- **The score,** from 0 to 1, is how much of the weight of its tags an item shares with what you asked. Rarer tags weigh more, so a tag on most items counts for little.
+- **The score,** from 0 to 1, is how much of the weight of its tags an item shares with what you asked. Rarer tags weigh more, so a tag on most items counts for little. Everything carrying exactly what you asked, and no other tag, scores 1.00, and the first line says how many do: they come in code order, not by how well they fit.
 - **With all the tags,** those carrying fewest others come first, as they sit closest to the topic. **With `--any`,** those carrying the rarer tags come first. **With `--like`,** those sharing the rarest tags with one of the items given come first, naming which. Ties go by code.
 - **Twenty at a time.** When there are more, the first line says which are shown, "(showing 1–20)", and a line after the results gives the option for the next page, such as `--from 21`. If the first line says "showing", you haven't seen them all: page on, or narrow, before concluding anything from the list. `--limit` changes the page size.
 - **Narrow and Widen** are the next steps, each with how many it would find. Take one rather than guessing at tags.
@@ -41,14 +43,14 @@ People search by tags in Tags mode's Search tab, once the page hands it a way to
 <script src="lib/sandkit/engines/tags/tags.js"></script>
 
 <script>
-  const tagSearch = createTags({ items: [...SOURCES, ...CLAIMS, ...DECISIONS], tags: TAGS });   // give each item its kind
+  const tagSearch = createTags({ lists: { SOURCES, CLAIMS, DECISIONS }, tags: TAGS });   // each list's name gives its kind
   document.querySelector('sb-tags-mode').search = (selection, onPage) =>
     (selection ? tagSearch.find(selection) : tagSearch.like(onPage)).results
-      .map(({ id, kind, score, item }) => ({ ref: id, kind, score, label: item.title ?? item.text }));
+      .map(({ id, kind, score, label }) => ({ ref: id, kind, score, label }));
 </script>
 ```
 
-With nothing chosen, people see what's most like what's on the page. Give each item its `kind` (`{ ...claim, kind: 'claim' }`) so results can say it.
+With nothing chosen, people see what's most like what's on the page. Pass records as named lists, as above, so each result says its kind (`CLAIMS` holds claims) and its label, the same as the tool shows.
 
 **Pulling results onto the page.** Add `pull-in` to Tags mode where the page can take records, such as a board, and bring one in on `sb-pull`. On a board, place it beside what it shares most with: `tagSearch.like([ref]).results.find(({ id }) => onBoard.has(id))` names it and the tags they share. Say what was pulled in, in words, through `sb-handoff`, such as "Pulled in CON-3, beside CON-2: shares platform-changes, announcements.", so the agent can write it into the layout; until then it lasts only as long as the page. `demos/collation` shows it whole.
 

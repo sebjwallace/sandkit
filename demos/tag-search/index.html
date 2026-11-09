@@ -113,14 +113,12 @@
   </main>
 
   <script>
-    // Every list of records, by the kind it holds. Sources live in the discovery page itself, so
-    // they're left out here; their excerpts are in.
+    // Every list of records, by name, which gives each its kind. Sources live in the discovery page
+    // itself, so they're left out here; their excerpts are in.
     const LISTS = {
-      excerpt: EXCERPTS, claim: CLAIMS, question: QUESTIONS, assumption: ASSUMPTIONS, inference: INFERENCES, observation: OBSERVATIONS,
-      prediction: PREDICTIONS, outcome: OUTCOMES, investigation: INVESTIGATIONS, experiment: EXPERIMENTS, action: ACTIONS, decision: DECISIONS,
-      goal: GOALS, metric: METRICS, definition: DEFINITIONS, opinion: OPINIONS, feedback: FEEDBACK, agreement: AGREEMENTS, constraint: CONSTRAINTS,
-      risk: RISKS, awaited: AWAITED, entity: ENTITIES, primitive: PRIMITIVES, principle: PRINCIPLES, optimization: OPTIMIZATIONS,
-      capability: CAPABILITIES, contract: CONTRACTS, scenario: SCENARIOS, rule: RULES
+      EXCERPTS, CLAIMS, QUESTIONS, ASSUMPTIONS, INFERENCES, OBSERVATIONS, PREDICTIONS, OUTCOMES, INVESTIGATIONS, EXPERIMENTS, ACTIONS,
+      DECISIONS, GOALS, METRICS, DEFINITIONS, OPINIONS, FEEDBACK, AGREEMENTS, CONSTRAINTS, RISKS, AWAITED, ENTITIES, PRIMITIVES,
+      PRINCIPLES, OPTIMIZATIONS, CAPABILITIES, CONTRACTS, SCENARIOS, RULES
     };
     const TAG_PRESETS = [
       { name: 'Platform changes passengers raised', asks: 'What did passengers say about platform changes?', tags: ['platform-changes', 'passengers'], match: 'all' },
@@ -128,15 +126,13 @@
       { name: 'Passengers or announcements', asks: 'What reaches passengers, either way?', tags: ['passengers', 'announcements'], match: 'any' }
     ];
 
-    const items = Object.entries(LISTS).flatMap(([kind, list]) => list.map((record) => ({ ...record, kind })));
-    const engine = createTags({ items, tags: TAGS });
+    const engine = createTags({ lists: LISTS, tags: TAGS });
 
     // What's asked: a selection, or more like one item.
     let selection = { tags: [], match: 'all', without: [] };
     let likeId = null;
 
     const el = (tag, className, text) => Object.assign(document.createElement(tag), className ? { className } : {}, text != null ? { textContent: text } : {});
-    const labelOf = ({ title, text, quote, term, name, summary }) => title ?? text ?? quote ?? term ?? name ?? summary ?? '';
     const chips = (tags, className = '') => tags.map((tag) => el('span', `chip ${className}`, tag));
 
     function choose(next) {
@@ -190,14 +186,14 @@
       if (!narrow.length && !widen.length) box.hidden = true;
     }
 
-    function resultRow({ id, kind, score, item }, tagLines) {
+    function resultRow({ id, kind, label, score }, tagLines) {
       const row = el('li');
       const scoreBox = el('div', 'score', score.toFixed(2));
       const bar = el('div', 'bar');
       bar.append(Object.assign(el('i'), { style: `width: ${score * 100}%` }));
       scoreBox.append(bar);
       const what = el('div', 'what');
-      what.append(el('b', '', id), el('span', 'kind', kind), el('p', 'label', labelOf(item)), ...tagLines);
+      what.append(el('b', '', id), el('span', 'kind', kind), el('p', 'label', label), ...tagLines);
       const more = el('button', 'quiet', 'More like this');
       more.onclick = () => { likeId = id; draw(); };
       row.append(scoreBox, what, more);
@@ -219,12 +215,13 @@
         list.replaceChildren();
         return;
       }
-      const { results, total, followed, undeclared } = engine.find(selection, { limit: 30 });
+      const { results, total, exact, followed, undeclared } = engine.find(selection, { limit: 30 });
       const asked = selection.tags.join(selection.match === 'any' ? ' or ' : ' + ') || 'any tag';
       summary.textContent = `${total} carry ${asked}${selection.without.length ? `, without ${selection.without.join(', ')}` : ''}.`;
       notes.textContent = [
         ...followed.map(({ from, to }) => `${from} is retired: followed to ${to.join(', ') || 'nothing'}.`),
         ...(undeclared.length ? [`Never declared: ${undeclared.join(', ')}.`] : []),
+        ...(exact > 1 ? [`${exact} carry exactly these and no other tag, so they score 1.00, in code order.`] : []),
         ...(total > results.length ? [`Showing the first ${results.length}.`] : [])
       ].join(' ');
       list.replaceChildren(...(results.length

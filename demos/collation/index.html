@@ -58,8 +58,9 @@
   </main>
 
   <script>
+    // Every record the board can show, each with its kind, for cards and for tag search.
+    const tagSearch = createTags({ lists: { EXCERPTS, CLAIMS, OPINIONS, RISKS, CONSTRAINTS, DECISIONS }, tags: TAGS });
     const excerpt = (id) => EXCERPTS.find((e) => e.id === id);
-    const record = (records, id) => records.find((r) => r.id === id);
 
     // A record as a compact card. Status is left out: it's worked out by the discovery engine, and
     // this page shows only what the records say.
@@ -73,9 +74,10 @@
       const { source, quote, tags } = excerpt(id);
       return cardOf({ id, kind: 'excerpt', tags, excerpt: { source, quote } });
     };
-    const recordCard = (records, id, kind) => {
-      const { text, title, tags } = record(records, id);
-      return cardOf({ id, kind, tags, text: text ?? title });
+    // Any record, by its code, as the engine knows it with its kind.
+    const cardFor = (ref) => {
+      const { id, kind, tags, text, title } = tagSearch.items().find((item) => item.id === ref);
+      return kind === 'excerpt' ? excerptCard(id) : cardOf({ id, kind, tags, text: text ?? title });
     };
 
     // A sample picture, in the page itself so it opens from disk, standing in for a still of the board.
@@ -117,9 +119,8 @@
 
     const board = document.getElementById('board');
     board.append(
-      excerptCard('SRC-3.3'), excerptCard('SRC-6.3'), excerptCard('SRC-7.1'), picture(),
-      recordCard(CLAIMS, 'CLM-5', 'claim'), recordCard(OPINIONS, 'OPN-1', 'opinion'), recordCard(RISKS, 'RSK-1', 'risk'),
-      recordCard(DECISIONS, 'DEC-1', 'decision'), recordCard(CONSTRAINTS, 'CON-2', 'constraint'),
+      cardFor('SRC-3.3'), cardFor('SRC-6.3'), cardFor('SRC-7.1'), picture(),
+      cardFor('CLM-5'), cardFor('OPN-1'), cardFor('RSK-1'), cardFor('DEC-1'), cardFor('CON-2'),
       table(), statechart()
     );
 
@@ -139,10 +140,8 @@
     };
 
     // Tag search in Tags mode: the chosen tags, or with none, what's most like what's on the board.
-    const RECORDS = { excerpt: EXCERPTS, claim: CLAIMS, opinion: OPINIONS, risk: RISKS, constraint: CONSTRAINTS, decision: DECISIONS };
-    const tagSearch = createTags({ items: Object.entries(RECORDS).flatMap(([kind, list]) => list.map((record) => ({ ...record, kind }))), tags: TAGS });
     document.querySelector('sb-tags-mode').search = (selection, onPage) => (selection ? tagSearch.find(selection) : tagSearch.like(onPage)).results
-      .map(({ id, kind, score, item }) => ({ ref: id, kind, score, label: item.title ?? item.text ?? item.quote }));
+      .map(({ id, kind, score, label }) => ({ ref: id, kind, score, label }));
 
     // Pulling in: the record lands beside what on the board it shares most tags with, and what people
     // pulled in goes to the agent in words, to write into the layout.
@@ -151,11 +150,10 @@
     handoff.prompt = () => ['# Collation board: pulled in', ...pulled, 'Add these to the board\'s layout where they landed, or say why not.'].join('\n\n');
 
     document.addEventListener('sb-pull', ({ detail: { ref } }) => {
-      const kind = Object.keys(RECORDS).find((k) => RECORDS[k].some((record) => record.id === ref));
-      if (!kind) return;
+      if (!tagSearch.items().some((item) => item.id === ref)) return;
       const onBoard = new Set(board.layout.groups.flatMap(({ items }) => items.map((item) => item.ref ?? item)));
       const beside = tagSearch.like([ref]).results.find(({ id }) => onBoard.has(id));
-      board.append(kind === 'excerpt' ? excerptCard(ref) : recordCard(RECORDS[kind], ref, kind));
+      board.append(cardFor(ref));
       board.layout = { ...board.layout, groups: beside ? board.layout.groups.map((group) => withAfter(group, beside.id, ref)) : [...board.layout.groups, { label: 'Pulled in', x: 90, y: 80, items: [ref] }] };
       pulled.push(beside ? `Pulled in ${ref}, beside ${beside.id}: shares ${beside.shares.join(', ')}.` : `Pulled in ${ref}: it shares no tag with anything on the board.`);
       handoff.disabled = false;

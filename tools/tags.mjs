@@ -38,11 +38,10 @@ const MAX_LISTED = 5;
 const SPOT_CHECKS = 3;
 const FIND_LIMIT = 20;
 const LABEL_LENGTH = 70;
-const LABEL_FIELDS = ['title', 'text', 'quote', 'term', 'name', 'summary'];
 
 function report(folder) {
-  const { notes, declared, presets, all } = readSandbox(folder);
-  const items = createTags({ items: all, tags: declared }).items().map(({ id, tags }) => ({ id, tags: Array.isArray(tags) ? tags : [] }));
+  const { notes, declared, presets, lists } = readSandbox(folder);
+  const items = createTags({ lists, tags: declared }).items().map(({ id, tags }) => ({ id, tags: Array.isArray(tags) ? tags : [] }));
   const tagged = items.filter((item) => item.tags.length);
   if (!declared.length && !tagged.length) return [...notes, 'No tags here. Tagging is opt-in: see the tagging practice.'];
 
@@ -52,7 +51,8 @@ function report(folder) {
 
 // ---- Reading ----
 
-// Everything both commands read: the declarations, the presets, and every item, each with its kind.
+// Everything both commands read: the declarations, the presets, and every list of items by name,
+// which gives their kind: SOURCES holds sources, ITEMS the model's items.
 function readSandbox(folder) {
   const sandbox = resolve(folder);
   const notes = [];
@@ -61,11 +61,9 @@ function readSandbox(folder) {
     notes,
     declared: readDeclared(sandbox, records, notes),
     presets: readPresets(sandbox, records, notes),
-    all: [...withKind(readSources(sandbox), 'source'), ...recordItems(records), ...withKind(readModelItems(sandbox, notes), 'item')]
+    lists: { SOURCES: readSources(sandbox), ...itemLists(records), ITEMS: readModelItems(sandbox, notes) }
   };
 }
-
-const withKind = (list, kind) => list.filter((item) => item && typeof item === 'object').map((item) => ({ kind, ...item }));
 
 // Every top-level const in each script in records/, by name.
 function readRecords(sandbox, notes) {
@@ -115,12 +113,9 @@ function readSources(sandbox) {
   }
 }
 
-// Every list in records/ but the tags' own, each item's kind named by its list: CLAIMS holds claims.
+// Every list in records/ but the tags' own.
 const NOT_ITEMS = ['TAGS', 'TAG_PRESETS'];
-const kindOfList = (name) => name.toLowerCase().replace(/ies$/, 'y').replace(/([^s])s$/, '$1');
-const recordItems = (records) => Object.entries(records)
-  .filter(([name, list]) => Array.isArray(list) && !NOT_ITEMS.includes(name))
-  .flatMap(([name, list]) => withKind(list, kindOfList(name)));
+const itemLists = (records) => Object.fromEntries(Object.entries(records).filter(([name]) => !NOT_ITEMS.includes(name)));
 
 function readModelItems(sandbox, notes) {
   const file = join(sandbox, 'model.js');
@@ -234,18 +229,18 @@ function spread(ids) {
 // ---- Searching ----
 
 function search(folder, args) {
-  const { notes, declared, presets, all } = readSandbox(folder);
-  const engine = createTags({ items: all, tags: declared });
+  const { notes, declared, presets, lists } = readSandbox(folder);
+  const engine = createTags({ lists, tags: declared });
   const asked = askedIn(args, presets);
   if (asked.like.length) return [...notes, ...likeLines(engine, asked)];
-  const { results: ranked, total, selection, followed, undeclared } = engine.find(asked.selection);
+  const { results: ranked, total, exact, selection, followed, undeclared } = engine.find(asked.selection);
   const results = pageOf(ranked, asked);
   const { narrow, widen } = engine.ways(selection);
   const { tags, match, without } = selection;
   const what = `${tags.join(match === 'any' ? ' or ' : ' + ') || 'any tag'}${without.length ? `, without ${without.join(', ')}` : ''}`;
   return [
     ...notes,
-    total ? `${counted(total, 'item')} ${total === 1 ? 'carries' : 'carry'} ${what}${showing(total, asked)}.` : `Nothing carries ${what}.`,
+    total ? `${counted(total, 'item')} ${total === 1 ? 'carries' : 'carry'} ${what}${showing(total, asked)}.${exactly(exact)}` : `Nothing carries ${what}.`,
     ...results.map((result) => resultLine(result, result.lacks.length && `lacks ${result.lacks.join(', ')}`)),
     ...moreLine(total, asked),
     ...(narrow.length ? [`Narrow: ${narrow.map(wayWords).join(' · ')}`] : []),
@@ -297,10 +292,11 @@ function usePreset(selection, presets, name) {
   if (preset.match) selection.match = preset.match;
 }
 
+// Several scoring 1.00 in a row would read as a fault, so the first line says why.
+const exactly = (exact) => (exact > 1 ? ` ${exact} carry exactly these and no other tag, so they score 1.00, in code order.` : '');
+
 // One line per result: score, id, kind (and status, where the record says it), a short label, and the tags.
-function resultLine({ score, id, kind, item }, tags) {
-  const said = LABEL_FIELDS.map((field) => item[field]).find((value) => typeof value === 'string') ?? '';
-  const label = said.replace(/\s+/g, ' ').trim();
+function resultLine({ score, id, kind, label, item }, tags) {
   const short = label.length > LABEL_LENGTH ? `${label.slice(0, LABEL_LENGTH - 1).trimEnd()}…` : label;
   const status = typeof item.status === 'string' ? `, ${item.status}` : '';
   return [`${score.toFixed(2)} ${id} ${kind ?? 'item'}${status}`, short, tags].filter(Boolean).join(' · ');
